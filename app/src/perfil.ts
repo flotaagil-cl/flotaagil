@@ -16,3 +16,10 @@ export function modoDeRastreo(perfil: Perfil | null): Modo | null {
   if (!perfil?.consentimiento_gps_en || perfil.estado === 'NO_DISPONIBLE') return null;
   return perfil.estado === 'EN_VIAJE' ? 'viaje' : 'espera';
 }
+
+/** Vehículo que se envía al empezar el turno: con uno solo no hace falta elegir (RN-05). */
+export function vehiculoParaTurno(perfil: Perfil, elegido: number | null): { listo: boolean; vehiculo?: number } {
+  if (perfil.vehiculos.length === 0) return { listo: false };
+  if (perfil.vehiculos.length === 1) return { listo: true };
+  return elegido === null ? { listo: false } : { listo: true, vehiculo: elegido };
+}

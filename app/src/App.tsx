@@ -14,7 +14,7 @@ import { Inicio } from './pantallas/Inicio';
 import { Login } from './pantallas/Login';
 import { modoDeRastreo, type Perfil } from './perfil';
 import { api, cola, rastreador, sesion } from './servicios';
-import { SinRed, type EstadoSesion } from './sesion/sesion';
+import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
 
 export default function App() {
   const [estado, setEstado] = useState<EstadoSesion>(sesion.estado);
@@ -62,6 +62,21 @@ export default function App() {
     else void rastreador.detener();
   }, [modo]);
 
+  /** HU-13: Disponible (con el vehículo del turno) o No disponible. Devuelve el mensaje de error o null. */
+  async function cambiarTurno(estado: 'DISPONIBLE' | 'NO_DISPONIBLE', vehiculo?: number): Promise<string | null> {
+    try {
+      setPerfil(await api.pedir<Perfil>('POST', '/api/app/turno/', { estado, ...(vehiculo && { vehiculo }) }));
+      return null;
+    } catch (error) {
+      if (error instanceof SinRed) return 'No se pudo conectar con el servidor. Intenta de nuevo.';
+      if (error instanceof ErrorApi && error.estado === 409) {
+        void cargarPerfil();
+        return error.message;
+      }
+      return 'No se pudo cambiar el estado.';
+    }
+  }
+
   async function cerrarSesion() {
     await rastreador.detener();
     cola.vaciarSinEnviar();
@@ -103,6 +118,7 @@ export default function App() {
       perfil={perfil}
       envio={envio}
       rastreo={rastreo}
+      cambiarTurno={cambiarTurno}
       actualizar={() => void cargarPerfil()}
       abrirAjustes={() => void abrirAjustes()}
       cerrarSesion={() => void cerrarSesion()}
