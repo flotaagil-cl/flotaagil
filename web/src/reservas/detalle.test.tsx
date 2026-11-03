@@ -1,9 +1,10 @@
 /** Detalle con historial y cancelación con motivo (CP-06). */
 
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MENSAJES } from '../api/errores';
+import { ESPERA_RESPUESTA_MS } from './api';
 import { esperarListado, montarPanel } from '../pruebas/montar';
 import { viajeDePrueba } from '../pruebas/servidorViajesFalso';
 
@@ -200,5 +201,18 @@ describe('asignar conductor (HU-14)', () => {
   it('solo en reservas solicitadas', async () => {
     await abrirDetalle(viajeDePrueba({ id: 8, estado: 'PENDIENTE_CONFIRMACION' }));
     expect(screen.queryByRole('button', { name: 'Asignar conductor…' })).not.toBeInTheDocument();
+  });
+});
+
+describe('esperando la respuesta del conductor (HU-15)', () => {
+  it('la ficha de una reserva asignada se actualiza sola', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'ASIGNADO', conductor: { id: 3, nombre: 'Carla Conductora' } }));
+    contexto.viajes.cambiarEstado(8, 'ACEPTADO');
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ESPERA_RESPUESTA_MS);
+    });
+    expect(await screen.findByRole('heading', { name: 'Reserva #8 Aceptado' })).toBeInTheDocument();
+    vi.useRealTimers();
   });
 });

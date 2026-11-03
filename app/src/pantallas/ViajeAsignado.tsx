@@ -6,7 +6,7 @@ const pesos = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP
 
 /**
  * Aviso de viaje asignado (HU-14): ocupa la pantalla, con los datos del viaje y la cuenta regresiva de 60 s.
- * Los botones Aceptar y Rechazar se agregan con HU-15 (`acciones`).
+ * Los botones Aceptar y Rechazar (HU-15) llegan en `acciones`.
  */
 export function ViajeAsignado({ asignacion, acciones }: { asignacion: Asignacion; acciones?: ReactNode }) {
   const [ahora, setAhora] = useState(() => Date.now());

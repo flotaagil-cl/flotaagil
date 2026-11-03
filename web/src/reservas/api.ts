@@ -34,6 +34,7 @@ export const claves = {
 };
 
 const VIGENCIA_MS = 30_000;
+export const ESPERA_RESPUESTA_MS = 5_000;
 
 export function useViajes(consulta: ConsultaViajes) {
   const api = useApi();
@@ -52,6 +53,8 @@ export function useViaje(id: number) {
     queryKey: claves.detalle(id),
     queryFn: () => resultado(api.GET('/api/viajes/{id}/', { params: { path: { id } } })),
     staleTime: VIGENCIA_MS,
+    // HU-15: mientras espera la respuesta del conductor (60 s) se vuelve a pedir, para ver si aceptó, rechazó o venció.
+    refetchInterval: (consulta) => (consulta.state.data?.estado === 'ASIGNADO' ? ESPERA_RESPUESTA_MS : false),
   });
 }
 

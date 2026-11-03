@@ -16,6 +16,7 @@ import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
 import { alertar, pedirPermisoDeNotificaciones } from './conductor/alerta';
 import type { EstadoCanal } from './conductor/canal';
+import { Responder } from './pantallas/Responder';
 import { ViajeAsignado } from './pantallas/ViajeAsignado';
 import { api, canal, cola, rastreador, sesion } from './servicios';
 import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
@@ -106,6 +107,24 @@ export default function App() {
     }
   }
 
+  /** HU-15: aceptar o rechazar dentro de los 60 s. Devuelve el mensaje de error o null. */
+  async function responderAsignacion(id: number, aceptar: boolean): Promise<string | null> {
+    try {
+      await api.pedir('POST', `/api/app/asignaciones/${id}/${aceptar ? 'aceptar' : 'rechazar'}/`);
+      canal.olvidar(id);
+      void cargarPerfil();
+      return null;
+    } catch (error) {
+      if (error instanceof SinRed) return 'No se pudo conectar con el servidor. Intenta de nuevo.';
+      if (error instanceof ErrorApi && error.estado === 409) {
+        canal.olvidar(id);
+        void cargarPerfil();
+        return error.message;
+      }
+      return 'No se pudo registrar tu respuesta.';
+    }
+  }
+
   async function cerrarSesion() {
     canal.detener();
     await rastreador.detener();
@@ -146,11 +165,14 @@ export default function App() {
       <ViajeAsignado
         asignacion={enVivo.asignacion}
         acciones={
-          <div className="acciones">
-            <button type="button" onClick={() => setAvisoOculto(id)}>
-              Ocultar aviso
-            </button>
-          </div>
+          <Responder
+            asignacion={enVivo.asignacion}
+            responder={(aceptar) => responderAsignacion(id, aceptar)}
+            ocultar={() => {
+              setAvisoOculto(id);
+              canal.olvidar(id);
+            }}
+          />
         }
       />
     );

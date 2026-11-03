@@ -14,13 +14,15 @@ from channels.layers import get_channel_layer
 from django.contrib.gis.db.models.functions import Distance
 from django.db import transaction
 from django.db.models import OuterRef, Subquery
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
+from apps.flota.tiempo_real import notificar_conductor
 
 from . import estados
-from .models import Asignacion, EstadoViaje, OrigenSugerencia, Viaje
+from .models import Actor, Asignacion, EstadoViaje, OrigenSugerencia, ResultadoAsignacion, Viaje
 
 SEGUNDOS_PARA_RESPONDER = 60  # RN-04
 # Estados en que el viaje ocupa al conductor (RN-03).
@@ -130,6 +132,8 @@ def _avisar_al_conductor(asignacion: Asignacion) -> None:
 
 def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
     with transaction.atomic():
+        # Estado actual con bloqueo: dos despachadores no pueden asignar la misma reserva a la vez.
+        viaje = Viaje.objects.select_for_update(of=("self",)).get(pk=viaje.pk)
         conductor = (
             Conductor.objects.select_for_update(of=("self",))
             .select_related("usuario", "vehiculo_activo")
@@ -168,3 +172,97 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
         )
         transaction.on_commit(lambda: _avisar_al_conductor(asignacion))
     return asignacion
+
+
+# --- Respuesta del conductor y expiración (HU-15, RN-04) ---
+
+
+def vence_en(asignacion: Asignacion):
+    return asignacion.enviada_en + timedelta(seconds=SEGUNDOS_PARA_RESPONDER)
+
+
+def _avisar_fin(asignacion: Asignacion) -> None:
+    """La app cierra el aviso (rechazo, expiración o aceptación desde otro dispositivo)."""
+    capa = get_channel_layer()
+    if capa is not None:
+        mensaje = {"type": "conductor.sin_asignacion", "asignacion": asignacion.pk}
+        async_to_sync(capa.group_send)(grupo_conductor(asignacion.conductor_id), mensaje)
+
+
+def _volver_a_solicitado(asignacion: Asignacion, *, actor: str, usuario=None) -> None:
+    """RN-04: la reserva vuelve a SOLICITADO, sin conductor ni vehículo, para reasignarla."""
+    estados.transicionar(
+        asignacion.viaje,
+        EstadoViaje.SOLICITADO,
+        desde=EstadoViaje.ASIGNADO,
+        actor=actor,
+        usuario=usuario,
+        conductor=None,
+        vehiculo=None,
+    )
+
+
+def responder(asignacion_id: int, *, usuario, aceptar: bool) -> Asignacion:
+    """El conductor acepta o rechaza dentro de los 60 s. Aceptar deja el viaje ACEPTADO y al conductor
+    EN_VIAJE (RN-03); rechazar devuelve la reserva a SOLICITADO (RN-04). Ambos quedan en ASIGNACION."""
+    ahora = timezone.now()
+    with transaction.atomic():
+        asignacion = (
+            Asignacion.objects.select_for_update(of=("self",))
+            .select_related("viaje", "conductor")
+            .filter(pk=asignacion_id, conductor__usuario=usuario)
+            .first()
+        )
+        if asignacion is None:
+            raise ValidationError({"asignacion": ["No existe una asignación tuya con ese número."]})
+        if asignacion.resultado is not None:
+            raise AsignacionNoPermitida("Esta asignación ya fue respondida o venció.")
+        if vence_en(asignacion) <= ahora:
+            raise AsignacionNoPermitida(
+                "Se acabó el tiempo para responder (60 s): la reserva vuelve a la central."
+            )
+        asignacion.respondida_en = ahora
+        if aceptar:
+            asignacion.resultado = ResultadoAsignacion.ACEPTADA
+            estados.transicionar(
+                asignacion.viaje,
+                EstadoViaje.ACEPTADO,
+                desde=EstadoViaje.ASIGNADO,
+                actor=Actor.CONDUCTOR,
+                usuario=usuario,
+            )
+            Conductor.objects.filter(pk=asignacion.conductor_id).update(estado=EstadoConductor.EN_VIAJE)
+        else:
+            asignacion.resultado = ResultadoAsignacion.RECHAZADA
+            _volver_a_solicitado(asignacion, actor=Actor.CONDUCTOR, usuario=usuario)
+        asignacion.save(update_fields=["respondida_en", "resultado"])
+        notificar_conductor(asignacion.conductor)  # el mapa ve el cambio a En viaje
+        transaction.on_commit(lambda: _avisar_fin(asignacion))
+    return asignacion
+
+
+def expirar_asignaciones(ahora=None) -> int:
+    """RN-04: las asignaciones sin respuesta a los 60 s quedan EXPIRADA y la reserva vuelve a SOLICITADO.
+    Puede correr varias veces o en paralelo sin efectos duplicados. Devuelve cuántas expiró."""
+    ahora = ahora or timezone.now()
+    limite = ahora - timedelta(seconds=SEGUNDOS_PARA_RESPONDER)
+    expiradas = 0
+    for asignacion_id in Asignacion.objects.filter(
+        resultado__isnull=True, enviada_en__lte=limite
+    ).values_list("pk", flat=True):
+        with transaction.atomic():
+            asignacion = (
+                Asignacion.objects.select_for_update(of=("self",), skip_locked=True)
+                .select_related("viaje")
+                .filter(pk=asignacion_id, resultado__isnull=True)
+                .first()
+            )
+            if asignacion is None:
+                continue  # la respondió el conductor o la tomó otro proceso
+            asignacion.resultado = ResultadoAsignacion.EXPIRADA
+            asignacion.save(update_fields=["resultado"])
+            if asignacion.viaje.estado == EstadoViaje.ASIGNADO:
+                _volver_a_solicitado(asignacion, actor=Actor.SISTEMA)
+            transaction.on_commit(lambda a=asignacion: _avisar_fin(a))
+        expiradas += 1
+    return expiradas

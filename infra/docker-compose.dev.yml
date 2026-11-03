@@ -63,5 +63,17 @@ services:
     restart: unless-stopped
     command: python manage.py expirar_pendientes --cada 60
 
+  # RN-04: asignaciones sin respuesta a los 60 s vuelven a SOLICITADO (cada 5 s, mientras no exista Celery beat).
+  asignaciones:
+    build: ../backend
+    env_file: ../backend/.env
+    volumes:
+      - ../backend:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    command: python manage.py expirar_asignaciones --cada 5
+
 volumes:
   db-datos:

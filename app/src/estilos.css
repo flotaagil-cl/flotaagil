@@ -198,3 +198,14 @@ main.asignado {
   font-weight: 700;
   color: #9a3412;
 }
+
+.responder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+button.principal.rechazar {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
