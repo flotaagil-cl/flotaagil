@@ -139,6 +139,19 @@ class TestEnvio:
         settings.WHATSAPP_URL_BASE = URL_BASE
         assert isinstance(obtener_notificador(), NotificadorTwilio)
 
+    def test_sin_plantilla_envia_texto_para_el_sandbox(self, pendiente, settings):
+        settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN = "AC1", TOKEN
+        settings.TWILIO_WHATSAPP_FROM, settings.WHATSAPP_URL_BASE = "+14155238886", URL_BASE
+        settings.TWILIO_PLANTILLA_VERIFICACION = ""
+        assert isinstance(obtener_notificador(), NotificadorTwilio)
+        twilio = TwilioFalso()
+        twilio.plantilla = ""
+        mensaje = enviar_verificacion(pendiente, twilio)
+        datos = twilio.enviados[0]
+        assert "ContentSid" not in datos
+        assert "Escribe Confirmar o Cancelar." in datos["Body"]
+        assert mensaje.tipo == TipoMensaje.SESION
+
     def test_post_real_arma_la_peticion(self, pendiente, monkeypatch):
         capturada = {}
 

@@ -5,7 +5,10 @@
   `python manage.py simular_whatsapp <viaje> confirmar|cancelar`.
 - `NotificadorTwilio`: Twilio WhatsApp Business API. La verificación usa una plantilla aprobada (Content API)
   con botones de respuesta rápida «Confirmar» y «Cancelar»; las respuestas llegan al webhook. Se usa cuando
-  están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` y `TWILIO_PLANTILLA_VERIFICACION`.
+  están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` y `WHATSAPP_URL_BASE`.
+  Sin `TWILIO_PLANTILLA_VERIFICACION` (sandbox, que no admite plantillas propias) la verificación va como
+  texto y el pasajero responde escribiendo «Confirmar» o «Cancelar»; solo llega si escribió en las
+  últimas 24 h.
 
 Todo mensaje (enviado o recibido) queda en MENSAJE_WHATSAPP. Si Twilio no responde tras los reintentos, el
 mensaje queda en FAILED y la solicitud expira sola (RN-06).
@@ -187,6 +190,14 @@ class NotificadorTwilio:
         from apps.reservas.models import TipoMensaje
 
         cuerpo, variables = texto_verificacion(viaje, expira_en)
+        if not self.plantilla:
+            # Sandbox: mensaje de sesión con la misma pregunta, a responder por escrito.
+            texto = cuerpo.replace("[Confirmar] [Cancelar]", "Escribe Confirmar o Cancelar.")
+            datos = self._comunes(viaje.pasajero.telefono) | {"Body": texto}
+            self._enviar_y_registrar(
+                viaje.pasajero, viaje, tipo=TipoMensaje.SESION, cuerpo=texto, datos=datos
+            )
+            return
         datos = self._comunes(viaje.pasajero.telefono) | {
             "ContentSid": self.plantilla,
             "ContentVariables": json.dumps(variables, ensure_ascii=False),
@@ -221,7 +232,6 @@ def twilio_configurado() -> bool:
             "TWILIO_ACCOUNT_SID",
             "TWILIO_AUTH_TOKEN",
             "TWILIO_WHATSAPP_FROM",
-            "TWILIO_PLANTILLA_VERIFICACION",
             "WHATSAPP_URL_BASE",
         )
     )
