@@ -87,6 +87,14 @@ docker compose -f infra/docker-compose.dev.yml exec db psql -U flotaagil -d flot
 3. Elige DMAA10 y empieza el turno. **Esperado:** en el panel, «Disponible» y en la ficha «declaró DMAA10».
 4. Desde el panel (Vehículos > DMAA10) intenta **Desactivar**. **Esperado:** 409 «está declarado por … en turno».
 
+## 5c. Prueba F: abrir Google Maps o Waze (HU-17)
+
+Necesita un viaje aceptado. Ingresa como `conductor2@transportes-andes.example`, que en `datos_demo` tiene un viaje EN_CAMINO.
+
+1. **Esperado:** en Inicio aparece «Viaje en curso · En camino» con el pasajero, el origen y el destino.
+2. Pulsa **Google Maps**. **Esperado:** se abre la app de Google Maps con la ruta hacia el punto de recogida (si no está instalada, el navegador).
+3. Vuelve a FlotaÁgil y pulsa **Waze**. **Esperado:** Waze abre la navegación al mismo punto (si no está instalada, la página de Waze).
+
 ## 6. Prueba C: sin señal y vuelta
 
 1. Con la app en turno, activa el **modo avión** 3 minutos y luego desactívalo.
