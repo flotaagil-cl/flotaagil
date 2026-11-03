@@ -2960,7 +2960,13 @@ components:
           items:
             $ref: '#/components/schemas/Historial'
           readOnly: true
+        calificacion:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: Puntaje del pasajero, de 1 a 5 (RN-14)
       required:
+      - calificacion
       - canal
       - cancelable
       - conductor

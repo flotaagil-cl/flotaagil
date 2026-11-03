@@ -1400,6 +1400,8 @@ export interface components {
             readonly editable: boolean;
             readonly cancelable: boolean;
             readonly historial: components["schemas"]["Historial"][];
+            /** @description Puntaje del pasajero, de 1 a 5 (RN-14) */
+            readonly calificacion: number | null;
         };
         Vuelo: {
             numero: string;
