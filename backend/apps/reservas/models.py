@@ -165,3 +165,63 @@ class HistorialEstado(models.Model):
 
     def __str__(self):
         return f"{self.estado_anterior or '—'} → {self.estado_nuevo} ({self.actor})"
+
+
+class DireccionMensaje(models.TextChoices):
+    ENTRANTE = "ENTRANTE", "Entrante"
+    SALIENTE = "SALIENTE", "Saliente"
+
+
+class TipoMensaje(models.TextChoices):
+    PLANTILLA = "PLANTILLA", "Plantilla"
+    SESION = "SESION", "Sesión"
+
+
+class EstadoEntrega(models.TextChoices):
+    QUEUED = "QUEUED", "En cola"
+    SENT = "SENT", "Enviado"
+    DELIVERED = "DELIVERED", "Entregado"
+    READ = "READ", "Leído"
+    FAILED = "FAILED", "Falló"
+
+
+class MensajeWhatsapp(models.Model):
+    """MENSAJE_WHATSAPP (Anexo D). `proveedor_sid` (el SID de Twilio) hace idempotentes los webhooks.
+    Retención 12 meses (RN-15)."""
+
+    pasajero = models.ForeignKey(Pasajero, on_delete=models.CASCADE, related_name="mensajes")
+    viaje = models.ForeignKey(
+        Viaje, on_delete=models.SET_NULL, null=True, blank=True, related_name="mensajes"
+    )
+    direccion = models.CharField(max_length=8, choices=DireccionMensaje.choices)
+    tipo = models.CharField(max_length=10, choices=TipoMensaje.choices)
+    cuerpo = models.TextField(max_length=1024)
+    proveedor_sid = models.CharField(max_length=40, unique=True, null=True, blank=True)
+    estado_entrega = models.CharField(
+        max_length=12,
+        choices=EstadoEntrega.choices,
+        default=EstadoEntrega.QUEUED,
+        db_default=EstadoEntrega.QUEUED,
+    )
+    usuario = models.ForeignKey(
+        "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    creado_en = models.DateTimeField(db_default=Now(), editable=False)
+
+    class Meta:
+        db_table = "mensaje_whatsapp"
+        verbose_name = "mensaje de WhatsApp"
+        verbose_name_plural = "mensajes de WhatsApp"
+        ordering = ["creado_en", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(direccion__in=DireccionMensaje.values), name="mensaje_direccion"
+            ),
+            models.CheckConstraint(condition=Q(tipo__in=TipoMensaje.values), name="mensaje_tipo"),
+            models.CheckConstraint(
+                condition=Q(estado_entrega__in=EstadoEntrega.values), name="mensaje_estado"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.direccion} {self.tipo} #{self.pk}"

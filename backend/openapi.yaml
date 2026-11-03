@@ -1280,6 +1280,46 @@ paths:
           description: ''
         '409':
           description: La reserva no admite la operación en su estado actual
+  /api/whatsapp/entrante/:
+    post:
+      operationId: whatsapp_entrante_create
+      description: Confirmar o Cancelar responde la verificación de RN-06. Idempotente
+        por MessageSid.
+      summary: 'Webhook de Twilio: mensaje entrante del pasajero'
+      tags:
+      - whatsapp
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '200':
+          description: TwiML vacío
+        '403':
+          description: Firma inválida
+  /api/whatsapp/estado/:
+    post:
+      operationId: whatsapp_estado_create
+      summary: 'Webhook de Twilio: estado de entrega de un mensaje enviado'
+      tags:
+      - whatsapp
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+        '403':
+          description: Firma inválida
 components:
   schemas:
     AccesoEnum:

@@ -4,6 +4,8 @@ from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.reservas.whatsapp_views import WebhookEntranteView, WebhookEstadoView
+
 
 def salud(_request):
     """Comprobación de vida para el monitoreo (UptimeRobot)."""
@@ -17,6 +19,8 @@ urlpatterns = [
     path("api/", include("apps.reservas.urls")),
     path("api/", include("apps.flota.urls")),
     path("api/app/", include("apps.flota.app_urls")),
+    path("api/whatsapp/entrante/", WebhookEntranteView.as_view(), name="whatsapp-entrante"),
+    path("api/whatsapp/estado/", WebhookEstadoView.as_view(), name="whatsapp-estado"),
     path("api/portal/", include("apps.portal.urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
 ]

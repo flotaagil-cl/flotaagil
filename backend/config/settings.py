@@ -134,6 +134,14 @@ GOOGLE_GEOCODING_API_KEY = env("GOOGLE_GEOCODING_API_KEY", default="")
 FLIGHTAWARE_API_KEY = env("FLIGHTAWARE_API_KEY", default="")
 AEROPUERTO_IATA = env("AEROPUERTO_IATA", default="SCL")
 
+# WhatsApp (HU-20): Twilio si están todas; si no, el notificador de desarrollo (registra y deja en el log).
+TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
+TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
+TWILIO_WHATSAPP_FROM = env("TWILIO_WHATSAPP_FROM", default="")  # +56…, número aprobado por Meta
+TWILIO_PLANTILLA_VERIFICACION = env("TWILIO_PLANTILLA_VERIFICACION", default="")  # ContentSid HX…
+# URL pública del backend con la que Twilio llama a los webhooks (y con la que se valida la firma).
+WHATSAPP_URL_BASE = env("WHATSAPP_URL_BASE", default="")
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MIN", default=15)),
     "REFRESH_TOKEN_LIFETIME": timedelta(hours=env.int("JWT_REFRESH_HORAS", default=12)),

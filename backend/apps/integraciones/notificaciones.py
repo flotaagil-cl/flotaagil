@@ -1,13 +1,30 @@
-"""Notificaciones al pasajero por WhatsApp, detrás de un adaptador.
+"""Notificaciones al pasajero por WhatsApp, detrás de un adaptador (HU-20, RN-06).
 
-En esta etapa solo existe la implementación de desarrollo, que deja en el log el mensaje que se enviaría.
-La implementación con Twilio (plantilla con botones Confirmar/Cancelar, MENSAJE_WHATSAPP, webhooks
-idempotentes) es parte de HU-20.
+- `NotificadorDesarrollo`: no envía nada. Registra el mensaje en MENSAJE_WHATSAPP (con un SID `DEV-…`) y
+  deja en el log un resumen con el número enmascarado. Las respuestas se simulan con
+  `python manage.py simular_whatsapp <viaje> confirmar|cancelar`.
+- `NotificadorTwilio`: Twilio WhatsApp Business API. La verificación usa una plantilla aprobada (Content API)
+  con botones de respuesta rápida «Confirmar» y «Cancelar»; las respuestas llegan al webhook. Se usa cuando
+  están `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` y `TWILIO_PLANTILLA_VERIFICACION`.
+
+Todo mensaje (enviado o recibido) queda en MENSAJE_WHATSAPP. Si Twilio no responde tras los reintentos, el
+mensaje queda en FAILED y la solicitud expira sola (RN-06).
 """
 
+import base64
+import hashlib
+import hmac
+import json
 import logging
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+import uuid
 from typing import Protocol
 
+from django.conf import settings
+from django.urls import reverse
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -18,12 +35,58 @@ def enmascarar_telefono(telefono: str) -> str:
     return telefono[:4] + "*" * max(len(telefono) - 6, 0) + telefono[-2:]
 
 
+def texto_verificacion(viaje, expira_en) -> tuple[str, dict]:
+    """Cuerpo de la plantilla de verificación y sus variables (Twilio Content API: {{1}}…{{4}})."""
+    variables = {
+        "1": viaje.pasajero.nombre.split()[0],
+        "2": viaje.empresa.razon_social,
+        "3": timezone.localtime(viaje.recogida_en).strftime("%d-%m %H:%M"),
+        "4": timezone.localtime(expira_en).strftime("%H:%M"),
+    }
+    cuerpo = (
+        f"Hola {variables['1']}, {variables['2']} recibió tu solicitud de viaje para el {variables['3']}. "
+        f"¿La confirmas? Responde antes de las {variables['4']}; si no, se anula. [Confirmar] [Cancelar]"
+    )
+    return cuerpo, variables
+
+
+class EnvioFallido(Exception):
+    pass
+
+
 class Notificador(Protocol):
     def solicitar_verificacion(self, viaje, expira_en) -> None: ...
+
+    def responder(self, pasajero, viaje, texto: str) -> None: ...
+
+
+def _registrar(pasajero, viaje, *, tipo: str, cuerpo: str, sid: str | None, estado: str):
+    from apps.reservas.models import DireccionMensaje, MensajeWhatsapp
+
+    return MensajeWhatsapp.objects.create(
+        pasajero=pasajero,
+        viaje=viaje,
+        direccion=DireccionMensaje.SALIENTE,
+        tipo=tipo,
+        cuerpo=cuerpo[:1024],
+        proveedor_sid=sid,
+        estado_entrega=estado,
+    )
 
 
 class NotificadorDesarrollo:
     def solicitar_verificacion(self, viaje, expira_en) -> None:
+        from apps.reservas.models import EstadoEntrega, TipoMensaje
+
+        cuerpo, _ = texto_verificacion(viaje, expira_en)
+        _registrar(
+            viaje.pasajero,
+            viaje,
+            tipo=TipoMensaje.PLANTILLA,
+            cuerpo=cuerpo,
+            sid=f"DEV-{uuid.uuid4().hex[:30]}",
+            estado=EstadoEntrega.SENT,
+        )
         logger.info(
             "[WhatsApp simulado] Verificación de la solicitud #%s a %s: recogida %s, expira %s.",
             viaje.pk,
@@ -32,6 +95,145 @@ class NotificadorDesarrollo:
             timezone.localtime(expira_en).strftime("%H:%M"),
         )
 
+    def responder(self, pasajero, viaje, texto: str) -> None:
+        from apps.reservas.models import EstadoEntrega, TipoMensaje
+
+        _registrar(
+            pasajero,
+            viaje,
+            tipo=TipoMensaje.SESION,
+            cuerpo=texto,
+            sid=f"DEV-{uuid.uuid4().hex[:30]}",
+            estado=EstadoEntrega.SENT,
+        )
+        logger.info("[WhatsApp simulado] Respuesta a %s: %s", enmascarar_telefono(pasajero.telefono), texto)
+
+
+class NotificadorTwilio:
+    URL = "https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+
+    def __init__(
+        self,
+        account_sid,
+        auth_token,
+        remitente,
+        plantilla,
+        url_base,
+        intentos=3,
+        espera_base=0.5,
+        timeout=5.0,
+    ):
+        self.account_sid = account_sid
+        self.auth_token = auth_token
+        self.remitente = remitente
+        self.plantilla = plantilla
+        self.url_base = url_base.rstrip("/")
+        self.intentos = intentos
+        self.espera_base = espera_base
+        self.timeout = timeout
+
+    def _post(self, datos: dict) -> dict:
+        credencial = base64.b64encode(f"{self.account_sid}:{self.auth_token}".encode()).decode()
+        peticion = urllib.request.Request(
+            self.URL.format(sid=self.account_sid),
+            data=urllib.parse.urlencode(datos).encode(),
+            headers={
+                "Authorization": f"Basic {credencial}",
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            method="POST",
+        )
+        # La URL es fija y https; no se abren esquemas arbitrarios.
+        with urllib.request.urlopen(peticion, timeout=self.timeout) as respuesta:  # nosec B310
+            return json.load(respuesta)
+
+    def _enviar(self, datos: dict) -> str:
+        for intento in range(self.intentos):
+            try:
+                return self._post(datos)["sid"]
+            except urllib.error.HTTPError as error:
+                if error.code != 429 and error.code < 500:
+                    raise EnvioFallido(f"Twilio respondió {error.code}.") from error
+                logger.warning(
+                    "Envío por WhatsApp falló (intento %s/%s): %s", intento + 1, self.intentos, error
+                )
+            except (urllib.error.URLError, TimeoutError) as error:
+                logger.warning(
+                    "Envío por WhatsApp falló (intento %s/%s): %s", intento + 1, self.intentos, error
+                )
+            if intento < self.intentos - 1:
+                time.sleep(self.espera_base * 2**intento)  # reintento exponencial
+        raise EnvioFallido("Twilio no está disponible.")
+
+    def _comunes(self, telefono: str) -> dict:
+        return {
+            "From": f"whatsapp:{self.remitente}",
+            "To": f"whatsapp:{telefono}",
+            "StatusCallback": f"{self.url_base}{reverse('whatsapp-estado')}",
+        }
+
+    def _enviar_y_registrar(self, pasajero, viaje, *, tipo, cuerpo, datos):
+        from apps.reservas.models import EstadoEntrega
+
+        try:
+            sid = self._enviar(datos)
+        except EnvioFallido as error:
+            logger.error("WhatsApp a %s no enviado: %s", enmascarar_telefono(pasajero.telefono), error)
+            _registrar(pasajero, viaje, tipo=tipo, cuerpo=cuerpo, sid=None, estado=EstadoEntrega.FAILED)
+            return
+        _registrar(pasajero, viaje, tipo=tipo, cuerpo=cuerpo, sid=sid, estado=EstadoEntrega.QUEUED)
+
+    def solicitar_verificacion(self, viaje, expira_en) -> None:
+        from apps.reservas.models import TipoMensaje
+
+        cuerpo, variables = texto_verificacion(viaje, expira_en)
+        datos = self._comunes(viaje.pasajero.telefono) | {
+            "ContentSid": self.plantilla,
+            "ContentVariables": json.dumps(variables, ensure_ascii=False),
+        }
+        self._enviar_y_registrar(
+            viaje.pasajero, viaje, tipo=TipoMensaje.PLANTILLA, cuerpo=cuerpo, datos=datos
+        )
+
+    def responder(self, pasajero, viaje, texto: str) -> None:
+        """Mensaje de sesión: solo dentro de las 24 h desde el último mensaje del pasajero (regla de
+        WhatsApp)."""
+        from apps.reservas.models import TipoMensaje
+
+        datos = self._comunes(pasajero.telefono) | {"Body": texto}
+        self._enviar_y_registrar(pasajero, viaje, tipo=TipoMensaje.SESION, cuerpo=texto, datos=datos)
+
+
+def firma_twilio(auth_token: str, url: str, parametros: dict) -> str:
+    """Firma X-Twilio-Signature: HMAC-SHA1 de la URL más los parámetros POST ordenados, en base64."""
+    datos = url + "".join(f"{clave}{parametros[clave]}" for clave in sorted(parametros))
+    return base64.b64encode(hmac.new(auth_token.encode(), datos.encode(), hashlib.sha1).digest()).decode()
+
+
+def firma_valida(auth_token: str, url: str, parametros: dict, firma: str) -> bool:
+    return hmac.compare_digest(firma_twilio(auth_token, url, parametros), firma or "")
+
+
+def twilio_configurado() -> bool:
+    return all(
+        getattr(settings, nombre, "")
+        for nombre in (
+            "TWILIO_ACCOUNT_SID",
+            "TWILIO_AUTH_TOKEN",
+            "TWILIO_WHATSAPP_FROM",
+            "TWILIO_PLANTILLA_VERIFICACION",
+            "WHATSAPP_URL_BASE",
+        )
+    )
+
 
 def obtener_notificador() -> Notificador:
+    if twilio_configurado():
+        return NotificadorTwilio(
+            settings.TWILIO_ACCOUNT_SID,
+            settings.TWILIO_AUTH_TOKEN,
+            settings.TWILIO_WHATSAPP_FROM,
+            settings.TWILIO_PLANTILLA_VERIFICACION,
+            settings.WHATSAPP_URL_BASE,
+        )
     return NotificadorDesarrollo()
