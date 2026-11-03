@@ -16,6 +16,7 @@ Agregados y desvíos de la implementación respecto de [`diccionario-datos.md`](
 | DC-10 | 2026-10-29 | Agregado | CONFIGURACION_EMPRESA | `anticipacion_minima_min` SMALLINT NOT NULL, defecto 30 | Anticipación mínima de una solicitud del portal, configurable por empresa | Implementado (feat/HU-19-portal) |
 | DC-11 | 2026-10-29 | Agregado | PASAJERO | `privacidad_aceptada_en` TIMESTAMPTZ NULL | Evidencia de la aceptación del aviso de privacidad (HU-19) | Implementado (feat/HU-19-portal) |
 | DC-12 | 2026-10-29 | Supuesto | VUELO | Sin distinción nacional/internacional: la recogida calculada (RN-17) usa `margen_nacional_min` | El Anexo D no tiene columna que distinga el tipo de vuelo | Implementado (feat/HU-19-portal); revisar en HU-27 |
+| DC-13 | 2026-11-03 | Agregado | AUDITORIA | `entidad` agrega `VEHICULO` y `CONDUCTOR` | HU-10 audita el alta, la edición y la desactivación de vehículos y los cambios de datos y vehículos de los conductores | Implementado (feat/HU-10-flota) |
 
 ## DC-01 · EMPRESA.slug
 
@@ -82,6 +83,19 @@ Dominio: `PASAJERO | DESPACHADOR | ADMINISTRADOR | SUPERVISOR | SISTEMA` (se agr
 ## DC-09 · Largo de los estados del viaje
 
 `VIAJE.estado`, `HISTORIAL_ESTADO.estado_anterior` y `HISTORIAL_ESTADO.estado_nuevo` son VARCHAR(22): el valor `PENDIENTE_CONFIRMACION` tiene 22 caracteres. Hay que corregir el Anexo D (dice VARCHAR(20)).
+
+## DC-13 · AUDITORIA en la administración de flota
+
+Dominio de `entidad`: `CONVENIO | VIAJE | PAGO_VIAJE | USUARIO | VEHICULO | CONDUCTOR`. Acciones registradas:
+
+| Entidad | Acción | `datos_previos` |
+|---|---|---|
+| VEHICULO | `CREAR` (alta individual o por CSV) | — |
+| VEHICULO | `EDITAR`, `ACTIVAR`, `DESACTIVAR` | Valores anteriores de los campos cambiados |
+| CONDUCTOR | `EDITAR` | Valores anteriores de nombre, RUT, teléfono o licencia |
+| CONDUCTOR | `ASOCIAR_VEHICULO`, `DESASOCIAR_VEHICULO` | `vehiculo_id` y `patente` del vehículo |
+
+Reglas de uso (no cambian columnas): la patente no se edita (otra patente es otro vehículo); un vehículo no se borra, se desactiva; no se desactiva ni se quita a un conductor el vehículo que tiene declarado en turno (DISPONIBLE o EN_VIAJE, RN-05) ni uno con un viaje entre ASIGNADO y PASAJERO_A_BORDO; si el conductor está NO_DISPONIBLE, su `vehiculo_activo` se vacía. La licencia que se edita debe quedar vigente (fecha futura), igual que en el alta.
 
 ## Pendientes por revisar
 

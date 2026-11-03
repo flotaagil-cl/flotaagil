@@ -224,6 +224,176 @@ paths:
           description: ''
         '401':
           description: Falta el access o no es válido (`token_not_valid`).
+  /api/conductores/:
+    get:
+      operationId: conductores_list
+      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      summary: Listar conductores
+      parameters:
+      - in: query
+        name: activo
+        schema:
+          type: boolean
+        description: Cuenta habilitada
+      - in: query
+        name: estado
+        schema:
+          type: string
+          enum:
+          - DISPONIBLE
+          - EN_VIAJE
+          - NO_DISPONIBLE
+        description: |-
+          * `DISPONIBLE` - Disponible
+          * `NO_DISPONIBLE` - No disponible
+          * `EN_VIAJE` - En viaje
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Nombre, RUT, email o patente asociada
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConductorList'
+          description: ''
+  /api/conductores/{id}/:
+    get:
+      operationId: conductores_retrieve
+      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      summary: Detalle de un conductor con sus vehículos
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+    patch:
+      operationId: conductores_partial_update
+      description: Nombre, RUT, teléfono y licencia. El email y la contraseña no se
+        editan aquí.
+      summary: Editar los datos de un conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConductorEditarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConductorEditarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConductorEditarRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+  /api/conductores/{id}/vehiculos/:
+    post:
+      operationId: conductores_vehiculos_create
+      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      summary: Asociar un vehículo al conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsociarVehiculoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AsociarVehiculoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AsociarVehiculoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+  /api/conductores/{id}/vehiculos/{vehiculo_id}/:
+    delete:
+      operationId: conductores_vehiculos_destroy
+      description: Si era su vehículo declarado y el conductor está No disponible,
+        la declaración se borra. Responde 409 si está en turno con ese vehículo.
+      summary: Quitar un vehículo al conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      - in: path
+        name: vehiculo_id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+        '409':
+          description: '`flota_en_uso`: el vehículo está declarado en un turno o tiene
+            un viaje en curso.'
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -305,6 +475,170 @@ paths:
           description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
             IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
             (varias solicitudes con el mismo número).'
+  /api/vehiculos/:
+    get:
+      operationId: vehiculos_list
+      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      summary: Listar vehículos
+      parameters:
+      - in: query
+        name: activo
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Patente o marca y modelo
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVehiculoList'
+          description: ''
+    post:
+      operationId: vehiculos_create
+      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      summary: Registrar un vehículo
+      tags:
+      - flota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VehiculoCrearRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VehiculoCrearRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VehiculoCrearRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehiculo'
+          description: ''
+  /api/vehiculos/{id}/:
+    get:
+      operationId: vehiculos_retrieve
+      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      summary: Detalle de un vehículo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este vehiculo.
+        required: true
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehiculo'
+          description: ''
+    patch:
+      operationId: vehiculos_partial_update
+      description: Desactivar quita el vehículo como declarado a los conductores No
+        disponibles. Responde 409 si está declarado en un turno (Disponible o En viaje)
+        o tiene un viaje en curso.
+      summary: Editar, activar o desactivar un vehículo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este vehiculo.
+        required: true
+      tags:
+      - flota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedVehiculoEditarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedVehiculoEditarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedVehiculoEditarRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Vehiculo'
+          description: ''
+        '409':
+          description: '`flota_en_uso`: el vehículo está declarado en un turno o tiene
+            un viaje en curso.'
+  /api/vehiculos/importar/:
+    post:
+      operationId: vehiculos_importar_create
+      description: |
+        Carga inicial de vehículos por CSV (HU-10).
+
+        Todo o nada: se valida cada fila con las mismas reglas del alta individual y solo se crea si ninguna tiene
+        errores. Sin `confirmar` solo se entrega el informe, para revisarlo antes de cargar.
+
+        Formato: encabezado en la primera línea con `patente`, `marca_modelo`, `anio` y, opcional, `capacidad`
+        (por defecto 4). Se aceptan las variantes «año», «marca y modelo», «marca/modelo», mayúsculas y tildes.
+        Separador coma o punto y coma (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM)
+        o Windows-1252.
+      summary: Carga inicial de vehículos por CSV
+      tags:
+      - flota
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportarRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeImportacion'
+          description: Informe sin crear nada.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeImportacion'
+          description: Todos creados.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeImportacion'
+          description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
+            el archivo no sirve, el error viene en `archivo`.'
   /api/viajes/:
     get:
       operationId: viajes_list
@@ -591,6 +925,13 @@ components:
         * `ADMINISTRADOR` - Administrador
         * `PASAJERO` - Pasajero
         * `SISTEMA` - Sistema
+    AsociarVehiculoRequest:
+      type: object
+      properties:
+        vehiculo:
+          type: integer
+      required:
+      - vehiculo
     BlankEnum:
       enum:
       - ''
@@ -625,6 +966,79 @@ components:
           maxLength: 200
       required:
       - motivo
+    Conductor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+        email:
+          type: string
+          format: email
+        activo:
+          type: boolean
+          description: Cuenta habilitada
+        rut:
+          type: string
+          readOnly: true
+        telefono:
+          type: string
+          readOnly: true
+        licencia_clase:
+          allOf:
+          - $ref: '#/components/schemas/LicenciaClaseEnum'
+          readOnly: true
+        licencia_vence:
+          type: string
+          format: date
+          readOnly: true
+        licencia_vigente:
+          type: boolean
+          readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/ConductorEstadoEnum'
+          readOnly: true
+        vehiculo_activo:
+          allOf:
+          - $ref: '#/components/schemas/VehiculoDeclarado'
+          nullable: true
+        consentimiento_gps_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vehiculos:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehiculoAsociado'
+          readOnly: true
+      required:
+      - activo
+      - consentimiento_gps_en
+      - email
+      - estado
+      - id
+      - licencia_clase
+      - licencia_vence
+      - licencia_vigente
+      - nombre
+      - rut
+      - telefono
+      - vehiculo_activo
+      - vehiculos
+    ConductorEstadoEnum:
+      enum:
+      - DISPONIBLE
+      - NO_DISPONIBLE
+      - EN_VIAJE
+      type: string
+      description: |-
+        * `DISPONIBLE` - Disponible
+        * `NO_DISPONIBLE` - No disponible
+        * `EN_VIAJE` - En viaje
     ConductorResumen:
       type: object
       properties:
@@ -732,6 +1146,26 @@ components:
         * `ATERRIZADO` - Aterrizado
         * `CANCELADO` - Cancelado
         * `DESVIADO` - Desviado
+    FilaImportacion:
+      type: object
+      properties:
+        linea:
+          type: integer
+          description: Línea del archivo (la 1 es el encabezado)
+        datos:
+          type: object
+          additionalProperties:
+            type: string
+        errores:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+      required:
+      - datos
+      - errores
+      - linea
     Historial:
       type: object
       properties:
@@ -757,6 +1191,48 @@ components:
       - creado_en
       - estado_nuevo
       - usuario
+    ImportarRequest:
+      type: object
+      properties:
+        archivo:
+          type: string
+          format: binary
+          description: CSV en UTF-8 o Windows-1252, separado por coma o punto y coma.
+        confirmar:
+          type: boolean
+          default: false
+          description: 'false: solo valida y muestra el informe. true: crea si no
+            hay errores.'
+      required:
+      - archivo
+    InformeImportacion:
+      type: object
+      properties:
+        filas:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilaImportacion'
+        validas:
+          type: integer
+        con_errores:
+          type: integer
+        creados:
+          type: integer
+      required:
+      - con_errores
+      - creados
+      - filas
+      - validas
+    LicenciaClaseEnum:
+      enum:
+      - A1
+      - A2
+      - A3
+      type: string
+      description: |-
+        * `A1` - A1
+        * `A2` - A2
+        * `A3` - A3
     LoginRequest:
       type: object
       properties:
@@ -790,6 +1266,52 @@ components:
         * `ADMINISTRADOR` - Administrador
         * `SUPERVISOR` - Supervisor de convenio
         * `SISTEMA` - Sistema
+    PaginatedConductorList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conductor'
+    PaginatedVehiculoList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Vehiculo'
     PaginatedViajeList:
       type: object
       required:
@@ -841,6 +1363,48 @@ components:
       - id
       - nombre
       - telefono
+    PatchedConductorEditarRequest:
+      type: object
+      description: Datos del conductor. El email y la contraseña (credenciales) no
+        se editan aquí.
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        rut:
+          type: string
+          minLength: 1
+          description: Acepta puntos y la K minúscula.
+          maxLength: 14
+        telefono:
+          type: string
+          minLength: 1
+          description: 'Móvil chileno: +569XXXXXXXX.'
+          maxLength: 24
+        licencia_clase:
+          $ref: '#/components/schemas/LicenciaClaseEnum'
+        licencia_vence:
+          type: string
+          format: date
+    PatchedVehiculoEditarRequest:
+      type: object
+      description: 'La patente no se edita: otra patente es otro vehículo.'
+      properties:
+        marca_modelo:
+          type: string
+          minLength: 1
+          maxLength: 60
+        anio:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        capacidad:
+          type: integer
+          maximum: 7
+          minimum: 1
+        activo:
+          type: boolean
     PatchedViajeEditarRequest:
       type: object
       properties:
@@ -1039,6 +1603,94 @@ components:
       - id
       - nombre
       - rol
+    Vehiculo:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        patente:
+          type: string
+          pattern: ^([A-Z]{2}\d{4}|[A-Z]{4}\d{2})$
+          maxLength: 8
+        marca_modelo:
+          type: string
+          maxLength: 60
+        anio:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        capacidad:
+          type: integer
+          maximum: 7
+          minimum: 1
+        activo:
+          type: boolean
+        conductores:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConductorResumen'
+          readOnly: true
+      required:
+      - anio
+      - conductores
+      - id
+      - marca_modelo
+      - patente
+    VehiculoAsociado:
+      type: object
+      properties:
+        id:
+          type: integer
+        patente:
+          type: string
+        marca_modelo:
+          type: string
+        activo:
+          type: boolean
+        desde:
+          type: string
+          format: date
+      required:
+      - activo
+      - desde
+      - id
+      - marca_modelo
+      - patente
+    VehiculoCrearRequest:
+      type: object
+      properties:
+        patente:
+          type: string
+          minLength: 1
+          description: 'Se normaliza: sin guiones, puntos ni espacios y en mayúsculas.'
+          maxLength: 12
+        marca_modelo:
+          type: string
+          minLength: 1
+          maxLength: 60
+        anio:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        capacidad:
+          type: integer
+          maximum: 7
+          minimum: 1
+      required:
+      - anio
+      - marca_modelo
+      - patente
+    VehiculoDeclarado:
+      type: object
+      properties:
+        id:
+          type: integer
+        patente:
+          type: string
+      required:
+      - id
+      - patente
     VehiculoResumen:
       type: object
       properties:

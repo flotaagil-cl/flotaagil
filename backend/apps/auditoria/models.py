@@ -11,6 +11,9 @@ class Entidad(models.TextChoices):
     VIAJE = "VIAJE", "Viaje"
     PAGO_VIAJE = "PAGO_VIAJE", "Pago de viaje"
     USUARIO = "USUARIO", "Usuario"
+    # DC-13: administración de flota (HU-10).
+    VEHICULO = "VEHICULO", "Vehículo"
+    CONDUCTOR = "CONDUCTOR", "Conductor"
 
 
 class AuditoriaInmutable(Exception):
