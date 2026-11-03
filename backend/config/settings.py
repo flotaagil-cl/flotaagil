@@ -17,6 +17,8 @@ ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.
 ADMIN_URL = env("DJANGO_ADMIN_URL", default="admin/")
 
 INSTALLED_APPS = [
+    # Daphne primero: `runserver` sirve HTTP y WebSocket (ASGI) en desarrollo.
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -27,6 +29,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt.token_blacklist",
     "drf_spectacular",
+    "channels",
     "django_filters",
     "apps.cuentas",
     "apps.flota",
@@ -49,6 +52,16 @@ MIDDLEWARE = [
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
+
+# Capa de canales (HU-02): grupos por empresa para el mapa en tiempo real.
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [env("REDIS_URL", default="redis://localhost:6379/0")]},
+    }
+}
+# HU-02: una posición más antigua que esto se marca como no confiable en el mapa.
+POSICION_CONFIABLE_SEGUNDOS = env.int("POSICION_CONFIABLE_SEGUNDOS", default=60)
 
 TEMPLATES = [
     {

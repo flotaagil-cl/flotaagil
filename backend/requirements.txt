@@ -6,3 +6,7 @@ psycopg[binary]==3.3.6
 django-environ==0.14.0
 django-filter==25.2
 redis==6.4.0
+# Tiempo real (HU-02): WebSocket con Channels 4 y Daphne; capa de canales en Redis.
+channels==4.3.2
+daphne==4.2.3
+channels-redis==4.3.0

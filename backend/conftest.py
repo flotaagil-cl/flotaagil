@@ -24,6 +24,12 @@ def _cache_de_pruebas(settings):
     cache.clear()
 
 
+@pytest.fixture(autouse=True)
+def _capa_de_canales_en_memoria(settings):
+    """Las pruebas no usan Redis para los WebSocket (HU-02)."""
+    settings.CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
+
 ORIGEN_PANEL = "http://localhost:5173"
 
 

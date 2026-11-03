@@ -12,6 +12,7 @@ from apps.cuentas.models import Rol, Usuario
 from apps.reservas.models import EstadoViaje, Viaje
 
 from .models import Conductor, ConductorVehiculo, EstadoConductor, Vehiculo
+from .tiempo_real import notificar_conductor
 
 # Estados del viaje en que el vehículo está comprometido con un servicio.
 ESTADOS_VIAJE_EN_CURSO = frozenset(
@@ -212,6 +213,7 @@ def cambiar_habilitacion(conductor: Conductor, habilitar: bool, *, usuario) -> N
             previos["estado"] = conductor.estado
             conductor.estado = EstadoConductor.NO_DISPONIBLE
             conductor.save(update_fields=["estado"])
+    notificar_conductor(conductor)  # HU-02: al deshabilitarse sale del mapa
     auditoria.registrar(
         usuario=usuario,
         entidad=Entidad.USUARIO,

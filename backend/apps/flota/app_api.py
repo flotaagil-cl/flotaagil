@@ -22,6 +22,7 @@ from apps.reservas.models import EstadoViaje, Viaje
 
 from .models import Conductor, EstadoConductor, PosicionGps
 from .serializers import VehiculoAsociadoSerializer, VehiculoDeclaradoSerializer
+from .tiempo_real import notificar_conductor
 
 MAX_POR_LOTE = 100
 # Estados del viaje en que la posición del conductor se asocia al viaje.
@@ -174,6 +175,9 @@ class PosicionesView(_VistaApp):
             antes = PosicionGps.objects.filter(conductor=conductor).count()
             PosicionGps.objects.bulk_create(nuevas, ignore_conflicts=True)
             recibidas = PosicionGps.objects.filter(conductor=conductor).count() - antes
+            if recibidas:
+                # HU-02: el mapa recibe la posición más reciente del lote.
+                notificar_conductor(conductor)
         return Response(
             {"recibidas": recibidas, "repetidas": len(validas) - recibidas, "descartadas": descartadas},
             status=status.HTTP_201_CREATED,
@@ -240,6 +244,7 @@ class TurnoView(_VistaApp):
                 )
                 conductor.estado = EstadoConductor.DISPONIBLE
             conductor.save(update_fields=["estado", "vehiculo_activo"])
+            notificar_conductor(conductor)
         return Response(PerfilConductorSerializer(_conductor(request)).data)
 
     @staticmethod
