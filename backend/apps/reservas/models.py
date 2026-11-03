@@ -308,3 +308,24 @@ class PagoViaje(models.Model):
 
     def __str__(self):
         return f"Viaje {self.viaje_id}: {self.metodo} {self.monto}"
+
+
+class Calificacion(models.Model):
+    """CALIFICACION (Anexo D). RN-14: es opcional y no condiciona el cierre. El conductor es el del viaje."""
+
+    viaje = models.OneToOneField(Viaje, on_delete=models.PROTECT, related_name="calificacion")
+    puntaje = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    creado_en = models.DateTimeField(db_default=Now(), editable=False)
+
+    class Meta:
+        db_table = "calificacion"
+        verbose_name = "calificación"
+        verbose_name_plural = "calificaciones"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(puntaje__gte=1, puntaje__lte=5), name="calificacion_puntaje_rango"
+            ),
+        ]
+
+    def __str__(self):
+        return f"Viaje {self.viaje_id}: {self.puntaje}"

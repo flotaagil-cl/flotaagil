@@ -7,6 +7,7 @@ falla, el cambio de estado no se revierte y el mensaje queda en FAILED.
 - Confirmación: reserva creada en SOLICITADO. Las del portal ya reciben la respuesta a su verificación
   (HU-20).
 - Conductor asignado: al aceptar el conductor, no al asignar. Antes de eso puede rechazar (DC-18).
+- Encuesta de 1 a 5 al finalizar (HU-24, RN-14).
 - En camino y «tu vehículo te espera»: este último solo con EN_ZONA automático. Si lo indicó el conductor, el
   pasajero ya va a bordo (DC-17).
 """

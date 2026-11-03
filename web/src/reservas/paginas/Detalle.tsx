@@ -140,6 +140,12 @@ function DetalleDe({ id }: { id: number }) {
               {viaje.vehiculo ? ` · ${viaje.vehiculo.patente}` : ''}
             </dd>
           </div>
+          {viaje.calificacion !== null && (
+            <div>
+              <dt>Calificación</dt>
+              <dd>{viaje.calificacion} de 5</dd>
+            </div>
+          )}
           {viaje.estado === 'CANCELADO' && (
             <div>
               <dt>Cancelación</dt>

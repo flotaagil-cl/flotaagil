@@ -59,6 +59,16 @@ describe('detalle', () => {
     if (explicacion) expect(screen.getByText(explicacion)).toBeInTheDocument();
   });
 
+  it('muestra la calificación solo si el pasajero respondió (RN-14)', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 10, estado: 'FINALIZADO', calificacion: 4 }));
+    expect(screen.getByText('4 de 5')).toBeInTheDocument();
+  });
+
+  it('sin calificación no muestra esa fila', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 11, estado: 'FINALIZADO' }));
+    expect(screen.queryByText('Calificación')).not.toBeInTheDocument();
+  });
+
   it('una cancelada muestra el motivo y quién la canceló', async () => {
     await abrirDetalle(viajeDePrueba({ id: 10, estado: 'CANCELADO', motivo_cancelacion: 'El pasajero no viaja.', origen_cancelacion: 'PASAJERO' }));
     expect(screen.getByText('El pasajero no viaja. (Pasajero)')).toBeInTheDocument();

@@ -6,9 +6,13 @@ La respuesta llega al webhook (o al comando `simular_whatsapp` en desarrollo) y 
 (`OriginalRepliedMessageSid`); si no viene, por la solicitud pendiente más reciente de ese teléfono o por su
 única reserva en curso. Con varias reservas en curso y sin esa referencia no se cancela ninguna: se le pide
 que cite el mensaje. Los cambios de estado pasan por la máquina de estados (actor PASAJERO).
+
+HU-24: un número del 1 al 5 es la respuesta a la encuesta del viaje citado o, sin cita, del último viaje
+finalizado sin calificar. Solo vale dentro de `encuesta_vigencia_horas` (DC-19): más tarde es conversación.
 """
 
 import logging
+from datetime import timedelta
 
 from django.db import IntegrityError, transaction
 from django.utils import timezone
@@ -18,9 +22,11 @@ from apps.integraciones.notificaciones import enmascarar_telefono, obtener_notif
 from . import estados
 from .models import (
     Actor,
+    Calificacion,
     DireccionMensaje,
     EstadoEntrega,
     EstadoViaje,
+    HistorialEstado,
     MensajeWhatsapp,
     OrigenCancelacion,
     Pasajero,
@@ -54,6 +60,8 @@ RESPUESTAS = {
     "Comunícate con la central.",
     "varias": "Tienes más de un viaje reservado. Para cancelar uno, responde citando el mensaje de ese viaje "
     "o comunícate con la central.",
+    "calificada": "¡Gracias por tu calificación!",
+    "ya_calificada": "Ya habíamos registrado tu calificación de este viaje. ¡Gracias!",
     "no_vigente": "Esa solicitud ya no está vigente (se anuló o ya fue respondida). Si necesitas un viaje, "
     "pide uno nuevo.",
 }
@@ -68,6 +76,42 @@ def _accion(boton: str, texto: str, viaje: Viaje | None) -> str | None:
         if palabra in CANCELAR or (pendiente and palabra in CANCELAR_SOLO_PENDIENTE):
             return "cancelar"
     return None
+
+
+def _puntaje(boton: str, texto: str) -> int | None:
+    for valor in (boton, texto):
+        palabra = (valor or "").strip()
+        if palabra in {"1", "2", "3", "4", "5"}:
+            return int(palabra)
+    return None
+
+
+def _encuesta_vigente(viaje: Viaje, ahora) -> bool:
+    fin = HistorialEstado.objects.filter(viaje=viaje, estado_nuevo=EstadoViaje.FINALIZADO).first()
+    horas = viaje.empresa.configuracion.encuesta_vigencia_horas
+    return fin is not None and ahora - fin.creado_en <= timedelta(hours=horas)
+
+
+def _viaje_a_calificar(pasajeros, original_sid: str | None) -> Viaje | None:
+    """El viaje citado, si está finalizado; sin cita, el último finalizado sin calificar. Siempre vigente."""
+    ahora = timezone.now()
+    finalizados = Viaje.objects.filter(pasajero__in=pasajeros, estado=EstadoViaje.FINALIZADO).select_related(
+        "empresa__configuracion"
+    )
+    if original_sid:
+        citado = MensajeWhatsapp.objects.filter(proveedor_sid=original_sid, pasajero__in=pasajeros).first()
+        viaje = finalizados.filter(pk=citado.viaje_id).first() if citado else None
+        if viaje:
+            return viaje if _encuesta_vigente(viaje, ahora) else None
+    for viaje in finalizados.filter(calificacion__isnull=True).order_by("-id")[:5]:
+        if _encuesta_vigente(viaje, ahora):
+            return viaje
+    return None
+
+
+def _calificar(viaje: Viaje, puntaje: int) -> str:
+    _, creada = Calificacion.objects.get_or_create(viaje=viaje, defaults={"puntaje": puntaje})
+    return "calificada" if creada else "ya_calificada"  # vale la primera respuesta
 
 
 def _telefono(direccion: str) -> str:
@@ -107,9 +151,11 @@ def procesar_entrante(datos: dict) -> str:
         logger.info("WhatsApp de un número desconocido (%s): se ignora.", enmascarar_telefono(telefono))
         return "desconocido"
 
-    viaje = _viaje_respondido(pasajeros, datos.get("OriginalRepliedMessageSid"))
-    pasajero = viaje.pasajero if viaje else pasajeros[0]
     texto = datos.get("Body") or datos.get("ButtonText") or ""
+    puntaje = _puntaje(datos.get("ButtonPayload", ""), texto)
+    a_calificar = _viaje_a_calificar(pasajeros, datos.get("OriginalRepliedMessageSid")) if puntaje else None
+    viaje = a_calificar or _viaje_respondido(pasajeros, datos.get("OriginalRepliedMessageSid"))
+    pasajero = viaje.pasajero if viaje else pasajeros[0]
     try:
         with transaction.atomic():
             MensajeWhatsapp.objects.create(
@@ -123,6 +169,11 @@ def procesar_entrante(datos: dict) -> str:
             )
     except IntegrityError:
         return "repetido"  # el mismo webhook llegó dos veces a la vez
+
+    if a_calificar:
+        resultado = _calificar(a_calificar, puntaje)
+        obtener_notificador().responder(pasajero, viaje, RESPUESTAS[resultado])
+        return resultado
 
     accion = _accion(datos.get("ButtonPayload", ""), texto, viaje)
     if accion is None:

@@ -79,6 +79,8 @@ class ConfiguracionEmpresa(models.Model):
     anticipacion_minima_min = _minutos(30)
     # DC-16: precisión máxima (m) de una posición para marcar EN_ZONA por geocerca (PoC H-3, A7).
     precision_geocerca_m = _minutos(50, minimo=1)
+    # DC-19: horas desde el fin del viaje en que un número suelto cuenta como respuesta a la encuesta.
+    encuesta_vigencia_horas = _minutos(24, minimo=1)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)

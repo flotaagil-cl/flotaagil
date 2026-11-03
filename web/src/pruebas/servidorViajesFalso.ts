@@ -41,6 +41,7 @@ export function viajeDePrueba(cambios: Partial<ViajeDetalle> = {}): ViajeDetalle
     creado_en: '2026-10-30T12:00:00Z',
     editable: EDITABLES.includes(estado),
     cancelable: CANCELABLES.includes(estado),
+    calificacion: null,
     historial: [
       { estado_anterior: null, estado_nuevo: 'SOLICITADO', actor: 'DESPACHADOR', usuario: 'Diego Despacho', creado_en: '2026-10-30T12:00:00Z' },
     ],

@@ -116,9 +116,14 @@ class ViajeSerializer(serializers.ModelSerializer):
 
 class ViajeDetalleSerializer(ViajeSerializer):
     historial = HistorialSerializer(many=True, read_only=True)
+    calificacion = serializers.SerializerMethodField(help_text="Puntaje del pasajero, de 1 a 5 (RN-14)")
 
     class Meta(ViajeSerializer.Meta):
-        fields = [*ViajeSerializer.Meta.fields, "historial"]
+        fields = [*ViajeSerializer.Meta.fields, "historial", "calificacion"]
+
+    def get_calificacion(self, viaje) -> int | None:
+        calificacion = getattr(viaje, "calificacion", None)
+        return calificacion.puntaje if calificacion else None
 
 
 class PasajeroEntradaSerializer(serializers.Serializer):

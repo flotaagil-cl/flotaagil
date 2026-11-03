@@ -60,6 +60,7 @@ AVISO_CONFIRMACION = "confirmacion"
 AVISO_CONDUCTOR = "conductor"
 AVISO_EN_CAMINO = "en_camino"
 AVISO_EN_ZONA = "en_zona"
+AVISO_ENCUESTA = "encuesta"
 
 
 def texto_aviso(viaje, tipo: str) -> tuple[str, dict]:
@@ -92,6 +93,12 @@ def texto_aviso(viaje, tipo: str) -> tuple[str, dict]:
     elif tipo == AVISO_EN_ZONA:
         variables = {"1": viaje.origen_dir, "2": viaje.vehiculo.patente}
         cuerpo = f"Tu vehículo te espera en {variables['1']}. Patente {variables['2']}."
+    elif tipo == AVISO_ENCUESTA:
+        variables = {"1": nombre, "2": viaje.conductor.usuario.nombre}
+        cuerpo = (
+            f"Gracias por viajar con nosotros, {variables['1']}. ¿Cómo fue tu viaje con {variables['2']}? "
+            "Responde con un número del 1 al 5. Es opcional."
+        )
     else:
         raise ValueError(f"Aviso desconocido: {tipo}")
     return cuerpo, variables
@@ -331,6 +338,7 @@ def obtener_notificador() -> Notificador:
                 AVISO_CONDUCTOR: settings.TWILIO_PLANTILLA_AVISO_CONDUCTOR,
                 AVISO_EN_CAMINO: settings.TWILIO_PLANTILLA_AVISO_EN_CAMINO,
                 AVISO_EN_ZONA: settings.TWILIO_PLANTILLA_AVISO_EN_ZONA,
+                AVISO_ENCUESTA: settings.TWILIO_PLANTILLA_AVISO_ENCUESTA,
             },
         )
     return NotificadorDesarrollo()

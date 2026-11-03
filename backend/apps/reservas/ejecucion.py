@@ -15,7 +15,7 @@ from rest_framework.exceptions import APIException, ValidationError
 
 from apps.flota.models import Conductor, EstadoConductor
 from apps.flota.tiempo_real import notificar_conductor
-from apps.integraciones.notificaciones import AVISO_EN_CAMINO, AVISO_EN_ZONA
+from apps.integraciones.notificaciones import AVISO_EN_CAMINO, AVISO_EN_ZONA, AVISO_ENCUESTA
 
 from . import avisos, estados
 from .asignacion import grupo_conductor
@@ -93,6 +93,7 @@ def finalizar(viaje_id: int, *, usuario, metodo: str, monto: int) -> Viaje:
     viaje = _cambiar(viaje, EstadoViaje.FINALIZADO, actor=Actor.CONDUCTOR, usuario=usuario)
     Conductor.objects.filter(pk=conductor_id).update(estado=EstadoConductor.DISPONIBLE)
     notificar_conductor(Conductor.objects.get(pk=conductor_id))
+    avisos.programar(viaje.pk, AVISO_ENCUESTA)  # HU-24: si falla, el viaje igual queda cerrado (RN-14)
     return viaje
 
 

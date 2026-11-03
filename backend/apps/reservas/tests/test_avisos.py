@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.flota.models import ConductorVehiculo, EstadoConductor
+from apps.flota.models import EstadoConductor
 from apps.integraciones import notificaciones
 from apps.integraciones.notificaciones import (
     AVISO_CONDUCTOR,
@@ -30,7 +30,7 @@ from apps.reservas.models import (
     OrigenCancelacion,
     TipoMensaje,
 )
-from apps.reservas.tests.fabricas import ConductorFactory, PasajeroFactory, VehiculoFactory, ViajeFactory
+from apps.reservas.tests.fabricas import ViajeFactory
 from apps.reservas.tests.test_api import reserva
 from apps.reservas.tests.test_ejecucion import CERCA, ORIGEN, posicion
 from apps.reservas.tests.test_whatsapp import TwilioFalso, entrante, http_error
@@ -39,30 +39,13 @@ E = EstadoViaje
 
 
 @pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(avisos, "obtener_notificador", lambda: falso)
-    monkeypatch.setattr(verificacion, "obtener_notificador", lambda: falso)
-    return falso
+def twilio(twilio_avisos):
+    return twilio_avisos
 
 
 @pytest.fixture
-def chofer(empresa):
-    vehiculo = VehiculoFactory(empresa=empresa, patente="ABCD12", marca_modelo="Toyota Corolla")
-    conductor = ConductorFactory(
-        usuario__empresa=empresa,
-        usuario__nombre="Muriel Moreno",
-        estado=EstadoConductor.DISPONIBLE,
-        vehiculo_activo=vehiculo,
-        consentimiento_gps_en=timezone.now(),
-    )
-    ConductorVehiculo.objects.create(conductor=conductor, vehiculo=vehiculo)
-    return conductor
-
-
-@pytest.fixture
-def pasajero(empresa):
-    return PasajeroFactory(empresa=empresa, nombre="Ana Pérez", telefono="+56900009001")
+def chofer(chofer_disponible):
+    return chofer_disponible
 
 
 def viaje_con(chofer, pasajero, estado, **cambios):
