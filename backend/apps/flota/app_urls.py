@@ -7,4 +7,5 @@ urlpatterns = [
     path("consentimiento/", app_api.ConsentimientoView.as_view(), name="app-consentimiento"),
     path("posiciones/", app_api.PosicionesView.as_view(), name="app-posiciones"),
     path("turno/", app_api.TurnoView.as_view(), name="app-turno"),
+    path("viaje-activo/", app_api.ViajeActivoView.as_view(), name="app-viaje-activo"),
 ]

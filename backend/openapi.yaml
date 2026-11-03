@@ -103,6 +103,24 @@ paths:
           description: '`en_viaje` (RN-03), `sin_consentimiento` (RN-18), `licencia_vencida`,
             `sin_vehiculo`, `elegir_vehiculo` (RN-05), `vehiculo_no_disponible` o
             `vehiculo_ocupado`.'
+  /api/app/viaje-activo/:
+    get:
+      operationId: app_viaje_activo_retrieve
+      description: El viaje aceptado y no terminado (ACEPTADO, EN_CAMINO, EN_ZONA
+        o PASAJERO_A_BORDO), con las coordenadas para navegar. `viaje` es null si
+        no hay uno.
+      summary: Viaje en curso del conductor
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaViajeActivo'
+          description: ''
   /api/auth/app/logout/:
     post:
       operationId: auth_app_logout_create
@@ -1948,6 +1966,21 @@ components:
       - lat
       - lon
       - registrada_en
+    Punto:
+      type: object
+      properties:
+        direccion:
+          type: string
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+      required:
+      - direccion
+      - lat
+      - lon
     RefreshRequest:
       type: object
       properties:
@@ -1956,6 +1989,15 @@ components:
           minLength: 1
       required:
       - refresh
+    RespuestaViajeActivo:
+      type: object
+      properties:
+        viaje:
+          allOf:
+          - $ref: '#/components/schemas/ViajeActivo'
+          nullable: true
+      required:
+      - viaje
     ResultadoLote:
       type: object
       properties:
@@ -2341,6 +2383,41 @@ components:
       - pasajero
       - recogida_en
       - vehiculo
+      - vuelo
+    ViajeActivo:
+      type: object
+      properties:
+        id:
+          type: integer
+        estado:
+          type: string
+        pasajero:
+          type: string
+          description: Nombre del pasajero
+        recogida_en:
+          type: string
+          format: date-time
+        origen:
+          $ref: '#/components/schemas/Punto'
+        destino:
+          $ref: '#/components/schemas/Punto'
+        vuelo:
+          type: string
+          nullable: true
+          description: Número de vuelo, si es desde el aeropuerto
+        hacia:
+          allOf:
+          - $ref: '#/components/schemas/Punto'
+          description: 'A dónde navegar ahora: el origen hasta subir el pasajero,
+            luego el destino'
+      required:
+      - destino
+      - estado
+      - hacia
+      - id
+      - origen
+      - pasajero
+      - recogida_en
       - vuelo
     ViajeCrearRequest:
       type: object

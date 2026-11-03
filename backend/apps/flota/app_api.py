@@ -278,3 +278,70 @@ class TurnoView(_VistaApp):
                 "vehiculo_ocupado", f"El vehículo {vehiculo.patente} ya está en turno con otro conductor."
             )
         return vehiculo
+
+
+# --- Viaje activo (HU-17) ---
+
+
+class PuntoSerializer(serializers.Serializer):
+    direccion = serializers.CharField()
+    lat = serializers.FloatField()
+    lon = serializers.FloatField()
+
+
+class ViajeActivoSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    estado = serializers.CharField()
+    pasajero = serializers.CharField(help_text="Nombre del pasajero")
+    recogida_en = serializers.DateTimeField()
+    origen = PuntoSerializer()
+    destino = PuntoSerializer()
+    vuelo = serializers.CharField(allow_null=True, help_text="Número de vuelo, si es desde el aeropuerto")
+    hacia = PuntoSerializer(
+        help_text="A dónde navegar ahora: el origen hasta subir el pasajero, luego el destino"
+    )
+
+
+class RespuestaViajeActivoSerializer(serializers.Serializer):
+    viaje = ViajeActivoSerializer(allow_null=True)
+
+
+def _punto(direccion, punto) -> dict:
+    return {"direccion": direccion, "lat": punto.y, "lon": punto.x}
+
+
+class ViajeActivoView(_VistaApp):
+    @extend_schema(
+        tags=["app"],
+        summary="Viaje en curso del conductor",
+        responses=RespuestaViajeActivoSerializer,
+        description=(
+            "El viaje aceptado y no terminado (ACEPTADO, EN_CAMINO, EN_ZONA o PASAJERO_A_BORDO), "
+            "con las coordenadas para navegar. `viaje` es null si no hay uno."
+        ),
+    )
+    def get(self, request):
+        viaje = (
+            Viaje.objects.select_related("pasajero", "vuelo")
+            .filter(conductor__usuario=request.user, estado__in=ESTADOS_CON_VIAJE)
+            .order_by("recogida_en")
+            .first()
+        )
+        if viaje is None:
+            return Response({"viaje": None})
+        origen = _punto(viaje.origen_dir, viaje.origen_geo)
+        destino = _punto(viaje.destino_dir, viaje.destino_geo)
+        return Response(
+            {
+                "viaje": {
+                    "id": viaje.pk,
+                    "estado": viaje.estado,
+                    "pasajero": viaje.pasajero.nombre,
+                    "recogida_en": viaje.recogida_en,
+                    "origen": origen,
+                    "destino": destino,
+                    "vuelo": getattr(getattr(viaje, "vuelo", None), "numero", None),
+                    "hacia": destino if viaje.estado == EstadoViaje.PASAJERO_A_BORDO else origen,
+                }
+            }
+        )

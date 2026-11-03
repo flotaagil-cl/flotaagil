@@ -81,6 +81,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/viaje-activo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Viaje en curso del conductor
+         * @description El viaje aceptado y no terminado (ACEPTADO, EN_CAMINO, EN_ZONA o PASAJERO_A_BORDO), con las coordenadas para navegar. `viaje` es null si no hay uno.
+         */
+        get: operations["app_viaje_activo_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/app/logout/": {
         parameters: {
             query?: never;
@@ -950,8 +970,18 @@ export interface components {
             /** Format: date-time */
             registrada_en: string;
         };
+        Punto: {
+            direccion: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+        };
         RefreshRequest: {
             refresh: string;
+        };
+        RespuestaViajeActivo: {
+            viaje: components["schemas"]["ViajeActivo"] | null;
         };
         ResultadoLote: {
             /** @description Guardadas ahora */
@@ -1105,6 +1135,20 @@ export interface components {
             readonly creado_en: string;
             readonly editable: boolean;
             readonly cancelable: boolean;
+        };
+        ViajeActivo: {
+            id: number;
+            estado: string;
+            /** @description Nombre del pasajero */
+            pasajero: string;
+            /** Format: date-time */
+            recogida_en: string;
+            origen: components["schemas"]["Punto"];
+            destino: components["schemas"]["Punto"];
+            /** @description Número de vuelo, si es desde el aeropuerto */
+            vuelo: string | null;
+            /** @description A dónde navegar ahora: el origen hasta subir el pasajero, luego el destino */
+            hacia: components["schemas"]["Punto"];
         };
         ViajeCrearRequest: {
             pasajero: components["schemas"]["PasajeroEntradaRequest"];
@@ -1279,6 +1323,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    app_viaje_activo_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespuestaViajeActivo"];
+                };
             };
         };
     };
