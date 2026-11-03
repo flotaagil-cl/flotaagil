@@ -39,6 +39,7 @@ TWILIO_PLANTILLA_AVISO_CONFIRMACION=
 TWILIO_PLANTILLA_AVISO_CONDUCTOR=
 TWILIO_PLANTILLA_AVISO_EN_CAMINO=
 TWILIO_PLANTILLA_AVISO_EN_ZONA=
+TWILIO_PLANTILLA_AVISO_ENCUESTA=
 ```
 
 `WHATSAPP_URL_BASE` debe ser exactamente la URL configurada en Twilio: con ella se valida la firma de cada webhook.
@@ -68,6 +69,7 @@ Los avisos de estado también necesitan una plantilla aprobada por cada tipo par
 | `TWILIO_PLANTILLA_AVISO_CONDUCTOR` | nombre, conductor, vehículo, patente |
 | `TWILIO_PLANTILLA_AVISO_EN_CAMINO` | conductor, punto de recogida |
 | `TWILIO_PLANTILLA_AVISO_EN_ZONA` | punto de recogida, patente |
+| `TWILIO_PLANTILLA_AVISO_ENCUESTA` | nombre, conductor |
 
 ## FlightAware AeroAPI
 
