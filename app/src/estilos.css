@@ -185,3 +185,16 @@ summary {
 .navegar button.principal {
   margin-top: 0.5rem;
 }
+
+/* Aviso de viaje asignado (HU-14): ocupa la pantalla. */
+main.asignado {
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #fff7ed;
+}
+
+.cuenta {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #9a3412;
+}

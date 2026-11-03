@@ -54,3 +54,68 @@ class MapaConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content, **kwargs):
         if content.get("tipo") == "ping" and await self._vigente():
             await self.send_json({"tipo": "pong"})
+
+
+class ConductorConsumer(AsyncJsonWebsocketConsumer):
+    """WebSocket de la app del conductor (HU-14): /ws/conductor/. Recibe los viajes asignados; al conectarse
+    (o reconectarse) recibe el que esté esperando su respuesta, para no perderlo si la app estuvo sin red."""
+
+    grupo = None
+
+    async def connect(self):
+        from apps.reservas.asignacion import grupo_conductor
+
+        usuario = self.scope.get("user")
+        if not getattr(usuario, "is_authenticated", False):
+            await self.close(code=SIN_SESION)
+            return
+        conductor = await _conductor_de(usuario)
+        if conductor is None:
+            await self.close(code=SIN_PERMISO)
+            return
+        self.grupo = grupo_conductor(conductor.pk)
+        await self.channel_layer.group_add(self.grupo, self.channel_name)
+        await self.accept(subprotocol=SUBPROTOCOLO)
+        pendiente = await _pendiente(conductor)
+        if pendiente is not None:
+            await self.send_json({"tipo": "asignado", "asignacion": pendiente})
+
+    async def disconnect(self, code):
+        if self.grupo:
+            await self.channel_layer.group_discard(self.grupo, self.channel_name)
+
+    async def _vigente(self) -> bool:
+        if (self.scope.get("token_exp") or 0) <= time.time():
+            await self.close(code=SIN_SESION)
+            return False
+        return True
+
+    async def conductor_asignado(self, evento):
+        if await self._vigente():
+            await self.send_json({"tipo": "asignado", "asignacion": evento["asignacion"]})
+
+    async def conductor_sin_asignacion(self, evento):
+        """La asignación terminó (expiró, se canceló o se reasignó): la app cierra el aviso (HU-15)."""
+        if await self._vigente():
+            await self.send_json({"tipo": "sin_asignacion", "asignacion": evento["asignacion"]})
+
+    async def receive_json(self, content, **kwargs):
+        if content.get("tipo") == "ping" and await self._vigente():
+            await self.send_json({"tipo": "pong"})
+
+
+@database_sync_to_async
+def _conductor_de(usuario):
+    from .models import Conductor
+
+    if usuario.rol != "CONDUCTOR":
+        return None
+    return Conductor.objects.filter(usuario=usuario).first()
+
+
+@database_sync_to_async
+def _pendiente(conductor):
+    from apps.reservas.asignacion import asignacion_pendiente, datos_para_la_app
+
+    asignacion = asignacion_pendiente(conductor)
+    return datos_para_la_app(asignacion) if asignacion else None

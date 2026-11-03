@@ -156,3 +156,49 @@ describe('vuelo verificado (HU-26)', () => {
     expect(screen.getByText('Sin verificar: la API de vuelos no respondió al registrarlo')).toBeInTheDocument();
   });
 });
+
+describe('asignar conductor (HU-14)', () => {
+  it('lista los disponibles por cercanía y asigna', async () => {
+    const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO' }));
+    contexto.viajes.candidatos = [
+      { id: 3, nombre: 'Carla Conductora', patente: 'BCDF10', distancia_m: 850, posicion_en: '2026-11-03T15:00:00Z' },
+      { id: 4, nombre: 'Pedro Soto', patente: 'GHJK20', distancia_m: 4200, posicion_en: '2026-11-03T15:00:00Z' },
+      { id: 5, nombre: 'Ana Ríos', patente: 'KLMN30', distancia_m: null, posicion_en: null },
+    ];
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Asignar la reserva #8' });
+    const lista = await within(dialogo).findByRole('list', { name: 'Conductores disponibles' });
+    expect(within(lista).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      expect.stringContaining('a 850 m del origen'),
+      expect.stringContaining('a 4,2 km del origen'),
+      expect.stringContaining('sin posición reciente del origen'),
+    ]);
+    await userEvent.click(within(lista).getByRole('button', { name: 'Asignar a Carla Conductora' }));
+    expect(await screen.findByText('Reserva asignada a Carla Conductora. Esperando que acepte en la app (60 s).')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Reserva #8 Asignado' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Asignar conductor…' })).not.toBeInTheDocument();
+  });
+
+  it('un 409 se muestra en el diálogo', async () => {
+    const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO' }));
+    contexto.viajes.candidatos = [{ id: 3, nombre: 'Carla Conductora', patente: 'BCDF10', distancia_m: 850, posicion_en: null }];
+    contexto.viajes.siguiente('POST /api/viajes/8/asignar/', {
+      estado: 409,
+      cuerpo: { detail: 'Carla Conductora ya tiene un viaje en ejecución (RN-03).', code: 'asignacion_no_permitida' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Asignar a Carla Conductora' }));
+    expect(await screen.findByText('Carla Conductora ya tiene un viaje en ejecución (RN-03).')).toBeInTheDocument();
+  });
+
+  it('sin disponibles lo dice', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
+    expect(await screen.findByText('No hay conductores Disponibles sin viaje en este momento.')).toBeInTheDocument();
+  });
+
+  it('solo en reservas solicitadas', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 8, estado: 'PENDIENTE_CONFIRMACION' }));
+    expect(screen.queryByRole('button', { name: 'Asignar conductor…' })).not.toBeInTheDocument();
+  });
+});

@@ -5,6 +5,7 @@ import { Cargando } from '../../componentes/Cargando';
 import { formatearFechaHora } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
 import { useViaje, type ViajeDetalle } from '../api';
+import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { DialogoCancelar } from '../componentes/DialogoCancelar';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
@@ -32,6 +33,8 @@ function DetalleDe({ id }: { id: number }) {
   const consulta = useViaje(id);
   const [cancelando, setCancelando] = useState(false);
   const [cancelada, setCancelada] = useState(false);
+  const [asignando, setAsignando] = useState(false);
+  const [asignadoA, setAsignadoA] = useState<string | null>(null);
 
   if (consulta.isPending) return <Cargando />;
   if (consulta.isError) {
@@ -60,9 +63,15 @@ function DetalleDe({ id }: { id: number }) {
       </div>
 
       {cancelada && <Aviso>Reserva cancelada.</Aviso>}
+      {asignadoA && <Aviso>Reserva asignada a {asignadoA}. Esperando que acepte en la app (60 s).</Aviso>}
 
       <div className={estilos.tarjeta}>
         <div className={estilos.acciones}>
+          {viaje.estado === 'SOLICITADO' && (
+            <button type="button" className={estilos.boton} onClick={() => setAsignando(true)}>
+              Asignar conductor…
+            </button>
+          )}
           {viaje.editable && (
             <Link to={`/reservas/${viaje.id}/editar`} className={estilos.boton}>
               Editar
@@ -165,6 +174,16 @@ function DetalleDe({ id }: { id: number }) {
         </ol>
       </div>
 
+      {asignando && (
+        <DialogoAsignar
+          viaje={viaje}
+          alCerrar={() => setAsignando(false)}
+          alAsignar={(nombre) => {
+            setAsignando(false);
+            setAsignadoA(nombre);
+          }}
+        />
+      )}
       {cancelando && (
         <DialogoCancelar
           viaje={viaje}

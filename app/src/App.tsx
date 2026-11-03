@@ -14,7 +14,10 @@ import { Inicio } from './pantallas/Inicio';
 import { Login } from './pantallas/Login';
 import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
-import { api, cola, rastreador, sesion } from './servicios';
+import { alertar, pedirPermisoDeNotificaciones } from './conductor/alerta';
+import type { EstadoCanal } from './conductor/canal';
+import { ViajeAsignado } from './pantallas/ViajeAsignado';
+import { api, canal, cola, rastreador, sesion } from './servicios';
 import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
 
 export default function App() {
@@ -24,10 +27,15 @@ export default function App() {
   const [fallaPerfil, setFallaPerfil] = useState<string | null>(null);
   const [envio, setEnvio] = useState<EstadoEnvio>(cola.estado);
   const [rastreo, setRastreo] = useState<EstadoRastreo>(rastreador.estado);
+  const [enVivo, setEnVivo] = useState<EstadoCanal>(canal.estado);
+  const [avisoOculto, setAvisoOculto] = useState<number | null>(null);
 
   useEffect(() => sesion.suscribir(setEstado), []);
   useEffect(() => cola.suscribir(setEnvio), []);
   useEffect(() => rastreador.suscribir(setRastreo), []);
+  useEffect(() => canal.suscribir(setEnVivo), []);
+  // HU-14: alerta sonora y vibración; notificación del sistema si la app no está a la vista.
+  useEffect(() => canal.alRecibirAsignacion((asignacion) => void alertar(asignacion, document.hidden)), []);
   useEffect(() => {
     void sesion.iniciar();
   }, []);
@@ -63,6 +71,20 @@ export default function App() {
     if (envio.detenido) void cargarPerfil();
   }, [envio.detenido, cargarPerfil]);
 
+  // El canal en vivo corre mientras haya sesión activa; las notificaciones se piden al entrar.
+  useEffect(() => {
+    if (!activa) return;
+    void pedirPermisoDeNotificaciones();
+    canal.iniciar();
+    return () => canal.detener();
+  }, [activa]);
+
+  // Al asignarse un viaje se recarga el perfil (el viaje en curso aparece al aceptarlo, HU-15).
+  const asignacionId = enVivo.asignacion?.asignacion ?? null;
+  useEffect(() => {
+    if (asignacionId !== null) void cargarPerfil();
+  }, [asignacionId, cargarPerfil]);
+
   const modo = activa ? modoDeRastreo(perfil) : null;
   useEffect(() => {
     if (modo) void rastreador.iniciar(modo);
@@ -85,6 +107,7 @@ export default function App() {
   }
 
   async function cerrarSesion() {
+    canal.detener();
     await rastreador.detener();
     cola.vaciarSinEnviar();
     setPerfil(null);
@@ -117,6 +140,21 @@ export default function App() {
       </main>
     );
   }
+  if (enVivo.asignacion && avisoOculto !== enVivo.asignacion.asignacion) {
+    const id = enVivo.asignacion.asignacion;
+    return (
+      <ViajeAsignado
+        asignacion={enVivo.asignacion}
+        acciones={
+          <div className="acciones">
+            <button type="button" onClick={() => setAvisoOculto(id)}>
+              Ocultar aviso
+            </button>
+          </div>
+        }
+      />
+    );
+  }
   if (!perfil.consentimiento_gps_en) {
     return <Consentimiento alAceptar={async () => setPerfil(await api.pedir<Perfil>('POST', '/api/app/consentimiento/'))} />;
   }
@@ -125,6 +163,8 @@ export default function App() {
       usuario={estado.usuario}
       perfil={perfil}
       viaje={viaje}
+      asignacion={enVivo.asignacion}
+      verAsignacion={() => setAvisoOculto(null)}
       envio={envio}
       rastreo={rastreo}
       cambiarTurno={cambiarTurno}

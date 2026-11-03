@@ -225,3 +225,50 @@ class MensajeWhatsapp(models.Model):
 
     def __str__(self):
         return f"{self.direccion} {self.tipo} #{self.pk}"
+
+
+class OrigenSugerencia(models.TextChoices):
+    FILA = "FILA", "Fila del aeropuerto"
+    DISTANCIA = "DISTANCIA", "Distancia"
+    MANUAL = "MANUAL", "Manual"
+
+
+class ResultadoAsignacion(models.TextChoices):
+    ACEPTADA = "ACEPTADA", "Aceptada"
+    RECHAZADA = "RECHAZADA", "Rechazada"
+    EXPIRADA = "EXPIRADA", "Expirada"
+
+
+class Asignacion(models.Model):
+    """ASIGNACION (Anexo D): cada vez que el despachador confirma un conductor para un viaje (RN-02). El
+    conductor tiene 60 s para responder (RN-04, HU-15)."""
+
+    viaje = models.ForeignKey(Viaje, on_delete=models.CASCADE, related_name="asignaciones")
+    conductor = models.ForeignKey("flota.Conductor", on_delete=models.PROTECT, related_name="asignaciones")
+    despachador = models.ForeignKey("cuentas.Usuario", on_delete=models.PROTECT, related_name="+")
+    origen_sugerencia = models.CharField(max_length=10, choices=OrigenSugerencia.choices)
+    enviada_en = models.DateTimeField(db_default=Now())
+    respondida_en = models.DateTimeField(null=True, blank=True)
+    resultado = models.CharField(max_length=10, choices=ResultadoAsignacion.choices, null=True, blank=True)
+
+    class Meta:
+        db_table = "asignacion"
+        verbose_name = "asignación"
+        verbose_name_plural = "asignaciones"
+        ordering = ["-enviada_en", "-id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(origen_sugerencia__in=OrigenSugerencia.values), name="asignacion_origen_valido"
+            ),
+            models.CheckConstraint(
+                condition=Q(resultado__isnull=True) | Q(resultado__in=ResultadoAsignacion.values),
+                name="asignacion_resultado_valido",
+            ),
+            # Una sola asignación esperando respuesta por viaje.
+            models.UniqueConstraint(
+                fields=["viaje"], condition=Q(resultado__isnull=True), name="asignacion_pendiente_unica"
+            ),
+        ]
+
+    def __str__(self):
+        return f"Viaje {self.viaje_id} → conductor {self.conductor_id}"

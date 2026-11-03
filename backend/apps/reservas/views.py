@@ -9,12 +9,14 @@ from rest_framework.response import Response
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 
-from . import servicios
+from . import asignacion, servicios
 from .estados import actor_de
 from .filtros import ViajeFiltro
 from .models import EstadoViaje, Viaje
 from .serializers import (
+    AsignarSerializer,
     CancelarSerializer,
+    CandidatoSerializer,
     ViajeCrearSerializer,
     ViajeDetalleSerializer,
     ViajeEditarSerializer,
@@ -98,4 +100,34 @@ class ViajeViewSet(
         entrada = CancelarSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         servicios.cancelar_viaje(viaje, motivo=entrada.validated_data["motivo"], usuario=request.user)
+        return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    @extend_schema(
+        summary="Conductores disponibles para asignar",
+        tags=["reservas"],
+        responses=CandidatoSerializer(many=True),
+        description="Disponibles de la empresa con vehículo y sin viaje en ejecución (RN-01, RN-03), los más "
+        "cercanos al origen primero cuando se conoce su última posición.",
+    )
+    @action(detail=True, methods=["get"], pagination_class=None)
+    def candidatos(self, request, pk=None):
+        return Response(CandidatoSerializer(asignacion.candidatos(self.get_object()), many=True).data)
+
+    @extend_schema(
+        summary="Asignar la reserva a un conductor",
+        tags=["reservas"],
+        request=AsignarSerializer,
+        responses={200: ViajeDetalleSerializer, 409: CONFLICTO},
+        description=(
+            "El despachador confirma el conductor (RN-02): la reserva pasa de SOLICITADO a ASIGNADO, "
+            "queda la ASIGNACION y la app del conductor recibe el aviso. Tiene 60 s para responder "
+            "(RN-04, HU-15)."
+        ),
+    )
+    @action(detail=True, methods=["post"])
+    def asignar(self, request, pk=None):
+        viaje = self.get_object()
+        entrada = AsignarSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        asignacion.asignar(viaje, entrada.validated_data["conductor"], usuario=request.user)
         return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)

@@ -1,6 +1,7 @@
 /** Servicios de la app armados una sola vez: sesión, API, cola de envío y rastreador del GPS. */
 
 import { Api } from './api';
+import { CanalConductor, urlDelCanal } from './conductor/canal';
 import { ColaPosiciones } from './gps/envio';
 import { detenerRastreo, iniciarRastreo } from './gps/rastreo';
 import { Rastreador } from './gps/turno';
@@ -19,3 +20,6 @@ export const rastreador = new Rastreador(
   { iniciar: iniciarRastreo, detener: detenerRastreo },
   cola,
 );
+
+/** Viajes asignados en vivo (HU-14). */
+export const canal = new CanalConductor(urlDelCanal(API_URL), sesion);

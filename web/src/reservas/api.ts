@@ -101,3 +101,27 @@ export function useCancelarViaje(id: number) {
     onError: (error) => alTerminar.error(id, error),
   });
 }
+
+export type Candidato = components['schemas']['Candidato'];
+
+/** Conductores disponibles para asignar (HU-14). Se piden al abrir el diálogo y no se guardan mucho. */
+export function useCandidatos(id: number, activo: boolean) {
+  const api = useApi();
+  return useQuery({
+    queryKey: [...claves.detalle(id), 'candidatos'] as const,
+    queryFn: () => resultado(api.GET('/api/viajes/{id}/candidatos/', { params: { path: { id } } })),
+    enabled: activo,
+    staleTime: 0,
+  });
+}
+
+export function useAsignarViaje(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: (conductor: number) =>
+      resultado(api.POST('/api/viajes/{id}/asignar/', { params: { path: { id } }, body: { conductor } })),
+    onSuccess: alTerminar.exito,
+    onError: (error) => alTerminar.error(id, error),
+  });
+}

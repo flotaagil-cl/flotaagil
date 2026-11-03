@@ -642,6 +642,26 @@ export interface paths {
         patch: operations["viajes_partial_update"];
         trace?: never;
     };
+    "/api/viajes/{id}/asignar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Asignar la reserva a un conductor
+         * @description El despachador confirma el conductor (RN-02): la reserva pasa de SOLICITADO a ASIGNADO, queda la ASIGNACION y la app del conductor recibe el aviso. Tiene 60 s para responder (RN-04, HU-15).
+         */
+        post: operations["viajes_asignar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/viajes/{id}/cancelar/": {
         parameters: {
             query?: never;
@@ -660,6 +680,26 @@ export interface paths {
          *     (p. ej. "usuario__empresa").
          */
         post: operations["viajes_cancelar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/viajes/{id}/candidatos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conductores disponibles para asignar
+         * @description Disponibles de la empresa con vehículo y sin viaje en ejecución (RN-01, RN-03), los más cercanos al origen primero cuando se conoce su última posición.
+         */
+        get: operations["viajes_candidatos_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -721,6 +761,10 @@ export interface components {
          * @enum {string}
          */
         ActorEnum: "CONDUCTOR" | "DESPACHADOR" | "ADMINISTRADOR" | "PASAJERO" | "SISTEMA";
+        AsignarRequest: {
+            /** @description Conductor Disponible de la empresa (RN-01, RN-03) */
+            conductor: number;
+        };
         AsociarVehiculoRequest: {
             vehiculo: number;
         };
@@ -747,6 +791,15 @@ export interface components {
         CanalPanelEnum: "TELEFONO" | "WHATSAPP" | "CONVENIO";
         CancelarRequest: {
             motivo: string;
+        };
+        Candidato: {
+            id: number;
+            nombre: string;
+            patente: string;
+            /** @description Desde su última posición al origen */
+            distancia_m: number | null;
+            /** Format: date-time */
+            posicion_en: string | null;
         };
         Conductor: {
             readonly id: number;
@@ -2375,6 +2428,41 @@ export interface operations {
             };
         };
     };
+    viajes_asignar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este viaje. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsignarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AsignarRequest"];
+                "multipart/form-data": components["schemas"]["AsignarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViajeDetalle"];
+                };
+            };
+            /** @description La reserva no admite la operación en su estado actual */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     viajes_cancelar_create: {
         parameters: {
             query?: never;
@@ -2407,6 +2495,71 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    viajes_candidatos_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `WEB` - Portal web
+                 *     * `WHATSAPP` - WhatsApp
+                 *     * `TELEFONO` - Teléfono
+                 *     * `CONVENIO` - Convenio
+                 */
+                canal?: "CONVENIO" | "TELEFONO" | "WEB" | "WHATSAPP";
+                desde?: string;
+                /**
+                 * @description Repetible: ?estado=A&estado=B
+                 *
+                 *     * `PENDIENTE_CONFIRMACION` - Pendiente de confirmación
+                 *     * `SOLICITADO` - Solicitado
+                 *     * `ASIGNADO` - Asignado
+                 *     * `ACEPTADO` - Aceptado
+                 *     * `EN_CAMINO` - En camino
+                 *     * `EN_ZONA` - En zona
+                 *     * `PASAJERO_A_BORDO` - Pasajero a bordo
+                 *     * `FINALIZADO` - Finalizado
+                 *     * `CANCELADO` - Cancelado
+                 */
+                estado?: ("ACEPTADO" | "ASIGNADO" | "CANCELADO" | "EN_CAMINO" | "EN_ZONA" | "FINALIZADO" | "PASAJERO_A_BORDO" | "PENDIENTE_CONFIRMACION" | "SOLICITADO")[];
+                /** @description Día de recogida */
+                fecha?: string;
+                hasta?: string;
+                /**
+                 * @description Ordenamiento
+                 *
+                 *     * `recogida_en` - Recogida en
+                 *     * `-recogida_en` - Recogida en (descendente)
+                 *     * `creado_en` - Creado en
+                 *     * `-creado_en` - Creado en (descendente)
+                 */
+                ordenar?: ("-creado_en" | "-recogida_en" | "creado_en" | "recogida_en")[];
+                /** @description Pasajero, teléfono, dirección o número de vuelo */
+                q?: string;
+                /**
+                 * @description * `DESDE_AEROPUERTO` - Desde el aeropuerto
+                 *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+                 *     * `URBANO` - Urbano
+                 */
+                sentido?: "DESDE_AEROPUERTO" | "HACIA_AEROPUERTO" | "URBANO";
+            };
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este viaje. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Candidato"][];
+                };
             };
         };
     };

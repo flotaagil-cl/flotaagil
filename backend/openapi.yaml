@@ -1238,6 +1238,45 @@ paths:
           description: ''
         '409':
           description: La reserva no admite la operación en su estado actual
+  /api/viajes/{id}/asignar/:
+    post:
+      operationId: viajes_asignar_create
+      description: 'El despachador confirma el conductor (RN-02): la reserva pasa
+        de SOLICITADO a ASIGNADO, queda la ASIGNACION y la app del conductor recibe
+        el aviso. Tiene 60 s para responder (RN-04, HU-15).'
+      summary: Asignar la reserva a un conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este viaje.
+        required: true
+      tags:
+      - reservas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsignarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AsignarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AsignarRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViajeDetalle'
+          description: ''
+        '409':
+          description: La reserva no admite la operación en su estado actual
   /api/viajes/{id}/cancelar/:
     post:
       operationId: viajes_cancelar_create
@@ -1280,6 +1319,130 @@ paths:
           description: ''
         '409':
           description: La reserva no admite la operación en su estado actual
+  /api/viajes/{id}/candidatos/:
+    get:
+      operationId: viajes_candidatos_list
+      description: Disponibles de la empresa con vehículo y sin viaje en ejecución
+        (RN-01, RN-03), los más cercanos al origen primero cuando se conoce su última
+        posición.
+      summary: Conductores disponibles para asignar
+      parameters:
+      - in: query
+        name: canal
+        schema:
+          type: string
+          enum:
+          - CONVENIO
+          - TELEFONO
+          - WEB
+          - WHATSAPP
+        description: |-
+          * `WEB` - Portal web
+          * `WHATSAPP` - WhatsApp
+          * `TELEFONO` - Teléfono
+          * `CONVENIO` - Convenio
+      - in: query
+        name: desde
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: estado
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - ACEPTADO
+            - ASIGNADO
+            - CANCELADO
+            - EN_CAMINO
+            - EN_ZONA
+            - FINALIZADO
+            - PASAJERO_A_BORDO
+            - PENDIENTE_CONFIRMACION
+            - SOLICITADO
+        description: |-
+          Repetible: ?estado=A&estado=B
+
+          * `PENDIENTE_CONFIRMACION` - Pendiente de confirmación
+          * `SOLICITADO` - Solicitado
+          * `ASIGNADO` - Asignado
+          * `ACEPTADO` - Aceptado
+          * `EN_CAMINO` - En camino
+          * `EN_ZONA` - En zona
+          * `PASAJERO_A_BORDO` - Pasajero a bordo
+          * `FINALIZADO` - Finalizado
+          * `CANCELADO` - Cancelado
+        explode: true
+        style: form
+      - in: query
+        name: fecha
+        schema:
+          type: string
+          format: date
+        description: Día de recogida
+      - in: query
+        name: hasta
+        schema:
+          type: string
+          format: date-time
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este viaje.
+        required: true
+      - in: query
+        name: ordenar
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - -creado_en
+            - -recogida_en
+            - creado_en
+            - recogida_en
+        description: |-
+          Ordenamiento
+
+          * `recogida_en` - Recogida en
+          * `-recogida_en` - Recogida en (descendente)
+          * `creado_en` - Creado en
+          * `-creado_en` - Creado en (descendente)
+        explode: false
+        style: form
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Pasajero, teléfono, dirección o número de vuelo
+      - in: query
+        name: sentido
+        schema:
+          type: string
+          enum:
+          - DESDE_AEROPUERTO
+          - HACIA_AEROPUERTO
+          - URBANO
+        description: |-
+          * `DESDE_AEROPUERTO` - Desde el aeropuerto
+          * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+          * `URBANO` - Urbano
+      tags:
+      - reservas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Candidato'
+          description: ''
   /api/whatsapp/entrante/:
     post:
       operationId: whatsapp_entrante_create
@@ -1350,6 +1513,14 @@ components:
         * `ADMINISTRADOR` - Administrador
         * `PASAJERO` - Pasajero
         * `SISTEMA` - Sistema
+    AsignarRequest:
+      type: object
+      properties:
+        conductor:
+          type: integer
+          description: Conductor Disponible de la empresa (RN-01, RN-03)
+      required:
+      - conductor
     AsociarVehiculoRequest:
       type: object
       properties:
@@ -1407,6 +1578,29 @@ components:
           maxLength: 200
       required:
       - motivo
+    Candidato:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        patente:
+          type: string
+        distancia_m:
+          type: integer
+          nullable: true
+          description: Desde su última posición al origen
+        posicion_en:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - distancia_m
+      - id
+      - nombre
+      - patente
+      - posicion_en
     Conductor:
       type: object
       properties:

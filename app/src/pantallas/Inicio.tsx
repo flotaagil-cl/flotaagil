@@ -3,6 +3,7 @@ import type { EstadoEnvio } from '../gps/envio';
 import type { EstadoRastreo } from '../gps/turno';
 import { horaDeChile } from '../hora';
 import { vehiculoParaTurno, type Perfil } from '../perfil';
+import type { Asignacion } from '../conductor/canal';
 import type { ViajeActivo } from '../navegacion';
 import type { Usuario } from '../sesion/sesion';
 import { ViajeEnCurso } from './ViajeEnCurso';
@@ -13,6 +14,8 @@ interface Props {
   usuario: Usuario;
   perfil: Perfil;
   viaje: ViajeActivo | null;
+  asignacion: Asignacion | null;
+  verAsignacion: () => void;
   envio: EstadoEnvio;
   rastreo: EstadoRastreo;
   /** Cambia el turno; resuelve con el mensaje de error del backend, o null si se cambió. */
@@ -23,7 +26,7 @@ interface Props {
 }
 
 /** Inicio del conductor: empezar o terminar el turno con su vehículo (HU-13) y estado del GPS. */
-export function Inicio({ usuario, perfil, viaje, envio, rastreo, cambiarTurno, actualizar, abrirAjustes, cerrarSesion }: Props) {
+export function Inicio({ usuario, perfil, viaje, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, abrirAjustes, cerrarSesion }: Props) {
   const enTurno = perfil.estado !== 'NO_DISPONIBLE';
   const [elegido, setElegido] = useState<number | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -49,6 +52,14 @@ export function Inicio({ usuario, perfil, viaje, envio, rastreo, cambiarTurno, a
       <h1>Hola, {usuario.nombre}</h1>
       <p className="secundario">{usuario.empresa.razon_social}</p>
 
+      {asignacion && (
+        <p className="aviso" role="status">
+          Tienes un viaje asignado esperando tu respuesta.{' '}
+          <button type="button" onClick={verAsignacion}>
+            Ver viaje
+          </button>
+        </p>
+      )}
       {viaje && <ViajeEnCurso viaje={viaje} />}
 
       <div className="tarjeta">

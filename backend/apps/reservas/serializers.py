@@ -211,3 +211,15 @@ class CancelarSerializer(serializers.Serializer):
         if not valor:
             raise serializers.ValidationError("Indica el motivo de la cancelación.")
         return valor
+
+
+class AsignarSerializer(serializers.Serializer):
+    conductor = serializers.IntegerField(help_text="Conductor Disponible de la empresa (RN-01, RN-03)")
+
+
+class CandidatoSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    nombre = serializers.CharField()
+    patente = serializers.CharField()
+    distancia_m = serializers.IntegerField(allow_null=True, help_text="Desde su última posición al origen")
+    posicion_en = serializers.DateTimeField(allow_null=True)

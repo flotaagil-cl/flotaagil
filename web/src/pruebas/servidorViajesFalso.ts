@@ -8,7 +8,7 @@
  */
 
 import type { components } from '../api/esquema';
-import type { EstadoViaje, ViajeCrear, ViajeDetalle, ViajeEditar } from '../reservas/api';
+import type { Candidato, EstadoViaje, ViajeCrear, ViajeDetalle, ViajeEditar } from '../reservas/api';
 import type { Respuesta, ServidorAuthFalso } from './servidorAuthFalso';
 
 const EDITABLES: EstadoViaje[] = ['PENDIENTE_CONFIRMACION', 'SOLICITADO'];
@@ -55,6 +55,8 @@ function resumen(viaje: ViajeDetalle): Omit<ViajeDetalle, 'historial'> {
 
 export class ServidorViajesFalso {
   viajes: ViajeDetalle[] = [];
+  /** Conductores disponibles que devuelve /candidatos/ (HU-14). */
+  candidatos: Candidato[] = [];
   /** Cuerpos recibidos, por ruta («POST /api/viajes/», «PATCH /api/viajes/7/»…). */
   cuerpos: { ruta: string; cuerpo: unknown }[] = [];
   private programadas = new Map<string, Respuesta[]>();
@@ -92,9 +94,11 @@ export class ServidorViajesFalso {
 
     if (ruta === 'GET /api/viajes/') return this.listar(url);
     if (ruta === 'POST /api/viajes/') return this.crear(cuerpo as ViajeCrear);
-    const detalle = /^\/api\/viajes\/(\d+)\/(cancelar\/)?$/.exec(url.pathname);
+    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos)\/)?$/.exec(url.pathname);
     const viaje = detalle && this.buscar(Number(detalle[1]));
     if (!viaje) return { estado: 404, cuerpo: { detail: 'No encontrado.' } };
+    if (detalle[2] === 'candidatos') return { estado: 200, cuerpo: this.candidatos };
+    if (detalle[2] === 'asignar') return this.asignar(viaje, (cuerpo as { conductor: number }).conductor);
     if (detalle[2] && peticion.method === 'POST') return this.cancelar(viaje, (cuerpo as { motivo: string }).motivo);
     if (peticion.method === 'PATCH') return this.editar(viaje, cuerpo as ViajeEditar);
     return { estado: 200, cuerpo: viaje };
@@ -160,6 +164,21 @@ export class ServidorViajesFalso {
     const final = { ...editado, vuelo };
     this.viajes[this.viajes.indexOf(viaje)] = final;
     return { estado: 200, cuerpo: final };
+  }
+
+  private asignar(viaje: ViajeDetalle, conductor: number): Respuesta {
+    const elegido = this.candidatos.find((c) => c.id === conductor);
+    if (viaje.estado !== 'SOLICITADO' || !elegido) {
+      return { estado: 409, cuerpo: { detail: 'No se puede asignar este viaje ahora.', code: 'asignacion_no_permitida' } };
+    }
+    Object.assign(viaje, {
+      estado: 'ASIGNADO',
+      editable: false,
+      cancelable: false,
+      conductor: { id: elegido.id, nombre: elegido.nombre },
+      vehiculo: { id: 1, patente: elegido.patente },
+    });
+    return { estado: 200, cuerpo: viaje };
   }
 
   private cancelar(viaje: ViajeDetalle, motivo: string): Respuesta {
