@@ -95,6 +95,14 @@ Necesita un viaje aceptado. Ingresa como `conductor2@transportes-andes.example`,
 2. Pulsa **Google Maps**. **Esperado:** se abre la app de Google Maps con la ruta hacia el punto de recogida (si no está instalada, el navegador).
 3. Vuelve a FlotaÁgil y pulsa **Waze**. **Esperado:** Waze abre la navegación al mismo punto (si no está instalada, la página de Waze).
 
+## 5d. Prueba G: viaje asignado (HU-14)
+
+Para que la app use WebSocket sin cifrar hacia el PC, compila con `FLOTAAGIL_DESARROLLO=1 npx cap sync android`. Eso permite `ws://` solo en esa compilación.
+
+1. En el teléfono, deja la app abierta con un conductor en turno y **sin viaje** (por ejemplo `conductor4`, después de «Empezar turno»).
+2. En el panel, crea una reserva y en su ficha pulsa **Asignar conductor…** → **Asignar**. **Esperado:** la app muestra «Nuevo viaje asignado» con los datos y «Responde en 60 s», suenan tres pitidos y el teléfono vibra.
+3. Repite con la app en segundo plano (botón Inicio) y la pantalla apagada. **Esperado:** llega una notificación «Nuevo viaje asignado» con sonido, y al tocarla se abre la app con el aviso.
+
 ## 6. Prueba C: sin señal y vuelta
 
 1. Con la app en turno, activa el **modo avión** 3 minutos y luego desactívalo.
