@@ -7,6 +7,7 @@ import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
+import campos from '../../formularios/formularios.module.css';
 import { formatearFecha, formatearFechaHora, hoy } from '../../hora/hora';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 import {
@@ -270,7 +271,7 @@ function Vehiculos({ conductor }: { conductor: TipoConductor }) {
       )}
 
       <h3>Asociar un vehículo</h3>
-      <label className={estilos.busqueda}>
+      <label className={`${campos.campo} ${estilos.busqueda}`}>
         Buscar vehículo activo
         <input type="search" placeholder="Patente o marca y modelo" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
       </label>
