@@ -60,6 +60,13 @@ def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
     Devuelve el viaje (None si la solicitud vino de un bot) y los datos de la respuesta.
     """
     config = empresa.configuracion
+    vuelo_verificado = None
+    if datos.get("vuelo"):
+        # HU-26: la recogida calculada (RN-17) usa la hora de llegada confirmada por la API de vuelos.
+        vuelo_verificado = reservas.verificar_vuelo(
+            {"numero": datos["vuelo"]["numero"], "hora_programada": datos["vuelo"]["hora_llegada"]}
+        )
+        datos = {**datos, "vuelo": {**datos["vuelo"], "hora_llegada": vuelo_verificado["hora_programada"]}}
     recogida = _hora_de_recogida(datos, config)
     minimo = timezone.now() + timedelta(minutes=config.anticipacion_minima_min)
     if recogida < minimo:
@@ -79,7 +86,6 @@ def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
         }
 
     _verificar_limite_telefono(empresa, datos["telefono"])
-    vuelo = datos.get("vuelo")
     with transaction.atomic():
         viaje = reservas.crear_viaje(
             empresa=empresa,
@@ -89,9 +95,7 @@ def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
                 "origen_dir": datos["origen_dir"],
                 "destino_dir": datos["destino_dir"],
                 "recogida_en": recogida,
-                "vuelo": {"numero": vuelo["numero"], "hora_programada": vuelo["hora_llegada"]}
-                if vuelo
-                else None,
+                "vuelo": vuelo_verificado,
             },
             canal=Canal.WEB,
             estado_inicial=EstadoViaje.PENDIENTE_CONFIRMACION,

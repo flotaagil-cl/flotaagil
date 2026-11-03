@@ -2565,6 +2565,11 @@ components:
           nullable: true
         estado_vuelo:
           $ref: '#/components/schemas/EstadoVueloEnum'
+        ultima_consulta_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: Última consulta a la API de vuelos; null = sin verificar (HU-26).
       required:
       - fecha
       - hora_programada

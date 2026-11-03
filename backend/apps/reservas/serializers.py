@@ -40,7 +40,12 @@ class ConvenioResumenSerializer(serializers.Serializer):
 class VueloSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vuelo
-        fields = ["numero", "fecha", "hora_programada", "hora_estimada", "estado_vuelo"]
+        fields = ["numero", "fecha", "hora_programada", "hora_estimada", "estado_vuelo", "ultima_consulta_en"]
+        extra_kwargs = {
+            "ultima_consulta_en": {
+                "help_text": "Última consulta a la API de vuelos; null = sin verificar (HU-26)."
+            }
+        }
 
 
 class HistorialSerializer(serializers.ModelSerializer):

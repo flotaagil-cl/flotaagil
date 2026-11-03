@@ -3,13 +3,16 @@
 El portal (HU-19) reutiliza crear_viaje.
 """
 
+import logging
+
+from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
-from apps.aeropuerto.models import Vuelo
+from apps.aeropuerto.models import EstadoVuelo, Vuelo
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
 from apps.cuentas.models import Rol
@@ -19,9 +22,12 @@ from apps.integraciones.geocodificador import (
     Zona,
     obtener_geocodificador,
 )
+from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
 
 from . import estados
 from .models import EstadoViaje, OrigenCancelacion, Pasajero, Sentido, Viaje
+
+logger = logging.getLogger(__name__)
 
 
 class ConflictoEstado(APIException):
@@ -59,6 +65,44 @@ def _validar_vuelo(sentido: str, vuelo: dict | None) -> None:
         )
 
 
+def verificar_vuelo(vuelo: dict, consultor=None) -> dict:
+    """HU-26: consulta inicial a la API de vuelos.
+
+    - No existe una llegada de ese vuelo al aeropuerto ese día: 400 en `vuelo.numero`.
+    - Existe: se guarda la hora programada de la API (corrige la informada, DC-06), la estimada y el estado.
+    - La API no responde: se guarda como se informó, sin verificar (`ultima_consulta_en` vacío), para no
+      bloquear la reserva; el monitoreo (HU-27/HU-28) vuelve a consultar y avisa si sigue sin datos.
+    """
+    consultor = consultor or obtener_consultor_vuelos()
+    numero = normalizar_vuelo(vuelo["numero"])
+    informada = vuelo["hora_programada"]
+    try:
+        datos = consultor.consultar(numero, informada)
+    except VuelosNoDisponibles as error:
+        logger.warning("Vuelo %s sin verificar: %s", numero, error)
+        return {"numero": numero, "hora_programada": informada, "verificado": False}
+    if datos is None:
+        dia = timezone.localtime(informada).strftime("%d-%m-%Y")
+        raise ValidationError(
+            {
+                "vuelo": {
+                    "numero": [
+                        f"No encontramos el vuelo {numero} con llegada a {settings.AEROPUERTO_IATA} "
+                        f"el {dia}. Revisa el número y la fecha."
+                    ]
+                }
+            }
+        )
+    return {
+        "numero": numero,
+        "hora_programada": datos.hora_programada,
+        "hora_estimada": datos.hora_estimada,
+        "estado_vuelo": datos.estado,
+        "ultima_consulta_en": timezone.now(),
+        "verificado": True,
+    }
+
+
 def _guardar_vuelo(viaje: Viaje, vuelo: dict | None) -> None:
     Vuelo.objects.filter(viaje=viaje).delete()
     if vuelo:
@@ -68,6 +112,9 @@ def _guardar_vuelo(viaje: Viaje, vuelo: dict | None) -> None:
             numero=normalizar_vuelo(vuelo["numero"]),
             fecha=timezone.localdate(hora),
             hora_programada=hora,
+            hora_estimada=vuelo.get("hora_estimada"),
+            estado_vuelo=vuelo.get("estado_vuelo") or EstadoVuelo.PROGRAMADO,
+            ultima_consulta_en=vuelo.get("ultima_consulta_en"),
         )
 
 
@@ -101,6 +148,8 @@ def crear_viaje(
     if validar_futuro:
         _validar_recogida(datos["recogida_en"])
     _validar_vuelo(sentido, vuelo)
+    if vuelo and "verificado" not in vuelo:
+        vuelo = verificar_vuelo(vuelo)
     origen = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir")
     _validar_origen_en_zona(origen, zona)
     destino = _punto(datos["destino_dir"], zona, geocodificador, "destino_dir")
@@ -141,6 +190,8 @@ def editar_viaje(viaje: Viaje, datos: dict, *, geocodificador=None) -> Viaje:
     reemplazar_vuelo = "vuelo" in datos or sentido != Sentido.DESDE_AEROPUERTO
     if "vuelo" in datos:
         _validar_vuelo(sentido, datos["vuelo"])
+        if datos["vuelo"]:
+            datos = {**datos, "vuelo": verificar_vuelo(datos["vuelo"])}
     if "recogida_en" in datos:
         _validar_recogida(datos["recogida_en"])
 

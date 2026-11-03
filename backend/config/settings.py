@@ -129,6 +129,10 @@ PORTAL_VENTANA_TELEFONO = timedelta(minutes=env.int("PORTAL_VENTANA_TELEFONO_MIN
 
 # Geocodificador (DC-05): sin clave se usa el de desarrollo (determinístico, sin servicios externos).
 GOOGLE_GEOCODING_API_KEY = env("GOOGLE_GEOCODING_API_KEY", default="")
+# Vuelos (HU-26): FlightAware AeroAPI si hay clave; si no, el consultor de desarrollo.
+# Se validan las llegadas a AEROPUERTO_IATA.
+FLIGHTAWARE_API_KEY = env("FLIGHTAWARE_API_KEY", default="")
+AEROPUERTO_IATA = env("AEROPUERTO_IATA", default="SCL")
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MIN", default=15)),
