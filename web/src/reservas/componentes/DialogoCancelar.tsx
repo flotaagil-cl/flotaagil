@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { Aviso } from '../../componentes/Aviso';
 import { useCancelarViaje, type ViajeDetalle } from '../api';
 import { mensajeDeErrorApi } from '../errores';
-import estilos from '../reservas.module.css';
+import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 
 const MAXIMO = 200;

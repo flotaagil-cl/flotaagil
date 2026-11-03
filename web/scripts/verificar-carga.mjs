@@ -5,7 +5,7 @@
  * 1. Las raíces y pantallas (sesión, marco del panel, páginas) son entradas de chunks dinámicos (lazy).
  * 2. Desde cada punto de partida (el paquete inicial o una pantalla), los módulos que se cargan por imports
  *    estáticos no incluyen lo prohibido para él: el paquete inicial y las rutas sin sesión no cargan nada del
- *    panel ni de la sesión; el login no carga reservas. Tampoco a través de componentes o proveedores
+ *    panel ni de la sesión; el login no carga reservas ni flota. Tampoco a través de componentes o proveedores
  *    compartidos, porque se sigue toda la cadena de imports estáticos.
  * 3. Los módulos vigilados existen en algún chunk (la verificación no pasa sin estar revisando nada).
  *
@@ -17,10 +17,10 @@ import { fileURLToPath } from 'node:url';
 
 /** Panel y sesión: lo que una ruta sin sesión no debe cargar. */
 export const PANEL_Y_SESION =
-  /^src\/(sesion|reservas)\/|^src\/api\/(cliente|auth)\.ts$|^src\/componentes\/Layout\.tsx$|^src\/rutas\/RutaAutenticada\.tsx$|^src\/paginas\/(Login|Inicio)\.tsx$/;
+  /^src\/(sesion|reservas|flota)\/|^src\/api\/(cliente|auth)\.ts$|^src\/componentes\/Layout\.tsx$|^src\/rutas\/RutaAutenticada\.tsx$|^src\/paginas\/(Login|Inicio)\.tsx$/;
 export const RESERVAS = /^src\/reservas\//;
-/** El login (con sesión) no carga reservas ni el portal. */
-export const RESERVAS_Y_PORTAL = /^src\/(reservas|portal)\//;
+/** El login (con sesión) no carga pantallas del panel (reservas, flota) ni el portal. */
+export const RESERVAS_Y_PORTAL = /^src\/(reservas|flota|portal)\//;
 
 /** Módulos que deben llegar con lazy (entrada de un chunk dinámico). */
 export const DIFERIDOS = [
@@ -34,6 +34,12 @@ export const DIFERIDOS = [
   'src/reservas/paginas/Nueva.tsx',
   'src/reservas/paginas/Detalle.tsx',
   'src/reservas/paginas/Editar.tsx',
+  'src/flota/paginas/Vehiculos.tsx',
+  'src/flota/paginas/VehiculoNuevo.tsx',
+  'src/flota/paginas/Vehiculo.tsx',
+  'src/flota/paginas/ImportarVehiculos.tsx',
+  'src/flota/paginas/Conductores.tsx',
+  'src/flota/paginas/Conductor.tsx',
   'src/portal/LayoutPortal.tsx',
   'src/portal/paginas/Solicitar.tsx',
   'src/portal/paginas/Privacidad.tsx',
@@ -55,6 +61,7 @@ export const VIGILADOS = [
   ['src/sesion/', /^src\/sesion\//],
   ['src/reservas/', RESERVAS],
   ['src/portal/', /^src\/portal\//],
+  ['src/flota/', /^src\/flota\//],
 ];
 
 /** Módulos que se cargan al abrir un chunk: el chunk y todos sus imports estáticos (no los dinámicos). */

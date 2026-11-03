@@ -8,8 +8,8 @@ import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
 import { ESTADOS } from '../etiquetas';
 import { cuerpoEditar, valoresDeViaje } from '../formulario';
-import estilos from '../reservas.module.css';
-import { useIdDeRuta } from './idDeRuta';
+import estilos from '../../componentes/panel.module.css';
+import { useIdDeRuta } from '../../rutas/idDeRuta';
 
 export function Editar() {
   const id = useIdDeRuta();

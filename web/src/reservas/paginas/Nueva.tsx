@@ -3,7 +3,7 @@ import { useCrearViaje } from '../api';
 import { FormularioReserva } from '../componentes/FormularioReserva';
 import { mensajeDeErrorApi, sinRespuesta } from '../errores';
 import { cuerpoCrear, VALORES_NUEVA } from '../formulario';
-import estilos from '../reservas.module.css';
+import estilos from '../../componentes/panel.module.css';
 
 export function Nueva() {
   const crear = useCrearViaje();

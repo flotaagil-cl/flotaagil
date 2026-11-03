@@ -18,7 +18,7 @@ import {
   type Filtros,
 } from '../filtros';
 import campos from '../../formularios/formularios.module.css';
-import estilos from '../reservas.module.css';
+import estilos from '../../componentes/panel.module.css';
 
 const ESPERA_BUSQUEDA_MS = 300;
 const numero = new Intl.NumberFormat('es-CL');

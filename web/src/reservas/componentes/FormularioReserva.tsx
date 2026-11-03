@@ -18,7 +18,7 @@ import {
   type ValoresReserva,
 } from '../formulario';
 import campos from '../../formularios/formularios.module.css';
-import estilos from '../reservas.module.css';
+import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 import { CampoFechaHora } from '../../formularios/CampoFechaHora';
 

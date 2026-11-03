@@ -24,6 +24,8 @@ export interface Manejo {
 }
 
 export const ROLES_PANEL: Rol[] = ['ADMINISTRADOR', 'DESPACHADOR'];
+/** Administración de flota (HU-10): solo el administrador. */
+export const ROLES_ADMIN: Rol[] = ['ADMINISTRADOR'];
 
 /** Pantallas del panel (con sesión). Las nuevas se agregan aquí. */
 export const pantallasDelPanel: RouteObject[] = [
@@ -51,6 +53,40 @@ export const pantallasDelPanel: RouteObject[] = [
         path: ':id/editar',
         lazy: async () => ({ Component: (await import('../reservas/paginas/Editar')).Editar }),
         handle: { titulo: 'Editar reserva', roles: ROLES_PANEL } satisfies Manejo,
+      },
+    ],
+  },
+  {
+    path: 'vehiculos',
+    handle: { titulo: 'Vehículos', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Vehiculos')).Vehiculos }) },
+      {
+        path: 'nuevo',
+        lazy: async () => ({ Component: (await import('../flota/paginas/VehiculoNuevo')).VehiculoNuevo }),
+        handle: { titulo: 'Nuevo vehículo', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+      {
+        path: 'importar',
+        lazy: async () => ({ Component: (await import('../flota/paginas/ImportarVehiculos')).ImportarVehiculos }),
+        handle: { titulo: 'Cargar vehículos por CSV', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+      {
+        path: ':id',
+        lazy: async () => ({ Component: (await import('../flota/paginas/Vehiculo')).Vehiculo }),
+        handle: { titulo: 'Vehículo', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+    ],
+  },
+  {
+    path: 'conductores',
+    handle: { titulo: 'Conductores', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Conductores')).Conductores }) },
+      {
+        path: ':id',
+        lazy: async () => ({ Component: (await import('../flota/paginas/Conductor')).Conductor }),
+        handle: { titulo: 'Conductor', roles: ROLES_ADMIN } satisfies Manejo,
       },
     ],
   },

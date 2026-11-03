@@ -10,8 +10,8 @@ import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
 import { ACTORES, CANALES, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
-import estilos from '../reservas.module.css';
-import { useIdDeRuta } from './idDeRuta';
+import estilos from '../../componentes/panel.module.css';
+import { useIdDeRuta } from '../../rutas/idDeRuta';
 
 function porQueNo(viaje: ViajeDetalle): string {
   if (viaje.estado === 'ASIGNADO') {

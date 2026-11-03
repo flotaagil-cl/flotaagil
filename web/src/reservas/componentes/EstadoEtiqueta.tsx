@@ -1,6 +1,6 @@
 import type { EstadoViaje } from '../api';
 import { ESTADOS, GRUPO_ESTADO } from '../etiquetas';
-import estilos from '../reservas.module.css';
+import estilos from '../../componentes/panel.module.css';
 
 /** Estado del viaje con texto (el color solo acompaña). */
 export function EstadoEtiqueta({ estado }: { estado: EstadoViaje }) {

@@ -118,6 +118,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/conductores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar conductores
+         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         */
+        get: operations["conductores_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conductores/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalle de un conductor con sus vehículos
+         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         */
+        get: operations["conductores_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar los datos de un conductor
+         * @description Nombre, RUT, teléfono y licencia. El email y la contraseña no se editan aquí.
+         */
+        patch: operations["conductores_partial_update"];
+        trace?: never;
+    };
+    "/api/conductores/{id}/vehiculos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Asociar un vehículo al conductor
+         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         */
+        post: operations["conductores_vehiculos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conductores/{id}/vehiculos/{vehiculo_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Quitar un vehículo al conductor
+         * @description Si era su vehículo declarado y el conductor está No disponible, la declaración se borra. Responde 409 si está en turno con ese vehículo.
+         */
+        delete: operations["conductores_vehiculos_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/": {
         parameters: {
             query?: never;
@@ -149,6 +233,82 @@ export interface paths {
          * @description Crea la reserva en PENDIENTE_CONFIRMACION. Se confirma respondiendo el WhatsApp (HU-20) antes de `expira_en`; si no, se cancela (RN-06).
          */
         post: operations["portal_solicitudes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehiculos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar vehículos
+         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         */
+        get: operations["vehiculos_list"];
+        put?: never;
+        /**
+         * Registrar un vehículo
+         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         */
+        post: operations["vehiculos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vehiculos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalle de un vehículo
+         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         */
+        get: operations["vehiculos_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar, activar o desactivar un vehículo
+         * @description Desactivar quita el vehículo como declarado a los conductores No disponibles. Responde 409 si está declarado en un turno (Disponible o En viaje) o tiene un viaje en curso.
+         */
+        patch: operations["vehiculos_partial_update"];
+        trace?: never;
+    };
+    "/api/vehiculos/importar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Carga inicial de vehículos por CSV
+         * @description Carga inicial de vehículos por CSV (HU-10).
+         *
+         *     Todo o nada: se valida cada fila con las mismas reglas del alta individual y solo se crea si ninguna tiene
+         *     errores. Sin `confirmar` solo se entrega el informe, para revisarlo antes de cargar.
+         *
+         *     Formato: encabezado en la primera línea con `patente`, `marca_modelo`, `anio` y, opcional, `capacidad`
+         *     (por defecto 4). Se aceptan las variantes «año», «marca y modelo», «marca/modelo», mayúsculas y tildes.
+         *     Separador coma o punto y coma (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM)
+         *     o Windows-1252.
+         */
+        post: operations["vehiculos_importar_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -255,6 +415,9 @@ export interface components {
          * @enum {string}
          */
         ActorEnum: "CONDUCTOR" | "DESPACHADOR" | "ADMINISTRADOR" | "PASAJERO" | "SISTEMA";
+        AsociarVehiculoRequest: {
+            vehiculo: number;
+        };
         /** @enum {unknown} */
         BlankEnum: "";
         /**
@@ -275,6 +438,32 @@ export interface components {
         CancelarRequest: {
             motivo: string;
         };
+        Conductor: {
+            readonly id: number;
+            readonly nombre: string;
+            /** Format: email */
+            readonly email: string;
+            /** @description Cuenta habilitada */
+            readonly activo: boolean;
+            readonly rut: string;
+            readonly telefono: string;
+            readonly licencia_clase: components["schemas"]["LicenciaClaseEnum"];
+            /** Format: date */
+            readonly licencia_vence: string;
+            readonly licencia_vigente: boolean;
+            readonly estado: components["schemas"]["ConductorEstadoEnum"];
+            readonly vehiculo_activo: components["schemas"]["VehiculoDeclarado"] | null;
+            /** Format: date-time */
+            readonly consentimiento_gps_en: string | null;
+            readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
+        };
+        /**
+         * @description * `DISPONIBLE` - Disponible
+         *     * `NO_DISPONIBLE` - No disponible
+         *     * `EN_VIAJE` - En viaje
+         * @enum {string}
+         */
+        ConductorEstadoEnum: "DISPONIBLE" | "NO_DISPONIBLE" | "EN_VIAJE";
         ConductorResumen: {
             id: number;
             nombre: string;
@@ -322,6 +511,16 @@ export interface components {
          * @enum {string}
          */
         EstadoVueloEnum: "PROGRAMADO" | "DEMORADO" | "ATERRIZADO" | "CANCELADO" | "DESVIADO";
+        FilaImportacion: {
+            /** @description Línea del archivo (la 1 es el encabezado) */
+            linea: number;
+            datos: {
+                [key: string]: string;
+            };
+            errores: {
+                [key: string]: string[];
+            };
+        };
         Historial: {
             estado_anterior?: (components["schemas"]["EstadoViajeEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             estado_nuevo: components["schemas"]["EstadoViajeEnum"];
@@ -330,6 +529,31 @@ export interface components {
             /** Format: date-time */
             readonly creado_en: string;
         };
+        ImportarRequest: {
+            /**
+             * Format: binary
+             * @description CSV en UTF-8 o Windows-1252, separado por coma o punto y coma.
+             */
+            archivo: string;
+            /**
+             * @description false: solo valida y muestra el informe. true: crea si no hay errores.
+             * @default false
+             */
+            confirmar: boolean;
+        };
+        InformeImportacion: {
+            filas: components["schemas"]["FilaImportacion"][];
+            validas: number;
+            con_errores: number;
+            creados: number;
+        };
+        /**
+         * @description * `A1` - A1
+         *     * `A2` - A2
+         *     * `A3` - A3
+         * @enum {string}
+         */
+        LicenciaClaseEnum: "A1" | "A2" | "A3";
         LoginRequest: {
             /** Format: email */
             email: string;
@@ -346,6 +570,36 @@ export interface components {
          * @enum {string}
          */
         OrigenCancelacionEnum: "PASAJERO" | "DESPACHADOR" | "ADMINISTRADOR" | "SUPERVISOR" | "SISTEMA";
+        PaginatedConductorList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Conductor"][];
+        };
+        PaginatedVehiculoList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Vehiculo"][];
+        };
         PaginatedViajeList: {
             /** @example 123 */
             count: number;
@@ -370,6 +624,24 @@ export interface components {
             id: number;
             nombre: string;
             telefono: string;
+        };
+        /** @description Datos del conductor. El email y la contraseña (credenciales) no se editan aquí. */
+        PatchedConductorEditarRequest: {
+            nombre?: string;
+            /** @description Acepta puntos y la K minúscula. */
+            rut?: string;
+            /** @description Móvil chileno: +569XXXXXXXX. */
+            telefono?: string;
+            licencia_clase?: components["schemas"]["LicenciaClaseEnum"];
+            /** Format: date */
+            licencia_vence?: string;
+        };
+        /** @description La patente no se edita: otra patente es otro vehículo. */
+        PatchedVehiculoEditarRequest: {
+            marca_modelo?: string;
+            anio?: number;
+            capacidad?: number;
+            activo?: boolean;
         };
         PatchedViajeEditarRequest: {
             sentido?: components["schemas"]["SentidoEnum"];
@@ -461,6 +733,34 @@ export interface components {
             email: string;
             rol: components["schemas"]["RolEnum"];
             readonly empresa: components["schemas"]["EmpresaResumen"];
+        };
+        Vehiculo: {
+            readonly id: number;
+            patente: string;
+            marca_modelo: string;
+            anio: number;
+            capacidad?: number;
+            activo?: boolean;
+            readonly conductores: components["schemas"]["ConductorResumen"][];
+        };
+        VehiculoAsociado: {
+            id: number;
+            patente: string;
+            marca_modelo: string;
+            activo: boolean;
+            /** Format: date */
+            desde: string;
+        };
+        VehiculoCrearRequest: {
+            /** @description Se normaliza: sin guiones, puntos ni espacios y en mayúsculas. */
+            patente: string;
+            marca_modelo: string;
+            anio: number;
+            capacidad?: number;
+        };
+        VehiculoDeclarado: {
+            id: number;
+            patente: string;
         };
         VehiculoResumen: {
             id: number;
@@ -824,6 +1124,146 @@ export interface operations {
             };
         };
     };
+    conductores_list: {
+        parameters: {
+            query?: {
+                /** @description Cuenta habilitada */
+                activo?: boolean;
+                /**
+                 * @description * `DISPONIBLE` - Disponible
+                 *     * `NO_DISPONIBLE` - No disponible
+                 *     * `EN_VIAJE` - En viaje
+                 */
+                estado?: "DISPONIBLE" | "EN_VIAJE" | "NO_DISPONIBLE";
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description Nombre, RUT, email o patente asociada */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedConductorList"];
+                };
+            };
+        };
+    };
+    conductores_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    conductores_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedConductorEditarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedConductorEditarRequest"];
+                "multipart/form-data": components["schemas"]["PatchedConductorEditarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    conductores_vehiculos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AsociarVehiculoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AsociarVehiculoRequest"];
+                "multipart/form-data": components["schemas"]["AsociarVehiculoRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    conductores_vehiculos_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+                vehiculo_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+            /** @description `flota_en_uso`: el vehículo está declarado en un turno o tiene un viaje en curso. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     portal_retrieve: {
         parameters: {
             query?: never;
@@ -891,6 +1331,155 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    vehiculos_list: {
+        parameters: {
+            query?: {
+                activo?: boolean;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description Patente o marca y modelo */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedVehiculoList"];
+                };
+            };
+        };
+    };
+    vehiculos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehiculoCrearRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["VehiculoCrearRequest"];
+                "multipart/form-data": components["schemas"]["VehiculoCrearRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+        };
+    };
+    vehiculos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este vehiculo. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+        };
+    };
+    vehiculos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este vehiculo. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedVehiculoEditarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedVehiculoEditarRequest"];
+                "multipart/form-data": components["schemas"]["PatchedVehiculoEditarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vehiculo"];
+                };
+            };
+            /** @description `flota_en_uso`: el vehículo está declarado en un turno o tiene un viaje en curso. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    vehiculos_importar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImportarRequest"];
+            };
+        };
+        responses: {
+            /** @description Informe sin crear nada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeImportacion"];
+                };
+            };
+            /** @description Todos creados. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeImportacion"];
+                };
+            };
+            /** @description Con `confirmar` y filas con errores: no se crea ninguno. Si el archivo no sirve, el error viene en `archivo`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeImportacion"];
                 };
             };
         };

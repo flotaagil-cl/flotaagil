@@ -1,4 +1,4 @@
-/* Pantallas de reservas: pensadas para escritorio, funcionan en celular (sin scroll horizontal). */
+/* Estilos compartidos de las pantallas del panel (reservas, flota): pensadas para escritorio, funcionan en celular (sin scroll horizontal). */
 
 .encabezado {
   display: flex;
@@ -531,4 +531,45 @@
   color: var(--texto-suave);
   font-size: 0.8rem;
   font-weight: 400;
+}
+
+/* --- Flota (HU-10) --- */
+
+.alerta {
+  display: block;
+  color: var(--error-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.listaAcciones {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: 0 0 var(--espacio-3);
+  padding: 0;
+  list-style: none;
+}
+
+.listaAcciones li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  padding: var(--espacio-2) 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.listaAcciones .secundario {
+  display: block;
+}
+
+.erroresFila {
+  margin: 0;
+  padding-left: var(--espacio-3);
+  color: var(--error-texto);
+}
+
+.tabla tr[data-error='true'] {
+  background: var(--error-fondo);
 }

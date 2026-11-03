@@ -2,7 +2,7 @@ import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
-// Cobertura mínima exigida en sesión, API, horas y reservas (DoD: ≥ 70 % en lo tocado).
+// Cobertura mínima exigida en sesión, API, horas, reservas, portal y flota (DoD: ≥ 70 % en lo tocado).
 const MINIMO = { lines: 70, functions: 70, branches: 70, statements: 70 };
 
 /**
@@ -62,6 +62,7 @@ export default defineConfig({
         'src/reservas/**': MINIMO,
         'src/formularios/**': MINIMO,
         'src/portal/**': MINIMO,
+        'src/flota/**': MINIMO,
         'src/entorno.ts': MINIMO,
       },
     },

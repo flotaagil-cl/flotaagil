@@ -114,6 +114,7 @@ describe('verificar-carga', () => {
       'No hay módulos de src/sesion/ en el build: la verificación no estaría revisando nada.',
       'No hay módulos de src/reservas/ en el build: la verificación no estaría revisando nada.',
       'No hay módulos de src/portal/ en el build: la verificación no estaría revisando nada.',
+      'No hay módulos de src/flota/ en el build: la verificación no estaría revisando nada.',
     ]);
   });
 });

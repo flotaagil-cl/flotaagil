@@ -60,7 +60,8 @@ describe('menú e Inicio', () => {
   it.each(['admin@andes.example', 'despacho@andes.example'])('%s ve «Reservas» en el menú', async (email) => {
     montarPanel('/', { email });
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
-    expect(within(menu).getAllByRole('link').map((a) => a.textContent)).toEqual(['Inicio', 'Reservas']);
+    // El administrador ve además Vehículos y Conductores (HU-10, en src/flota/flota.test.tsx).
+    expect(within(menu).getAllByRole('link').map((a) => a.textContent).slice(0, 2)).toEqual(['Inicio', 'Reservas']);
   });
 
   it('«Reservas» queda marcada también en el detalle', async () => {
