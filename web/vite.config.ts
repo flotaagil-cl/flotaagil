@@ -41,7 +41,8 @@ export default defineConfig({
   server: {
     // En desarrollo el panel y la API quedan en el mismo origen: la cookie del refresh (Path=/api/auth/)
     // viaja sin CORS. El proxy reenvía Origin tal como lo manda el navegador (http://localhost:5173).
-    proxy: { '/api': 'http://localhost:8000' },
+    // /ws: WebSocket del mapa en tiempo real (HU-02), mismo origen que el panel.
+    proxy: { '/api': 'http://127.0.0.1:8000', '/ws': { target: 'ws://127.0.0.1:8000', ws: true } },
   },
   test: {
     environment: 'jsdom',
@@ -63,6 +64,7 @@ export default defineConfig({
         'src/formularios/**': MINIMO,
         'src/portal/**': MINIMO,
         'src/flota/**': MINIMO,
+        'src/mapa/**': MINIMO,
         'src/entorno.ts': MINIMO,
       },
     },

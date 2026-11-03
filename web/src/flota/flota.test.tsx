@@ -35,6 +35,7 @@ describe('menú y permisos', () => {
     expect(within(menu).getAllByRole('link').map((a) => a.textContent)).toEqual([
       'Inicio',
       'Reservas',
+      'Mapa',
       'Vehículos',
       'Conductores',
     ]);

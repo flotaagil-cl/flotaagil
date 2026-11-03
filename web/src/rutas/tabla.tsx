@@ -57,6 +57,11 @@ export const pantallasDelPanel: RouteObject[] = [
     ],
   },
   {
+    path: 'mapa',
+    lazy: async () => ({ Component: (await import('../mapa/Mapa')).Mapa }),
+    handle: { titulo: 'Mapa', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+  },
+  {
     path: 'vehiculos',
     handle: { titulo: 'Vehículos', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
     children: [

@@ -1,0 +1,107 @@
+/* Mapa en tiempo real (HU-02). */
+
+.disposicion {
+  display: grid;
+  gap: var(--espacio-3);
+}
+
+@media (min-width: 60rem) {
+  .disposicion {
+    grid-template-columns: 1fr 20rem;
+    align-items: start;
+  }
+}
+
+.mapa {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.fondo {
+  fill: var(--superficie);
+}
+
+.cuadricula line {
+  stroke: var(--borde);
+  stroke-width: 1;
+}
+
+.marcador {
+  cursor: pointer;
+}
+
+.marcador circle {
+  stroke: var(--superficie);
+  stroke-width: 3;
+}
+
+.marcador[data-estado='DISPONIBLE'] circle {
+  fill: #15803d;
+}
+
+.marcador[data-estado='EN_VIAJE'] circle {
+  fill: #b45309;
+}
+
+/* Posición de más de 60 s o imprecisa: gris y con borde punteado. */
+.marcador[data-confiable='false'] circle {
+  fill: #9ca3af;
+  stroke: #4b5563;
+  stroke-dasharray: 4 3;
+}
+
+.marcador[data-seleccionado='true'] circle {
+  stroke: var(--foco);
+  stroke-width: 4;
+}
+
+.marcador text {
+  fill: var(--texto);
+  font-size: 20px;
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--superficie);
+  stroke-width: 4px;
+}
+
+.lista {
+  display: grid;
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista button {
+  display: grid;
+  width: 100%;
+  min-height: var(--toque);
+  gap: 2px;
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lista button[aria-pressed='true'] {
+  border-color: var(--acento);
+  background: var(--acento-suave);
+}
+
+.noConfiable {
+  color: var(--error-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.estadoConexion {
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
