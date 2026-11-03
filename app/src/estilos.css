@@ -2,6 +2,8 @@
   font-family: system-ui, sans-serif;
   color: #1b1f24;
   background: #f6f7f9;
+  --acento: #0f5c6e;
+  --borde: #c7ccd3;
 }
 
 body {
@@ -23,48 +25,65 @@ h2 {
   margin-top: 1.5rem;
 }
 
-button {
+label {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.9rem;
+  font-weight: 500;
+}
+
+input {
   font: inherit;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid #c7ccd3;
+  min-height: 44px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--borde);
   border-radius: 0.5rem;
   background: #fff;
 }
 
-button.activo {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  color: #fff;
+input[aria-invalid='true'] {
+  border-color: #b91c1c;
+}
+
+.campo-error {
+  color: #991b1b;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: #fff;
 }
 
 button.principal {
   width: 100%;
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   padding: 0.9rem;
-  background: #15803d;
-  border-color: #15803d;
+  background: var(--acento);
+  border-color: var(--acento);
   color: #fff;
   font-weight: 600;
 }
 
-button.principal.detener {
-  background: #b91c1c;
-  border-color: #b91c1c;
+button:disabled {
+  opacity: 0.6;
 }
 
-.modos,
 .acciones {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.modos button {
-  flex: 1;
+  margin-top: 1rem;
 }
 
 .aviso,
-.error {
+.error,
+.ok {
   padding: 0.6rem 0.8rem;
   border-radius: 0.5rem;
 }
@@ -77,28 +96,34 @@ button.principal.detener {
   background: #fee2e2;
 }
 
-table.resumen {
-  width: 100%;
-  border-collapse: collapse;
+.ok {
+  background: #dcfce7;
+}
+
+.tarjeta {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e3e6ea;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.secundario {
+  color: #5b6670;
   font-size: 0.9rem;
 }
 
-table.resumen th,
-table.resumen td {
-  text-align: left;
-  padding: 0.35rem 0.25rem;
-  border-bottom: 1px solid #e3e6ea;
-  vertical-align: top;
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
 }
 
-table.resumen th {
-  font-weight: 500;
-  width: 45%;
+dt {
+  color: #5b6670;
 }
 
-details {
-  margin-top: 0.5rem;
-  background: #fff;
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
+dd {
+  margin: 0;
 }

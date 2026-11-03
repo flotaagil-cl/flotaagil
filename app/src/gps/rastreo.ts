@@ -8,8 +8,8 @@ import { registerPlugin } from '@capacitor/core';
 const BackgroundGeolocation = registerPlugin<BackgroundGeolocationPlugin>('BackgroundGeolocation');
 
 /**
- * Inicia el servicio de ubicación en primer plano (notificación fija en Android).
- * distanceFilter 0 hace que el plugin entregue posiciones aunque el teléfono esté quieto.
+ * Inicia el servicio de ubicación en primer plano (notificación fija en Android mientras dure el turno).
+ * distanceFilter 0: el plugin entrega posiciones aunque el teléfono esté quieto (H-3).
  */
 export function iniciarRastreo(
   alRecibir: (posicion: Location) => void,
@@ -17,8 +17,8 @@ export function iniciarRastreo(
 ): Promise<string> {
   return BackgroundGeolocation.addWatcher(
     {
-      backgroundTitle: 'FlotaÁgil: prueba de GPS',
-      backgroundMessage: 'Registrando tu ubicación para la prueba H-3. Detén la sesión para terminar.',
+      backgroundTitle: 'FlotaÁgil: en turno',
+      backgroundMessage: 'Se registra tu ubicación mientras estés en turno. Para detenerlo, pasa a No disponible.',
       requestPermissions: true,
       stale: false,
       distanceFilter: 0,
