@@ -87,11 +87,11 @@ class VehiculoDeclaradoSerializer(serializers.Serializer):
 
 
 class ConductorSerializer(serializers.ModelSerializer):
-    nombre = serializers.CharField(source="usuario.nombre")
-    email = serializers.EmailField(source="usuario.email")
-    activo = serializers.BooleanField(source="usuario.activo", help_text="Cuenta habilitada")
+    nombre = serializers.CharField(source="usuario.nombre", read_only=True)
+    email = serializers.EmailField(source="usuario.email", read_only=True)
+    activo = serializers.BooleanField(source="usuario.activo", read_only=True, help_text="Cuenta habilitada")
     licencia_vigente = serializers.SerializerMethodField()
-    vehiculo_activo = VehiculoDeclaradoSerializer(allow_null=True)
+    vehiculo_activo = VehiculoDeclaradoSerializer(allow_null=True, read_only=True)
     vehiculos = serializers.SerializerMethodField()
 
     class Meta:

@@ -974,11 +974,14 @@ components:
           readOnly: true
         nombre:
           type: string
+          readOnly: true
         email:
           type: string
           format: email
+          readOnly: true
         activo:
           type: boolean
+          readOnly: true
           description: Cuenta habilitada
         rut:
           type: string
@@ -1004,6 +1007,7 @@ components:
         vehiculo_activo:
           allOf:
           - $ref: '#/components/schemas/VehiculoDeclarado'
+          readOnly: true
           nullable: true
         consentimiento_gps_en:
           type: string
