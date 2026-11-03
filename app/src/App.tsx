@@ -12,6 +12,7 @@ import { CambiarPassword } from './pantallas/CambiarPassword';
 import { Consentimiento } from './pantallas/Consentimiento';
 import { Inicio } from './pantallas/Inicio';
 import { Login } from './pantallas/Login';
+import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
 import { api, cola, rastreador, sesion } from './servicios';
 import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
@@ -19,6 +20,7 @@ import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
 export default function App() {
   const [estado, setEstado] = useState<EstadoSesion>(sesion.estado);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
+  const [viaje, setViaje] = useState<ViajeActivo | null>(null);
   const [fallaPerfil, setFallaPerfil] = useState<string | null>(null);
   const [envio, setEnvio] = useState<EstadoEnvio>(cola.estado);
   const [rastreo, setRastreo] = useState<EstadoRastreo>(rastreador.estado);
@@ -34,7 +36,12 @@ export default function App() {
 
   const cargarPerfil = useCallback(async () => {
     try {
-      setPerfil(await api.pedir<Perfil>('GET', '/api/app/perfil/'));
+      const [nuevo, activo] = await Promise.all([
+        api.pedir<Perfil>('GET', '/api/app/perfil/'),
+        api.pedir<{ viaje: ViajeActivo | null }>('GET', '/api/app/viaje-activo/'),
+      ]);
+      setPerfil(nuevo);
+      setViaje(activo.viaje);
       setFallaPerfil(null);
     } catch (error) {
       setFallaPerfil(error instanceof SinRed ? 'Sin conexión con el servidor.' : 'No se pudo cargar tu información.');
@@ -81,6 +88,7 @@ export default function App() {
     await rastreador.detener();
     cola.vaciarSinEnviar();
     setPerfil(null);
+    setViaje(null);
     await sesion.logout();
   }
 
@@ -116,6 +124,7 @@ export default function App() {
     <Inicio
       usuario={estado.usuario}
       perfil={perfil}
+      viaje={viaje}
       envio={envio}
       rastreo={rastreo}
       cambiarTurno={cambiarTurno}

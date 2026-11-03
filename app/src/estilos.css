@@ -175,3 +175,13 @@ summary {
   align-items: center;
   cursor: pointer;
 }
+
+.navegar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.navegar button.principal {
+  margin-top: 0.5rem;
+}

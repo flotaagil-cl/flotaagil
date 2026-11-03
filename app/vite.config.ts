@@ -8,13 +8,15 @@ const MINIMO = { lines: 70, functions: 70, branches: 70, statements: 70 };
 
 export default defineConfig({
   plugins: [react()],
+  // Desarrollo en el navegador (`npm run dev` con VITE_API_URL vacío): la API queda en el mismo origen.
+  server: { proxy: { '/api': 'http://127.0.0.1:8000' } },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
     coverage: {
       enabled: true,
       provider: 'v8',
-      include: ['src/api.ts', 'src/perfil.ts', 'src/sesion/sesion.ts', 'src/gps/envio.ts', 'src/gps/turno.ts', 'src/gps/muestreo.ts'],
+      include: ['src/api.ts', 'src/perfil.ts', 'src/navegacion.ts', 'src/sesion/sesion.ts', 'src/gps/envio.ts', 'src/gps/turno.ts', 'src/gps/muestreo.ts'],
       thresholds: MINIMO,
     },
   },

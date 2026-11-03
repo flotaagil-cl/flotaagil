@@ -3,13 +3,16 @@ import type { EstadoEnvio } from '../gps/envio';
 import type { EstadoRastreo } from '../gps/turno';
 import { horaDeChile } from '../hora';
 import { vehiculoParaTurno, type Perfil } from '../perfil';
+import type { ViajeActivo } from '../navegacion';
 import type { Usuario } from '../sesion/sesion';
+import { ViajeEnCurso } from './ViajeEnCurso';
 
 const ESTADOS = { DISPONIBLE: 'Disponible', NO_DISPONIBLE: 'No disponible', EN_VIAJE: 'En viaje' } as const;
 
 interface Props {
   usuario: Usuario;
   perfil: Perfil;
+  viaje: ViajeActivo | null;
   envio: EstadoEnvio;
   rastreo: EstadoRastreo;
   /** Cambia el turno; resuelve con el mensaje de error del backend, o null si se cambió. */
@@ -20,7 +23,7 @@ interface Props {
 }
 
 /** Inicio del conductor: empezar o terminar el turno con su vehículo (HU-13) y estado del GPS. */
-export function Inicio({ usuario, perfil, envio, rastreo, cambiarTurno, actualizar, abrirAjustes, cerrarSesion }: Props) {
+export function Inicio({ usuario, perfil, viaje, envio, rastreo, cambiarTurno, actualizar, abrirAjustes, cerrarSesion }: Props) {
   const enTurno = perfil.estado !== 'NO_DISPONIBLE';
   const [elegido, setElegido] = useState<number | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -45,6 +48,8 @@ export function Inicio({ usuario, perfil, envio, rastreo, cambiarTurno, actualiz
     <main>
       <h1>Hola, {usuario.nombre}</h1>
       <p className="secundario">{usuario.empresa.razon_social}</p>
+
+      {viaje && <ViajeEnCurso viaje={viaje} />}
 
       <div className="tarjeta">
         <h2>Turno</h2>
