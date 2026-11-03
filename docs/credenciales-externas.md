@@ -33,15 +33,19 @@ TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_WHATSAPP_FROM=+14155238886
 WHATSAPP_URL_BASE=https://<url pública>
-# Vacía en el sandbox:
+# Vacías en el sandbox:
 TWILIO_PLANTILLA_VERIFICACION=
+TWILIO_PLANTILLA_AVISO_CONFIRMACION=
+TWILIO_PLANTILLA_AVISO_CONDUCTOR=
+TWILIO_PLANTILLA_AVISO_EN_CAMINO=
+TWILIO_PLANTILLA_AVISO_EN_ZONA=
 ```
 
 `WHATSAPP_URL_BASE` debe ser exactamente la URL configurada en Twilio: con ella se valida la firma de cada webhook.
 
 **Qué se activa**
 
-- Con las cuatro primeras variables, las solicitudes del portal envían un WhatsApp real al pasajero.
+- Con las cuatro primeras variables, las solicitudes del portal envían un WhatsApp real al pasajero, y también los avisos de estado del viaje.
 - Con `TWILIO_AUTH_TOKEN`, los webhooks exigen la firma `X-Twilio-Signature`. Una llamada sin firma recibe 403.
 - `simular_whatsapp` sigue disponible con `DEBUG` activo, pero sus respuestas al pasajero ahora se envían de verdad.
 
@@ -55,6 +59,15 @@ TWILIO_PLANTILLA_VERIFICACION=
 - Todos los usuarios del sandbox comparten el número.
 
 **Para producción** hace falta un número de WhatsApp registrado y una plantilla de tipo `twilio/quick-reply` aprobada, con los botones Confirmar y Cancelar y cuatro variables: nombre, empresa, recogida y hora límite. Su identificador (`HX...`) va en `TWILIO_PLANTILLA_VERIFICACION`, y con eso se activan los botones. Queda sin probar si la plantilla entrega `ButtonPayload` con el valor esperado: el código acepta `confirmar` y `cancelar`, así que conviene definir esos identificadores en los botones.
+
+Los avisos de estado también necesitan una plantilla aprobada por cada tipo para llegar fuera de la ventana de 24 h. Sin ellas van como texto y fallan si el pasajero no ha escrito hace poco, como en una reserva por teléfono. Las variables son:
+
+| Variable de `backend/.env` | Variables de la plantilla |
+|---|---|
+| `TWILIO_PLANTILLA_AVISO_CONFIRMACION` | nombre, empresa, recogida |
+| `TWILIO_PLANTILLA_AVISO_CONDUCTOR` | nombre, conductor, vehículo, patente |
+| `TWILIO_PLANTILLA_AVISO_EN_CAMINO` | conductor, punto de recogida |
+| `TWILIO_PLANTILLA_AVISO_EN_ZONA` | punto de recogida, patente |
 
 ## FlightAware AeroAPI
 
