@@ -31,6 +31,7 @@ services:
 
   backend:
     build: ../backend
+    image: flotaagil-backend
     env_file: ../backend/.env
     volumes:
       # Código montado: runserver recarga al guardar (StatReloader, por sondeo).
@@ -52,8 +53,9 @@ services:
       start_period: 10s
 
   # Tareas periódicas mientras no exista Celery beat: expiración de solicitudes del portal (RN-06).
+  # Misma imagen que el backend: al reconstruirlo, este servicio también recibe las dependencias nuevas.
   programador:
-    build: ../backend
+    image: flotaagil-backend
     env_file: ../backend/.env
     volumes:
       - ../backend:/app
@@ -65,7 +67,7 @@ services:
 
   # RN-04: asignaciones sin respuesta a los 60 s vuelven a SOLICITADO (cada 5 s, mientras no exista Celery beat).
   asignaciones:
-    build: ../backend
+    image: flotaagil-backend
     env_file: ../backend/.env
     volumes:
       - ../backend:/app

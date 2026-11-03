@@ -21,6 +21,7 @@ import {
 import { FallaDeCarga, NoEncontrado } from '../componentes/comunes';
 import { CuentaConductor } from '../componentes/CuentaConductor';
 import { erroresDelBackend, mensajeDeError } from '../errores';
+import { useEstadoEnVivo } from '../estadoEnVivo';
 import { avisoLicencia, ESTADOS_CONDUCTOR, LICENCIAS } from '../etiquetas';
 import { cuerpoEditarConductor, esquemaConductor, type DatosConductor, type ValoresConductor } from '../formularios';
 
@@ -34,6 +35,7 @@ export function Conductor() {
 
 function ConductorDe({ id }: { id: number }) {
   const consulta = useConductor(id);
+  useEstadoEnVivo();
   if (consulta.isPending) return <Cargando />;
   if (consulta.isError) {
     if (consulta.error instanceof ErrorApi && consulta.error.estado === 404) {

@@ -37,11 +37,6 @@ export const claves = {
 };
 
 const VIGENCIA_MS = 30_000;
-/**
- * HU-13: el estado del conductor (Disponible, No disponible, En viaje) cambia desde la app. Mientras la pantalla
- * está abierta se vuelve a pedir cada 10 s (PR-07: el WebSocket llega con el mapa en tiempo real, HU-02).
- */
-export const REFRESCO_ESTADO_MS = 10_000;
 
 export function useVehiculos(consulta: ConsultaVehiculos) {
   const api = useApi();
@@ -69,7 +64,6 @@ export function useConductores(consulta: ConsultaConductores) {
     queryFn: () => resultado(api.GET('/api/conductores/', { params: { query: consulta } })),
     placeholderData: keepPreviousData,
     staleTime: VIGENCIA_MS,
-    refetchInterval: REFRESCO_ESTADO_MS,
   });
 }
 
@@ -79,7 +73,6 @@ export function useConductor(id: number) {
     queryKey: claves.conductor(id),
     queryFn: () => resultado(api.GET('/api/conductores/{id}/', { params: { path: { id } } })),
     staleTime: VIGENCIA_MS,
-    refetchInterval: REFRESCO_ESTADO_MS,
   });
 }
 
