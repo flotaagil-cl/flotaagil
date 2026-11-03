@@ -19,6 +19,7 @@ from apps.integraciones.vuelos import (
 
 SANTIAGO = ZoneInfo("America/Santiago")
 INFORMADA = datetime(2026, 11, 5, 9, 30, tzinfo=SANTIAGO)  # 12:30 UTC
+HOY = datetime(2026, 11, 4, 12, 0, tzinfo=SANTIAGO)  # el vuelo está al alcance de /flights
 
 
 def vuelo(**cambios):
@@ -35,17 +36,17 @@ def vuelo(**cambios):
 class FlightAwareFalso(ConsultorFlightAware):
     """Responde con la lista dada o lanza los errores dados, en orden, sin red."""
 
-    def __init__(self, *respuestas):
-        super().__init__("clave-sintetica", espera_base=0)
+    def __init__(self, *respuestas, ahora=HOY):
+        super().__init__("clave-sintetica", espera_base=0, ahora=lambda: ahora)
         self.respuestas = list(respuestas)
         self.pedidos = []
 
-    def _pedir(self, numero, desde, hasta):
-        self.pedidos.append((numero, desde, hasta))
+    def _pedir(self, ruta, parametros):
+        self.pedidos.append((ruta, parametros))
         respuesta = self.respuestas.pop(0)
         if isinstance(respuesta, Exception):
             raise respuesta
-        return {"flights": respuesta}
+        return {"scheduled" if ruta.startswith("/schedules/") else "flights": respuesta}
 
 
 def http_error(codigo):
@@ -78,9 +79,11 @@ class TestFlightAware:
         datos = consultor.consultar("LA 123", INFORMADA)
         assert datos.hora_programada == datetime(2026, 11, 5, 12, 40, tzinfo=ZoneInfo("UTC"))
         assert datos.estado == EstadoVuelo.PROGRAMADO
-        numero, desde, hasta = consultor.pedidos[0]
-        assert numero == "LA123"
-        assert (hasta - desde).days == 2
+        ruta, parametros = consultor.pedidos[0]
+        assert ruta == "/flights/LA123"
+        assert parametros["ident_type"] == "designator"
+        assert parametros["start"].startswith("2026-11-04T00:00:00")
+        assert parametros["end"].startswith("2026-11-06T00:00:00")
 
     def test_no_existe(self):
         assert (
@@ -116,6 +119,27 @@ class TestFlightAware:
             consultor.consultar("LA123", INFORMADA)
         assert len(consultor.pedidos) == 1
 
+    def test_lejos_en_el_futuro_usa_el_itinerario(self):
+        """/flights no acepta fechas a más de 2 días: para esas se consulta /schedules."""
+        consultor = FlightAwareFalso(
+            [
+                {"ident_iata": "LA123", "scheduled_in": "2026-11-05T22:00:00Z"},
+                {"ident_iata": "LA123", "scheduled_in": "2026-11-05T12:40:00Z"},
+                {"ident_iata": "LA123", "scheduled_in": "2026-11-06T12:40:00Z"},  # otro día
+            ],
+            ahora=datetime(2026, 10, 20, 12, 0, tzinfo=SANTIAGO),
+        )
+        datos = consultor.consultar("LA 123", INFORMADA)
+        assert datos.hora_programada == datetime(2026, 11, 5, 12, 40, tzinfo=ZoneInfo("UTC"))
+        assert (datos.hora_estimada, datos.estado) == (None, EstadoVuelo.PROGRAMADO)
+        ruta, parametros = consultor.pedidos[0]
+        assert ruta.startswith("/schedules/2026-11-04T00:00:00")
+        assert parametros == {"airline": "LA", "flight_number": "123", "destination": "SCL"}
+
+    def test_itinerario_sin_ese_vuelo(self):
+        lejos = datetime(2026, 10, 20, 12, 0, tzinfo=SANTIAGO)
+        assert FlightAwareFalso([], ahora=lejos).consultar("LA123", INFORMADA) is None
+
     def test_arma_la_peticion(self, monkeypatch):
         capturada = {}
 
@@ -124,7 +148,7 @@ class TestFlightAware:
             return io.BytesIO(json.dumps({"flights": []}).encode())
 
         monkeypatch.setattr(vuelos.urllib.request, "urlopen", urlopen)
-        ConsultorFlightAware("clave-sintetica").consultar("H2 456", INFORMADA)
+        ConsultorFlightAware("clave-sintetica", ahora=lambda: HOY).consultar("H2 456", INFORMADA)
         assert capturada["url"].startswith(
             "https://aeroapi.flightaware.com/aeroapi/flights/H2456?ident_type=designator"
         )
