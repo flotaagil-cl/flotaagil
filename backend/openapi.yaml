@@ -67,6 +67,42 @@ paths:
           description: ''
         '409':
           description: '`fuera_de_turno` o `sin_consentimiento` (RN-18).'
+  /api/app/turno/:
+    post:
+      operationId: app_turno_create
+      description: 'Disponible exige consentimiento de ubicación, licencia vigente
+        y declarar el vehículo del turno: si tiene uno activo se usa ese; si tiene
+        más, hay que elegirlo. Un vehículo no puede estar declarado por dos conductores
+        en turno. No disponible borra el vehículo declarado. Desde En viaje no se
+        cambia aquí.'
+      summary: Empezar o terminar el turno (Disponible / No disponible)
+      tags:
+      - app
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TurnoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TurnoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilConductor'
+          description: ''
+        '409':
+          description: '`en_viaje` (RN-03), `sin_consentimiento` (RN-18), `licencia_vencida`,
+            `sin_vehiculo`, `elegir_vehiculo` (RN-05), `vehiculo_no_disponible` o
+            `vehiculo_ocupado`.'
   /api/auth/app/logout/:
     post:
       operationId: auth_app_logout_create
@@ -2063,6 +2099,26 @@ components:
       required:
       - access
       - refresh
+    TurnoEstadoEnum:
+      enum:
+      - DISPONIBLE
+      - NO_DISPONIBLE
+      type: string
+      description: |-
+        * `DISPONIBLE` - DISPONIBLE
+        * `NO_DISPONIBLE` - NO_DISPONIBLE
+    TurnoRequest:
+      type: object
+      properties:
+        estado:
+          $ref: '#/components/schemas/TurnoEstadoEnum'
+        vehiculo:
+          type: integer
+          nullable: true
+          description: Obligatorio para quedar Disponible con más de un vehículo activo
+            (RN-05).
+      required:
+      - estado
     Ubicacion:
       type: object
       properties:

@@ -178,3 +178,103 @@ class PosicionesView(_VistaApp):
             {"recibidas": recibidas, "repetidas": len(validas) - recibidas, "descartadas": descartadas},
             status=status.HTTP_201_CREATED,
         )
+
+
+# --- Turno (HU-13) ---
+
+
+class TurnoConflicto(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "turno_no_permitido"
+    default_detail = "No se puede cambiar el estado ahora."
+
+
+class TurnoSerializer(serializers.Serializer):
+    estado = serializers.ChoiceField(choices=[EstadoConductor.DISPONIBLE, EstadoConductor.NO_DISPONIBLE])
+    vehiculo = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Obligatorio para quedar Disponible con más de un vehículo activo (RN-05).",
+    )
+
+
+def _conflicto(codigo: str, mensaje: str) -> TurnoConflicto:
+    return TurnoConflicto(mensaje, code=codigo)
+
+
+class TurnoView(_VistaApp):
+    @extend_schema(
+        tags=["app"],
+        summary="Empezar o terminar el turno (Disponible / No disponible)",
+        request=TurnoSerializer,
+        responses={
+            200: PerfilConductorSerializer,
+            409: OpenApiResponse(
+                description="`en_viaje` (RN-03), `sin_consentimiento` (RN-18), `licencia_vencida`, "
+                "`sin_vehiculo`, `elegir_vehiculo` (RN-05), `vehiculo_no_disponible` o `vehiculo_ocupado`."
+            ),
+        },
+        description=(
+            "Disponible exige consentimiento de ubicación, licencia vigente y declarar el vehículo "
+            "del turno: si tiene uno activo se usa ese; si tiene más, hay que elegirlo. Un vehículo "
+            "no puede estar declarado por dos conductores en turno. No disponible borra el vehículo "
+            "declarado. Desde En viaje no se cambia aquí."
+        ),
+    )
+    def post(self, request):
+        entrada = TurnoSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        with transaction.atomic():
+            conductor = (
+                Conductor.objects.select_for_update(of=("self",))
+                .select_related("usuario")
+                .get(usuario=request.user)
+            )
+            if conductor.estado == EstadoConductor.EN_VIAJE:
+                raise _conflicto("en_viaje", "Estás en un viaje: el estado cambia al terminarlo (RN-03).")
+            if entrada.validated_data["estado"] == EstadoConductor.NO_DISPONIBLE:
+                conductor.estado, conductor.vehiculo_activo = EstadoConductor.NO_DISPONIBLE, None
+            else:
+                conductor.vehiculo_activo = self._vehiculo_del_turno(
+                    conductor, entrada.validated_data.get("vehiculo")
+                )
+                conductor.estado = EstadoConductor.DISPONIBLE
+            conductor.save(update_fields=["estado", "vehiculo_activo"])
+        return Response(PerfilConductorSerializer(_conductor(request)).data)
+
+    @staticmethod
+    def _vehiculo_del_turno(conductor: Conductor, elegido: int | None):
+        if conductor.consentimiento_gps_en is None:
+            raise _conflicto(
+                "sin_consentimiento", "Acepta el uso de tu ubicación antes de empezar el turno (RN-18)."
+            )
+        if conductor.licencia_vence <= timezone.localdate():
+            raise _conflicto(
+                "licencia_vencida", "Tu licencia está vencida. Habla con el administrador de tu empresa."
+            )
+        activos = [a.vehiculo for a in conductor.asociaciones.select_related("vehiculo") if a.vehiculo.activo]
+        if not activos:
+            raise _conflicto(
+                "sin_vehiculo", "No tienes vehículos activos asociados. Habla con el administrador."
+            )
+        if elegido is None:
+            if len(activos) > 1:
+                raise _conflicto("elegir_vehiculo", "Elige el vehículo que usarás en este turno (RN-05).")
+            vehiculo = activos[0]
+        else:
+            vehiculo = next((v for v in activos if v.pk == elegido), None)
+            if vehiculo is None:
+                raise _conflicto(
+                    "vehiculo_no_disponible", "Ese vehículo no está asociado a ti o está inactivo."
+                )
+        ocupado = (
+            Conductor.objects.filter(vehiculo_activo=vehiculo, estado__in=EN_TURNO)
+            .exclude(pk=conductor.pk)
+            .select_related("usuario")
+            .first()
+        )
+        if ocupado:
+            raise _conflicto(
+                "vehiculo_ocupado", f"El vehículo {vehiculo.patente} ya está en turno con otro conductor."
+            )
+        return vehiculo

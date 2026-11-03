@@ -61,6 +61,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/turno/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Empezar o terminar el turno (Disponible / No disponible)
+         * @description Disponible exige consentimiento de ubicación, licencia vigente y declarar el vehículo del turno: si tiene uno activo se usa ese; si tiene más, hay que elegirlo. Un vehículo no puede estar declarado por dos conductores en turno. No disponible borra el vehículo declarado. Desde En viaje no se cambia aquí.
+         */
+        post: operations["app_turno_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/app/logout/": {
         parameters: {
             query?: never;
@@ -1005,6 +1025,17 @@ export interface components {
             access: string;
             refresh: string;
         };
+        /**
+         * @description * `DISPONIBLE` - DISPONIBLE
+         *     * `NO_DISPONIBLE` - NO_DISPONIBLE
+         * @enum {string}
+         */
+        TurnoEstadoEnum: "DISPONIBLE" | "NO_DISPONIBLE";
+        TurnoRequest: {
+            estado: components["schemas"]["TurnoEstadoEnum"];
+            /** @description Obligatorio para quedar Disponible con más de un vehículo activo (RN-05). */
+            vehiculo?: number | null;
+        };
         Ubicacion: {
             direccion: string;
             /** Format: double */
@@ -1211,6 +1242,38 @@ export interface operations {
                 };
             };
             /** @description `fuera_de_turno` o `sin_consentimiento` (RN-18). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    app_turno_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TurnoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TurnoRequest"];
+                "multipart/form-data": components["schemas"]["TurnoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilConductor"];
+                };
+            };
+            /** @description `en_viaje` (RN-03), `sin_consentimiento` (RN-18), `licencia_vencida`, `sin_vehiculo`, `elegir_vehiculo` (RN-05), `vehiculo_no_disponible` o `vehiculo_ocupado`. */
             409: {
                 headers: {
                     [name: string]: unknown;
