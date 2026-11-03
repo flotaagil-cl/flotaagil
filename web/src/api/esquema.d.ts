@@ -1196,6 +1196,11 @@ export interface components {
             /** Format: date-time */
             hora_estimada?: string | null;
             estado_vuelo?: components["schemas"]["EstadoVueloEnum"];
+            /**
+             * Format: date-time
+             * @description Última consulta a la API de vuelos; null = sin verificar (HU-26).
+             */
+            ultima_consulta_en?: string | null;
         };
         VueloEntradaRequest: {
             /** @description Código IATA, p. ej. LA123 o H2 456. */

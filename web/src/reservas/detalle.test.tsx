@@ -142,3 +142,17 @@ describe('cancelar con motivo (CP-06)', () => {
     await waitFor(() => expect(screen.getByRole('row', { name: /Rita Ruiz/ })).toHaveTextContent('Cancelado'));
   });
 });
+
+describe('vuelo verificado (HU-26)', () => {
+  it('indica si el vuelo se verificó con la API de vuelos', async () => {
+    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const };
+    await abrirDetalle(viajeDePrueba({ id: 8, sentido: 'DESDE_AEROPUERTO', vuelo: { ...vuelo, ultima_consulta_en: '2026-07-15T10:00:00Z' } }));
+    expect(screen.getByText('Verificado con la API de vuelos el mié 15-07-2026 06:00')).toBeInTheDocument();
+  });
+
+  it('o si quedó sin verificar', async () => {
+    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, ultima_consulta_en: null };
+    await abrirDetalle(viajeDePrueba({ id: 9, sentido: 'DESDE_AEROPUERTO', vuelo }));
+    expect(screen.getByText('Sin verificar: la API de vuelos no respondió al registrarlo')).toBeInTheDocument();
+  });
+});

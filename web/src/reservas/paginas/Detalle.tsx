@@ -116,6 +116,11 @@ function DetalleDe({ id }: { id: number }) {
                 {viaje.vuelo.numero} · llegada programada {formatearFechaHora(viaje.vuelo.hora_programada)}
                 {viaje.vuelo.hora_estimada && ` · estimada ${formatearFechaHora(viaje.vuelo.hora_estimada)}`}
                 {viaje.vuelo.estado_vuelo && ` · ${ESTADOS_VUELO[viaje.vuelo.estado_vuelo]}`}
+                <span className={estilos.secundario}>
+                  {viaje.vuelo.ultima_consulta_en
+                    ? `Verificado con la API de vuelos el ${formatearFechaHora(viaje.vuelo.ultima_consulta_en)}`
+                    : 'Sin verificar: la API de vuelos no respondió al registrarlo'}
+                </span>
               </dd>
             </div>
           )}
