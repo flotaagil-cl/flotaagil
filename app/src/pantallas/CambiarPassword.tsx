@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { cloneElement, useState, type FormEvent, type ReactElement } from 'react';
 import { ErrorApi, SinRed, type SesionApp } from '../sesion/sesion';
 
 const MINIMO = 10;
@@ -34,9 +34,6 @@ export function CambiarPassword({ sesion, nombre }: { sesion: SesionApp; nombre:
     }
   }
 
-  const campo = (clave: string) =>
-    errores[clave] ? { 'aria-invalid': true as const, 'aria-describedby': `error-${clave}` } : {};
-
   return (
     <main>
       <h1>Crea tu contraseña</h1>
@@ -47,25 +44,20 @@ export function CambiarPassword({ sesion, nombre }: { sesion: SesionApp; nombre:
         </p>
       )}
       <form onSubmit={cambiar} noValidate>
-        <label>
-          Contraseña temporal
-          <input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} {...campo('password_actual')} />
-          {errores.password_actual && <span id="error-password_actual" className="campo-error">{errores.password_actual}</span>}
-        </label>
-        <label>
-          Nueva contraseña
-          <input type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} {...campo('password_nueva')} />
-          {errores.password_nueva ? (
-            <span id="error-password_nueva" className="campo-error">{errores.password_nueva}</span>
-          ) : (
-            <span className="secundario">Al menos {MINIMO} caracteres; evita solo números o palabras comunes.</span>
-          )}
-        </label>
-        <label>
-          Repite la nueva contraseña
-          <input type="password" autoComplete="new-password" value={repetida} onChange={(e) => setRepetida(e.target.value)} {...campo('repetida')} />
-          {errores.repetida && <span id="error-repetida" className="campo-error">{errores.repetida}</span>}
-        </label>
+        <Campo id="password_actual" etiqueta="Contraseña temporal" error={errores.password_actual}>
+          <input type="password" autoComplete="current-password" value={actual} onChange={(e) => setActual(e.target.value)} />
+        </Campo>
+        <Campo
+          id="password_nueva"
+          etiqueta="Nueva contraseña"
+          error={errores.password_nueva}
+          ayuda={`Al menos ${MINIMO} caracteres; evita solo números o palabras comunes.`}
+        >
+          <input type="password" autoComplete="new-password" value={nueva} onChange={(e) => setNueva(e.target.value)} />
+        </Campo>
+        <Campo id="repetida" etiqueta="Repite la nueva contraseña" error={errores.repetida}>
+          <input type="password" autoComplete="new-password" value={repetida} onChange={(e) => setRepetida(e.target.value)} />
+        </Campo>
         <button className="principal" type="submit" disabled={enviando}>
           {enviando ? 'Guardando…' : 'Guardar y continuar'}
         </button>
@@ -76,5 +68,27 @@ export function CambiarPassword({ sesion, nombre }: { sesion: SesionApp; nombre:
         </button>
       </div>
     </main>
+  );
+}
+
+/** Etiqueta y control; la ayuda y el error van fuera de la etiqueta, enlazados con aria-describedby. */
+function Campo({ id, etiqueta, error, ayuda, children }: { id: string; etiqueta: string; error?: string; ayuda?: string; children: ReactElement<Record<string, unknown>> }) {
+  const descripcion = error ? `${id}-error` : ayuda ? `${id}-ayuda` : undefined;
+  return (
+    <div className="campo">
+      <label htmlFor={id}>{etiqueta}</label>
+      {cloneElement(children, { id, 'aria-invalid': error ? true : undefined, 'aria-describedby': descripcion })}
+      {error ? (
+        <span id={`${id}-error`} className="campo-error">
+          {error}
+        </span>
+      ) : (
+        ayuda && (
+          <span id={`${id}-ayuda`} className="secundario">
+            {ayuda}
+          </span>
+        )
+      )}
+    </div>
   );
 }

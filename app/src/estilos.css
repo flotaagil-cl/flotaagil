@@ -25,11 +25,16 @@ h2 {
   margin-top: 1.5rem;
 }
 
-label {
+label,
+.campo {
   display: grid;
   gap: 0.3rem;
   margin-top: 0.9rem;
   font-weight: 500;
+}
+
+.campo label {
+  margin-top: 0;
 }
 
 input {
@@ -126,4 +131,8 @@ dt {
 
 dd {
   margin: 0;
+}
+
+.tarjeta h2 {
+  margin-top: 0;
 }
