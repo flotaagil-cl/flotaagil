@@ -53,6 +53,25 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe('aviso de cambio del viaje', () => {
+  it('avisa a los oyentes hasta que se dan de baja', async () => {
+    SocketFalso.creados = [];
+    const crear = (url: string, protocolos: string[]) => new SocketFalso(url, protocolos);
+    const canal = new CanalConductor('ws://x/', { access: 'a', renovar: async () => 'a' }, crear);
+    let avisos = 0;
+    const baja = canal.alCambiarViaje(() => (avisos += 1));
+    canal.iniciar();
+    await vi.waitFor(() => expect(SocketFalso.creados).toHaveLength(1));
+    const socket = SocketFalso.creados[0];
+    socket.abrir();
+    socket.enviar({ tipo: 'viaje', viaje: 8 });
+    baja();
+    socket.enviar({ tipo: 'viaje', viaje: 8 });
+    canal.detener();
+    expect(avisos).toBe(1);
+  });
+});
+
 describe('canal del conductor (HU-14)', () => {
   it('URL ws/wss según la API', () => {
     expect(urlDelCanal('http://10.0.2.2:8000')).toBe('ws://10.0.2.2:8000/ws/conductor/');

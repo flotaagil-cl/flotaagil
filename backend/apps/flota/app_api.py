@@ -178,6 +178,10 @@ class PosicionesView(_VistaApp):
             if recibidas:
                 # HU-02: el mapa recibe la posición más reciente del lote.
                 notificar_conductor(conductor)
+                # HU-16: EN_ZONA automático por geocerca (import aquí: reservas depende de flota).
+                from apps.reservas.ejecucion import marcar_en_zona
+
+                marcar_en_zona(conductor, validas)
         return Response(
             {"recibidas": recibidas, "repetidas": len(validas) - recibidas, "descartadas": descartadas},
             status=status.HTTP_201_CREATED,
@@ -302,6 +306,8 @@ class ViajeActivoSerializer(serializers.Serializer):
     origen = PuntoSerializer()
     destino = PuntoSerializer()
     vuelo = serializers.CharField(allow_null=True, help_text="Número de vuelo, si es desde el aeropuerto")
+    tarifa = serializers.IntegerField(allow_null=True, help_text="Tarifa acordada (CLP), si la hay")
+    convenio = serializers.BooleanField(help_text="El viaje pertenece a un convenio")
     hacia = PuntoSerializer(
         help_text="A dónde navegar ahora: el origen hasta subir el pasajero, luego el destino"
     )
@@ -346,6 +352,8 @@ class ViajeActivoView(_VistaApp):
                     "origen": origen,
                     "destino": destino,
                     "vuelo": getattr(getattr(viaje, "vuelo", None), "numero", None),
+                    "tarifa": viaje.tarifa,
+                    "convenio": viaje.convenio_id is not None,
                     "hacia": destino if viaje.estado == EstadoViaje.PASAJERO_A_BORDO else origen,
                 }
             }

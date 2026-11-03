@@ -1,7 +1,7 @@
 """PASAJERO, VIAJE e HISTORIAL_ESTADO, según docs/diccionario-datos.md."""
 
 from django.contrib.gis.db import models as gis
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Now
@@ -272,3 +272,39 @@ class Asignacion(models.Model):
 
     def __str__(self):
         return f"Viaje {self.viaje_id} → conductor {self.conductor_id}"
+
+
+class MetodoPago(models.TextChoices):
+    EFECTIVO = "EFECTIVO", "Efectivo"
+    TARJETA = "TARJETA", "Tarjeta"
+    TRANSFERENCIA = "TRANSFERENCIA", "Transferencia"
+    CONVENIO = "CONVENIO", "Convenio"
+
+
+MONTO_MAXIMO = 500_000
+
+
+class PagoViaje(models.Model):
+    """PAGO_VIAJE (Anexo D). RN-10: ningún viaje se finaliza sin método de pago y monto."""
+
+    viaje = models.OneToOneField(Viaje, on_delete=models.PROTECT, related_name="pago")
+    metodo = models.CharField(max_length=14, choices=MetodoPago.choices)
+    monto = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(MONTO_MAXIMO)])
+    registrado_en = models.DateTimeField(db_default=Now(), editable=False)
+    corregido_por = models.ForeignKey(
+        "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "pago_viaje"
+        verbose_name = "pago de viaje"
+        verbose_name_plural = "pagos de viajes"
+        constraints = [
+            models.CheckConstraint(condition=Q(metodo__in=MetodoPago.values), name="pago_metodo_valido"),
+            models.CheckConstraint(
+                condition=Q(monto__gte=0, monto__lte=MONTO_MAXIMO), name="pago_monto_rango"
+            ),
+        ]
+
+    def __str__(self):
+        return f"Viaje {self.viaje_id}: {self.metodo} {self.monto}"

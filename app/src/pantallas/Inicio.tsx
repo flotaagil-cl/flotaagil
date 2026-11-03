@@ -1,3 +1,4 @@
+import type { Accion } from '../conductor/ejecucion';
 import { useEffect, useState } from 'react';
 import type { EstadoEnvio } from '../gps/envio';
 import type { EstadoRastreo } from '../gps/turno';
@@ -6,6 +7,7 @@ import { vehiculoParaTurno, type Perfil } from '../perfil';
 import type { Asignacion } from '../conductor/canal';
 import type { ViajeActivo } from '../navegacion';
 import type { Usuario } from '../sesion/sesion';
+import { AvanceViaje, type Pago } from './AvanceViaje';
 import { ViajeEnCurso } from './ViajeEnCurso';
 
 const ESTADOS = { DISPONIBLE: 'Disponible', NO_DISPONIBLE: 'No disponible', EN_VIAJE: 'En viaje' } as const;
@@ -14,6 +16,7 @@ interface Props {
   usuario: Usuario;
   perfil: Perfil;
   viaje: ViajeActivo | null;
+  avanzar: (accion: Accion | 'finalizar', pago?: Pago) => Promise<string | null>;
   asignacion: Asignacion | null;
   verAsignacion: () => void;
   envio: EstadoEnvio;
@@ -26,7 +29,7 @@ interface Props {
 }
 
 /** Inicio del conductor: empezar o terminar el turno con su vehículo (HU-13) y estado del GPS. */
-export function Inicio({ usuario, perfil, viaje, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, abrirAjustes, cerrarSesion }: Props) {
+export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, abrirAjustes, cerrarSesion }: Props) {
   const enTurno = perfil.estado !== 'NO_DISPONIBLE';
   const [elegido, setElegido] = useState<number | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -60,7 +63,11 @@ export function Inicio({ usuario, perfil, viaje, asignacion, verAsignacion, envi
           </button>
         </p>
       )}
-      {viaje && <ViajeEnCurso viaje={viaje} />}
+      {viaje && (
+        <ViajeEnCurso viaje={viaje}>
+          <AvanceViaje key={`${viaje.id}-${viaje.estado}`} viaje={viaje} avanzar={avanzar} />
+        </ViajeEnCurso>
+      )}
 
       <div className="tarjeta">
         <h2>Turno</h2>

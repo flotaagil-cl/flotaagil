@@ -1,5 +1,5 @@
 import { AppLauncher } from '@capacitor/app-launcher';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { horaDeChile } from '../hora';
 import { enlaceGoogleMaps, enlaceWaze, type ViajeActivo } from '../navegacion';
 
@@ -10,8 +10,11 @@ const ETAPAS = {
   PASAJERO_A_BORDO: 'Pasajero a bordo',
 } as const;
 
-/** Viaje en curso con los botones para navegar (HU-17): al origen hasta subir el pasajero, luego al destino. */
-export function ViajeEnCurso({ viaje }: { viaje: ViajeActivo }) {
+/**
+ * Viaje en curso con los botones para navegar (HU-17): al origen hasta subir el pasajero, luego al destino. Debajo,
+ * el avance del viaje (HU-16).
+ */
+export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children?: ReactNode }) {
   const [falla, setFalla] = useState(false);
   const aBordo = viaje.estado === 'PASAJERO_A_BORDO';
 
@@ -56,6 +59,7 @@ export function ViajeEnCurso({ viaje }: { viaje: ViajeActivo }) {
           Waze
         </button>
       </div>
+      {children}
     </div>
   );
 }

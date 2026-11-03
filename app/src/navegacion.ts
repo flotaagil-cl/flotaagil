@@ -30,5 +30,7 @@ export interface ViajeActivo {
   origen: Punto;
   destino: Punto;
   vuelo: string | null;
+  tarifa: number | null;
+  convenio: boolean;
   hacia: Punto;
 }

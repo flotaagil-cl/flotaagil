@@ -220,6 +220,22 @@ ORIGEN_POR_ROL = {
 }
 
 
+def _liberar_conductor(conductor, viaje: Viaje) -> None:
+    """El viaje cancelado ya no ocupa al conductor: vuelve a Disponible y la app se entera."""
+    from apps.flota.models import Conductor, EstadoConductor
+    from apps.flota.tiempo_real import notificar_conductor
+
+    from .ejecucion import avisar_viaje_actualizado
+
+    Conductor.objects.filter(pk=conductor.pk, estado=EstadoConductor.EN_VIAJE).update(
+        estado=EstadoConductor.DISPONIBLE
+    )
+    conductor.refresh_from_db()
+    notificar_conductor(conductor)
+    conductor_id, viaje_id = conductor.pk, viaje.pk
+    transaction.on_commit(lambda: avisar_viaje_actualizado(conductor_id, viaje_id))
+
+
 def cancelar_viaje(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
     """Cancelación desde el panel: exige motivo, registra el historial y la auditoría.
 
@@ -228,6 +244,7 @@ def cancelar_viaje(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
     if viaje.estado not in estados.CANCELABLES:
         raise ConflictoEstado(f"Una reserva en estado {viaje.estado} no se puede cancelar desde aquí.")
     estado_previo = viaje.estado
+    conductor = viaje.conductor
     with transaction.atomic():
         try:
             viaje = estados.transicionar(
@@ -248,4 +265,6 @@ def cancelar_viaje(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
             motivo=motivo,
             datos_previos={"estado": estado_previo},
         )
+        if conductor is not None:
+            _liberar_conductor(conductor, viaje)
     return viaje

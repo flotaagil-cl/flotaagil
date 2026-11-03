@@ -15,6 +15,8 @@ import { Login } from './pantallas/Login';
 import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
 import { alertar, pedirPermisoDeNotificaciones } from './conductor/alerta';
+import type { Accion } from './conductor/ejecucion';
+import type { Pago } from './pantallas/AvanceViaje';
 import type { EstadoCanal } from './conductor/canal';
 import { Responder } from './pantallas/Responder';
 import { ViajeAsignado } from './pantallas/ViajeAsignado';
@@ -86,6 +88,12 @@ export default function App() {
     if (asignacionId !== null) void cargarPerfil();
   }, [asignacionId, cargarPerfil]);
 
+  // HU-16: EN_ZONA automático o cancelación desde el panel. Al reconectarse también, por si se perdió el aviso.
+  useEffect(() => canal.alCambiarViaje(() => void cargarPerfil()), [cargarPerfil]);
+  useEffect(() => {
+    if (enVivo.conectado) void cargarPerfil();
+  }, [enVivo.conectado, cargarPerfil]);
+
   const modo = activa ? modoDeRastreo(perfil) : null;
   useEffect(() => {
     if (modo) void rastreador.iniciar(modo);
@@ -122,6 +130,24 @@ export default function App() {
         return error.message;
       }
       return 'No se pudo registrar tu respuesta.';
+    }
+  }
+
+  /** HU-16: paso siguiente del viaje en curso. Devuelve el mensaje de error o null. */
+  async function avanzarViaje(accion: Accion | 'finalizar', pago?: Pago): Promise<string | null> {
+    if (!viaje) return null;
+    try {
+      await api.pedir('POST', `/api/app/viajes/${viaje.id}/${accion}/`, pago);
+      await cargarPerfil();
+      return null;
+    } catch (error) {
+      if (error instanceof SinRed) return 'No se pudo conectar con el servidor. Intenta de nuevo.';
+      if (error instanceof ErrorApi && error.estado === 409) {
+        // El viaje cambió por otro lado (por ejemplo, se canceló): se muestra lo que hay ahora.
+        void cargarPerfil();
+        return error.message;
+      }
+      return 'No se pudo registrar el cambio.';
     }
   }
 
@@ -185,6 +211,7 @@ export default function App() {
       usuario={estado.usuario}
       perfil={perfil}
       viaje={viaje}
+      avanzar={avanzarViaje}
       asignacion={enVivo.asignacion}
       verAsignacion={() => setAvisoOculto(null)}
       envio={envio}

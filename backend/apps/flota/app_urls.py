@@ -10,6 +10,9 @@ urlpatterns = [
     path("posiciones/", app_api.PosicionesView.as_view(), name="app-posiciones"),
     path("turno/", app_api.TurnoView.as_view(), name="app-turno"),
     path("viaje-activo/", app_api.ViajeActivoView.as_view(), name="app-viaje-activo"),
+    path("viajes/<int:pk>/en-camino/", asignaciones.EnCaminoView.as_view(), name="app-en-camino"),
+    path("viajes/<int:pk>/a-bordo/", asignaciones.ABordoView.as_view(), name="app-a-bordo"),
+    path("viajes/<int:pk>/finalizar/", asignaciones.FinalizarView.as_view(), name="app-finalizar"),
     path("asignaciones/<int:pk>/aceptar/", asignaciones.AceptarView.as_view(), name="app-aceptar"),
     path("asignaciones/<int:pk>/rechazar/", asignaciones.RechazarView.as_view(), name="app-rechazar"),
 ]

@@ -30,6 +30,7 @@ export interface Asignacion {
 type Mensaje =
   | { tipo: 'asignado'; asignacion: Asignacion }
   | { tipo: 'sin_asignacion'; asignacion: number }
+  | { tipo: 'viaje'; viaje: number }
   | { tipo: 'pong' };
 
 export interface SocketMinimo {
@@ -63,6 +64,7 @@ export class CanalConductor {
   private estadoActual: EstadoCanal = { conectado: false, asignacion: null };
   private oyentes = new Set<(estado: EstadoCanal) => void>();
   private alAsignar = new Set<(asignacion: Asignacion) => void>();
+  private alCambiar = new Set<() => void>();
 
   constructor(
     private readonly url: string,
@@ -84,6 +86,12 @@ export class CanalConductor {
   alRecibirAsignacion(oyente: (asignacion: Asignacion) => void): () => void {
     this.alAsignar.add(oyente);
     return () => this.alAsignar.delete(oyente);
+  }
+
+  /** El viaje cambió sin que lo pidiera la app (EN_ZONA automático, cancelación desde el panel). */
+  alCambiarViaje(oyente: () => void): () => void {
+    this.alCambiar.add(oyente);
+    return () => this.alCambiar.delete(oyente);
   }
 
   private publicar(cambios: Partial<EstadoCanal>) {
@@ -148,6 +156,7 @@ export class CanalConductor {
       if (nueva) this.alAsignar.forEach((oyente) => oyente(mensaje.asignacion));
     }
     if (mensaje.tipo === 'sin_asignacion') this.olvidar(mensaje.asignacion);
+    if (mensaje.tipo === 'viaje') this.alCambiar.forEach((oyente) => oyente());
   }
 }
 
