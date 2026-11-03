@@ -103,6 +103,9 @@ Para que la app use WebSocket sin cifrar hacia el PC, compila con `FLOTAAGIL_DES
 2. En el panel, crea una reserva y en su ficha pulsa **Asignar conductor…** → **Asignar**. **Esperado:** la app muestra «Nuevo viaje asignado» con los datos y «Responde en 60 s», suenan tres pitidos y el teléfono vibra.
 3. Repite con la app en segundo plano (botón Inicio) y la pantalla apagada. **Esperado:** llega una notificación «Nuevo viaje asignado» con sonido, y al tocarla se abre la app con el aviso.
 
+4. Con un viaje asignado, pulsa **Aceptar**. **Esperado:** aparece «Viaje en curso» y el GPS pasa a una posición cada 10 s.
+5. Asigna otro viaje a un conductor libre y pulsa **Rechazar**, o no respondas durante 60 s. **Esperado:** el aviso se cierra y la reserva vuelve a Solicitado en el panel.
+
 ## 6. Prueba C: sin señal y vuelta
 
 1. Con la app en turno, activa el **modo avión** 3 minutos y luego desactívalo.
