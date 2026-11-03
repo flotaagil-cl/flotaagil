@@ -106,6 +106,10 @@ Para que la app use WebSocket sin cifrar hacia el PC, compila con `FLOTAAGIL_DES
 4. Con un viaje asignado, pulsa **Aceptar**. **Esperado:** aparece «Viaje en curso» y el GPS pasa a una posición cada 10 s.
 5. Asigna otro viaje a un conductor libre y pulsa **Rechazar**, o no respondas durante 60 s. **Esperado:** el aviso se cierra y la reserva vuelve a Solicitado en el panel.
 
+6. Con el viaje aceptado, pulsa **Voy en camino** y acércate a menos de 150 m del punto de recogida. **Esperado:** sin tocar nada, aparece «Llegaste al punto de recogida». Si no aparece, anota la precisión del GPS y pulsa **Pasajero a bordo** igual.
+7. Pulsa **Pasajero a bordo**, elige el método de pago, escribe el monto y pulsa **Finalizar viaje**. **Esperado:** el viaje desaparece y el estado vuelve a Disponible.
+8. Si tras pulsar un botón la pantalla no cambia, anota la hora y pulsa **Actualizar**: es el fallo intermitente registrado en `docs/evidencias/HU-16/resultados.md`.
+
 ## 6. Prueba C: sin señal y vuelta
 
 1. Con la app en turno, activa el **modo avión** 3 minutos y luego desactívalo.

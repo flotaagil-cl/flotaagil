@@ -19,6 +19,8 @@ Agregados y desvíos de la implementación respecto de [`diccionario-datos.md`](
 | DC-13 | 2026-11-03 | Agregado | AUDITORIA | `entidad` agrega `VEHICULO` y `CONDUCTOR` | HU-10 audita el alta, la edición y la desactivación de vehículos y los cambios de datos y vehículos de los conductores | Implementado (feat/HU-10-flota) |
 | DC-14 | 2026-11-03 | Agregado | USUARIO | `debe_cambiar_password` BOOLEAN NOT NULL (defecto false) y `password_temporal_vence` TIMESTAMPTZ NULL | Contraseña temporal que genera el administrador para el conductor (HU-10): obliga a cambiarla y vence si no se usa | Implementado (feat/HU-10-flota) |
 | DC-15 | 2026-11-03 | Agregado | POSICION_GPS | Restricción única (`conductor_id`, `registrada_en`) e índice (`conductor_id`, `registrada_en` desc) | La app reenvía un lote si no supo si llegó (red móvil, segundo plano): la restricción evita duplicados; el índice sirve a la última posición del conductor (HU-02) | Implementado (chore/app-base) |
+| DC-16 | 2026-11-03 | Supuesto | CONFIGURACION_EMPRESA | `precision_geocerca_m` SMALLINT NOT NULL, defecto 50 | Precisión máxima de una posición para marcar EN_ZONA. El PoC H-3 (A7) observó posiciones de ±88 a ±1400 m al iniciar bajo techo, que marcarían una llegada falsa; configurable por empresa | Implementado (feat/HU-16-estados-pago) |
+| DC-17 | 2026-11-03 | Supuesto | HISTORIAL_ESTADO | Sin cambio de columnas: EN_ZONA puede tener actor CONDUCTOR además de SISTEMA | Si la geocerca no marca la llegada (GPS impreciso), el conductor no queda bloqueado: «Pasajero a bordo» registra EN_ZONA con actor CONDUCTOR y luego PASAJERO_A_BORDO. El informe dice que EN_ZONA es automático: pendiente de aceptación del PO | Implementado (feat/HU-16-estados-pago) |
 
 ## DC-01 · EMPRESA.slug
 
