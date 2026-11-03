@@ -18,6 +18,7 @@ Agregados y desvíos de la implementación respecto de [`diccionario-datos.md`](
 | DC-12 | 2026-10-29 | Supuesto | VUELO | Sin distinción nacional/internacional: la recogida calculada (RN-17) usa `margen_nacional_min` | El Anexo D no tiene columna que distinga el tipo de vuelo | Implementado (feat/HU-19-portal); revisar en HU-27 |
 | DC-13 | 2026-11-03 | Agregado | AUDITORIA | `entidad` agrega `VEHICULO` y `CONDUCTOR` | HU-10 audita el alta, la edición y la desactivación de vehículos y los cambios de datos y vehículos de los conductores | Implementado (feat/HU-10-flota) |
 | DC-14 | 2026-11-03 | Agregado | USUARIO | `debe_cambiar_password` BOOLEAN NOT NULL (defecto false) y `password_temporal_vence` TIMESTAMPTZ NULL | Contraseña temporal que genera el administrador para el conductor (HU-10): obliga a cambiarla y vence si no se usa | Implementado (feat/HU-10-flota) |
+| DC-15 | 2026-11-03 | Agregado | POSICION_GPS | Restricción única (`conductor_id`, `registrada_en`) e índice (`conductor_id`, `registrada_en` desc) | La app reenvía un lote si no supo si llegó (red móvil, segundo plano): la restricción evita duplicados; el índice sirve a la última posición del conductor (HU-02) | Implementado (chore/app-base) |
 
 ## DC-01 · EMPRESA.slug
 

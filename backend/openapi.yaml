@@ -4,6 +4,69 @@ info:
   version: 0.1.0
   description: 'API de FlotaÁgil: panel web, portal del pasajero y app del conductor.'
 paths:
+  /api/app/consentimiento/:
+    post:
+      operationId: app_consentimiento_create
+      description: Guarda la fecha de aceptación. Si ya estaba aceptado, la conserva.
+      summary: Aceptar el tratamiento de la ubicación (RN-18)
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilConductor'
+          description: ''
+  /api/app/perfil/:
+    get:
+      operationId: app_perfil_retrieve
+      summary: Perfil del conductor de la sesión
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PerfilConductor'
+          description: ''
+  /api/app/posiciones/:
+    post:
+      operationId: app_posiciones_create
+      description: 'Hasta 100 posiciones por lote. Idempotente: reenviar el mismo
+        lote no duplica (única por conductor e instante). Se asocian al viaje en curso
+        del conductor, si hay uno.'
+      summary: Enviar un lote de posiciones GPS
+      tags:
+      - app
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LotePosicionesRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LotePosicionesRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LotePosicionesRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultadoLote'
+          description: ''
+        '409':
+          description: '`fuera_de_turno` o `sin_consentimiento` (RN-18).'
   /api/auth/app/logout/:
     post:
       operationId: auth_app_logout_create
@@ -1286,7 +1349,7 @@ components:
           readOnly: true
         estado:
           allOf:
-          - $ref: '#/components/schemas/ConductorEstadoEnum'
+          - $ref: '#/components/schemas/EstadoConductorEnum'
           readOnly: true
         vehiculo_activo:
           allOf:
@@ -1367,16 +1430,6 @@ components:
       - nombre
       - rut
       - telefono
-    ConductorEstadoEnum:
-      enum:
-      - DISPONIBLE
-      - NO_DISPONIBLE
-      - EN_VIAJE
-      type: string
-      description: |-
-        * `DISPONIBLE` - Disponible
-        * `NO_DISPONIBLE` - No disponible
-        * `EN_VIAJE` - En viaje
     ConductorResumen:
       type: object
       properties:
@@ -1448,6 +1501,16 @@ components:
       required:
       - code
       - detail
+    EstadoConductorEnum:
+      enum:
+      - DISPONIBLE
+      - NO_DISPONIBLE
+      - EN_VIAJE
+      type: string
+      description: |-
+        * `DISPONIBLE` - Disponible
+        * `NO_DISPONIBLE` - No disponible
+        * `EN_VIAJE` - En viaje
     EstadoViajeEnum:
       enum:
       - PENDIENTE_CONFIRMACION
@@ -1587,6 +1650,15 @@ components:
       required:
       - email
       - password
+    LotePosicionesRequest:
+      type: object
+      properties:
+        posiciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosicionRequest'
+      required:
+      - posiciones
     NullEnum:
       enum:
       - null
@@ -1780,6 +1852,66 @@ components:
           allOf:
           - $ref: '#/components/schemas/VueloEntradaRequest'
           nullable: true
+    PerfilConductor:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/EstadoConductorEnum'
+          readOnly: true
+        vehiculo_activo:
+          allOf:
+          - $ref: '#/components/schemas/VehiculoDeclarado'
+          readOnly: true
+          nullable: true
+        consentimiento_gps_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vehiculos:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehiculoAsociado'
+          readOnly: true
+      required:
+      - consentimiento_gps_en
+      - estado
+      - id
+      - nombre
+      - vehiculo_activo
+      - vehiculos
+    PosicionRequest:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        lon:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        precision_m:
+          type: number
+          format: double
+          minimum: 0
+          nullable: true
+        registrada_en:
+          type: string
+          format: date-time
+      required:
+      - lat
+      - lon
+      - registrada_en
     RefreshRequest:
       type: object
       properties:
@@ -1788,6 +1920,23 @@ components:
           minLength: 1
       required:
       - refresh
+    ResultadoLote:
+      type: object
+      properties:
+        recibidas:
+          type: integer
+          description: Guardadas ahora
+        repetidas:
+          type: integer
+          description: Ya estaban (reenvío del mismo lote)
+        descartadas:
+          type: integer
+          description: 'Precisión > 500 m, del futuro o más antiguas que la retención:
+            no se guardan'
+      required:
+      - descartadas
+      - recibidas
+      - repetidas
     RolEnum:
       enum:
       - ADMINISTRADOR

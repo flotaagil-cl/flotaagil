@@ -139,6 +139,9 @@ SIMPLE_JWT = {
     "SIGNING_KEY": SECRET_KEY,
 }
 
+# RN-15: las posiciones GPS se conservan 30 días; la app no puede enviar posiciones más antiguas.
+RETENCION_POSICIONES_DIAS = 30
+
 # Contraseña temporal que genera el administrador (HU-10): vence si no se cambia en este plazo.
 PASSWORD_TEMPORAL_HORAS = env.int("PASSWORD_TEMPORAL_HORAS", default=72)
 
@@ -173,6 +176,7 @@ SPECTACULAR_SETTINGS = {
         "EstadoViajeEnum": "apps.reservas.models.EstadoViaje",
         "CanalEnum": "apps.reservas.models.Canal",
         "CanalPanelEnum": ["TELEFONO", "WHATSAPP", "CONVENIO"],
+        "EstadoConductorEnum": "apps.flota.models.EstadoConductor",
     },
 }
 

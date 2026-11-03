@@ -4,6 +4,63 @@
  */
 
 export interface paths {
+    "/api/app/consentimiento/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aceptar el tratamiento de la ubicación (RN-18)
+         * @description Guarda la fecha de aceptación. Si ya estaba aceptado, la conserva.
+         */
+        post: operations["app_consentimiento_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/perfil/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Perfil del conductor de la sesión */
+        get: operations["app_perfil_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/posiciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enviar un lote de posiciones GPS
+         * @description Hasta 100 posiciones por lote. Idempotente: reenviar el mismo lote no duplica (única por conductor e instante). Se asocian al viaje en curso del conductor, si hay uno.
+         */
+        post: operations["app_posiciones_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/app/logout/": {
         parameters: {
             query?: never;
@@ -627,7 +684,7 @@ export interface components {
             /** Format: date */
             readonly licencia_vence: string;
             readonly licencia_vigente: boolean;
-            readonly estado: components["schemas"]["ConductorEstadoEnum"];
+            readonly estado: components["schemas"]["EstadoConductorEnum"];
             readonly vehiculo_activo: components["schemas"]["VehiculoDeclarado"] | null;
             /** Format: date-time */
             readonly consentimiento_gps_en: string | null;
@@ -650,13 +707,6 @@ export interface components {
             /** Format: email */
             email: string;
         };
-        /**
-         * @description * `DISPONIBLE` - Disponible
-         *     * `NO_DISPONIBLE` - No disponible
-         *     * `EN_VIAJE` - En viaje
-         * @enum {string}
-         */
-        ConductorEstadoEnum: "DISPONIBLE" | "NO_DISPONIBLE" | "EN_VIAJE";
         ConductorResumen: {
             id: number;
             nombre: string;
@@ -682,6 +732,13 @@ export interface components {
             detail: string;
             code: string;
         };
+        /**
+         * @description * `DISPONIBLE` - Disponible
+         *     * `NO_DISPONIBLE` - No disponible
+         *     * `EN_VIAJE` - En viaje
+         * @enum {string}
+         */
+        EstadoConductorEnum: "DISPONIBLE" | "NO_DISPONIBLE" | "EN_VIAJE";
         /**
          * @description * `PENDIENTE_CONFIRMACION` - Pendiente de confirmación
          *     * `SOLICITADO` - Solicitado
@@ -751,6 +808,9 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+        };
+        LotePosicionesRequest: {
+            posiciones: components["schemas"]["PosicionRequest"][];
         };
         /** @enum {unknown} */
         NullEnum: null;
@@ -851,8 +911,35 @@ export interface components {
             tarifa?: number | null;
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
         };
+        PerfilConductor: {
+            readonly id: number;
+            readonly nombre: string;
+            readonly estado: components["schemas"]["EstadoConductorEnum"];
+            readonly vehiculo_activo: components["schemas"]["VehiculoDeclarado"] | null;
+            /** Format: date-time */
+            readonly consentimiento_gps_en: string | null;
+            readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
+        };
+        PosicionRequest: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+            /** Format: double */
+            precision_m?: number | null;
+            /** Format: date-time */
+            registrada_en: string;
+        };
         RefreshRequest: {
             refresh: string;
+        };
+        ResultadoLote: {
+            /** @description Guardadas ahora */
+            recibidas: number;
+            /** @description Ya estaban (reenvío del mismo lote) */
+            repetidas: number;
+            /** @description Precisión > 500 m, del futuro o más antiguas que la retención: no se guardan */
+            descartadas: number;
         };
         /**
          * @description * `ADMINISTRADOR` - Administrador
@@ -1062,6 +1149,76 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    app_consentimiento_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilConductor"];
+                };
+            };
+        };
+    };
+    app_perfil_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerfilConductor"];
+                };
+            };
+        };
+    };
+    app_posiciones_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LotePosicionesRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LotePosicionesRequest"];
+                "multipart/form-data": components["schemas"]["LotePosicionesRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultadoLote"];
+                };
+            };
+            /** @description `fuera_de_turno` o `sin_consentimiento` (RN-18). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     auth_app_logout_create: {
         parameters: {
             query?: never;

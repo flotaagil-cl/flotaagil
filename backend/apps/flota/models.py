@@ -1,5 +1,6 @@
 """CONDUCTOR, VEHICULO y CONDUCTOR_VEHICULO, según docs/diccionario-datos.md."""
 
+from django.contrib.gis.db import models as gis
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -122,3 +123,41 @@ class ConductorVehiculo(models.Model):
 
     def __str__(self):
         return f"{self.conductor} / {self.vehiculo}"
+
+
+class PosicionGps(models.Model):
+    """POSICION_GPS (Anexo D). Solo en turno y con consentimiento (RN-18). Retención 30 días (RN-15).
+
+    DC-15: única por (conductor, registrada_en), para que la app pueda reenviar un lote sin duplicar.
+    """
+
+    conductor = models.ForeignKey(Conductor, on_delete=models.CASCADE, related_name="posiciones")
+    viaje = models.ForeignKey(
+        "reservas.Viaje", on_delete=models.SET_NULL, null=True, blank=True, related_name="posiciones"
+    )
+    punto = gis.PointField(geography=True, srid=4326)
+    precision_m = models.PositiveSmallIntegerField(null=True, blank=True, validators=[MaxValueValidator(500)])
+    registrada_en = models.DateTimeField()
+
+    class Meta:
+        db_table = "posicion_gps"
+        verbose_name = "posición GPS"
+        verbose_name_plural = "posiciones GPS"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conductor", "registrada_en"], name="posicion_unica_por_instante"
+            ),
+            models.CheckConstraint(
+                condition=Q(precision_m__isnull=True) | Q(precision_m__lte=500),
+                name="posicion_precision_0_500",
+            ),
+        ]
+        indexes = [models.Index(fields=["conductor", "-registrada_en"], name="posicion_conductor_reciente")]
+
+    def __str__(self):
+        return f"{self.conductor_id} @ {self.registrada_en:%Y-%m-%d %H:%M:%S}"
+
+    @property
+    def confiable(self) -> bool:
+        """El Anexo D marca como no confiable una precisión mayor a 100 m."""
+        return self.precision_m is not None and self.precision_m <= 100
