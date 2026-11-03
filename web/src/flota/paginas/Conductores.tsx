@@ -1,9 +1,11 @@
 import { Link } from 'react-router';
+import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import campos from '../../formularios/formularios.module.css';
 import { formatearFecha, hoy } from '../../hora/hora';
 import { useConductores, type ConsultaConductores, type EstadoConductor } from '../api';
 import { Celda, Esqueleto, FallaDeCarga, Paginacion } from '../componentes/comunes';
+import { useEstadoEnVivo } from '../estadoEnVivo';
 import { avisoLicencia, ESTADOS_CONDUCTOR } from '../etiquetas';
 import { useFiltrosUrl } from '../filtrosUrl';
 
@@ -29,6 +31,7 @@ export function Conductores() {
     ...(filtros.pagina > 1 && { page: filtros.pagina }),
   };
   const lista = useConductores(consulta);
+  const enVivo = useEstadoEnVivo();
   const fechaHoy = hoy();
 
   return (
@@ -44,6 +47,10 @@ export function Conductores() {
           </Link>
         </div>
       </div>
+
+      {enVivo === 'reconectando' && (
+        <Aviso tipo="error">Sin conexión en vivo: el estado puede estar desactualizado. Reconectando…</Aviso>
+      )}
 
       <div className={estilos.filtros}>
         <div className={estilos.camposFiltro} data-abierto="true">
