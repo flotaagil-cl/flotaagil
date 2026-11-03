@@ -17,6 +17,7 @@ Agregados y desvíos de la implementación respecto de [`diccionario-datos.md`](
 | DC-11 | 2026-10-29 | Agregado | PASAJERO | `privacidad_aceptada_en` TIMESTAMPTZ NULL | Evidencia de la aceptación del aviso de privacidad (HU-19) | Implementado (feat/HU-19-portal) |
 | DC-12 | 2026-10-29 | Supuesto | VUELO | Sin distinción nacional/internacional: la recogida calculada (RN-17) usa `margen_nacional_min` | El Anexo D no tiene columna que distinga el tipo de vuelo | Implementado (feat/HU-19-portal); revisar en HU-27 |
 | DC-13 | 2026-11-03 | Agregado | AUDITORIA | `entidad` agrega `VEHICULO` y `CONDUCTOR` | HU-10 audita el alta, la edición y la desactivación de vehículos y los cambios de datos y vehículos de los conductores | Implementado (feat/HU-10-flota) |
+| DC-14 | 2026-11-03 | Agregado | USUARIO | `debe_cambiar_password` BOOLEAN NOT NULL (defecto false) y `password_temporal_vence` TIMESTAMPTZ NULL | Contraseña temporal que genera el administrador para el conductor (HU-10): obliga a cambiarla y vence si no se usa | Implementado (feat/HU-10-flota) |
 
 ## DC-01 · EMPRESA.slug
 
@@ -86,24 +87,36 @@ Dominio: `PASAJERO | DESPACHADOR | ADMINISTRADOR | SUPERVISOR | SISTEMA` (se agr
 
 ## DC-13 · AUDITORIA en la administración de flota
 
-Dominio de `entidad`: `CONVENIO | VIAJE | PAGO_VIAJE | USUARIO | VEHICULO | CONDUCTOR`. Acciones registradas:
+Dominio de `entidad`: `CONVENIO | VIAJE | PAGO_VIAJE | USUARIO | VEHICULO | CONDUCTOR`. Acciones registradas (las de USUARIO cumplen RN-12):
 
 | Entidad | Acción | `datos_previos` |
 |---|---|---|
 | VEHICULO | `CREAR` (alta individual o por CSV) | — |
+| CONDUCTOR | `CREAR` (alta individual o por CSV) | — |
 | VEHICULO | `EDITAR`, `ACTIVAR`, `DESACTIVAR` | Valores anteriores de los campos cambiados |
 | CONDUCTOR | `EDITAR` | Valores anteriores de nombre, RUT, teléfono o licencia |
 | CONDUCTOR | `ASOCIAR_VEHICULO`, `DESASOCIAR_VEHICULO` | `vehiculo_id` y `patente` del vehículo |
+| USUARIO | `GENERAR_PASSWORD`, `RESTABLECER_PASSWORD`, `CAMBIAR_PASSWORD` | — (la contraseña nunca se guarda en la auditoría) |
+| USUARIO | `DESHABILITAR`, `HABILITAR` | `activo` y, al deshabilitar, el `estado` previo del conductor |
 
 Reglas de uso (no cambian columnas): la patente no se edita (otra patente es otro vehículo); un vehículo no se borra, se desactiva; no se desactiva ni se quita a un conductor el vehículo que tiene declarado en turno (DISPONIBLE o EN_VIAJE, RN-05) ni uno con un viaje entre ASIGNADO y PASAJERO_A_BORDO; si el conductor está NO_DISPONIBLE, su `vehiculo_activo` se vacía. La licencia que se edita debe quedar vigente (fecha futura), igual que en el alta.
+
+## DC-14 · Contraseña temporal en USUARIO
+
+| Columna | Tipo | Nulo | Clave | Descripción | Dominio / restricción | Defecto | Clasificación |
+|---|---|---|---|---|---|---|---|
+| debe_cambiar_password | BOOLEAN | No |  | El usuario tiene una contraseña temporal que debe cambiar | true/false | false |  |
+| password_temporal_vence | TIMESTAMPTZ | Sí |  | Vencimiento de la temporal si no se usa | UTC; `PASSWORD_TEMPORAL_HORAS` (72) desde que se genera | NULL |  |
+
+Reglas: la cuenta nueva de un conductor queda sin contraseña utilizable; el administrador genera la temporal (14 caracteres sin 0/O/o ni 1/l/I/i, solo se guarda el hash PBKDF2, se muestra una vez). Mientras `debe_cambiar_password` esté activo la API responde 403 `cambio_password_requerido` en todo salvo cambiar la contraseña, `yo` y el logout (el login y el refresh no se bloquean). Una temporal vencida responde 401 `password_temporal_vencida` en el login. Generar, restablecer y deshabilitar cierran todas las sesiones del usuario (sus refresh van a la lista negra).
 
 ## Pendientes por revisar
 
 | # | Tema | Detalle |
 |---|---|---|
 | PR-01 | RN-15 y AUDITORIA | RN-15 fija la retención de «eventos 90 días». Si AUDITORIA cuenta como evento, su purga choca con RN-12 (auditoría inmutable) y con el trigger `auditoria_sin_cambios`, que impide borrar filas. Definir si AUDITORIA queda fuera de RN-15 (retención indefinida o propia) o si la purga se hace con un procedimiento controlado que desactive el trigger y deje constancia. Mientras no se decida, AUDITORIA no se purga. |
-| PR-02 | Logout de la app del conductor | La app no tiene logout en el servidor (`/api/auth/app/`), así que su refresh no se puede invalidar antes de que venza. Queda para la HU de la app del conductor. |
+| PR-02 | Logout de la app del conductor | **Cerrado** en feat/HU-10-flota: `POST /api/auth/app/logout/` deja el refresh en la lista negra (204 siempre). |
 | PR-03 | Teléfono del pasajero al editar (HU-03) | El PATCH de `/api/viajes/{id}/` no acepta `pasajero`, así que el panel no puede corregir el teléfono: se muestra en solo lectura. Un teléfono mal ingresado manda los avisos de WhatsApp a otra persona. Evaluar el cambio en el backend (p. ej. permitir corregir el pasajero mientras la reserva sea editable, con auditoría). |
 | PR-04 | Texto del aviso de privacidad (HU-19) | No hay un texto aprobado. El portal muestra un borrador (`web/src/portal/Privacidad.tsx`) con la franja «Texto provisional, pendiente de aprobación», junto a la aceptación y en `/solicitar/{slug}/privacidad`. Falta: texto final validado (responsable, datos, finalidad, encargados, plazos de RN-15, derechos y normativa citada) y quitar la franja. |
 | PR-05 | Portal en inglés (HU-19) | El portal está solo en español, pero muchos pasajeros que piden desde el aeropuerto son turistas. Requiere su propia HU (textos, mensajes del backend y de WhatsApp, selector de idioma). |
-| PR-06 | Alta y baja de conductores con credenciales (HU-10) | El criterio «CRUD de conductores con credenciales» y la carga de conductores por CSV tocan la autenticación (contraseña inicial, cambio obligatorio en el primer ingreso, revocar sesiones al deshabilitar, auditoría RN-12) y esperan decisión. Hecho en feat/HU-10-flota: vehículos completos (alta, edición, activar/desactivar, CSV), edición de los datos del conductor y asociación N:M. Mientras tanto los conductores se crean con `datos_demo` o el admin de Django. |
+| PR-06 | Alta y baja de conductores con credenciales (HU-10) | **Cerrado** en feat/HU-10-flota con las decisiones del 2026-11-03: contraseña temporal generada (DC-14), deshabilitar y restablecer revocan las sesiones y responden 409 en viaje, CSV de conductores sin contraseñas. |
