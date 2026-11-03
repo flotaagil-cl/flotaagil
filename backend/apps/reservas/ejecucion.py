@@ -15,8 +15,9 @@ from rest_framework.exceptions import APIException, ValidationError
 
 from apps.flota.models import Conductor, EstadoConductor
 from apps.flota.tiempo_real import notificar_conductor
+from apps.integraciones.notificaciones import AVISO_EN_CAMINO, AVISO_EN_ZONA
 
-from . import estados
+from . import avisos, estados
 from .asignacion import grupo_conductor
 from .models import Actor, EstadoViaje, HistorialEstado, MetodoPago, PagoViaje, Viaje
 
@@ -62,6 +63,7 @@ def en_camino(viaje_id: int, *, usuario) -> Viaje:
     viaje = _del_conductor(viaje_id, usuario)
     if viaje.estado != EstadoViaje.ACEPTADO:
         raise EstadoNoPermitido(f"Solo un viaje aceptado pasa a En camino; este está en {viaje.estado}.")
+    avisos.programar(viaje.pk, AVISO_EN_CAMINO)  # HU-21
     return _cambiar(viaje, EstadoViaje.EN_CAMINO, actor=Actor.CONDUCTOR, usuario=usuario)
 
 
@@ -124,5 +126,6 @@ def marcar_en_zona(conductor: Conductor, posiciones: list[dict]) -> bool:
                     viaje, EstadoViaje.EN_ZONA, desde=EstadoViaje.EN_CAMINO, actor=Actor.SISTEMA
                 )
                 transaction.on_commit(lambda: avisar_viaje_actualizado(conductor_id, viaje_id))
+                avisos.programar(viaje_id, AVISO_EN_ZONA)  # HU-21: solo la llegada automática (DC-17)
                 return True
     return False

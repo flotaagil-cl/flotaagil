@@ -8,8 +8,9 @@ from rest_framework.response import Response
 
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
+from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 
-from . import asignacion, servicios
+from . import asignacion, avisos, servicios
 from .estados import actor_de
 from .filtros import ViajeFiltro
 from .models import EstadoViaje, Viaje
@@ -71,6 +72,7 @@ class ViajeViewSet(
             actor=actor_de(request.user),
             usuario=request.user,
         )
+        avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21
         return Response(
             ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data, status=status.HTTP_201_CREATED
         )

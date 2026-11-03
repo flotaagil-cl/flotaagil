@@ -10,6 +10,9 @@
   texto y el pasajero responde escribiendo «Confirmar» o «Cancelar»; solo llega si escribió en las
   últimas 24 h.
 
+Los avisos de estado (HU-21) usan su plantilla si está configurada (`TWILIO_PLANTILLA_AVISO_*`); si no, van
+como texto, que solo llega dentro de las 24 h desde el último mensaje del pasajero.
+
 Todo mensaje (enviado o recibido) queda en MENSAJE_WHATSAPP. Si Twilio no responde tras los reintentos, el
 mensaje queda en FAILED y la solicitud expira sola (RN-06).
 """
@@ -53,6 +56,47 @@ def texto_verificacion(viaje, expira_en) -> tuple[str, dict]:
     return cuerpo, variables
 
 
+AVISO_CONFIRMACION = "confirmacion"
+AVISO_CONDUCTOR = "conductor"
+AVISO_EN_CAMINO = "en_camino"
+AVISO_EN_ZONA = "en_zona"
+
+
+def texto_aviso(viaje, tipo: str) -> tuple[str, dict]:
+    """Cuerpo de un aviso de estado y sus variables (Twilio Content API: {{1}}, {{2}}…)."""
+    nombre = viaje.pasajero.nombre.split()[0]
+    if tipo == AVISO_CONFIRMACION:
+        variables = {
+            "1": nombre,
+            "2": viaje.empresa.razon_social,
+            "3": timezone.localtime(viaje.recogida_en).strftime("%d-%m %H:%M"),
+        }
+        cuerpo = (
+            f"Hola {variables['1']}, {variables['2']} confirmó tu viaje para el {variables['3']}. "
+            "Te avisaremos por aquí cuando tengas conductor. Si necesitas anularlo antes, responde Cancelar."
+        )
+    elif tipo == AVISO_CONDUCTOR:
+        variables = {
+            "1": nombre,
+            "2": viaje.conductor.usuario.nombre,
+            "3": viaje.vehiculo.marca_modelo,
+            "4": viaje.vehiculo.patente,
+        }
+        cuerpo = (
+            f"Hola {variables['1']}, tu conductor es {variables['2']}, en {variables['3']}, "
+            f"patente {variables['4']}."
+        )
+    elif tipo == AVISO_EN_CAMINO:
+        variables = {"1": viaje.conductor.usuario.nombre, "2": viaje.origen_dir}
+        cuerpo = f"{variables['1']} va en camino a recogerte en {variables['2']}."
+    elif tipo == AVISO_EN_ZONA:
+        variables = {"1": viaje.origen_dir, "2": viaje.vehiculo.patente}
+        cuerpo = f"Tu vehículo te espera en {variables['1']}. Patente {variables['2']}."
+    else:
+        raise ValueError(f"Aviso desconocido: {tipo}")
+    return cuerpo, variables
+
+
 class EnvioFallido(Exception):
     pass
 
@@ -61,6 +105,8 @@ class Notificador(Protocol):
     def solicitar_verificacion(self, viaje, expira_en) -> None: ...
 
     def responder(self, pasajero, viaje, texto: str) -> None: ...
+
+    def avisar(self, viaje, tipo: str) -> None: ...
 
 
 def _registrar(pasajero, viaje, *, tipo: str, cuerpo: str, sid: str | None, estado: str):
@@ -111,6 +157,25 @@ class NotificadorDesarrollo:
         )
         logger.info("[WhatsApp simulado] Respuesta a %s: %s", enmascarar_telefono(pasajero.telefono), texto)
 
+    def avisar(self, viaje, tipo: str) -> None:
+        from apps.reservas.models import EstadoEntrega, TipoMensaje
+
+        cuerpo, _ = texto_aviso(viaje, tipo)
+        _registrar(
+            viaje.pasajero,
+            viaje,
+            tipo=TipoMensaje.SESION,
+            cuerpo=cuerpo,
+            sid=f"DEV-{uuid.uuid4().hex[:30]}",
+            estado=EstadoEntrega.SENT,
+        )
+        logger.info(
+            "[WhatsApp simulado] Aviso «%s» del viaje #%s a %s.",
+            tipo,
+            viaje.pk,
+            enmascarar_telefono(viaje.pasajero.telefono),
+        )
+
 
 class NotificadorTwilio:
     URL = "https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
@@ -122,6 +187,7 @@ class NotificadorTwilio:
         remitente,
         plantilla,
         url_base,
+        plantillas_aviso=None,
         intentos=3,
         espera_base=0.5,
         timeout=5.0,
@@ -131,6 +197,7 @@ class NotificadorTwilio:
         self.remitente = remitente
         self.plantilla = plantilla
         self.url_base = url_base.rstrip("/")
+        self.plantillas_aviso = plantillas_aviso or {}
         self.intentos = intentos
         self.espera_base = espera_base
         self.timeout = timeout
@@ -214,6 +281,20 @@ class NotificadorTwilio:
         datos = self._comunes(pasajero.telefono) | {"Body": texto}
         self._enviar_y_registrar(pasajero, viaje, tipo=TipoMensaje.SESION, cuerpo=texto, datos=datos)
 
+    def avisar(self, viaje, tipo: str) -> None:
+        from apps.reservas.models import TipoMensaje
+
+        cuerpo, variables = texto_aviso(viaje, tipo)
+        datos = self._comunes(viaje.pasajero.telefono)
+        plantilla = self.plantillas_aviso.get(tipo)
+        if plantilla:
+            datos |= {"ContentSid": plantilla, "ContentVariables": json.dumps(variables, ensure_ascii=False)}
+            tipo_mensaje = TipoMensaje.PLANTILLA
+        else:
+            datos |= {"Body": cuerpo}
+            tipo_mensaje = TipoMensaje.SESION
+        self._enviar_y_registrar(viaje.pasajero, viaje, tipo=tipo_mensaje, cuerpo=cuerpo, datos=datos)
+
 
 def firma_twilio(auth_token: str, url: str, parametros: dict) -> str:
     """Firma X-Twilio-Signature: HMAC-SHA1 de la URL más los parámetros POST ordenados, en base64."""
@@ -245,5 +326,11 @@ def obtener_notificador() -> Notificador:
             settings.TWILIO_WHATSAPP_FROM,
             settings.TWILIO_PLANTILLA_VERIFICACION,
             settings.WHATSAPP_URL_BASE,
+            plantillas_aviso={
+                AVISO_CONFIRMACION: settings.TWILIO_PLANTILLA_AVISO_CONFIRMACION,
+                AVISO_CONDUCTOR: settings.TWILIO_PLANTILLA_AVISO_CONDUCTOR,
+                AVISO_EN_CAMINO: settings.TWILIO_PLANTILLA_AVISO_EN_CAMINO,
+                AVISO_EN_ZONA: settings.TWILIO_PLANTILLA_AVISO_EN_ZONA,
+            },
         )
     return NotificadorDesarrollo()

@@ -1,9 +1,11 @@
 """RN-06: el pasajero confirma o cancela su solicitud del portal respondiendo por WhatsApp (HU-20).
+RN-09: después puede cancelar por WhatsApp solo mientras no tenga conductor asignado (HU-21).
 
 La respuesta llega al webhook (o al comando `simular_whatsapp` en desarrollo) y se procesa una sola vez por
 `MessageSid` (idempotencia). La reserva se identifica por el mensaje al que responde
-(`OriginalRepliedMessageSid`) o, si no viene, por la solicitud pendiente más reciente de ese teléfono.
-Los cambios de estado pasan por la máquina de estados (actor PASAJERO).
+(`OriginalRepliedMessageSid`); si no viene, por la solicitud pendiente más reciente de ese teléfono o por su
+única reserva en curso. Con varias reservas en curso y sin esa referencia no se cancela ninguna: se le pide
+que cite el mensaje. Los cambios de estado pasan por la máquina de estados (actor PASAJERO).
 """
 
 import logging
@@ -29,24 +31,41 @@ from .models import (
 logger = logging.getLogger(__name__)
 
 MOTIVO_CANCELACION = "Cancelada por el pasajero por WhatsApp (RN-06)."
+MOTIVO_CANCELACION_RN09 = "Cancelada por el pasajero por WhatsApp, sin conductor asignado (RN-09)."
 CONFIRMAR = {"confirmar", "confirmo", "si", "sí"}
-CANCELAR = {"cancelar", "cancelo", "no"}
+CANCELAR = {"cancelar", "cancelo"}
+# «No» solo responde a la pregunta de la verificación: fuera de ella es conversación, no una cancelación.
+CANCELAR_SOLO_PENDIENTE = {"no"}
+EN_CURSO = (
+    EstadoViaje.SOLICITADO,
+    EstadoViaje.ASIGNADO,
+    EstadoViaje.ACEPTADO,
+    EstadoViaje.EN_CAMINO,
+    EstadoViaje.EN_ZONA,
+    EstadoViaje.PASAJERO_A_BORDO,
+)
 
 RESPUESTAS = {
     "confirmada": "¡Listo! Tu solicitud quedó confirmada. Te avisaremos por aquí cuando asignemos un "
     "conductor.",
     "cancelada": "Tu solicitud quedó cancelada. Si necesitas un viaje, puedes pedir otro cuando quieras.",
+    "ya_confirmada": "Tu viaje ya está confirmado. Te avisaremos por aquí cómo avanza.",
+    "con_conductor": "Tu viaje ya tiene conductor asignado, así que no se puede cancelar por aquí. "
+    "Comunícate con la central.",
+    "varias": "Tienes más de un viaje reservado. Para cancelar uno, responde citando el mensaje de ese viaje "
+    "o comunícate con la central.",
     "no_vigente": "Esa solicitud ya no está vigente (se anuló o ya fue respondida). Si necesitas un viaje, "
     "pide uno nuevo.",
 }
 
 
-def _accion(boton: str, texto: str) -> str | None:
+def _accion(boton: str, texto: str, viaje: Viaje | None) -> str | None:
+    pendiente = viaje is not None and viaje.estado == EstadoViaje.PENDIENTE_CONFIRMACION
     for valor in (boton, texto):
         palabra = (valor or "").strip().lower()
         if palabra in CONFIRMAR:
             return "confirmar"
-        if palabra in CANCELAR:
+        if palabra in CANCELAR or (pendiente and palabra in CANCELAR_SOLO_PENDIENTE):
             return "cancelar"
     return None
 
@@ -65,11 +84,15 @@ def _viaje_respondido(pasajeros, original_sid: str | None) -> Viaje | None:
         if mensaje and mensaje.viaje:
             return mensaje.viaje
     # Sin referencia: la solicitud pendiente más reciente de ese teléfono (en cualquiera de sus empresas).
-    return (
+    pendiente = (
         Viaje.objects.filter(pasajero__in=pasajeros, estado=EstadoViaje.PENDIENTE_CONFIRMACION)
         .order_by("-creado_en")
         .first()
     )
+    if pendiente:
+        return pendiente
+    en_curso = list(Viaje.objects.filter(pasajero__in=pasajeros, estado__in=EN_CURSO)[:2])
+    return en_curso[0] if len(en_curso) == 1 else None
 
 
 def procesar_entrante(datos: dict) -> str:
@@ -101,15 +124,40 @@ def procesar_entrante(datos: dict) -> str:
     except IntegrityError:
         return "repetido"  # el mismo webhook llegó dos veces a la vez
 
-    accion = _accion(datos.get("ButtonPayload", ""), texto)
+    accion = _accion(datos.get("ButtonPayload", ""), texto, viaje)
     if accion is None:
         return "sin_accion"  # conversación libre: la atiende el despachador (HU-30)
-    if viaje is None or viaje.estado != EstadoViaje.PENDIENTE_CONFIRMACION:
-        resultado = "no_vigente"
-    else:
+    if viaje is None:
+        varias = Viaje.objects.filter(pasajero__in=pasajeros, estado__in=EN_CURSO).exists()
+        resultado = "varias" if varias else "no_vigente"
+    elif viaje.estado == EstadoViaje.PENDIENTE_CONFIRMACION:
         resultado = _aplicar(viaje, accion)
+    else:
+        resultado = _despues_de_confirmar(viaje, accion)
     obtener_notificador().responder(pasajero, viaje, RESPUESTAS[resultado])
     return resultado
+
+
+def _despues_de_confirmar(viaje: Viaje, accion: str) -> str:
+    if viaje.estado not in EN_CURSO:
+        return "no_vigente"
+    if accion == "confirmar":
+        return "ya_confirmada"
+    if viaje.estado != EstadoViaje.SOLICITADO:
+        return "con_conductor"  # RN-09
+    try:
+        estados.transicionar(
+            viaje,
+            EstadoViaje.CANCELADO,
+            desde=EstadoViaje.SOLICITADO,
+            actor=Actor.PASAJERO,
+            motivo_cancelacion=MOTIVO_CANCELACION_RN09,
+            origen_cancelacion=OrigenCancelacion.PASAJERO,
+        )
+    except estados.TransicionInvalida:
+        viaje.refresh_from_db()  # lo asignaron o lo cancelaron en el mismo instante
+        return "con_conductor" if viaje.estado in EN_CURSO else "no_vigente"
+    return "cancelada"
 
 
 def _aplicar(viaje: Viaje, accion: str) -> str:

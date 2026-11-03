@@ -152,6 +152,11 @@ TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
 TWILIO_WHATSAPP_FROM = env("TWILIO_WHATSAPP_FROM", default="")  # +56…, número aprobado por Meta
 TWILIO_PLANTILLA_VERIFICACION = env("TWILIO_PLANTILLA_VERIFICACION", default="")  # ContentSid HX…
+# Avisos de estado (HU-21). Sin plantilla van como texto, que solo llega dentro de la ventana de 24 h.
+TWILIO_PLANTILLA_AVISO_CONFIRMACION = env("TWILIO_PLANTILLA_AVISO_CONFIRMACION", default="")
+TWILIO_PLANTILLA_AVISO_CONDUCTOR = env("TWILIO_PLANTILLA_AVISO_CONDUCTOR", default="")
+TWILIO_PLANTILLA_AVISO_EN_CAMINO = env("TWILIO_PLANTILLA_AVISO_EN_CAMINO", default="")
+TWILIO_PLANTILLA_AVISO_EN_ZONA = env("TWILIO_PLANTILLA_AVISO_EN_ZONA", default="")
 # URL pública del backend con la que Twilio llama a los webhooks (y con la que se valida la firma).
 WHATSAPP_URL_BASE = env("WHATSAPP_URL_BASE", default="")
 

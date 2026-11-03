@@ -20,8 +20,9 @@ from rest_framework.exceptions import APIException, ValidationError
 
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
+from apps.integraciones.notificaciones import AVISO_CONDUCTOR
 
-from . import estados
+from . import avisos, estados
 from .models import Actor, Asignacion, EstadoViaje, OrigenSugerencia, ResultadoAsignacion, Viaje
 
 SEGUNDOS_PARA_RESPONDER = 60  # RN-04
@@ -232,6 +233,7 @@ def responder(asignacion_id: int, *, usuario, aceptar: bool) -> Asignacion:
                 usuario=usuario,
             )
             Conductor.objects.filter(pk=asignacion.conductor_id).update(estado=EstadoConductor.EN_VIAJE)
+            avisos.programar(asignacion.viaje_id, AVISO_CONDUCTOR)  # HU-21
         else:
             asignacion.resultado = ResultadoAsignacion.RECHAZADA
             _volver_a_solicitado(asignacion, actor=Actor.CONDUCTOR, usuario=usuario)
