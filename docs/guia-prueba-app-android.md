@@ -53,14 +53,8 @@ Es la configuración recomendada de la PoC H-3 (`docs/poc-gps.md`):
 
 ## 5. Prueba B: GPS en segundo plano con la pantalla apagada (la importante)
 
-Hasta HU-13 el estado se cambia en la base. Para dejar al conductor demo en turno:
-
-```
-docker compose -f infra/docker-compose.dev.yml exec db psql -U flotaagil -d flotaagil -c "update conductor set estado='DISPONIBLE' where usuario_id=(select id from usuario where email='conductor1@transportes-andes.example');"
-```
-
-1. Ingresa en el teléfono como `conductor1@transportes-andes.example` (contraseña: `DATOS_DEMO_PASSWORD` del `.env`).
-2. **Esperado:** Android pide permiso de ubicación (acepta «Mientras se usa la app» y «precisa»); aparece la notificación fija «FlotaÁgil: en turno» y en Inicio «Registrando tu ubicación (cada 30 s)».
+1. Ingresa en el teléfono como `conductor1@transportes-andes.example` (contraseña: `DATOS_DEMO_PASSWORD` del `.env`). Si quedó en turno de una prueba anterior, pulsa «Terminar turno».
+2. Ese conductor tiene dos vehículos: elige **DMAE14** y pulsa **Empezar turno (Disponible)** (HU-13). **Esperado:** Android pide permiso de ubicación (acepta «Mientras se usa la app» y «precisa»); aparece la notificación fija «FlotaÁgil: en turno» y en Inicio «Registrando tu ubicación (cada 30 s)».
 3. Anota la hora. Pulsa Inicio, **apaga la pantalla** y deja el teléfono **30 minutos** sin tocarlo (sin cable, si puedes). Si puedes, camina o anda en auto un rato: así las posiciones cambian.
 4. Mientras tanto, en el PC, revisa que lleguen posiciones:
 
@@ -85,6 +79,13 @@ docker compose -f infra/docker-compose.dev.yml exec db psql -U flotaagil -d flot
 ```
 
 **Esperado:** el hueco mayor es de unos 30 s (en espera), sin pasar de 60 s.
+
+## 5b. Prueba E: turno desde la app y el panel (HU-13)
+
+1. Con el panel abierto en el PC en **Conductores**, en el teléfono pulsa **Terminar turno (No disponible)**. **Esperado:** desaparece la notificación del GPS; en el panel, sin recargar, el conductor pasa a «No disponible» en 10 s o menos.
+2. Pulsa **Empezar turno** sin elegir vehículo. **Esperado:** el botón está desactivado hasta elegir uno (RN-05).
+3. Elige DMAA10 y empieza el turno. **Esperado:** en el panel, «Disponible» y en la ficha «declaró DMAA10».
+4. Desde el panel (Vehículos > DMAA10) intenta **Desactivar**. **Esperado:** 409 «está declarado por … en turno».
 
 ## 6. Prueba C: sin señal y vuelta
 
