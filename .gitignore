@@ -65,3 +65,6 @@ local.properties
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Pruebas manuales locales (scripts y capturas)
+.manual/

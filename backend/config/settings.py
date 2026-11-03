@@ -92,7 +92,10 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
+    # JWT de simplejwt más el bloqueo de cambio de contraseña pendiente (DC-14).
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.cuentas.jwt.AutenticacionJWT"],
+    # Todo error con solo `detail` lleva además `code` (p. ej. cambio_password_requerido, flota_en_uso).
+    "EXCEPTION_HANDLER": "apps.comun.excepciones.error_con_codigo",
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
@@ -135,6 +138,9 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": False,
     "SIGNING_KEY": SECRET_KEY,
 }
+
+# Contraseña temporal que genera el administrador (HU-10): vence si no se cambia en este plazo.
+PASSWORD_TEMPORAL_HORAS = env.int("PASSWORD_TEMPORAL_HORAS", default=72)
 
 # Panel web: el refresh viaja en una cookie httpOnly; el access se guarda solo en memoria.
 JWT_COOKIE = {

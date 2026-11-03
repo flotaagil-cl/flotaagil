@@ -62,7 +62,7 @@ class TestImportar:
         assert errores[2] == {"patente": ["Esta patente ya está registrada."]}
         assert errores[3] == {}
         assert list(errores[4]) == ["anio"]
-        assert errores[5] == {"patente": ["Repetida en el archivo (línea 3)."]}
+        assert errores[5] == {"patente": ["Repetido en el archivo (línea 3)."]}
         assert Vehiculo.objects.count() == 1
 
     def test_excel_en_espanol(self, api):

@@ -66,6 +66,13 @@ def autenticar(email: str, password: str, roles_permitidos: frozenset[str]) -> U
         raise AuthenticationFailed("La cuenta está deshabilitada.", code="cuenta_deshabilitada")
     if usuario.rol not in roles_permitidos:
         raise PermissionDenied("Este acceso no corresponde a tu rol.", code="rol_no_permitido")
+    vence = usuario.password_temporal_vence
+    if usuario.debe_cambiar_password and vence is not None and vence <= timezone.now():
+        # DC-14: la temporal no se usó a tiempo; el administrador debe generar otra.
+        raise AuthenticationFailed(
+            "La contraseña temporal venció. Pide al administrador de tu empresa una nueva.",
+            code="password_temporal_vencida",
+        )
 
     if usuario.intentos_fallidos:
         Usuario.objects.filter(pk=usuario.pk).update(intentos_fallidos=0)

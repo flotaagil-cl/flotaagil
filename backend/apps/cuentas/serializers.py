@@ -24,7 +24,8 @@ class UsuarioSesionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ["id", "nombre", "email", "rol", "empresa"]
+        fields = ["id", "nombre", "email", "rol", "empresa", "debe_cambiar_password"]
+        read_only_fields = ["debe_cambiar_password"]
 
 
 class AccessSerializer(serializers.Serializer):
@@ -45,3 +46,8 @@ class SesionAppSerializer(SesionPanelSerializer):
 
 class TokensSerializer(AccessSerializer):
     refresh = serializers.CharField()
+
+
+class CambiarPasswordSerializer(serializers.Serializer):
+    password_actual = serializers.CharField(write_only=True, trim_whitespace=False, max_length=128)
+    password_nueva = serializers.CharField(write_only=True, trim_whitespace=False, max_length=128)

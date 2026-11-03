@@ -1,7 +1,7 @@
-"""API de flota (HU-10): vehículos, datos de los conductores y asociación conductor-vehículo.
+"""API de flota (HU-10): vehículos, conductores con sus cuentas y asociación conductor-vehículo.
 
-Solo el administrador, y solo registros de su empresa (RN-13). No hay borrado: un vehículo se desactiva.
-El alta y la baja de conductores (cuentas con credenciales) no están aquí.
+Solo el administrador, y solo registros de su empresa (RN-13). No hay borrado: un vehículo se desactiva y la
+cuenta de un conductor se deshabilita.
 """
 
 from django.db.models import Prefetch
@@ -12,7 +12,6 @@ from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 
-from apps.comun.excepciones import error_con_codigo
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 
@@ -21,26 +20,57 @@ from .filtros import ConductorFiltro, VehiculoFiltro
 from .models import Conductor, ConductorVehiculo, Vehiculo
 from .serializers import (
     AsociarVehiculoSerializer,
+    ConductorCrearSerializer,
     ConductorEditarSerializer,
     ConductorSerializer,
     ImportarSerializer,
     InformeImportacionSerializer,
+    PasswordTemporalSerializer,
     VehiculoCrearSerializer,
     VehiculoEditarSerializer,
     VehiculoSerializer,
 )
 
+EN_VIAJE = OpenApiResponse(description="`conductor_en_viaje`: el conductor está en viaje.")
 EN_USO = OpenApiResponse(
     description="`flota_en_uso`: el vehículo está declarado en un turno o tiene un viaje en curso."
 )
 SOLO_ADMIN = [con_roles(Rol.ADMINISTRADOR)]
 
 
-class _ConCodigo:
-    """Los 409 llevan `code` (`flota_en_uso`) además de `detail`."""
+def _importar(request, formato, crear):
+    """Informe del CSV (200), o con `confirmar` crea todo (201) o nada (400 con el informe)."""
+    entrada = ImportarSerializer(data=request.data)
+    entrada.is_valid(raise_exception=True)
+    filas, validos = importacion.validar(
+        importacion.leer_filas(entrada.validated_data["archivo"], formato), formato
+    )
+    con_errores = sum(1 for fila in filas if fila["errores"])
+    informe = {"filas": filas, "validas": len(validos), "con_errores": con_errores, "creados": 0}
+    if not entrada.validated_data["confirmar"]:
+        return Response(informe)
+    if con_errores:
+        return Response(informe, status=status.HTTP_400_BAD_REQUEST)
+    informe["creados"] = len(crear(request.user.empresa, validos, usuario=request.user))
+    return Response(informe, status=status.HTTP_201_CREATED)
 
-    def get_exception_handler(self):
-        return error_con_codigo
+
+def _documentar_importacion(que: str):
+    return extend_schema(
+        summary=f"Carga inicial de {que} por CSV",
+        tags=["flota"],
+        request={"multipart/form-data": ImportarSerializer},
+        responses={
+            200: OpenApiResponse(InformeImportacionSerializer, description="Informe sin crear nada."),
+            201: OpenApiResponse(InformeImportacionSerializer, description="Todos creados."),
+            400: OpenApiResponse(
+                InformeImportacionSerializer,
+                description="Con `confirmar` y filas con errores: no se crea ninguno. Si el archivo no "
+                "sirve, el error viene en `archivo`.",
+            ),
+        },
+        description=importacion.__doc__,
+    )
 
 
 @extend_schema_view(
@@ -48,7 +78,6 @@ class _ConCodigo:
     retrieve=extend_schema(summary="Detalle de un vehículo", tags=["flota"]),
 )
 class VehiculoViewSet(
-    _ConCodigo,
     AisladoPorEmpresaMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -94,36 +123,10 @@ class VehiculoViewSet(
         servicios.editar_vehiculo(vehiculo, dict(entrada.validated_data), usuario=request.user)
         return self._detalle(vehiculo)
 
-    @extend_schema(
-        summary="Carga inicial de vehículos por CSV",
-        tags=["flota"],
-        request={"multipart/form-data": ImportarSerializer},
-        responses={
-            200: OpenApiResponse(InformeImportacionSerializer, description="Informe sin crear nada."),
-            201: OpenApiResponse(InformeImportacionSerializer, description="Todos creados."),
-            400: OpenApiResponse(
-                InformeImportacionSerializer,
-                description="Con `confirmar` y filas con errores: no se crea ninguno. Si el archivo no "
-                "sirve, el error viene en `archivo`.",
-            ),
-        },
-        description=importacion.__doc__,
-    )
+    @_documentar_importacion("vehículos")
     @action(detail=False, methods=["post"], parser_classes=[MultiPartParser, FormParser, JSONParser])
     def importar(self, request):
-        entrada = ImportarSerializer(data=request.data)
-        entrada.is_valid(raise_exception=True)
-        filas, validos = importacion.validar(importacion.leer_filas(entrada.validated_data["archivo"]))
-        con_errores = sum(1 for fila in filas if fila["errores"])
-        informe = {"filas": filas, "validas": len(validos), "con_errores": con_errores, "creados": 0}
-        if not entrada.validated_data["confirmar"]:
-            return Response(informe)
-        if con_errores:
-            return Response(informe, status=status.HTTP_400_BAD_REQUEST)
-        informe["creados"] = len(
-            servicios.crear_vehiculos(request.user.empresa, validos, usuario=request.user)
-        )
-        return Response(informe, status=status.HTTP_201_CREATED)
+        return _importar(request, importacion.VEHICULOS, servicios.crear_vehiculos)
 
 
 @extend_schema_view(
@@ -131,7 +134,6 @@ class VehiculoViewSet(
     retrieve=extend_schema(summary="Detalle de un conductor con sus vehículos", tags=["flota"]),
 )
 class ConductorViewSet(
-    _ConCodigo,
     AisladoPorEmpresaMixin,
     mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
@@ -151,6 +153,72 @@ class ConductorViewSet(
 
     def _detalle(self, conductor, codigo=status.HTTP_200_OK):
         return Response(ConductorSerializer(self.get_queryset().get(pk=conductor.pk)).data, status=codigo)
+
+    @extend_schema(
+        summary="Registrar un conductor con su cuenta",
+        tags=["flota"],
+        request=ConductorCrearSerializer,
+        responses={201: ConductorSerializer},
+        description="La cuenta (rol CONDUCTOR) queda sin contraseña utilizable: el administrador genera una "
+        "temporal con `password/`.",
+    )
+    def create(self, request):
+        entrada = ConductorCrearSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        (conductor,) = servicios.crear_conductores(
+            request.user.empresa, [dict(entrada.validated_data)], usuario=request.user
+        )
+        return self._detalle(conductor, status.HTTP_201_CREATED)
+
+    @_documentar_importacion("conductores")
+    @action(detail=False, methods=["post"], parser_classes=[MultiPartParser, FormParser, JSONParser])
+    def importar(self, request):
+        return _importar(request, importacion.CONDUCTORES, servicios.crear_conductores)
+
+    @extend_schema(
+        summary="Generar o restablecer la contraseña temporal",
+        tags=["flota"],
+        request=None,
+        responses={201: PasswordTemporalSerializer, 409: EN_VIAJE},
+        description="Se muestra una sola vez y vence a las PASSWORD_TEMPORAL_HORAS (72 por defecto). "
+        "Cierra todas "
+        "las sesiones del conductor; al ingresar debe cambiarla (403 `cambio_password_requerido` en el resto "
+        "de la API). Queda en auditoría (RN-12).",
+    )
+    @action(detail=True, methods=["post"])
+    def password(self, request, pk=None):
+        password, vence = servicios.generar_password(self.get_object(), usuario=request.user)
+        respuesta = Response(
+            {"password_temporal": password, "vence_en": vence}, status=status.HTTP_201_CREATED
+        )
+        respuesta["Cache-Control"] = "no-store"
+        return respuesta
+
+    @extend_schema(
+        summary="Deshabilitar la cuenta del conductor",
+        tags=["flota"],
+        request=None,
+        responses={200: ConductorSerializer, 409: EN_VIAJE},
+        description="No puede ingresar, se cierran todas sus sesiones y queda No disponible. "
+        "Auditoría (RN-12).",
+    )
+    @action(detail=True, methods=["post"])
+    def deshabilitar(self, request, pk=None):
+        conductor = self.get_object()
+        servicios.cambiar_habilitacion(conductor, False, usuario=request.user)
+        return self._detalle(conductor)
+
+    @extend_schema(
+        summary="Habilitar la cuenta del conductor",
+        tags=["flota"],
+        request=None,
+        responses={200: ConductorSerializer},
+    )
+    @action(detail=True, methods=["post"])
+    def habilitar(self, request, pk=None):
+        conductor = self.get_object()
+        servicios.cambiar_habilitacion(conductor, True, usuario=request.user)
+        return self._detalle(conductor)
 
     @extend_schema(
         summary="Editar los datos de un conductor",

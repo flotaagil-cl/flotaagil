@@ -4,6 +4,32 @@ info:
   version: 0.1.0
   description: 'API de FlotaÁgil: panel web, portal del pasajero y app del conductor.'
 paths:
+  /api/auth/app/logout/:
+    post:
+      operationId: auth_app_logout_create
+      description: 'Deja el refresh en la lista negra. Responde 204 aunque el refresh
+        no sirva (vencido, ya usado o de otro canal): para la app la sesión queda
+        cerrada igual.'
+      summary: Cerrar sesión en la app del conductor
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
   /api/auth/app/refresh/:
     post:
       operationId: auth_app_refresh_create
@@ -112,6 +138,47 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: '`origen_no_permitido`: falta el encabezado Origin (y el Referer)
             o no está en PANEL_ORIGENES.'
+  /api/auth/password/:
+    post:
+      operationId: auth_password_create
+      description: Exige la contraseña actual. Cierra todas las sesiones del usuario
+        (panel y app) y entrega una nueva en el mismo canal del access usado. Quita
+        la obligación de cambiar la temporal.
+      summary: Cambiar la propia contraseña
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambiarPasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CambiarPasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CambiarPasswordRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tokens'
+          description: 'App: tokens nuevos. Panel: solo `access` y el refresh en la
+            cookie.'
+        '400':
+          description: 'Datos inválidos: errores por campo.'
+        '401':
+          description: Falta el access o no es válido.
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: '`throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN).'
   /api/auth/refresh/:
     post:
       operationId: auth_refresh_create
@@ -227,7 +294,12 @@ paths:
   /api/conductores/:
     get:
       operationId: conductores_list
-      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
       summary: Listar conductores
       parameters:
       - in: query
@@ -269,10 +341,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedConductorList'
           description: ''
+    post:
+      operationId: conductores_create
+      description: 'La cuenta (rol CONDUCTOR) queda sin contraseña utilizable: el
+        administrador genera una temporal con `password/`.'
+      summary: Registrar un conductor con su cuenta
+      tags:
+      - flota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConductorCrearRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConductorCrearRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConductorCrearRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
   /api/conductores/{id}/:
     get:
       operationId: conductores_retrieve
-      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
       summary: Detalle de un conductor con sus vehículos
       parameters:
       - in: path
@@ -326,10 +431,97 @@ paths:
               schema:
                 $ref: '#/components/schemas/Conductor'
           description: ''
+  /api/conductores/{id}/deshabilitar/:
+    post:
+      operationId: conductores_deshabilitar_create
+      description: No puede ingresar, se cierran todas sus sesiones y queda No disponible.
+        Auditoría (RN-12).
+      summary: Deshabilitar la cuenta del conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+        '409':
+          description: '`conductor_en_viaje`: el conductor está en viaje.'
+  /api/conductores/{id}/habilitar/:
+    post:
+      operationId: conductores_habilitar_create
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
+      summary: Habilitar la cuenta del conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+  /api/conductores/{id}/password/:
+    post:
+      operationId: conductores_password_create
+      description: Se muestra una sola vez y vence a las PASSWORD_TEMPORAL_HORAS (72
+        por defecto). Cierra todas las sesiones del conductor; al ingresar debe cambiarla
+        (403 `cambio_password_requerido` en el resto de la API). Queda en auditoría
+        (RN-12).
+      summary: Generar o restablecer la contraseña temporal
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordTemporal'
+          description: ''
+        '409':
+          description: '`conductor_en_viaje`: el conductor está en viaje.'
   /api/conductores/{id}/vehiculos/:
     post:
       operationId: conductores_vehiculos_create
-      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
       summary: Asociar un vehículo al conductor
       parameters:
       - in: path
@@ -394,6 +586,55 @@ paths:
         '409':
           description: '`flota_en_uso`: el vehículo está declarado en un turno o tiene
             un viaje en curso.'
+  /api/conductores/importar/:
+    post:
+      operationId: conductores_importar_create
+      description: |
+        Carga inicial de vehículos y de conductores por CSV (HU-10).
+
+        Todo o nada: se valida cada fila con las mismas reglas del alta individual y solo se crea si ninguna tiene
+        errores. Sin `confirmar` solo se entrega el informe, para revisarlo antes de cargar.
+
+        Formato común: encabezado en la primera línea; mayúsculas y tildes no importan. Separador coma o punto y coma
+        (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM) o Windows-1252. Hasta 500 filas
+        y 1 MB.
+
+        - Vehículos: `patente`, `marca_modelo`, `anio` y, opcional, `capacidad` (por defecto 4). También sirven «año»,
+          «marca y modelo» y «marca/modelo».
+        - Conductores: `nombre`, `email`, `rut`, `telefono`, `licencia_clase` y `licencia_vence` (AAAA-MM-DD o
+          DD-MM-AAAA). Sin contraseñas: las cuentas quedan sin contraseña utilizable y el administrador genera una
+          temporal desde la ficha de cada conductor.
+      summary: Carga inicial de conductores por CSV
+      tags:
+      - flota
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ImportarRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeImportacion'
+          description: Informe sin crear nada.
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeImportacion'
+          description: Todos creados.
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformeImportacion'
+          description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
+            el archivo no sirve, el error viene en `archivo`.'
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -478,7 +719,12 @@ paths:
   /api/vehiculos/:
     get:
       operationId: vehiculos_list
-      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
       summary: Listar vehículos
       parameters:
       - in: query
@@ -509,7 +755,12 @@ paths:
           description: ''
     post:
       operationId: vehiculos_create
-      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
       summary: Registrar un vehículo
       tags:
       - flota
@@ -537,7 +788,12 @@ paths:
   /api/vehiculos/{id}/:
     get:
       operationId: vehiculos_retrieve
-      description: Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+      description: |-
+        RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+
+        Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+        para no revelar que existe. `campo_empresa` permite filtrar por una relación
+        (p. ej. "usuario__empresa").
       summary: Detalle de un vehículo
       parameters:
       - in: path
@@ -599,15 +855,20 @@ paths:
     post:
       operationId: vehiculos_importar_create
       description: |
-        Carga inicial de vehículos por CSV (HU-10).
+        Carga inicial de vehículos y de conductores por CSV (HU-10).
 
         Todo o nada: se valida cada fila con las mismas reglas del alta individual y solo se crea si ninguna tiene
         errores. Sin `confirmar` solo se entrega el informe, para revisarlo antes de cargar.
 
-        Formato: encabezado en la primera línea con `patente`, `marca_modelo`, `anio` y, opcional, `capacidad`
-        (por defecto 4). Se aceptan las variantes «año», «marca y modelo», «marca/modelo», mayúsculas y tildes.
-        Separador coma o punto y coma (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM)
-        o Windows-1252.
+        Formato común: encabezado en la primera línea; mayúsculas y tildes no importan. Separador coma o punto y coma
+        (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM) o Windows-1252. Hasta 500 filas
+        y 1 MB.
+
+        - Vehículos: `patente`, `marca_modelo`, `anio` y, opcional, `capacidad` (por defecto 4). También sirven «año»,
+          «marca y modelo» y «marca/modelo».
+        - Conductores: `nombre`, `email`, `rut`, `telefono`, `licencia_clase` y `licencia_vence` (AAAA-MM-DD o
+          DD-MM-AAAA). Sin contraseñas: las cuentas quedan sin contraseña utilizable y el administrador genera una
+          temporal desde la ficha de cada conductor.
       summary: Carga inicial de vehículos por CSV
       tags:
       - flota
@@ -904,6 +1165,13 @@ paths:
           description: La reserva no admite la operación en su estado actual
 components:
   schemas:
+    AccesoEnum:
+      enum:
+      - SIN_PASSWORD
+      - TEMPORAL
+      - TEMPORAL_VENCIDA
+      - ACTIVA
+      type: string
     Access:
       type: object
       properties:
@@ -935,6 +1203,22 @@ components:
     BlankEnum:
       enum:
       - ''
+    CambiarPasswordRequest:
+      type: object
+      properties:
+        password_actual:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        password_nueva:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - password_actual
+      - password_nueva
     CanalEnum:
       enum:
       - WEB
@@ -1014,12 +1298,24 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        acceso:
+          allOf:
+          - $ref: '#/components/schemas/AccesoEnum'
+          description: SIN_PASSWORD (recién creada), TEMPORAL (debe cambiarla), TEMPORAL_VENCIDA
+            o ACTIVA.
+          readOnly: true
+        password_temporal_vence:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         vehiculos:
           type: array
           items:
             $ref: '#/components/schemas/VehiculoAsociado'
           readOnly: true
       required:
+      - acceso
       - activo
       - consentimiento_gps_en
       - email
@@ -1029,10 +1325,48 @@ components:
       - licencia_vence
       - licencia_vigente
       - nombre
+      - password_temporal_vence
       - rut
       - telefono
       - vehiculo_activo
       - vehiculos
+    ConductorCrearRequest:
+      type: object
+      description: 'Alta: los datos del conductor más el correo de acceso. La cuenta
+        queda sin contraseña utilizable.'
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        rut:
+          type: string
+          minLength: 1
+          description: Acepta puntos y la K minúscula.
+          maxLength: 14
+        telefono:
+          type: string
+          minLength: 1
+          description: 'Móvil chileno: +569XXXXXXXX (sin prefijo, 9XXXXXXXX también
+            sirve).'
+          maxLength: 24
+        licencia_clase:
+          $ref: '#/components/schemas/LicenciaClaseEnum'
+        licencia_vence:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 120
+      required:
+      - email
+      - licencia_clase
+      - licencia_vence
+      - nombre
+      - rut
+      - telefono
     ConductorEstadoEnum:
       enum:
       - DISPONIBLE
@@ -1367,6 +1701,18 @@ components:
       - id
       - nombre
       - telefono
+    PasswordTemporal:
+      type: object
+      properties:
+        password_temporal:
+          type: string
+          description: Se muestra una sola vez. No se guarda en texto plano.
+        vence_en:
+          type: string
+          format: date-time
+      required:
+      - password_temporal
+      - vence_en
     PatchedConductorEditarRequest:
       type: object
       description: Datos del conductor. El email y la contraseña (credenciales) no
@@ -1384,7 +1730,8 @@ components:
         telefono:
           type: string
           minLength: 1
-          description: 'Móvil chileno: +569XXXXXXXX.'
+          description: 'Móvil chileno: +569XXXXXXXX (sin prefijo, 9XXXXXXXX también
+            sirve).'
           maxLength: 24
         licencia_clase:
           $ref: '#/components/schemas/LicenciaClaseEnum'
@@ -1601,7 +1948,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/EmpresaResumen'
           readOnly: true
+        debe_cambiar_password:
+          type: boolean
+          readOnly: true
       required:
+      - debe_cambiar_password
       - email
       - empresa
       - id

@@ -143,6 +143,11 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         default=0, db_default=0, validators=[MaxValueValidator(5)]
     )
     bloqueado_hasta = models.DateTimeField(null=True, blank=True)
+    # DC-14: contraseña temporal generada por el administrador. Mientras esté activo, la API solo permite
+    # cambiar la contraseña y cerrar sesión (403 cambio_password_requerido). La temporal vence a las
+    # PASSWORD_TEMPORAL_HORAS si no se usa para cambiarla.
+    debe_cambiar_password = models.BooleanField(default=False, db_default=False)
+    password_temporal_vence = models.DateTimeField(null=True, blank=True)
     is_staff = models.BooleanField(default=False, db_default=False)
 
     objects = UsuarioManager()

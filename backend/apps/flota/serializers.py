@@ -10,12 +10,15 @@ from apps.comun.validadores import (
     validar_patente,
     validar_rut,
 )
+from apps.cuentas.credenciales import estado_de_acceso
+from apps.cuentas.models import Usuario
 from apps.reservas.serializers import ConductorResumenSerializer
 
 from .models import Conductor, Vehiculo
 
 PATENTE_REGISTRADA = "Esta patente ya está registrada."
 RUT_REGISTRADO = "Este RUT ya está registrado."
+EMAIL_REGISTRADO = "Este correo ya tiene una cuenta."
 
 
 def normalizar_patente(valor: str) -> str:
@@ -91,6 +94,12 @@ class ConductorSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="usuario.email", read_only=True)
     activo = serializers.BooleanField(source="usuario.activo", read_only=True, help_text="Cuenta habilitada")
     licencia_vigente = serializers.SerializerMethodField()
+    acceso = serializers.SerializerMethodField(
+        help_text="SIN_PASSWORD (recién creada), TEMPORAL (debe cambiarla), TEMPORAL_VENCIDA o ACTIVA."
+    )
+    password_temporal_vence = serializers.DateTimeField(
+        source="usuario.password_temporal_vence", read_only=True, allow_null=True
+    )
     vehiculo_activo = VehiculoDeclaradoSerializer(allow_null=True, read_only=True)
     vehiculos = serializers.SerializerMethodField()
 
@@ -109,9 +118,18 @@ class ConductorSerializer(serializers.ModelSerializer):
             "estado",
             "vehiculo_activo",
             "consentimiento_gps_en",
+            "acceso",
+            "password_temporal_vence",
             "vehiculos",
         ]
         read_only_fields = fields
+
+    @staticmethod
+    @extend_schema_field(
+        serializers.ChoiceField(choices=["SIN_PASSWORD", "TEMPORAL", "TEMPORAL_VENCIDA", "ACTIVA"])
+    )
+    def get_acceso(conductor):
+        return estado_de_acceso(conductor.usuario)
 
     @staticmethod
     def get_licencia_vigente(conductor) -> bool:
@@ -129,7 +147,9 @@ class ConductorEditarSerializer(serializers.Serializer):
 
     nombre = serializers.CharField(max_length=80)
     rut = serializers.CharField(max_length=14, help_text="Acepta puntos y la K minúscula.")
-    telefono = serializers.CharField(max_length=24, help_text="Móvil chileno: +569XXXXXXXX.")
+    telefono = serializers.CharField(
+        max_length=24, help_text="Móvil chileno: +569XXXXXXXX (sin prefijo, 9XXXXXXXX también sirve)."
+    )
     licencia_clase = serializers.ChoiceField(choices=Conductor._meta.get_field("licencia_clase").choices)
     licencia_vence = serializers.DateField()
 
@@ -142,13 +162,18 @@ class ConductorEditarSerializer(serializers.Serializer):
     def validate_rut(self, valor):
         valor = normalizar_rut(valor)
         validar_rut(valor)
-        conductor = self.context["conductor"]
-        if Conductor.objects.filter(rut=valor).exclude(pk=conductor.pk).exists():
+        otros = Conductor.objects.filter(rut=valor)
+        if self.context.get("conductor") is not None:
+            otros = otros.exclude(pk=self.context["conductor"].pk)
+        if otros.exists():
             raise serializers.ValidationError(RUT_REGISTRADO)
         return valor
 
     def validate_telefono(self, valor):
         valor = normalizar_telefono(valor)
+        # Un móvil chileno escrito sin prefijo (9 dígitos que empiezan con 9, como en una planilla).
+        if len(valor) == 9 and valor.startswith("9") and valor.isdigit():
+            valor = f"+56{valor}"
         validar_movil_chile(valor)
         return valor
 
@@ -158,6 +183,25 @@ class ConductorEditarSerializer(serializers.Serializer):
                 "La licencia debe estar vigente: la fecha tiene que ser futura."
             )
         return valor
+
+
+class ConductorCrearSerializer(ConductorEditarSerializer):
+    """Alta: los datos del conductor más el correo de acceso. La cuenta queda sin contraseña utilizable."""
+
+    email = serializers.EmailField(max_length=120)
+
+    def validate_email(self, valor):
+        valor = valor.strip().lower()
+        if Usuario.objects.filter(email__iexact=valor).exists():
+            raise serializers.ValidationError(EMAIL_REGISTRADO)
+        return valor
+
+
+class PasswordTemporalSerializer(serializers.Serializer):
+    password_temporal = serializers.CharField(
+        help_text="Se muestra una sola vez. No se guarda en texto plano."
+    )
+    vence_en = serializers.DateTimeField()
 
 
 class AsociarVehiculoSerializer(serializers.Serializer):

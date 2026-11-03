@@ -20,7 +20,7 @@ from django.conf import settings
 from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import status
 from rest_framework.parsers import JSONParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -40,9 +40,11 @@ from .autenticacion import (
     renovar,
     vida_cookie,
 )
+from .credenciales import cambiar_password
 from .origen import OrigenPanelPermitido
 from .serializers import (
     AccessSerializer,
+    CambiarPasswordSerializer,
     ErrorSerializer,
     LoginSerializer,
     RefreshSerializer,
@@ -267,6 +269,9 @@ class RefreshAppView(_VistaAuth):
 
 
 class YoView(APIView):
+    # Con la temporal pendiente la app la consulta para saber que debe pedir el cambio (DC-14).
+    permite_cambio_pendiente = True
+
     @extend_schema(
         tags=["auth"],
         summary="Usuario de la sesión actual",
@@ -277,3 +282,65 @@ class YoView(APIView):
     )
     def get(self, request):
         return Response(UsuarioSesionSerializer(request.user).data)
+
+
+class LogoutAppView(_VistaAuth):
+    @extend_schema(
+        tags=["auth"],
+        summary="Cerrar sesión en la app del conductor",
+        request=RefreshSerializer,
+        responses={204: None},
+        description="Deja el refresh en la lista negra. Responde 204 aunque el refresh no sirva (vencido, ya "
+        "usado o de otro canal): para la app la sesión queda cerrada igual.",
+    )
+    def post(self, request):
+        datos = RefreshSerializer(data=request.data)
+        if datos.is_valid():
+            with contextlib.suppress(TokenError):
+                token = RefreshToken(datos.validated_data["refresh"])
+                if token.get("canal") == CANAL_APP:
+                    token.blacklist()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class CambiarPasswordView(APIView):
+    """Disponible aunque el usuario tenga una contraseña temporal pendiente (DC-14)."""
+
+    permite_cambio_pendiente = True
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
+
+    @extend_schema(
+        tags=["auth"],
+        summary="Cambiar la propia contraseña",
+        request=CambiarPasswordSerializer,
+        responses={
+            200: OpenApiResponse(
+                TokensSerializer,
+                description="App: tokens nuevos. Panel: solo `access` y el refresh en la cookie.",
+            ),
+            400: ERROR_VALIDACION,
+            401: OpenApiResponse(description="Falta el access o no es válido."),
+            429: ERROR_THROTTLE,
+        },
+        description="Exige la contraseña actual. Cierra todas las sesiones del usuario (panel y app) y "
+        "entrega "
+        "una nueva en el mismo canal del access usado. Quita la obligación de cambiar la temporal.",
+    )
+    def post(self, request):
+        datos = CambiarPasswordSerializer(data=request.data)
+        datos.is_valid(raise_exception=True)
+        cambiar_password(
+            request.user,
+            actual=datos.validated_data["password_actual"],
+            nueva=datos.validated_data["password_nueva"],
+        )
+        request.user.refresh_from_db()
+        canal = request.auth.get("canal") if request.auth is not None else None
+        refresh = emitir_tokens(request.user, CANAL_PANEL if canal == CANAL_PANEL else CANAL_APP)
+        if canal == CANAL_PANEL:
+            respuesta = Response({"access": str(refresh.access_token)})
+            _poner_cookie(respuesta, str(refresh), vida_cookie(refresh))
+            return respuesta
+        return Response({"access": str(refresh.access_token), "refresh": str(refresh)})

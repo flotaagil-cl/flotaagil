@@ -7,6 +7,8 @@ from rest_framework.exceptions import APIException, ValidationError
 
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
+from apps.cuentas import credenciales
+from apps.cuentas.models import Rol, Usuario
 from apps.reservas.models import EstadoViaje, Viaje
 
 from .models import Conductor, ConductorVehiculo, EstadoConductor, Vehiculo
@@ -149,4 +151,71 @@ def desasociar_vehiculo(conductor: Conductor, vehiculo: Vehiculo, *, usuario) ->
         entidad_id=conductor.pk,
         accion="DESASOCIAR_VEHICULO",
         datos_previos={"vehiculo_id": vehiculo.pk, "patente": vehiculo.patente},
+    )
+
+
+# --- Cuentas de los conductores (PR-06, DC-14) ---
+
+
+class ConductorEnViaje(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "conductor_en_viaje"
+    default_detail = "El conductor está en viaje. Espera a que termine."
+
+
+def _no_en_viaje(conductor: Conductor, accion: str) -> None:
+    if conductor.estado == EstadoConductor.EN_VIAJE:
+        raise ConductorEnViaje(f"El conductor está en viaje: no se puede {accion} hasta que termine.")
+
+
+@transaction.atomic
+def crear_conductores(empresa, filas: list[dict], *, usuario) -> list[Conductor]:
+    """Crea las cuentas (rol CONDUCTOR, sin contraseña utilizable) y sus conductores."""
+    creados = []
+    for fila in filas:
+        datos = dict(fila)
+        cuenta = Usuario.objects.create_user(
+            datos.pop("email"), password=None, nombre=datos.pop("nombre"), empresa=empresa, rol=Rol.CONDUCTOR
+        )
+        conductor = Conductor.objects.create(usuario=cuenta, **datos)
+        auditoria.registrar(
+            usuario=usuario, entidad=Entidad.CONDUCTOR, entidad_id=conductor.pk, accion="CREAR"
+        )
+        creados.append(conductor)
+    return creados
+
+
+@transaction.atomic
+def generar_password(conductor: Conductor, *, usuario):
+    """Temporal nueva (o restablecida): cierra todas las sesiones del conductor. 409 si está en viaje."""
+    conductor = Conductor.objects.select_for_update().select_related("usuario").get(pk=conductor.pk)
+    _no_en_viaje(conductor, "restablecer su contraseña")
+    return credenciales.asignar_password_temporal(conductor.usuario, por=usuario)
+
+
+@transaction.atomic
+def cambiar_habilitacion(conductor: Conductor, habilitar: bool, *, usuario) -> None:
+    """Deshabilitar: la cuenta no puede ingresar, se cierran sus sesiones y el conductor queda No disponible.
+    Habilitar: puede volver a ingresar con su contraseña. Ambos quedan en auditoría (RN-12)."""
+    conductor = Conductor.objects.select_for_update().select_related("usuario").get(pk=conductor.pk)
+    cuenta = conductor.usuario
+    if cuenta.activo == habilitar:
+        return
+    if not habilitar:
+        _no_en_viaje(conductor, "deshabilitar su cuenta")
+    previos = {"activo": cuenta.activo}
+    cuenta.activo = habilitar
+    cuenta.save(update_fields=["activo"])
+    if not habilitar:
+        credenciales.revocar_sesiones(cuenta)
+        if conductor.estado != EstadoConductor.NO_DISPONIBLE:
+            previos["estado"] = conductor.estado
+            conductor.estado = EstadoConductor.NO_DISPONIBLE
+            conductor.save(update_fields=["estado"])
+    auditoria.registrar(
+        usuario=usuario,
+        entidad=Entidad.USUARIO,
+        entidad_id=cuenta.pk,
+        accion="HABILITAR" if habilitar else "DESHABILITAR",
+        datos_previos=previos,
     )
