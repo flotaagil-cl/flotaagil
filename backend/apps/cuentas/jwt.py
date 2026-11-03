@@ -1,6 +1,5 @@
 """Autenticación JWT de la API con el bloqueo de cambio de contraseña pendiente (DC-14)."""
 
-from drf_spectacular.contrib.rest_framework_simplejwt import SimpleJWTScheme
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -23,9 +22,3 @@ class AutenticacionJWT(JWTAuthentication):
             if not getattr(vista, "permite_cambio_pendiente", False):
                 raise CambioPasswordRequerido()
         return resultado
-
-
-class EsquemaAutenticacionJWT(SimpleJWTScheme):
-    """Para drf-spectacular: la misma definición (jwtAuth, Bearer) que la autenticación de simplejwt."""
-
-    target_class = "apps.cuentas.jwt.AutenticacionJWT"

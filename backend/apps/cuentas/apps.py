@@ -7,4 +7,7 @@ class CuentasConfig(AppConfig):
     verbose_name = "Cuentas y empresas"
 
     def ready(self):
-        from . import checks  # noqa: F401  (registra los system checks)
+        from . import (
+            checks,  # noqa: F401  (registra los system checks)
+            esquema,  # noqa: F401  (extensión de OpenAPI para AutenticacionJWT)
+        )
