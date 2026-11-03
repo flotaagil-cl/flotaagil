@@ -141,6 +141,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/viajes/{id}/a-bordo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Indicar que el pasajero subió (PASAJERO_A_BORDO)
+         * @description Desde EN_ZONA. Desde EN_CAMINO (la geocerca no lo marcó), registra antes EN_ZONA con actor CONDUCTOR (DC-17).
+         */
+        post: operations["app_viajes_a_bordo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/viajes/{id}/en-camino/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Salir hacia el punto de recogida (EN_CAMINO) */
+        post: operations["app_viajes_en_camino_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/viajes/{id}/finalizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finalizar el viaje con el pago (RN-10)
+         * @description Método y monto obligatorios. El conductor queda Disponible.
+         */
+        post: operations["app_viajes_finalizar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/app/logout/": {
         parameters: {
             query?: never;
@@ -909,6 +966,10 @@ export interface components {
          * @enum {string}
          */
         EstadoConductorEnum: "DISPONIBLE" | "NO_DISPONIBLE" | "EN_VIAJE";
+        EstadoViaje: {
+            viaje: number;
+            estado: string;
+        };
         /**
          * @description * `PENDIENTE_CONFIRMACION` - Pendiente de confirmación
          *     * `SOLICITADO` - Solicitado
@@ -940,6 +1001,11 @@ export interface components {
             errores: {
                 [key: string]: string[];
             };
+        };
+        FinalizarRequest: {
+            metodo: components["schemas"]["MetodoEnum"];
+            /** @description Monto cobrado en CLP */
+            monto: number;
         };
         Historial: {
             estado_anterior?: (components["schemas"]["EstadoViajeEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -982,6 +1048,14 @@ export interface components {
         LotePosicionesRequest: {
             posiciones: components["schemas"]["PosicionRequest"][];
         };
+        /**
+         * @description * `EFECTIVO` - Efectivo
+         *     * `TARJETA` - Tarjeta
+         *     * `TRANSFERENCIA` - Transferencia
+         *     * `CONVENIO` - Convenio
+         * @enum {string}
+         */
+        MetodoEnum: "EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "CONVENIO";
         /** @enum {unknown} */
         NullEnum: null;
         /**
@@ -1283,6 +1357,10 @@ export interface components {
             destino: components["schemas"]["Punto"];
             /** @description Número de vuelo, si es desde el aeropuerto */
             vuelo: string | null;
+            /** @description Tarifa acordada (CLP), si la hay */
+            tarifa: number | null;
+            /** @description El viaje pertenece a un convenio */
+            convenio: boolean;
             /** @description A dónde navegar ahora: el origen hasta subir el pasajero, luego el destino */
             hacia: components["schemas"]["Punto"];
         };
@@ -1539,6 +1617,96 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["RespuestaViajeActivo"];
                 };
+            };
+        };
+    };
+    app_viajes_a_bordo_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoViaje"];
+                };
+            };
+            /** @description `estado_no_permitido`: el viaje no está en el estado previo. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    app_viajes_en_camino_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoViaje"];
+                };
+            };
+            /** @description `estado_no_permitido`: el viaje no está en el estado previo. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    app_viajes_finalizar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinalizarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["FinalizarRequest"];
+                "multipart/form-data": components["schemas"]["FinalizarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoViaje"];
+                };
+            };
+            /** @description `estado_no_permitido`: el viaje no está en el estado previo. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

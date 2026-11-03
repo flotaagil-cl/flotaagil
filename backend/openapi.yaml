@@ -172,6 +172,90 @@ paths:
               schema:
                 $ref: '#/components/schemas/RespuestaViajeActivo'
           description: ''
+  /api/app/viajes/{id}/a-bordo/:
+    post:
+      operationId: app_viajes_a_bordo_create
+      description: Desde EN_ZONA. Desde EN_CAMINO (la geocerca no lo marcó), registra
+        antes EN_ZONA con actor CONDUCTOR (DC-17).
+      summary: Indicar que el pasajero subió (PASAJERO_A_BORDO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoViaje'
+          description: ''
+        '409':
+          description: '`estado_no_permitido`: el viaje no está en el estado previo.'
+  /api/app/viajes/{id}/en-camino/:
+    post:
+      operationId: app_viajes_en_camino_create
+      summary: Salir hacia el punto de recogida (EN_CAMINO)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoViaje'
+          description: ''
+        '409':
+          description: '`estado_no_permitido`: el viaje no está en el estado previo.'
+  /api/app/viajes/{id}/finalizar/:
+    post:
+      operationId: app_viajes_finalizar_create
+      description: Método y monto obligatorios. El conductor queda Disponible.
+      summary: Finalizar el viaje con el pago (RN-10)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - app
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinalizarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FinalizarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FinalizarRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoViaje'
+          description: ''
+        '409':
+          description: '`estado_no_permitido`: el viaje no está en el estado previo.'
   /api/auth/app/logout/:
     post:
       operationId: auth_app_logout_create
@@ -1850,6 +1934,16 @@ components:
         * `DISPONIBLE` - Disponible
         * `NO_DISPONIBLE` - No disponible
         * `EN_VIAJE` - En viaje
+    EstadoViaje:
+      type: object
+      properties:
+        viaje:
+          type: integer
+        estado:
+          type: string
+      required:
+      - estado
+      - viaje
     EstadoViajeEnum:
       enum:
       - PENDIENTE_CONFIRMACION
@@ -1906,6 +2000,19 @@ components:
       - datos
       - errores
       - linea
+    FinalizarRequest:
+      type: object
+      properties:
+        metodo:
+          $ref: '#/components/schemas/MetodoEnum'
+        monto:
+          type: integer
+          maximum: 500000
+          minimum: 0
+          description: Monto cobrado en CLP
+      required:
+      - metodo
+      - monto
     Historial:
       type: object
       properties:
@@ -1998,6 +2105,18 @@ components:
             $ref: '#/components/schemas/PosicionRequest'
       required:
       - posiciones
+    MetodoEnum:
+      enum:
+      - EFECTIVO
+      - TARJETA
+      - TRANSFERENCIA
+      - CONVENIO
+      type: string
+      description: |-
+        * `EFECTIVO` - Efectivo
+        * `TARJETA` - Tarjeta
+        * `TRANSFERENCIA` - Transferencia
+        * `CONVENIO` - Convenio
     NullEnum:
       enum:
       - null
@@ -2706,12 +2825,20 @@ components:
           type: string
           nullable: true
           description: Número de vuelo, si es desde el aeropuerto
+        tarifa:
+          type: integer
+          nullable: true
+          description: Tarifa acordada (CLP), si la hay
+        convenio:
+          type: boolean
+          description: El viaje pertenece a un convenio
         hacia:
           allOf:
           - $ref: '#/components/schemas/Punto'
           description: 'A dónde navegar ahora: el origen hasta subir el pasajero,
             luego el destino'
       required:
+      - convenio
       - destino
       - estado
       - hacia
@@ -2719,6 +2846,7 @@ components:
       - origen
       - pasajero
       - recogida_en
+      - tarifa
       - vuelo
     ViajeCrearRequest:
       type: object
