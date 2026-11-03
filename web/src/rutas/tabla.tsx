@@ -84,6 +84,16 @@ export const pantallasDelPanel: RouteObject[] = [
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Conductores')).Conductores }) },
       {
+        path: 'nuevo',
+        lazy: async () => ({ Component: (await import('../flota/paginas/ConductorNuevo')).ConductorNuevo }),
+        handle: { titulo: 'Nuevo conductor', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+      {
+        path: 'importar',
+        lazy: async () => ({ Component: (await import('../flota/paginas/ImportarConductores')).ImportarConductores }),
+        handle: { titulo: 'Cargar conductores por CSV', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+      {
         path: ':id',
         lazy: async () => ({ Component: (await import('../flota/paginas/Conductor')).Conductor }),
         handle: { titulo: 'Conductor', roles: ROLES_ADMIN } satisfies Manejo,

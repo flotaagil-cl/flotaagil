@@ -40,6 +40,8 @@ export const DIFERIDOS = [
   'src/flota/paginas/ImportarVehiculos.tsx',
   'src/flota/paginas/Conductores.tsx',
   'src/flota/paginas/Conductor.tsx',
+  'src/flota/paginas/ConductorNuevo.tsx',
+  'src/flota/paginas/ImportarConductores.tsx',
   'src/portal/LayoutPortal.tsx',
   'src/portal/paginas/Solicitar.tsx',
   'src/portal/paginas/Privacidad.tsx',

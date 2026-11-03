@@ -573,3 +573,30 @@
 .tabla tr[data-error='true'] {
   background: var(--error-fondo);
 }
+
+.formularioDialogo {
+  display: grid;
+  gap: var(--espacio-3);
+  padding: var(--espacio-4);
+}
+
+.confirmacion {
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+}
+
+/* Contraseña temporal: grande, monoespaciada y fácil de seleccionar entera. */
+.password {
+  margin: 0;
+  padding: var(--espacio-3);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  user-select: all;
+  overflow-wrap: anywhere;
+}

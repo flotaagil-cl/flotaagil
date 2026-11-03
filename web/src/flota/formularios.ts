@@ -110,3 +110,24 @@ export function cuerpoEditarConductor(datos: DatosConductor, antes: DatosConduct
       .map((campo) => [campo, datos[campo]]),
   ) as ConductorEditar;
 }
+
+export function esquemaConductorNuevo(hoy: string) {
+  return esquemaConductor(hoy).extend({
+    email: z
+      .string()
+      .transform((v) => v.trim().toLowerCase())
+      .pipe(z.email({ error: 'Correo inválido.' }).max(120, { error: 'Máximo 120 caracteres.' })),
+  });
+}
+
+export type ValoresConductorNuevo = z.input<ReturnType<typeof esquemaConductorNuevo>>;
+export type DatosConductorNuevo = z.output<ReturnType<typeof esquemaConductorNuevo>>;
+
+export const CONDUCTOR_VACIO: ValoresConductorNuevo = {
+  nombre: '',
+  email: '',
+  rut: '',
+  telefono: '',
+  licencia_clase: 'A2',
+  licencia_vence: '',
+};

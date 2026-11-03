@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
@@ -19,6 +19,7 @@ import {
   type Conductor as TipoConductor,
 } from '../api';
 import { FallaDeCarga, NoEncontrado } from '../componentes/comunes';
+import { CuentaConductor } from '../componentes/CuentaConductor';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 import { avisoLicencia, ESTADOS_CONDUCTOR, LICENCIAS } from '../etiquetas';
 import { cuerpoEditarConductor, esquemaConductor, type DatosConductor, type ValoresConductor } from '../formularios';
@@ -50,7 +51,8 @@ function datosDe(conductor: TipoConductor): DatosConductor {
 
 function Ficha({ conductor }: { conductor: TipoConductor }) {
   const [editando, setEditando] = useState(false);
-  const [aviso, setAviso] = useState<string | null>(null);
+  const ubicacion = useLocation();
+  const [aviso, setAviso] = useState<string | null>((ubicacion.state as { aviso?: string } | null)?.aviso ?? null);
   const alertaLicencia = avisoLicencia(conductor.licencia_vence, hoy());
 
   return (
@@ -88,10 +90,6 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
               <dd>{conductor.email}</dd>
             </div>
             <div>
-              <dt>Cuenta</dt>
-              <dd>{conductor.activo ? 'Habilitada' : 'Deshabilitada'}</dd>
-            </div>
-            <div>
               <dt>Licencia</dt>
               <dd>
                 Clase {LICENCIAS[conductor.licencia_clase]} · vence {formatearFecha(conductor.licencia_vence)}
@@ -124,9 +122,11 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
               Editar datos
             </button>
           </div>
-          <p className={estilos.explicacion}>El correo y la contraseña de acceso no se cambian desde aquí.</p>
+          <p className={estilos.explicacion}>El correo de acceso no se cambia desde aquí.</p>
         </div>
       )}
+
+      <CuentaConductor conductor={conductor} />
 
       <Vehiculos conductor={conductor} />
     </section>

@@ -23,10 +23,10 @@ interface UsuarioFalso extends Usuario {
 const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes' };
 
 export const USUARIOS: UsuarioFalso[] = [
-  { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, password: 'clave' },
-  { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave' },
-  { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave' },
-  { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true },
+  { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
+  { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
+  { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
+  { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true, debe_cambiar_password: false },
 ];
 
 interface Pendiente {
@@ -222,6 +222,6 @@ export class ServidorAuthFalso {
 }
 
 function publico(usuario: UsuarioFalso): Usuario {
-  const { id, nombre, email, rol, empresa } = usuario;
-  return { id, nombre, email, rol, empresa };
+  const { id, nombre, email, rol, empresa, debe_cambiar_password } = usuario;
+  return { id, nombre, email, rol, empresa, debe_cambiar_password };
 }

@@ -6,7 +6,7 @@
  * vehículos (409 si es el declarado en turno). `siguiente` programa la próxima respuesta de una ruta.
  */
 
-import type { Conductor, ConductorEditar, Informe, Vehiculo, VehiculoCrear, VehiculoEditar } from '../flota/api';
+import type { Conductor, ConductorCrear, ConductorEditar, Informe, Vehiculo, VehiculoCrear, VehiculoEditar } from '../flota/api';
 import type { Respuesta, ServidorAuthFalso } from './servidorAuthFalso';
 
 let siguienteId = 500;
@@ -38,6 +38,8 @@ export function conductorDePrueba(cambios: Partial<Conductor> = {}): Conductor {
     estado: 'NO_DISPONIBLE',
     vehiculo_activo: null,
     consentimiento_gps_en: null,
+    acceso: 'ACTIVA',
+    password_temporal_vence: null,
     vehiculos: [],
     ...cambios,
   };
@@ -70,7 +72,7 @@ export class ServidorFlotaFalso {
     if (!esFlota) {
       return this.anterior ? this.anterior(peticion, url) : { estado: 404, cuerpo: { detail: 'No encontrado.' } };
     }
-    if (ruta === 'POST /api/vehiculos/importar/') {
+    if (ruta === 'POST /api/vehiculos/importar/' || ruta === 'POST /api/conductores/importar/') {
       const formulario = await peticion.formData();
       const archivo = formulario.get('archivo');
       this.cuerpos.push({
@@ -79,7 +81,9 @@ export class ServidorFlotaFalso {
       });
       return this.informes.shift() ?? { estado: 200, cuerpo: informeDePrueba() };
     }
-    const cuerpo = peticion.method === 'GET' || peticion.method === 'DELETE' ? undefined : await peticion.json();
+    // Algunas acciones (password, deshabilitar…) van sin cuerpo.
+    const texto = peticion.method === 'GET' || peticion.method === 'DELETE' ? '' : await peticion.text();
+    const cuerpo: unknown = texto ? JSON.parse(texto) : undefined;
     if (cuerpo !== undefined) this.cuerpos.push({ ruta, cuerpo });
     const programada = this.programadas.get(ruta)?.shift();
     if (programada) return programada;
@@ -87,6 +91,7 @@ export class ServidorFlotaFalso {
     if (ruta === 'GET /api/vehiculos/') return paginar(this.filtrarVehiculos(url), url);
     if (ruta === 'POST /api/vehiculos/') return this.crearVehiculo(cuerpo as VehiculoCrear);
     if (ruta === 'GET /api/conductores/') return paginar(this.filtrarConductores(url), url);
+    if (ruta === 'POST /api/conductores/') return this.crearConductor(cuerpo as ConductorCrear);
 
     const vehiculo = /^\/api\/vehiculos\/(\d+)\/$/.exec(url.pathname);
     if (vehiculo) {
@@ -95,9 +100,10 @@ export class ServidorFlotaFalso {
       if (peticion.method === 'PATCH') return this.editarVehiculo(encontrado, cuerpo as VehiculoEditar);
       return { estado: 200, cuerpo: encontrado };
     }
-    const conductor = /^\/api\/conductores\/(\d+)\/(?:vehiculos\/(?:(\d+)\/)?)?$/.exec(url.pathname);
+    const conductor = /^\/api\/conductores\/(\d+)\/(?:vehiculos\/(?:(\d+)\/)?|(password|deshabilitar|habilitar)\/)?$/.exec(url.pathname);
     const encontrado = conductor && this.conductores.find((c) => c.id === Number(conductor[1]));
     if (!conductor || !encontrado) return NO_ENCONTRADO;
+    if (conductor[3]) return this.cuenta(encontrado, conductor[3]);
     if (url.pathname.includes('/vehiculos/')) {
       if (peticion.method === 'POST') return this.asociar(encontrado, (cuerpo as { vehiculo: number }).vehiculo);
       return this.quitar(encontrado, Number(conductor[2]));
@@ -107,6 +113,32 @@ export class ServidorFlotaFalso {
       return { estado: 200, cuerpo: encontrado };
     }
     return { estado: 200, cuerpo: encontrado };
+  }
+
+  /** Contraseña temporal entregada por el último `password/` (para comprobar que se muestra y se olvida). */
+  ultimaTemporal: string | null = null;
+
+  private crearConductor(datos: ConductorCrear): Respuesta {
+    if (this.conductores.some((c) => c.email === datos.email)) {
+      return { estado: 400, cuerpo: { email: ['Este correo ya tiene una cuenta.'] } };
+    }
+    const conductor = conductorDePrueba({ ...datos, acceso: 'SIN_PASSWORD' });
+    this.conductores.push(conductor);
+    return { estado: 201, cuerpo: conductor };
+  }
+
+  private cuenta(conductor: Conductor, accion: string): Respuesta {
+    if (conductor.estado === 'EN_VIAJE' && accion !== 'habilitar') {
+      return { estado: 409, cuerpo: { detail: 'El conductor está en viaje: no se puede hacer esto hasta que termine.', code: 'conductor_en_viaje' } };
+    }
+    if (accion === 'password') {
+      this.ultimaTemporal = `Tmp${++siguienteId}abcdEFGH`;
+      Object.assign(conductor, { acceso: 'TEMPORAL', password_temporal_vence: '2026-11-06T15:00:00Z' });
+      return { estado: 201, cuerpo: { password_temporal: this.ultimaTemporal, vence_en: '2026-11-06T15:00:00Z' } };
+    }
+    const activo = accion === 'habilitar';
+    Object.assign(conductor, { activo, ...(activo ? {} : { estado: 'NO_DISPONIBLE' }) });
+    return { estado: 200, cuerpo: conductor };
   }
 
   private filtrarVehiculos(url: URL): Vehiculo[] {

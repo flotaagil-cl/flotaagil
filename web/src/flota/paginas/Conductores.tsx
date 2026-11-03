@@ -8,6 +8,11 @@ import { avisoLicencia, ESTADOS_CONDUCTOR } from '../etiquetas';
 import { useFiltrosUrl } from '../filtrosUrl';
 
 const numero = new Intl.NumberFormat('es-CL');
+const SIN_ACCESO = {
+  SIN_PASSWORD: 'Sin contraseña',
+  TEMPORAL: 'Contraseña temporal',
+  TEMPORAL_VENCIDA: 'Temporal vencida',
+} as const;
 const CLASE_ESTADO: Record<EstadoConductor, string> = {
   DISPONIBLE: estilos.curso,
   EN_VIAJE: estilos.pendiente,
@@ -30,11 +35,15 @@ export function Conductores() {
     <section>
       <div className={estilos.encabezado}>
         <h1>Conductores</h1>
+        <div className={estilos.acciones}>
+          <Link to="/conductores/importar" className={estilos.botonSecundario}>
+            Cargar CSV
+          </Link>
+          <Link to="/conductores/nuevo" className={estilos.boton}>
+            Nuevo conductor
+          </Link>
+        </div>
       </div>
-      <p className={estilos.explicacion}>
-        Aquí se editan los datos y los vehículos de cada conductor. El alta de cuentas nuevas aún no está disponible
-        desde el panel.
-      </p>
 
       <div className={estilos.filtros}>
         <div className={estilos.camposFiltro} data-abierto="true">
@@ -129,6 +138,9 @@ export function Conductores() {
                         {ESTADOS_CONDUCTOR[conductor.estado]}
                       </span>
                       {!conductor.activo && <span className={estilos.alerta}>Cuenta deshabilitada</span>}
+                      {conductor.activo && conductor.acceso !== 'ACTIVA' && (
+                        <span className={estilos.alerta}>{SIN_ACCESO[conductor.acceso]}</span>
+                      )}
                     </Celda>
                   </tr>
                 );

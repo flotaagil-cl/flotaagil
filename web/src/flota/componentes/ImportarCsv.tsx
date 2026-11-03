@@ -1,14 +1,13 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import campos from '../../formularios/formularios.module.css';
-import { useImportarVehiculos, type Informe } from '../api';
-import { Celda } from '../componentes/comunes';
+import { useImportar, type Informe, type RutaImportar } from '../api';
+import { Celda } from './comunes';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 
-const COLUMNAS = { patente: 'Patente', marca_modelo: 'Marca y modelo', anio: 'Año', capacidad: 'Capacidad' } as const;
 
 /** Error del archivo (`archivo` en un 400 sin informe) o mensaje general. */
 function fallaDe(error: unknown): string {
@@ -23,12 +22,25 @@ function esInforme(cuerpo: unknown): cuerpo is Informe {
   return Boolean(cuerpo && typeof cuerpo === 'object' && 'filas' in cuerpo);
 }
 
+interface Props {
+  titulo: string;
+  ruta: RutaImportar;
+  volverA: string;
+  textoVolver: string;
+  /** Columna del informe → título. */
+  columnas: Record<string, string>;
+  ayuda: ReactNode;
+  ejemplo: string;
+  singular: string;
+  plural: string;
+}
+
 /**
  * Carga inicial por CSV en dos pasos: «Revisar» valida sin crear y muestra cada línea con sus errores;
  * «Cargar» crea todos o ninguno. Si el archivo cambia, hay que revisarlo de nuevo.
  */
-export function ImportarVehiculos() {
-  const importar = useImportarVehiculos();
+export function ImportarCsv({ titulo, ruta, volverA, textoVolver, columnas: COLUMNAS, ayuda, ejemplo, singular, plural }: Props) {
+  const importar = useImportar(ruta);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [informe, setInforme] = useState<Informe | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -45,7 +57,7 @@ export function ImportarVehiculos() {
       // Con `confirmar` y errores, el 400 trae el informe actualizado (p. ej. otra persona cargó una patente).
       if (error instanceof ErrorApi && esInforme(error.cuerpo)) {
         setInforme(error.cuerpo);
-        setFalla('No se cargó ningún vehículo: hay líneas con errores.');
+        setFalla(`No se cargó ningún ${singular}: hay líneas con errores.`);
       } else {
         setFalla(fallaDe(error));
       }
@@ -55,13 +67,11 @@ export function ImportarVehiculos() {
   if (creados !== null) {
     return (
       <section>
-        <h1>Cargar vehículos por CSV</h1>
-        <Aviso>
-          Se {creados === 1 ? 'cargó 1 vehículo' : `cargaron ${creados} vehículos`}.
-        </Aviso>
+        <h1>{titulo}</h1>
+        <Aviso>{creados === 1 ? `Se cargó 1 ${singular}.` : `Se cargaron ${creados} ${plural}.`}</Aviso>
         <div className={estilos.acciones}>
-          <Link to="/vehiculos" className={estilos.boton}>
-            Ver los vehículos
+          <Link to={volverA} className={estilos.boton}>
+            Ver los {plural}
           </Link>
         </div>
       </section>
@@ -71,18 +81,14 @@ export function ImportarVehiculos() {
   return (
     <section>
       <div className={estilos.encabezado}>
-        <h1>Cargar vehículos por CSV</h1>
-        <Link to="/vehiculos" className={estilos.botonSecundario}>
-          Volver a los vehículos
+        <h1>{titulo}</h1>
+        <Link to={volverA} className={estilos.botonSecundario}>
+          {textoVolver}
         </Link>
       </div>
       <div className={estilos.tarjeta}>
-        <p>
-          La primera línea debe tener los títulos <code>patente</code>, <code>marca_modelo</code>, <code>anio</code> y,
-          opcional, <code>capacidad</code> (si falta, 4). Sirve el CSV que guarda Excel (separado por punto y coma) y uno
-          separado por comas. Máximo 500 vehículos. Se cargan todos o ninguno.
-        </p>
-        <pre className={estilos.secundario}>patente;marca_modelo;anio;capacidad{'\n'}AB1234;Toyota Yaris;2022;4</pre>
+        {ayuda}
+        <pre className={estilos.secundario}>{ejemplo}</pre>
         <label className={campos.campo}>
           Archivo CSV
           <input
@@ -156,7 +162,7 @@ export function ImportarVehiculos() {
           {informe.con_errores === 0 ? (
             <div className={estilos.acciones}>
               <button type="button" className={estilos.boton} disabled={importar.isPending} onClick={() => void enviar(true)}>
-                {importar.isPending ? 'Cargando…' : `Cargar ${informe.validas} ${informe.validas === 1 ? 'vehículo' : 'vehículos'}`}
+                {importar.isPending ? 'Cargando…' : `Cargar ${informe.validas} ${informe.validas === 1 ? singular : plural}`}
               </button>
             </div>
           ) : (

@@ -19,6 +19,8 @@ export type VehiculoCrear = components['schemas']['VehiculoCrearRequest'];
 export type VehiculoEditar = components['schemas']['PatchedVehiculoEditarRequest'];
 export type Conductor = components['schemas']['Conductor'];
 export type ConductorEditar = components['schemas']['PatchedConductorEditarRequest'];
+export type ConductorCrear = components['schemas']['ConductorCrearRequest'];
+export type Acceso = components['schemas']['AccesoEnum'];
 export type EstadoConductor = components['schemas']['ConductorEstadoEnum'];
 export type LicenciaClase = components['schemas']['LicenciaClaseEnum'];
 export type Informe = components['schemas']['InformeImportacion'];
@@ -116,13 +118,15 @@ export function useEditarVehiculo(id: number) {
 }
 
 /** Carga por CSV: sin `confirmar` solo trae el informe; con `confirmar`, crea todo o nada. */
-export function useImportarVehiculos() {
+export type RutaImportar = '/api/vehiculos/importar/' | '/api/conductores/importar/';
+
+export function useImportar(ruta: RutaImportar) {
   const api = useApi();
   const cliente = useQueryClient();
   return useMutation({
     mutationFn: ({ archivo, confirmar }: { archivo: File; confirmar: boolean }) =>
       resultado(
-        api.POST('/api/vehiculos/importar/', {
+        api.POST(ruta, {
           // El esquema tipa el archivo como string (binary); el cuerpo real es multipart.
           body: { archivo: archivo as unknown as string, confirmar },
           bodySerializer: () => {
@@ -134,8 +138,47 @@ export function useImportarVehiculos() {
         }),
       ),
     onSuccess: (informe) => {
-      if (informe.creados > 0) void cliente.invalidateQueries({ queryKey: claves.vehiculos });
+      if (informe.creados > 0) {
+        void cliente.invalidateQueries({ queryKey: ruta.includes('conductores') ? claves.conductores : claves.vehiculos });
+      }
     },
+  });
+}
+
+export function useCrearConductor() {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: (datos: ConductorCrear) => resultado(api.POST('/api/conductores/', { body: datos })),
+    onSuccess: alTerminar.conductor,
+  });
+}
+
+/**
+ * Genera (o restablece) la contraseña temporal. La respuesta solo vive en el estado de la mutación: no se
+ * guarda en la caché de TanStack Query ni en el navegador.
+ */
+export function useGenerarPassword(id: number) {
+  const api = useApi();
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: () => resultado(api.POST('/api/conductores/{id}/password/', { params: { path: { id } } })),
+    onSettled: () => void cliente.invalidateQueries({ queryKey: claves.conductor(id) }),
+  });
+}
+
+export function useHabilitacion(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: (habilitar: boolean) =>
+      resultado(
+        habilitar
+          ? api.POST('/api/conductores/{id}/habilitar/', { params: { path: { id } } })
+          : api.POST('/api/conductores/{id}/deshabilitar/', { params: { path: { id } } }),
+      ),
+    onSuccess: alTerminar.conductor,
+    onError: (error) => alTerminar.conflicto(error, claves.conductor(id)),
   });
 }
 

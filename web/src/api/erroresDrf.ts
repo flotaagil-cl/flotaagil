@@ -37,6 +37,8 @@ export function erroresDelBackend(
     }
     if (valor && typeof valor === 'object') {
       for (const [clave, interno] of Object.entries(valor)) {
+        // `code` acompaña a `detail` en los errores sin campos: es para el programa, no para mostrarlo.
+        if (clave === 'code' && ruta === '' && 'detail' in valor) continue;
         const general = clave === 'non_field_errors' || clave === 'detail';
         recorrer(interno, general ? `${ruta}#general` : ruta ? `${ruta}.${clave}` : clave);
       }

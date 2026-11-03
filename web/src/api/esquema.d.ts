@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/api/auth/app/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cerrar sesión en la app del conductor
+         * @description Deja el refresh en la lista negra. Responde 204 aunque el refresh no sirva (vencido, ya usado o de otro canal): para la app la sesión queda cerrada igual.
+         */
+        post: operations["auth_app_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/app/refresh/": {
         parameters: {
             query?: never;
@@ -55,6 +75,26 @@ export interface paths {
          * @description Deja el refresh de la cookie en la lista negra y borra la cookie. Responde 204 aunque no haya sesión. Exige que el navegador envíe Origin (o, si falta, Referer) con un origen de PANEL_ORIGENES; el navegador lo pone solo.
          */
         post: operations["auth_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cambiar la propia contraseña
+         * @description Exige la contraseña actual. Cierra todas las sesiones del usuario (panel y app) y entrega una nueva en el mismo canal del access usado. Quita la obligación de cambiar la temporal.
+         */
+        post: operations["auth_password_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -127,11 +167,19 @@ export interface paths {
         };
         /**
          * Listar conductores
-         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
          */
         get: operations["conductores_list"];
         put?: never;
-        post?: never;
+        /**
+         * Registrar un conductor con su cuenta
+         * @description La cuenta (rol CONDUCTOR) queda sin contraseña utilizable: el administrador genera una temporal con `password/`.
+         */
+        post: operations["conductores_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -147,7 +195,11 @@ export interface paths {
         };
         /**
          * Detalle de un conductor con sus vehículos
-         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
          */
         get: operations["conductores_retrieve"];
         put?: never;
@@ -162,6 +214,70 @@ export interface paths {
         patch: operations["conductores_partial_update"];
         trace?: never;
     };
+    "/api/conductores/{id}/deshabilitar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deshabilitar la cuenta del conductor
+         * @description No puede ingresar, se cierran todas sus sesiones y queda No disponible. Auditoría (RN-12).
+         */
+        post: operations["conductores_deshabilitar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conductores/{id}/habilitar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Habilitar la cuenta del conductor
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
+         */
+        post: operations["conductores_habilitar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conductores/{id}/password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generar o restablecer la contraseña temporal
+         * @description Se muestra una sola vez y vence a las PASSWORD_TEMPORAL_HORAS (72 por defecto). Cierra todas las sesiones del conductor; al ingresar debe cambiarla (403 `cambio_password_requerido` en el resto de la API). Queda en auditoría (RN-12).
+         */
+        post: operations["conductores_password_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conductores/{id}/vehiculos/": {
         parameters: {
             query?: never;
@@ -173,7 +289,11 @@ export interface paths {
         put?: never;
         /**
          * Asociar un vehículo al conductor
-         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
          */
         post: operations["conductores_vehiculos_create"];
         delete?: never;
@@ -197,6 +317,39 @@ export interface paths {
          * @description Si era su vehículo declarado y el conductor está No disponible, la declaración se borra. Responde 409 si está en turno con ese vehículo.
          */
         delete: operations["conductores_vehiculos_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conductores/importar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Carga inicial de conductores por CSV
+         * @description Carga inicial de vehículos y de conductores por CSV (HU-10).
+         *
+         *     Todo o nada: se valida cada fila con las mismas reglas del alta individual y solo se crea si ninguna tiene
+         *     errores. Sin `confirmar` solo se entrega el informe, para revisarlo antes de cargar.
+         *
+         *     Formato común: encabezado en la primera línea; mayúsculas y tildes no importan. Separador coma o punto y coma
+         *     (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM) o Windows-1252. Hasta 500 filas
+         *     y 1 MB.
+         *
+         *     - Vehículos: `patente`, `marca_modelo`, `anio` y, opcional, `capacidad` (por defecto 4). También sirven «año»,
+         *       «marca y modelo» y «marca/modelo».
+         *     - Conductores: `nombre`, `email`, `rut`, `telefono`, `licencia_clase` y `licencia_vence` (AAAA-MM-DD o
+         *       DD-MM-AAAA). Sin contraseñas: las cuentas quedan sin contraseña utilizable y el administrador genera una
+         *       temporal desde la ficha de cada conductor.
+         */
+        post: operations["conductores_importar_create"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -248,13 +401,21 @@ export interface paths {
         };
         /**
          * Listar vehículos
-         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
          */
         get: operations["vehiculos_list"];
         put?: never;
         /**
          * Registrar un vehículo
-         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
          */
         post: operations["vehiculos_create"];
         delete?: never;
@@ -272,7 +433,11 @@ export interface paths {
         };
         /**
          * Detalle de un vehículo
-         * @description Los 409 llevan `code` (`flota_en_uso`) además de `detail`.
+         * @description RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
+         *
+         *     Un registro de otra empresa no existe para el usuario: el detalle responde 404 y no 403,
+         *     para no revelar que existe. `campo_empresa` permite filtrar por una relación
+         *     (p. ej. "usuario__empresa").
          */
         get: operations["vehiculos_retrieve"];
         put?: never;
@@ -298,15 +463,20 @@ export interface paths {
         put?: never;
         /**
          * Carga inicial de vehículos por CSV
-         * @description Carga inicial de vehículos por CSV (HU-10).
+         * @description Carga inicial de vehículos y de conductores por CSV (HU-10).
          *
          *     Todo o nada: se valida cada fila con las mismas reglas del alta individual y solo se crea si ninguna tiene
          *     errores. Sin `confirmar` solo se entrega el informe, para revisarlo antes de cargar.
          *
-         *     Formato: encabezado en la primera línea con `patente`, `marca_modelo`, `anio` y, opcional, `capacidad`
-         *     (por defecto 4). Se aceptan las variantes «año», «marca y modelo», «marca/modelo», mayúsculas y tildes.
-         *     Separador coma o punto y coma (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM)
-         *     o Windows-1252.
+         *     Formato común: encabezado en la primera línea; mayúsculas y tildes no importan. Separador coma o punto y coma
+         *     (Excel en español guarda con punto y coma). Codificación UTF-8 (con o sin BOM) o Windows-1252. Hasta 500 filas
+         *     y 1 MB.
+         *
+         *     - Vehículos: `patente`, `marca_modelo`, `anio` y, opcional, `capacidad` (por defecto 4). También sirven «año»,
+         *       «marca y modelo» y «marca/modelo».
+         *     - Conductores: `nombre`, `email`, `rut`, `telefono`, `licencia_clase` y `licencia_vence` (AAAA-MM-DD o
+         *       DD-MM-AAAA). Sin contraseñas: las cuentas quedan sin contraseña utilizable y el administrador genera una
+         *       temporal desde la ficha de cada conductor.
          */
         post: operations["vehiculos_importar_create"];
         delete?: never;
@@ -403,6 +573,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        AccesoEnum: "SIN_PASSWORD" | "TEMPORAL" | "TEMPORAL_VENCIDA" | "ACTIVA";
         Access: {
             access: string;
         };
@@ -420,6 +592,10 @@ export interface components {
         };
         /** @enum {unknown} */
         BlankEnum: "";
+        CambiarPasswordRequest: {
+            password_actual: string;
+            password_nueva: string;
+        };
         /**
          * @description * `WEB` - Portal web
          *     * `WHATSAPP` - WhatsApp
@@ -455,7 +631,24 @@ export interface components {
             readonly vehiculo_activo: components["schemas"]["VehiculoDeclarado"] | null;
             /** Format: date-time */
             readonly consentimiento_gps_en: string | null;
+            /** @description SIN_PASSWORD (recién creada), TEMPORAL (debe cambiarla), TEMPORAL_VENCIDA o ACTIVA. */
+            readonly acceso: components["schemas"]["AccesoEnum"];
+            /** Format: date-time */
+            readonly password_temporal_vence: string | null;
             readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
+        };
+        /** @description Alta: los datos del conductor más el correo de acceso. La cuenta queda sin contraseña utilizable. */
+        ConductorCrearRequest: {
+            nombre: string;
+            /** @description Acepta puntos y la K minúscula. */
+            rut: string;
+            /** @description Móvil chileno: +569XXXXXXXX (sin prefijo, 9XXXXXXXX también sirve). */
+            telefono: string;
+            licencia_clase: components["schemas"]["LicenciaClaseEnum"];
+            /** Format: date */
+            licencia_vence: string;
+            /** Format: email */
+            email: string;
         };
         /**
          * @description * `DISPONIBLE` - Disponible
@@ -625,12 +818,18 @@ export interface components {
             nombre: string;
             telefono: string;
         };
+        PasswordTemporal: {
+            /** @description Se muestra una sola vez. No se guarda en texto plano. */
+            password_temporal: string;
+            /** Format: date-time */
+            vence_en: string;
+        };
         /** @description Datos del conductor. El email y la contraseña (credenciales) no se editan aquí. */
         PatchedConductorEditarRequest: {
             nombre?: string;
             /** @description Acepta puntos y la K minúscula. */
             rut?: string;
-            /** @description Móvil chileno: +569XXXXXXXX. */
+            /** @description Móvil chileno: +569XXXXXXXX (sin prefijo, 9XXXXXXXX también sirve). */
             telefono?: string;
             licencia_clase?: components["schemas"]["LicenciaClaseEnum"];
             /** Format: date */
@@ -733,6 +932,7 @@ export interface components {
             email: string;
             rol: components["schemas"]["RolEnum"];
             readonly empresa: components["schemas"]["EmpresaResumen"];
+            readonly debe_cambiar_password: boolean;
         };
         Vehiculo: {
             readonly id: number;
@@ -862,6 +1062,30 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_app_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RefreshRequest"];
+                "multipart/form-data": components["schemas"]["RefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     auth_app_refresh_create: {
         parameters: {
             query?: never;
@@ -982,6 +1206,55 @@ export interface operations {
             };
             /** @description `origen_no_permitido`: falta el encabezado Origin (y el Referer) o no está en PANEL_ORIGENES. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    auth_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambiarPasswordRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CambiarPasswordRequest"];
+                "multipart/form-data": components["schemas"]["CambiarPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description App: tokens nuevos. Panel: solo `access` y el refresh en la cookie. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tokens"];
+                };
+            };
+            /** @description Datos inválidos: errores por campo. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Falta el access o no es válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN). */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1156,6 +1429,31 @@ export interface operations {
             };
         };
     };
+    conductores_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConductorCrearRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConductorCrearRequest"];
+                "multipart/form-data": components["schemas"]["ConductorCrearRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
     conductores_retrieve: {
         parameters: {
             query?: never;
@@ -1203,6 +1501,86 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Conductor"];
                 };
+            };
+        };
+    };
+    conductores_deshabilitar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+            /** @description `conductor_en_viaje`: el conductor está en viaje. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    conductores_habilitar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+        };
+    };
+    conductores_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordTemporal"];
+                };
+            };
+            /** @description `conductor_en_viaje`: el conductor está en viaje. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -1261,6 +1639,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    conductores_importar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["ImportarRequest"];
+            };
+        };
+        responses: {
+            /** @description Informe sin crear nada. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeImportacion"];
+                };
+            };
+            /** @description Todos creados. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeImportacion"];
+                };
+            };
+            /** @description Con `confirmar` y filas con errores: no se crea ninguno. Si el archivo no sirve, el error viene en `archivo`. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InformeImportacion"];
+                };
             };
         };
     };
