@@ -4,6 +4,57 @@ info:
   version: 0.1.0
   description: 'API de FlotaÁgil: panel web, portal del pasajero y app del conductor.'
 paths:
+  /api/app/asignaciones/{id}/aceptar/:
+    post:
+      operationId: app_asignaciones_aceptar_create
+      description: 'Dentro de los 60 s: el viaje queda ACEPTADO y el conductor En
+        viaje.'
+      summary: Aceptar el viaje asignado
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaAsignacion'
+          description: ''
+        '409':
+          description: '`asignacion_no_permitida`: ya respondida o pasaron los 60
+            s (RN-04).'
+  /api/app/asignaciones/{id}/rechazar/:
+    post:
+      operationId: app_asignaciones_rechazar_create
+      description: La reserva vuelve a SOLICITADO para reasignarla (RN-04).
+      summary: Rechazar el viaje asignado
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaAsignacion'
+          description: ''
+        '409':
+          description: '`asignacion_no_permitida`: ya respondida o pasaron los 60
+            s (RN-04).'
   /api/app/consentimiento/:
     post:
       operationId: app_consentimiento_create
@@ -2223,6 +2274,22 @@ components:
           minLength: 1
       required:
       - refresh
+    RespuestaAsignacion:
+      type: object
+      properties:
+        asignacion:
+          type: integer
+        viaje:
+          type: integer
+        resultado:
+          type: string
+        estado_viaje:
+          type: string
+      required:
+      - asignacion
+      - estado_viaje
+      - resultado
+      - viaje
     RespuestaViajeActivo:
       type: object
       properties:

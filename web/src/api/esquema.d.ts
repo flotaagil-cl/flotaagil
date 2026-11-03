@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/app/asignaciones/{id}/aceptar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aceptar el viaje asignado
+         * @description Dentro de los 60 s: el viaje queda ACEPTADO y el conductor En viaje.
+         */
+        post: operations["app_asignaciones_aceptar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/app/asignaciones/{id}/rechazar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rechazar el viaje asignado
+         * @description La reserva vuelve a SOLICITADO para reasignarla (RN-04).
+         */
+        post: operations["app_asignaciones_rechazar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/consentimiento/": {
         parameters: {
             query?: never;
@@ -1070,6 +1110,12 @@ export interface components {
         RefreshRequest: {
             refresh: string;
         };
+        RespuestaAsignacion: {
+            asignacion: number;
+            viaje: number;
+            resultado: string;
+            estado_viaje: string;
+        };
         RespuestaViajeActivo: {
             viaje: components["schemas"]["ViajeActivo"] | null;
         };
@@ -1319,6 +1365,62 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    app_asignaciones_aceptar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespuestaAsignacion"];
+                };
+            };
+            /** @description `asignacion_no_permitida`: ya respondida o pasaron los 60 s (RN-04). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    app_asignaciones_rechazar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespuestaAsignacion"];
+                };
+            };
+            /** @description `asignacion_no_permitida`: ya respondida o pasaron los 60 s (RN-04). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     app_consentimiento_create: {
         parameters: {
             query?: never;
