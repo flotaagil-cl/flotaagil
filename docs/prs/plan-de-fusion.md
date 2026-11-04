@@ -1,17 +1,18 @@
-# Plan de fusión: Sprints 1, 2 y 3
+# Plan de fusión: Sprints 1 a 4
 
-Para Carlos. Son 3 PR hacia `main`, uno por sprint, **en este orden**. El PR del Sprint 4 se agregará cuando ese sprint termine.
+Para Carlos. Son 4 PR hacia `main`, uno por sprint, **en este orden**.
 
 | PR | Sprint | Rama de origen | Rama base | Issues que cierra |
 |---|---|---|---|---|
 | 1 | Sprint 1 | `feat/HU-20-whatsapp` | `main` | #9, #13, #16, #20, #22, #23, #27 |
 | 2 | Sprint 2 | `feat/HU-24-calificacion` | `main` | #8, #17, #18, #19, #24, #25 |
 | 3 | Sprint 3 | `fix/HU-27-origen-icao` | `main` | #10, #14, #28, #29, #30 |
+| 4 | Sprint 4 | `feat/HU-06-reportes` | `main` | #7, #11, #12, #15, #21, #26, #31 |
 
 ## Antes de empezar
 
 - **Carlos solo usa la web.** Abre, revisa y fusiona ahí. El paso 5 requiere una terminal y **lo hace Claude desde el PC de Renato**, cuando Renato le avisa que se fusionó el PR.
-- **No uses el botón «Update branch» en los PR 2 y 3, ni abras uno antes de que Renato confirme el paso 5.** Generaría conflictos: las ramas están encadenadas y la fusión es *squash*.
+- **No uses el botón «Update branch» en los PR 2, 3 y 4, ni abras uno antes de que Renato confirme el paso 5.** Generaría conflictos: las ramas están encadenadas y la fusión es *squash*.
 - **Revisión:** el ruleset exige una aprobación. Si tú abres el PR, lo aprueba Renato.
 - **Estos PR son grandes** (el 1 toca muchos archivos). Conviene revisar cada uno con su `docs/prs/HU-XX.md` y sus evidencias en `docs/evidencias/`.
 
@@ -33,7 +34,7 @@ Repite 1 a 5 para cada PR, en orden.
 | 4 | Carlos, en la web | **Fusionar** con «Squash and merge», y avisarle a Renato. |
 | 5 | Claude, desde el PC de Renato | **Preparar la rama del PR siguiente,** cuando Renato avisa que se fusionó. Confirma cuando el siguiente PR se puede abrir. |
 
-Tras el PR 3 el paso 5 no hace falta, hasta que exista el PR del Sprint 4.
+Tras el PR 4 el paso 5 ya no hace falta.
 
 ### Lo que hace el paso 5
 
@@ -58,9 +59,10 @@ Un commit nuevo en la rama de un PR no llega solo a las siguientes, porque `merg
   - Una prueba de flota falla entre las 21:00 y las 24:00 de Chile, porque la fecha salía de la base en UTC. Si pasa, vuelve a correr el CI después de esa hora.
   - Dos pruebas largas de formularios de la web pueden superar los 5 s en una máquina lenta. Vuelve a correr el CI.
 - **Tras fusionar el PR 2 o el 3:** quien tenga el entorno levantado debe correr `docker compose -f infra/docker-compose.dev.yml build backend`, `up -d --remove-orphans` y las migraciones. El PR 3 trae Celery y quita los servicios `programador` y `asignaciones`.
+- **Tras fusionar el PR 4:** migraciones y reinicio de `worker` y `beat`. Trae tres migraciones y la tarea `enviar_chat`.
 - **Los PR abiertos** de Dependabot (#1 a #4) y #32 no son parte de este plan. Dependabot propondrá subir `redis` a más de 5.2.1: no se debe aceptar sin subir también Celery.
 
-Según CLAUDE.md, después de cada PR corresponde la línea base del sprint (`v0.1`, `v0.2`, `v0.3`).
+Según CLAUDE.md, después de cada PR corresponde la línea base del sprint (`v0.1`, `v0.2`, `v0.3`, `v0.4`).
 
 ---
 
@@ -209,4 +211,58 @@ Detalle en `docs/prs/` y resultados en `docs/evidencias/`.
 ### Sin probar contra el servicio real
 
 Twilio, FlightAware y Google Maps con dobles; geocerca y fila sin GPS real.
+```
+
+---
+
+## PR 4: Sprint 4
+
+**Rama de origen:** `feat/HU-06-reportes` · **Rama base:** `main`
+
+**Antes de abrirlo:** paso 5, con esta rama.
+
+**Título:** `feat: incremento del Sprint 4 (cierre forzado, Mi turno, acceso de convenio, chat, indicadores y reportes)`
+
+**Cuerpo:**
+
+```markdown
+Incremento del Sprint 4.
+
+Closes #7
+Closes #11
+Closes #12
+Closes #15
+Closes #21
+Closes #26
+Closes #31
+Refs #25
+
+### Qué incluye
+
+- HU-01: panel de indicadores de reservas y vehículos.
+- HU-05: cierre o anulación forzada de viaje.
+- HU-06: reportes operativos y exportación CSV.
+- HU-12: auditoría de cambios en convenios.
+- HU-18: Mi turno, viajes completados.
+- HU-25: acceso de convenio con link protegido.
+- HU-30: chat de WhatsApp desde el panel.
+
+### Decisiones
+
+DC-25 a DC-27 siguen las decisiones del PO. **DC-28 y DC-29 están pendientes de aprobación:** qué es «en línea», quién ve los indicadores, sin comisiones en la liquidación y qué fecha usa cada reporte.
+
+### Cómo revisarlo
+
+Detalle en `docs/prs/HU-XX.md` y resultados en `docs/evidencias/HU-XX/`.
+
+### Para revisar
+
+- Migraciones: `flota.0004`, `convenios.0002` y `auditoria.0004` (`usuario_id` pasa a NULL).
+- Tras fusionar: migrar y reiniciar `worker` y `beat`.
+- Nginx debe reenviar `/ws/indicadores/`, igual que `/ws/mapa/`.
+- HU-25: confirmar que el supervisor acepta los avisos en nombre del pasajero.
+
+### Sin probar contra el servicio real
+
+Twilio con un doble y el notificador de desarrollo. Mi turno, sin probar en un teléfono.
 ```

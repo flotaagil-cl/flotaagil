@@ -1423,6 +1423,122 @@ paths:
           description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
             IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
             (varias solicitudes con el mismo número).'
+  /api/reportes/{tipo}/:
+    get:
+      operationId: reportes_retrieve
+      summary: Reporte operativo
+      parameters:
+      - in: query
+        name: conductor
+        schema:
+          type: integer
+      - in: query
+        name: convenio
+        schema:
+          type: integer
+      - in: query
+        name: desde
+        schema:
+          type: string
+          format: date
+        description: Hoy si no se indica
+      - in: query
+        name: hasta
+        schema:
+          type: string
+          format: date
+        description: Hoy si no se indica
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: path
+        name: tipo
+        schema:
+          type: string
+          enum:
+          - cancelaciones
+          - facturacion
+          - historial
+          - liquidacion
+        description: Reporte que se pide
+        required: true
+      tags:
+      - reportes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reporte'
+          description: ''
+  /api/reportes/{tipo}/csv/:
+    get:
+      operationId: reportes_csv_retrieve
+      description: Con los mismos filtros y columnas, sin paginar y con los totales
+        en la última fila.
+      summary: Exportar el reporte a CSV
+      parameters:
+      - in: query
+        name: conductor
+        schema:
+          type: integer
+      - in: query
+        name: convenio
+        schema:
+          type: integer
+      - in: query
+        name: desde
+        schema:
+          type: string
+          format: date
+        description: Hoy si no se indica
+      - in: query
+        name: hasta
+        schema:
+          type: string
+          format: date
+        description: Hoy si no se indica
+      - in: path
+        name: tipo
+        schema:
+          type: string
+          enum:
+          - cancelaciones
+          - facturacion
+          - historial
+          - liquidacion
+        description: Reporte que se pide
+        required: true
+      tags:
+      - reportes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/reportes/opciones/:
+    get:
+      operationId: reportes_opciones_retrieve
+      summary: Conductores y convenios para los filtros
+      tags:
+      - reportes
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Opciones'
+          description: ''
   /api/vehiculos/:
     get:
       operationId: vehiculos_list
@@ -2430,6 +2546,35 @@ components:
       - creado_en
       - motivo
       - usuario
+    Columna:
+      type: object
+      properties:
+        clave:
+          type: string
+        titulo:
+          type: string
+        tipo:
+          $ref: '#/components/schemas/ColumnaTipoEnum'
+      required:
+      - clave
+      - tipo
+      - titulo
+    ColumnaTipoEnum:
+      enum:
+      - texto
+      - entero
+      - pesos
+      - fecha
+      - fecha_hora
+      - porcentaje
+      type: string
+      description: |-
+        * `texto` - texto
+        * `entero` - entero
+        * `pesos` - pesos
+        * `fecha` - fecha
+        * `fecha_hora` - fecha_hora
+        * `porcentaje` - porcentaje
     Conductor:
       type: object
       properties:
@@ -3222,6 +3367,30 @@ components:
     NullEnum:
       enum:
       - null
+    Opcion:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+      required:
+      - id
+      - nombre
+    Opciones:
+      type: object
+      properties:
+        conductores:
+          type: array
+          items:
+            $ref: '#/components/schemas/Opcion'
+        convenios:
+          type: array
+          items:
+            $ref: '#/components/schemas/Opcion'
+      required:
+      - conductores
+      - convenios
     OrigenCancelacionEnum:
       enum:
       - PASAJERO
@@ -3635,6 +3804,38 @@ components:
       - accion
       - creado_en
       - id
+    Reporte:
+      type: object
+      properties:
+        columnas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Columna'
+        filas:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        totales:
+          type: object
+          additionalProperties: {}
+          description: De todo el período, con las mismas claves de las columnas
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+          description: Solo el historial se pagina
+        previous:
+          type: string
+          nullable: true
+      required:
+      - columnas
+      - count
+      - filas
+      - next
+      - previous
+      - totales
     ReservaVinculada:
       type: object
       properties:

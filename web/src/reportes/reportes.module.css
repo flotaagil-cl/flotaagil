@@ -1,0 +1,9 @@
+/* Los reportes tienen muchas columnas: en escritorio la tabla se desplaza dentro de su contenedor. */
+.desplazable {
+  overflow-x: auto;
+}
+
+.totales td {
+  border-top: 2px solid var(--borde);
+  font-weight: 700;
+}

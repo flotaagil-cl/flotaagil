@@ -118,6 +118,11 @@ export const pantallasDelPanel: RouteObject[] = [
     ],
   },
   {
+    path: 'reportes',
+    lazy: async () => ({ Component: (await import('../reportes/paginas/Reportes')).Reportes }),
+    handle: { titulo: 'Reportes', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
     path: 'convenios',
     handle: { titulo: 'Convenios', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
     children: [

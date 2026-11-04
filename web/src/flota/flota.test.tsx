@@ -39,6 +39,7 @@ describe('menú y permisos', () => {
       'Vehículos',
       'Conductores',
       'Conversaciones',
+      'Reportes',
       'Convenios',
     ]);
   });

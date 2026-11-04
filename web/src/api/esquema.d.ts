@@ -882,6 +882,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reportes/{tipo}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reporte operativo */
+        get: operations["reportes_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reportes/{tipo}/csv/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Exportar el reporte a CSV
+         * @description Con los mismos filtros y columnas, sin paginar y con los totales en la última fila.
+         */
+        get: operations["reportes_csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reportes/opciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Conductores y convenios para los filtros */
+        get: operations["reportes_opciones_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vehiculos/": {
         parameters: {
             query?: never;
@@ -1303,6 +1357,21 @@ export interface components {
             /** Format: date-time */
             creado_en: string;
         };
+        Columna: {
+            clave: string;
+            titulo: string;
+            tipo: components["schemas"]["ColumnaTipoEnum"];
+        };
+        /**
+         * @description * `texto` - texto
+         *     * `entero` - entero
+         *     * `pesos` - pesos
+         *     * `fecha` - fecha
+         *     * `fecha_hora` - fecha_hora
+         *     * `porcentaje` - porcentaje
+         * @enum {string}
+         */
+        ColumnaTipoEnum: "texto" | "entero" | "pesos" | "fecha" | "fecha_hora" | "porcentaje";
         Conductor: {
             readonly id: number;
             readonly nombre: string;
@@ -1634,6 +1703,14 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        Opcion: {
+            id: number;
+            nombre: string;
+        };
+        Opciones: {
+            conductores: components["schemas"]["Opcion"][];
+            convenios: components["schemas"]["Opcion"][];
+        };
         /**
          * @description * `PASAJERO` - Pasajero
          *     * `DESPACHADOR` - Despachador
@@ -1839,6 +1916,20 @@ export interface components {
             usuario?: string | null;
             /** Format: date-time */
             creado_en: string;
+        };
+        Reporte: {
+            columnas: components["schemas"]["Columna"][];
+            filas: {
+                [key: string]: unknown;
+            }[];
+            /** @description De todo el período, con las mismas claves de las columnas */
+            totales: {
+                [key: string]: unknown;
+            };
+            count: number;
+            /** @description Solo el historial se pagina */
+            next: string | null;
+            previous: string | null;
         };
         ReservaVinculada: {
             id: number;
@@ -3556,6 +3647,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reportes_retrieve: {
+        parameters: {
+            query?: {
+                conductor?: number;
+                convenio?: number;
+                /** @description Hoy si no se indica */
+                desde?: string;
+                /** @description Hoy si no se indica */
+                hasta?: string;
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Reporte que se pide */
+                tipo: "cancelaciones" | "facturacion" | "historial" | "liquidacion";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reporte"];
+                };
+            };
+        };
+    };
+    reportes_csv_retrieve: {
+        parameters: {
+            query?: {
+                conductor?: number;
+                convenio?: number;
+                /** @description Hoy si no se indica */
+                desde?: string;
+                /** @description Hoy si no se indica */
+                hasta?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Reporte que se pide */
+                tipo: "cancelaciones" | "facturacion" | "historial" | "liquidacion";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    reportes_opciones_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Opciones"];
                 };
             };
         };
