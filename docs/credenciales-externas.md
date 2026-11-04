@@ -61,7 +61,7 @@ TWILIO_PLANTILLA_AVISO_ENCUESTA=
 
 **Para producción** hace falta un número de WhatsApp registrado y una plantilla de tipo `twilio/quick-reply` aprobada, con los botones Confirmar y Cancelar y cuatro variables: nombre, empresa, recogida y hora límite. Su identificador (`HX...`) va en `TWILIO_PLANTILLA_VERIFICACION`, y con eso se activan los botones. Queda sin probar si la plantilla entrega `ButtonPayload` con el valor esperado: el código acepta `confirmar` y `cancelar`, así que conviene definir esos identificadores en los botones.
 
-Los avisos de estado también necesitan una plantilla aprobada por cada tipo para llegar fuera de la ventana de 24 h. Sin ellas van como texto y fallan si el pasajero no ha escrito hace poco, como en una reserva por teléfono. Las variables son:
+**En producción, todo aviso iniciado por la empresa fuera de la ventana de 24 h requiere una plantilla aprobada por Meta.** Esa ventana se abre con el último mensaje del pasajero, así que la regla alcanza a la verificación, a los cuatro avisos de estado y a la encuesta. Sin plantilla van como texto y fallan si el pasajero no ha escrito hace poco, como en una reserva por teléfono. Hay que tramitar una plantilla por tipo, y su aprobación queda en manos de Meta, así que conviene contar con ese plazo antes de salir a producción. Las variables son:
 
 | Variable de `backend/.env` | Variables de la plantilla |
 |---|---|

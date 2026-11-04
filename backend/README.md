@@ -90,6 +90,8 @@ Protección: throttling por IP (`THROTTLE_PORTAL_MINUTO`, `THROTTLE_PORTAL_HORA`
 
 La verificación por WhatsApp está simulada (`apps/integraciones/notificaciones.py`, solo deja un log con el número enmascarado); Twilio es HU-20. Las solicitudes no confirmadas se cancelan al vencer el plazo (RN-06): Celery beat lo programa cada 60 s y el worker lo ejecuta; `python manage.py expirar_pendientes` hace una pasada manual.
 
+**Celery:** el compose levanta `worker` y `beat`. El worker no recarga al guardar: tras cambiar una tarea, usa `docker compose -f infra/docker-compose.dev.yml restart worker`. Las pruebas usan `config/settings_pruebas.py`, con broker en memoria, y no llegan a este worker.
+
 ## Autenticación
 
 | Canal | Login | Renovación | Roles |
