@@ -40,7 +40,7 @@ Rama `feat/HU-18-mi-turno`, 2026-11-04. Prueba manual contra el stack principal,
   - No fue la migración ni el backend: ya estaba migrado, y otro cliente recibió 200 en `/api/app/perfil/` a las 16:41:29.
   - Por lo tanto, se perdió entre la página y el proxy del Vite de `app/`. La pantalla no se capturó, así que no se sabe más.
   - No se reprodujo: funcionó la repetición, y después 3 de 3 logins justo tras un `migrate`, estos por el build de la app, porque ese Vite ya no estaba activo.
-- **Hallazgo aparte, de esa misma prueba:** entre las 16:37:48 y las 16:41 UTC, `/api/app/perfil/` y `/ws/conductor/` fallaron en el stack principal para un cliente conectado, porque el modelo se editó antes de aplicar la migración: el código montado se recarga solo. Desde HU-25 la migración se aplica en el mismo paso que la edición.
+- **Hallazgo aparte, de esa misma prueba:** entre las 16:37:48 y las 16:41 UTC, `/api/app/perfil/` y `/ws/conductor/` fallaron en el stack principal para un cliente conectado, porque el modelo se editó antes de aplicar la migración: el código montado se recarga solo. En HU-25 volvió a pasar unos minutos, porque el primer `migrate` falló. Desde `fix/HU-25-declaracion` la migración se aplica en el mismo paso que la edición.
 
 ## Límites conocidos
 
