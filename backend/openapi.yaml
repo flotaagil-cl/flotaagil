@@ -3186,10 +3186,18 @@ components:
       properties:
         en_linea:
           type: integer
+          description: Con señal más sin señal
+        en_linea_con_senal:
+          type: integer
+        en_linea_sin_senal:
+          type: integer
+          description: Sin posición hace más de 60 s, o sin ninguna
         fuera_de_linea:
           type: integer
       required:
       - en_linea
+      - en_linea_con_senal
+      - en_linea_sin_senal
       - fuera_de_linea
     InformeImportacion:
       type: object

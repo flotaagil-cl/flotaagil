@@ -30,7 +30,7 @@ function indicadores(solicitadas: number, enLinea: number) {
   return {
     fecha: '2026-07-15',
     reservas: { total: solicitadas, por_estado: POR_ESTADO.map((estado) => ({ estado, cantidad: estado === 'SOLICITADO' ? solicitadas : 0 })) },
-    vehiculos: { en_linea: enLinea, fuera_de_linea: 3 },
+    vehiculos: { en_linea: enLinea + 1, en_linea_con_senal: enLinea, en_linea_sin_senal: 1, fuera_de_linea: 3 },
   };
 }
 
@@ -48,8 +48,9 @@ beforeEach(() => {
 describe('indicadores (HU-01)', () => {
   it('muestra los vehículos y las reservas del día por estado, con enlace al listado filtrado', async () => {
     montar();
-    expect(await screen.findByText('Vehículos en línea')).toBeInTheDocument();
-    expect(screen.getByText('Vehículos en línea').parentElement).toHaveTextContent('1');
+    expect(await screen.findByText('En línea con señal')).toBeInTheDocument();
+    expect(screen.getByText('En línea con señal').parentElement).toHaveTextContent('1');
+    expect(screen.getByText('En línea sin señal').parentElement).toHaveTextContent('1');
     expect(screen.getByText('Vehículos fuera de línea').parentElement).toHaveTextContent('3');
     expect(screen.getByText('Reservas del día').parentElement).toHaveTextContent('2');
     const lista = screen.getByRole('list', { name: 'Reservas del día por estado' });
@@ -68,23 +69,23 @@ describe('indicadores (HU-01)', () => {
 
   it('un aviso actualiza los números sin recargar', async () => {
     const { viajes } = montar();
-    await screen.findByText('Vehículos en línea');
+    await screen.findByText('En línea con señal');
     await waitFor(() => expect(delIndicadores()).toHaveLength(1));
     act(() => delIndicadores()[0].onopen?.());
     expect(await screen.findByText('En vivo')).toBeInTheDocument();
     viajes.indicadores = indicadores(7, 4);
     act(() => delIndicadores()[0].onmessage?.({ data: '{"tipo":"cambio"}' }));
     await waitFor(() => expect(screen.getByText('Reservas del día').parentElement).toHaveTextContent('7'));
-    expect(screen.getByText('Vehículos en línea').parentElement).toHaveTextContent('4');
+    expect(screen.getByText('En línea con señal').parentElement).toHaveTextContent('4');
   });
 
   it('al perder la conexión lo dice y sigue mostrando los datos', async () => {
     montar();
-    await screen.findByText('Vehículos en línea');
+    await screen.findByText('En línea con señal');
     await waitFor(() => expect(delIndicadores()).toHaveLength(1));
     act(() => delIndicadores()[0].onclose?.({ code: 1006 }));
     expect(await screen.findByText(/Reconectando/)).toBeInTheDocument();
-    expect(screen.getByText('Vehículos en línea')).toBeInTheDocument();
+    expect(screen.getByText('En línea con señal')).toBeInTheDocument();
   });
 
   it('con el access vencido (4401) renueva y se reconecta al instante', async () => {
@@ -98,7 +99,7 @@ describe('indicadores (HU-01)', () => {
     const { viajes } = montar();
     viajes.siguiente('GET /api/indicadores/', { estado: 500, cuerpo: {} });
     await userEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
-    expect(await screen.findByText('Vehículos en línea')).toBeInTheDocument();
+    expect(await screen.findByText('En línea con señal')).toBeInTheDocument();
   });
 
   it('al salir de Inicio cierra la conexión', async () => {

@@ -1624,7 +1624,11 @@ export interface components {
             por_estado: components["schemas"]["ReservasPorEstado"][];
         };
         IndicadoresVehiculos: {
+            /** @description Con señal más sin señal */
             en_linea: number;
+            en_linea_con_senal: number;
+            /** @description Sin posición hace más de 60 s, o sin ninguna */
+            en_linea_sin_senal: number;
             fuera_de_linea: number;
         };
         InformeImportacion: {

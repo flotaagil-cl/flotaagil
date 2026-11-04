@@ -190,11 +190,16 @@ class PosicionesView(_VistaApp):
             # En serie por conductor: el conteo de recibidas no se mezcla con otro lote simultáneo.
             list(Conductor.objects.select_for_update().filter(pk=conductor.pk).values_list("pk"))
             antes = PosicionGps.objects.filter(conductor=conductor).count()
+            previa = PosicionGps.objects.filter(conductor=conductor).order_by("-registrada_en").first()
             PosicionGps.objects.bulk_create(nuevas, ignore_conflicts=True)
             recibidas = PosicionGps.objects.filter(conductor=conductor).count() - antes
             if recibidas:
                 # HU-02: el mapa recibe la posición más reciente del lote.
                 notificar_conductor(conductor)
+                # HU-01: solo si recuperó la señal; las demás posiciones no cambian los indicadores.
+                vigencia = timedelta(seconds=settings.POSICION_CONFIABLE_SEGUNDOS)
+                if previa is None or previa.registrada_en < ahora - vigencia:
+                    avisar_indicadores(request.user.empresa_id)
                 # HU-16: EN_ZONA automático por geocerca (import aquí: reservas depende de flota).
                 from apps.reservas.ejecucion import marcar_en_zona
 

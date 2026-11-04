@@ -65,7 +65,8 @@ def grupo_indicadores(empresa_id: int) -> str:
 def avisar_indicadores(empresa_id: int) -> None:
     """HU-01: cambiaron reservas, turnos o vehículos. Con robust, un corte de Redis no daña la acción.
 
-    Las posiciones GPS no pasan por aquí: no cambian los indicadores.
+    Una posición solo pasa por aquí si el conductor recuperó la señal. Perderla no genera eventos: el panel
+    lo nota en su revisión periódica.
     """
 
     def enviar():

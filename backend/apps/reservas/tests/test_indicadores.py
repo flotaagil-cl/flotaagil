@@ -1,17 +1,19 @@
 """HU-01 · Panel de indicadores de reservas y vehículos."""
 
+import asyncio
 from datetime import timedelta
 
 import pytest
 from asgiref.sync import async_to_sync
 from channels.db import database_sync_to_async
 from channels.testing import WebsocketCommunicator
+from django.contrib.gis.geos import Point
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import AccessToken
 
-from apps.flota.models import ConductorVehiculo, EstadoConductor
+from apps.flota.models import ConductorVehiculo, EstadoConductor, PosicionGps
 from apps.reservas.models import EstadoViaje
 from apps.reservas.tests.fabricas import ConductorFactory, VehiculoFactory, ViajeFactory
 from config.asgi import application
@@ -33,6 +35,15 @@ def en_turno(empresa, estado=EstadoConductor.DISPONIBLE, **vehiculo):
     )
     ConductorVehiculo.objects.create(conductor=conductor, vehiculo=v)
     return conductor
+
+
+def posicion(conductor, hace_s=1):
+    return PosicionGps.objects.create(
+        conductor=conductor,
+        punto=Point(-70.66, -33.45, srid=4326),
+        precision_m=7,
+        registrada_en=timezone.now() - timedelta(seconds=hace_s),
+    )
 
 
 @pytest.fixture
@@ -75,33 +86,72 @@ class TestReservas:
         en_turno(otra_empresa)
         datos = api.get(URL).json()
         assert datos["reservas"]["total"] == 0
-        assert datos["vehiculos"] == {"en_linea": 0, "fuera_de_linea": 0}
+        assert datos["vehiculos"] == {
+            "en_linea": 0,
+            "en_linea_con_senal": 0,
+            "en_linea_sin_senal": 0,
+            "fuera_de_linea": 0,
+        }
 
 
 @pytest.mark.django_db
 class TestVehiculos:
     def test_en_linea_y_fuera_de_linea(self, api, empresa):
-        en_turno(empresa)
+        posicion(en_turno(empresa))
         en_turno(empresa, EstadoConductor.EN_VIAJE)
         VehiculoFactory(empresa=empresa)
-        assert api.get(URL).json()["vehiculos"] == {"en_linea": 2, "fuera_de_linea": 1}
+        assert api.get(URL).json()["vehiculos"] == {
+            "en_linea": 2,
+            "en_linea_con_senal": 1,
+            "en_linea_sin_senal": 1,
+            "fuera_de_linea": 1,
+        }
+
+    @pytest.mark.parametrize(("hace_s", "con_senal"), [(5, 1), (59, 1), (61, 0), (3600, 0)])
+    def test_con_senal_hasta_60_s_desde_la_ultima_posicion(self, api, empresa, hace_s, con_senal):
+        """El mismo criterio de HU-02."""
+        posicion(en_turno(empresa), hace_s=hace_s)
+        vehiculos = api.get(URL).json()["vehiculos"]
+        assert (vehiculos["en_linea_con_senal"], vehiculos["en_linea_sin_senal"]) == (
+            con_senal,
+            1 - con_senal,
+        )
+
+    def test_sin_ninguna_posicion_no_tiene_senal(self, api, empresa):
+        en_turno(empresa)
+        vehiculos = api.get(URL).json()["vehiculos"]
+        assert (vehiculos["en_linea_con_senal"], vehiculos["en_linea_sin_senal"]) == (0, 1)
+
+    def test_vale_la_ultima_posicion(self, api, empresa):
+        conductor = en_turno(empresa)
+        posicion(conductor, hace_s=3600)
+        posicion(conductor, hace_s=5)
+        assert api.get(URL).json()["vehiculos"]["en_linea_con_senal"] == 1
+
+    def test_el_limite_es_configurable(self, api, empresa, settings):
+        settings.POSICION_CONFIABLE_SEGUNDOS = 600
+        posicion(en_turno(empresa), hace_s=300)
+        assert api.get(URL).json()["vehiculos"]["en_linea_con_senal"] == 1
 
     def test_inactivo_no_cuenta(self, api, empresa):
         VehiculoFactory(empresa=empresa, activo=False)
-        assert api.get(URL).json()["vehiculos"] == {"en_linea": 0, "fuera_de_linea": 0}
+        vehiculos = api.get(URL).json()["vehiculos"]
+        assert (vehiculos["en_linea"], vehiculos["fuera_de_linea"]) == (0, 0)
 
     def test_conductor_no_disponible_deja_el_vehiculo_fuera(self, api, empresa):
         conductor = en_turno(empresa)
         conductor.estado = EstadoConductor.NO_DISPONIBLE
         conductor.vehiculo_activo = None
         conductor.save()
-        assert api.get(URL).json()["vehiculos"] == {"en_linea": 0, "fuera_de_linea": 1}
+        vehiculos = api.get(URL).json()["vehiculos"]
+        assert (vehiculos["en_linea"], vehiculos["fuera_de_linea"]) == (0, 1)
 
     def test_cuenta_deshabilitada_no_cuenta(self, api, empresa):
         conductor = en_turno(empresa)
         conductor.usuario.activo = False
         conductor.usuario.save()
-        assert api.get(URL).json()["vehiculos"] == {"en_linea": 0, "fuera_de_linea": 1}
+        vehiculos = api.get(URL).json()["vehiculos"]
+        assert (vehiculos["en_linea"], vehiculos["fuera_de_linea"]) == (0, 1)
 
 
 @pytest.mark.django_db
@@ -166,6 +216,23 @@ class TestAvisoEnVivo:
 
         assert async_to_sync(prueba)() is False
 
+    def test_con_el_access_vencido_cierra_4401_y_no_avisa(self, despachador, empresa):
+        """El panel renueva y se reconecta."""
+        viaje = ViajeFactory(empresa=empresa)
+        token = AccessToken.for_user(despachador)
+        token.set_exp(lifetime=timedelta(seconds=1))
+
+        async def prueba():
+            ws = comunicador(str(token))
+            await ws.connect()
+            await ws.receive_json_from()
+            await asyncio.sleep(1.1)
+            ruta = reverse("viaje-cancelar", args=[viaje.pk])
+            assert await como(despachador, "post", ruta, {"motivo": "Prueba"}) == 200
+            return await ws.receive_output(timeout=5)
+
+        assert async_to_sync(prueba)() == {"type": "websocket.close", "code": 4401}
+
     def test_crear_una_reserva_avisa(self, despachador):
         cuerpo = {
             "pasajero": {"nombre": "Ana", "telefono": "+56900009001"},
@@ -226,9 +293,8 @@ class TestAvisoEnVivo:
 
         assert async_to_sync(prueba)() is True
 
-    def test_una_posicion_gps_no_avisa(self, despachador, empresa):
-        conductor = en_turno(empresa)
-        posiciones = {
+    def enviar_posicion_y_escuchar(self, despachador, conductor):
+        cuerpo = {
             "posiciones": [
                 {
                     "lat": -33.45,
@@ -243,9 +309,22 @@ class TestAvisoEnVivo:
             ws = comunicador(str(AccessToken.for_user(despachador)))
             await ws.connect()
             await ws.receive_json_from()
-            assert await como(conductor.usuario, "post", reverse("app-posiciones"), posiciones) == 201
+            assert await como(conductor.usuario, "post", reverse("app-posiciones"), cuerpo) == 201
             nada = await ws.receive_nothing(timeout=0.5)
             await ws.disconnect()
             return nada
 
-        assert async_to_sync(prueba)() is True
+        return async_to_sync(prueba)()
+
+    def test_una_posicion_con_senal_vigente_no_avisa(self, despachador, empresa):
+        conductor = en_turno(empresa)
+        posicion(conductor, hace_s=10)
+        assert self.enviar_posicion_y_escuchar(despachador, conductor) is True
+
+    def test_recuperar_la_senal_avisa(self, despachador, empresa):
+        conductor = en_turno(empresa)
+        posicion(conductor, hace_s=120)
+        assert self.enviar_posicion_y_escuchar(despachador, conductor) is False
+
+    def test_la_primera_posicion_del_conductor_avisa(self, despachador, empresa):
+        assert self.enviar_posicion_y_escuchar(despachador, en_turno(empresa)) is False

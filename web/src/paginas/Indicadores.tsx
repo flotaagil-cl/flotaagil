@@ -10,13 +10,13 @@ import { ConexionIndicadores, type FaseIndicadores } from './conexionIndicadores
 import estilos from './Inicio.module.css';
 
 const CLAVE = ['indicadores'];
-// Red de seguridad: el cambio de día no genera ningún aviso, y un aviso se puede perder.
-const REVISION_MS = 60_000;
+// Perder la señal no genera ningún aviso (es que no llegan posiciones), y tampoco el cambio de día.
+const REVISION_MS = 15_000;
 
 const TEXTO_FASE: Record<FaseIndicadores, string> = {
   conectando: 'Conectando…',
   en_vivo: 'En vivo',
-  reconectando: 'Reconectando: los datos pueden tener hasta 1 minuto',
+  reconectando: 'Reconectando: los datos pueden tener hasta 15 s',
   sin_sesion: 'La sesión terminó.',
 };
 
@@ -68,8 +68,12 @@ export function Indicadores({ crearSocket }: { crearSocket?: CrearSocket }) {
         <>
           <dl className={estilos.cifras} aria-label="Vehículos">
             <div>
-              <dt>Vehículos en línea</dt>
-              <dd>{consulta.data.vehiculos.en_linea}</dd>
+              <dt>En línea con señal</dt>
+              <dd>{consulta.data.vehiculos.en_linea_con_senal}</dd>
+            </div>
+            <div>
+              <dt>En línea sin señal</dt>
+              <dd>{consulta.data.vehiculos.en_linea_sin_senal}</dd>
             </div>
             <div>
               <dt>Vehículos fuera de línea</dt>

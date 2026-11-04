@@ -27,14 +27,30 @@ Rama `feat/HU-01-indicadores`, 2026-11-04. Prueba manual contra el stack princip
 | Conductor en la API | 403 | OK (automática y manual) |
 | Celular (390 px) | Sin desborde horizontal | OK (manual) |
 
+## Ajuste del PO: con señal y sin señal (`fix/HU-01-senal`)
+
+DC-28 aprobado, separando «en línea con señal» de «en línea sin señal» (sin posición hace más de 60 s, o sin ninguna), el criterio de HU-02. Suites en esta rama: backend 1053 (98 % de líneas), web 588 (94,4 %).
+
+| Qué se probó | Esperado | Obtenido |
+|---|---|---|
+| Límite | Con señal hasta 60 s desde la última posición; configurable | OK (automática en 5, 59, 61 y 3600 s) |
+| Sin ninguna posición | Sin señal | OK (automática y manual) |
+| Turno sin posición reciente | Pasa a «sin señal» | OK (manual: 0,1 s) |
+| Llega una posición | Pasa a «con señal», avisando por WebSocket | OK (automática y manual: 0,1 s) |
+| Dejan de llegar | Pasa a «sin señal», en la revisión de cada 15 s | OK (manual: 61 s) |
+| Posición con señal vigente | No avisa | OK (automática) |
+| Access vencido en el WebSocket | Cierra con 4401 | OK (automática) |
+
 ## Límites conocidos
 
-- **DC-28 está por aprobar:** qué significa «en línea» y que también lo vea el despachador.
+- **Perder la señal tarda hasta 75 s en verse:** 60 s del criterio más hasta 15 s de revisión, porque no llegar posiciones no genera ningún evento.
+- **Solo cuenta la antigüedad:** una posición imprecisa da «con señal», aunque el mapa la marque como no confiable. Es lo que pidió el PO.
 - **Latencia medida en local,** con un solo panel y sin carga.
-- **La confirmación de una nueva hora de recogida (HU-27) no avisa:** se ve en la revisión de cada minuto.
+- **La confirmación de una nueva hora de recogida (HU-27) no avisa:** se ve en la revisión periódica.
 
 ## Capturas
 
 - `panel-indicadores-escritorio.png`: estado inicial.
 - `panel-indicadores-en-vivo-escritorio.png`: tras los cambios, sin recargar.
 - `panel-indicadores-celular.png`: como administrador.
+- `panel-sin-senal-escritorio.png` y `panel-con-senal-escritorio.png`: ajuste del PO.
