@@ -146,6 +146,11 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": timedelta(seconds=60),
         "options": {"expires": 60},
     },
+    "revisar-fila-hu29": {
+        "task": "apps.aeropuerto.tareas.revisar_fila",
+        "schedule": timedelta(seconds=60),
+        "options": {"expires": 60},
+    },
     "expirar-asignaciones-rn04": {
         "task": "apps.reservas.tareas.expirar_asignaciones",
         "schedule": timedelta(seconds=5),

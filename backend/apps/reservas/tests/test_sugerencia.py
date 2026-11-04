@@ -154,7 +154,7 @@ class TestSugerido:
 
     @pytest.mark.parametrize("sentido", [Sentido.DESDE_AEROPUERTO])
     def test_recogida_en_aeropuerto_no_usa_la_distancia(self, api, empresa, sentido):
-        """Se delega en la fila virtual (HU-29)."""
+        """Se delega en la fila virtual (HU-29): sin nadie en la fila, no se sugiere."""
         disponible(empresa, "Cerca", lat=A_100_M)
         viaje = ViajeFactory(empresa=empresa, estado=E.SOLICITADO, sentido=sentido)
         assert [f["sugerido"] for f in filas(api, viaje)] == [False]

@@ -69,6 +69,16 @@ export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignac
         </ViajeEnCurso>
       )}
 
+      {perfil.fila && (
+        <div className="tarjeta" role="status">
+          <h2>Fila del aeropuerto</h2>
+          <p>
+            {perfil.fila.posicion === 1 ? 'Eres el primero' : `Vas en el lugar ${perfil.fila.posicion}`} de {perfil.fila.total} · {perfil.fila.zona}
+          </p>
+          <p className="secundario">Sales de la fila si dejas la zona, terminas el turno o te asignan un viaje.</p>
+        </div>
+      )}
+
       <div className="tarjeta">
         <h2>Turno</h2>
         <dl>

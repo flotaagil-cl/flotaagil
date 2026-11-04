@@ -9,6 +9,8 @@ export interface Perfil {
   vehiculo_activo: { id: number; patente: string } | null;
   consentimiento_gps_en: string | null;
   vehiculos: { id: number; patente: string; marca_modelo: string }[];
+  /** Lugar en la fila del aeropuerto (HU-29). */
+  fila?: { posicion: number; total: number; zona: string; ingreso_en: string } | null;
 }
 
 /** Modo del GPS según el perfil, o null si no debe registrar (fuera de turno o sin consentimiento). */

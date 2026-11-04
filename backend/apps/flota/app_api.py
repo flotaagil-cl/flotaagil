@@ -47,15 +47,30 @@ class SinConsentimiento(APIException):
     default_detail = "Falta el consentimiento informado para registrar la ubicación."
 
 
+class LugarEnFilaSerializer(serializers.Serializer):
+    posicion = serializers.IntegerField(help_text="Su lugar en la fila: 1 es el siguiente (RN-16)")
+    total = serializers.IntegerField()
+    zona = serializers.CharField()
+    ingreso_en = serializers.DateTimeField()
+
+
 class PerfilConductorSerializer(serializers.ModelSerializer):
     nombre = serializers.CharField(source="usuario.nombre", read_only=True)
     vehiculo_activo = VehiculoDeclaradoSerializer(allow_null=True, read_only=True)
     vehiculos = serializers.SerializerMethodField()
+    fila = serializers.SerializerMethodField()
 
     class Meta:
         model = Conductor
-        fields = ["id", "nombre", "estado", "vehiculo_activo", "consentimiento_gps_en", "vehiculos"]
+        fields = ["id", "nombre", "estado", "vehiculo_activo", "consentimiento_gps_en", "vehiculos", "fila"]
         read_only_fields = fields
+
+    @staticmethod
+    @extend_schema_field(LugarEnFilaSerializer(allow_null=True))
+    def get_fila(conductor):
+        from apps.aeropuerto.fila import estado_de
+
+        return estado_de(conductor)
 
     @staticmethod
     @extend_schema_field(VehiculoAsociadoSerializer(many=True))
@@ -182,6 +197,10 @@ class PosicionesView(_VistaApp):
                 from apps.reservas.ejecucion import marcar_en_zona
 
                 marcar_en_zona(conductor, validas)
+                # HU-29: ingreso a la fila del aeropuerto.
+                from apps.aeropuerto.fila import registrar_posiciones
+
+                registrar_posiciones(conductor, validas)
         return Response(
             {"recibidas": recibidas, "repetidas": len(validas) - recibidas, "descartadas": descartadas},
             status=status.HTTP_201_CREATED,
@@ -249,6 +268,11 @@ class TurnoView(_VistaApp):
                 conductor.estado = EstadoConductor.DISPONIBLE
             conductor.save(update_fields=["estado", "vehiculo_activo"])
             notificar_conductor(conductor)
+            if conductor.estado == EstadoConductor.NO_DISPONIBLE:
+                from apps.aeropuerto.fila import salir
+                from apps.aeropuerto.models import MotivoSalidaFila
+
+                salir(conductor, MotivoSalidaFila.NO_DISPONIBLE)  # HU-29
         return Response(PerfilConductorSerializer(_conductor(request)).data)
 
     @staticmethod

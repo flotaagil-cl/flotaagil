@@ -79,6 +79,7 @@ export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: ViajeDet
                   <span>
                     <strong>Sugerido: {sugerido.nombre}</strong> · {sugerido.patente}
                     <span className={estilos.secundario}>
+                      {sugerido.posicion_fila !== null && `Primero de la fila del aeropuerto · `}
                       {distancia(sugerido.distancia_m)} del origen ·{' '}
                       {sugerido.ultimo_viaje_en ? `último viaje ${formatearFechaHora(sugerido.ultimo_viaje_en)}` : 'sin viajes terminados'}
                     </span>
@@ -89,7 +90,11 @@ export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: ViajeDet
                 </li>
               </ul>
             ) : (
-              <p>Sin sugerencia: ningún conductor tiene una posición reciente y precisa. Elige uno de la lista.</p>
+              <p>
+                {viaje.sentido === 'DESDE_AEROPUERTO'
+                  ? 'Sin sugerencia: no hay conductores en la fila del aeropuerto. Elige uno de la lista.'
+                  : 'Sin sugerencia: ningún conductor tiene una posición reciente y precisa. Elige uno de la lista.'}
+              </p>
             )}
             {otros.length > 0 && (
               <div className={estilos.acciones}>
@@ -99,7 +104,8 @@ export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: ViajeDet
                     <option value="">Elige un conductor…</option>
                     {otros.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nombre} · {c.patente} · {distancia(c.distancia_m)}
+                        {c.nombre} · {c.patente} · {c.posicion_fila !== null ? `fila ${c.posicion_fila} · ` : ''}
+                        {distancia(c.distancia_m)}
                         {c.confiable ? '' : ' (no reciente)'}
                       </option>
                     ))}

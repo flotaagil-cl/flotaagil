@@ -99,6 +99,11 @@ class ConductorConsumer(AsyncJsonWebsocketConsumer):
         if await self._vigente():
             await self.send_json({"tipo": "viaje", "viaje": evento["viaje"]})
 
+    async def conductor_fila(self, evento):
+        """Cambió la fila del aeropuerto: la app vuelve a leer su lugar (HU-29)."""
+        if await self._vigente():
+            await self.send_json({"tipo": "fila"})
+
     async def conductor_sin_asignacion(self, evento):
         """La asignación terminó (expiró, se canceló o se reasignó): la app cierra el aviso (HU-15)."""
         if await self._vigente():

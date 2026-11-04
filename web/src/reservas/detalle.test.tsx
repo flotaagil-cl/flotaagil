@@ -200,6 +200,7 @@ describe('asignar conductor (HU-14)', () => {
     posicion_en: '2026-11-03T15:00:00Z',
     confiable: true,
     ultimo_viaje_en: null,
+    posicion_fila: null,
     sugerido: false,
     ...cambios,
   });
@@ -245,6 +246,25 @@ describe('asignar conductor (HU-14)', () => {
     await userEvent.selectOptions(desplegable, 'Pedro Soto · BCDF40 · a 4,2 km');
     await userEvent.click(asignarElegido);
     expect(await screen.findByText('Reserva asignada a Pedro Soto. Esperando que acepte en la app (60 s).')).toBeInTheDocument();
+  });
+
+  it('en el aeropuerto propone al primero de la fila (HU-29)', async () => {
+    const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO', sentido: 'DESDE_AEROPUERTO' }));
+    contexto.viajes.candidatos = [
+      candidato(3, 'Carla Conductora', { sugerido: true, posicion_fila: 1 }),
+      candidato(4, 'Pedro Soto', { posicion_fila: 2, distancia_m: 100 }),
+    ];
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Asignar la reserva #8' });
+    expect((await within(dialogo).findByRole('list', { name: 'Conductor sugerido' })).textContent).toContain('Primero de la fila del aeropuerto');
+    expect(within(dialogo).getByRole('option', { name: /Pedro Soto · BCDF40 · fila 2/ })).toBeInTheDocument();
+  });
+
+  it('en el aeropuerto sin fila lo explica', async () => {
+    const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO', sentido: 'DESDE_AEROPUERTO' }));
+    contexto.viajes.candidatos = [candidato(4, 'Pedro Soto')];
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
+    expect(await screen.findByText(/no hay conductores en la fila del aeropuerto/)).toBeInTheDocument();
   });
 
   it('sin sugerencia lo explica y deja elegir', async () => {

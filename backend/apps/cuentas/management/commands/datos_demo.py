@@ -17,6 +17,8 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.aeropuerto.models import Geocerca
+from apps.aeropuerto.zonas import NOMBRE_ZONA_SCL, poligono_scl
 from apps.comun.validadores import digito_verificador
 from apps.cuentas.models import Empresa, Plan, Rol, Usuario
 from apps.flota import demo as demo_flota
@@ -86,6 +88,9 @@ class Command(BaseCommand):
                         "razon_social": datos["razon_social"],
                         "plan": datos["plan"],
                     },
+                )
+                Geocerca.objects.get_or_create(
+                    empresa=empresa, nombre=NOMBRE_ZONA_SCL, defaults={"poligono": poligono_scl()}
                 )
                 conductores = []
                 for rol, alias in USUARIOS_POR_EMPRESA:

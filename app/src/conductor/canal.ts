@@ -31,6 +31,7 @@ type Mensaje =
   | { tipo: 'asignado'; asignacion: Asignacion }
   | { tipo: 'sin_asignacion'; asignacion: number }
   | { tipo: 'viaje'; viaje: number }
+  | { tipo: 'fila' }
   | { tipo: 'pong' };
 
 export interface SocketMinimo {
@@ -156,7 +157,7 @@ export class CanalConductor {
       if (nueva) this.alAsignar.forEach((oyente) => oyente(mensaje.asignacion));
     }
     if (mensaje.tipo === 'sin_asignacion') this.olvidar(mensaje.asignacion);
-    if (mensaje.tipo === 'viaje' || mensaje.tipo === 'sin_asignacion') this.alCambiar.forEach((oyente) => oyente());
+    if (mensaje.tipo !== 'asignado' && mensaje.tipo !== 'pong') this.alCambiar.forEach((oyente) => oyente());
   }
 }
 

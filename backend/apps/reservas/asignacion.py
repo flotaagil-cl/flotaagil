@@ -19,6 +19,8 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
+from apps.aeropuerto.fila import posiciones_en_fila, salir
+from apps.aeropuerto.models import MotivoSalidaFila
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
 from apps.integraciones.notificaciones import AVISO_CONDUCTOR
@@ -101,8 +103,7 @@ def _ordenar(filas: list[dict]) -> list[dict]:
 def candidatos(viaje: Viaje) -> list[dict]:
     """Conductores Disponibles de la empresa sin viaje en ejecución (RN-01, RN-03), los más aptos primero.
     Solo informa: nada se asigna hasta que el despachador lo confirma (RN-02). Con posición no confiable no
-    compite ni se sugiere. En recogidas en aeropuerto no se sugiere por distancia: lo decide la fila
-    (HU-29)."""
+    compite ni se sugiere. En recogidas en aeropuerto se propone al primero de la fila (HU-29, RN-16)."""
     ultima = PosicionGps.objects.filter(conductor=OuterRef("pk")).order_by("-registrada_en")
     conductores = list(
         Conductor.objects.filter(
@@ -128,6 +129,7 @@ def candidatos(viaje: Viaje) -> list[dict]:
         .values_list("viaje__conductor")
         .annotate(ultimo=Max("creado_en"))
     )
+    lugares = posiciones_en_fila(viaje.empresa_id)
     ahora = timezone.now()
     filas = []
     for conductor in conductores:
@@ -141,11 +143,17 @@ def candidatos(viaje: Viaje) -> list[dict]:
                 "posicion_en": posicion.registrada_en if posicion else None,
                 "confiable": _posicion_confiable(posicion, ahora),
                 "ultimo_viaje_en": ultimos_viajes.get(conductor.pk),
+                "posicion_fila": lugares.get(conductor.pk),
                 "sugerido": False,
             }
         )
     filas = _ordenar(filas)
-    if filas and filas[0]["confiable"] and viaje.sentido != Sentido.DESDE_AEROPUERTO:
+    if viaje.sentido == Sentido.DESDE_AEROPUERTO:
+        # Sort estable: la fila primero, en orden de ingreso; el resto, como ya venía.
+        filas.sort(key=lambda f: f["posicion_fila"] or len(lugares) + 1)
+        if filas and filas[0]["posicion_fila"] is not None:
+            filas[0]["sugerido"] = True
+    elif filas and filas[0]["confiable"]:
         filas[0]["sugerido"] = True
     return filas
 
@@ -215,7 +223,12 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
         if Viaje.objects.filter(conductor=conductor, estado__in=EN_EJECUCION).exists():
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} ya tiene un viaje en ejecución (RN-03).")
         sugerido = next((f["id"] for f in candidatos(viaje) if f["sugerido"]), None)
-        origen = OrigenSugerencia.DISTANCIA if conductor.pk == sugerido else OrigenSugerencia.MANUAL
+        if conductor.pk != sugerido:
+            origen = OrigenSugerencia.MANUAL
+        elif viaje.sentido == Sentido.DESDE_AEROPUERTO:
+            origen = OrigenSugerencia.FILA
+        else:
+            origen = OrigenSugerencia.DISTANCIA
         try:
             viaje = estados.transicionar(
                 viaje,
@@ -231,6 +244,7 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
         asignacion = Asignacion.objects.create(
             viaje=viaje, conductor=conductor, despachador=usuario, origen_sugerencia=origen
         )
+        salir(conductor, MotivoSalidaFila.ASIGNADO)  # HU-29
         asignacion = Asignacion.objects.select_related("viaje__pasajero", "viaje__vuelo").get(
             pk=asignacion.pk
         )

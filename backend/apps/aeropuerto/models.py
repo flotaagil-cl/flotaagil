@@ -1,7 +1,10 @@
-"""VUELO, según docs/diccionario-datos.md. Solo para viajes DESDE_AEROPUERTO (DC-06)."""
+"""VUELO, GEOCERCA y FILA_AEROPUERTO, según docs/diccionario-datos.md. VUELO, solo para viajes
+DESDE_AEROPUERTO (DC-06)."""
 
+from django.contrib.gis.db import models as gis
 from django.db import models
 from django.db.models import Q
+from django.db.models.functions import Now
 
 from apps.comun.validadores import validar_vuelo_iata
 
@@ -42,3 +45,54 @@ class Vuelo(models.Model):
 
     def __str__(self):
         return f"{self.numero} {self.fecha:%Y-%m-%d}"
+
+
+class Geocerca(models.Model):
+    """GEOCERCA (Anexo D). El polígono del aeropuerto es un supuesto configurable por empresa (DC-21)."""
+
+    empresa = models.ForeignKey("cuentas.Empresa", on_delete=models.CASCADE, related_name="geocercas")
+    nombre = models.CharField(max_length=60)
+    poligono = gis.PolygonField(geography=True, srid=4326)
+
+    class Meta:
+        db_table = "geocerca"
+        verbose_name = "geocerca"
+        verbose_name_plural = "geocercas"
+
+    def __str__(self):
+        return self.nombre
+
+
+class MotivoSalidaFila(models.TextChoices):
+    ASIGNADO = "ASIGNADO", "Asignado"
+    FUERA_ZONA = "FUERA_ZONA", "Fuera de la zona"
+    NO_DISPONIBLE = "NO_DISPONIBLE", "No disponible"
+
+
+class FilaAeropuerto(models.Model):
+    """FILA_AEROPUERTO (Anexo D). RN-16: orden de ingreso a la geocerca."""
+
+    geocerca = models.ForeignKey(Geocerca, on_delete=models.CASCADE, related_name="fila")
+    conductor = models.ForeignKey("flota.Conductor", on_delete=models.CASCADE, related_name="entradas_fila")
+    ingreso_en = models.DateTimeField(db_default=Now())
+    salida_en = models.DateTimeField(null=True, blank=True)
+    motivo_salida = models.CharField(max_length=14, choices=MotivoSalidaFila.choices, null=True, blank=True)
+
+    class Meta:
+        db_table = "fila_aeropuerto"
+        verbose_name = "entrada a la fila"
+        verbose_name_plural = "fila del aeropuerto"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conductor"], condition=Q(salida_en__isnull=True), name="fila_una_entrada_abierta"
+            ),
+            models.CheckConstraint(
+                condition=Q(salida_en__isnull=True, motivo_salida__isnull=True)
+                | Q(salida_en__isnull=False, motivo_salida__in=MotivoSalidaFila.values),
+                name="fila_salida_con_motivo",
+            ),
+        ]
+        indexes = [models.Index(fields=["geocerca", "ingreso_en"], name="fila_orden")]
+
+    def __str__(self):
+        return f"{self.conductor} en {self.geocerca}"

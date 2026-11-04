@@ -20,6 +20,8 @@ const red = vi.hoisted(() => ({
   retener: false,
   retenidas: [] as (() => void)[],
   socket: null as unknown,
+  /** Lugar en la fila que devuelve el perfil. */
+  fila: null as unknown,
   llamadas: [] as string[],
 }));
 
@@ -73,6 +75,7 @@ async function httpFalso(url: string, init: RequestInit): Promise<Response> {
         vehiculo_activo: { id: 1, patente: 'ABCD12' },
         consentimiento_gps_en: '2026-11-01T12:00:00Z',
         vehiculos: [{ id: 1, patente: 'ABCD12', marca_modelo: 'Kia Rio' }],
+        fila: red.fila,
       });
     case 'GET /api/app/viaje-activo/': {
       const foto = json({ viaje: viajeActivo(red.estado) });
@@ -151,6 +154,7 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     vi.useFakeTimers();
     red.estado = 'ACEPTADO';
     red.colgar.clear();
+    red.fila = null;
     red.perder.clear();
     red.retener = false;
     red.retenidas.length = 0;
@@ -234,6 +238,20 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     red.retenidas.forEach((soltar) => soltar());
     await avanzar(50);
     expect(titulo()).toBe('Viaje en curso · En camino');
+  });
+
+  it('muestra el lugar en la fila y lo actualiza con el evento del canal (HU-29)', async () => {
+    red.fila = { posicion: 2, total: 3, zona: 'Aeropuerto SCL', ingreso_en: '2026-11-03T15:00:00Z' };
+    await abrirApp();
+    expect(screen.getByRole('status').textContent).toContain('Vas en el lugar 2 de 3 · Aeropuerto SCL');
+    red.fila = { posicion: 1, total: 2, zona: 'Aeropuerto SCL', ingreso_en: '2026-11-03T15:00:00Z' };
+    enviarAlCanal({ tipo: 'fila' });
+    await avanzar(50);
+    expect(screen.getByRole('status').textContent).toContain('Eres el primero de 2');
+    red.fila = null;
+    enviarAlCanal({ tipo: 'fila' });
+    await avanzar(50);
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
   it('después de cada acción vuelve a pedir el viaje activo', async () => {
