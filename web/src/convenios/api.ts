@@ -1,0 +1,64 @@
+/** Administración de convenios (HU-11): solo el administrador. */
+
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { components, paths } from '../api/esquema';
+import { resultado } from '../api/resultado';
+import { useApi } from '../sesion/SesionProvider';
+
+export type Convenio = components['schemas']['Convenio'];
+export type ConvenioDetalle = components['schemas']['ConvenioDetalle'];
+export type ConvenioCrear = NonNullable<paths['/api/convenios/']['post']['requestBody']>['content']['application/json'];
+export type ConvenioEditar = NonNullable<paths['/api/convenios/{id}/']['patch']['requestBody']>['content']['application/json'];
+export type ConsultaConvenios = NonNullable<paths['/api/convenios/']['get']['parameters']['query']>;
+
+const claves = {
+  todo: ['convenios'] as const,
+  lista: (consulta: ConsultaConvenios) => ['convenios', 'lista', consulta] as const,
+  detalle: (id: number) => ['convenios', 'detalle', id] as const,
+};
+
+export function useConvenios(consulta: ConsultaConvenios) {
+  const api = useApi();
+  return useQuery({
+    queryKey: claves.lista(consulta),
+    queryFn: () => resultado(api.GET('/api/convenios/', { params: { query: consulta } })),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useConvenio(id: number) {
+  const api = useApi();
+  return useQuery({
+    queryKey: claves.detalle(id),
+    queryFn: () => resultado(api.GET('/api/convenios/{id}/', { params: { path: { id } } })),
+  });
+}
+
+export function useCrearConvenio() {
+  const api = useApi();
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: (datos: ConvenioCrear) => resultado(api.POST('/api/convenios/', { body: datos })),
+    onSuccess: () => void cliente.invalidateQueries({ queryKey: claves.todo }),
+  });
+}
+
+export function useEditarConvenio(id: number) {
+  const api = useApi();
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: (cambios: ConvenioEditar) =>
+      resultado(api.PATCH('/api/convenios/{id}/', { params: { path: { id } }, body: cambios })),
+    onSuccess: (convenio) => {
+      cliente.setQueryData(claves.detalle(id), convenio);
+      void cliente.invalidateQueries({ queryKey: claves.todo });
+    },
+  });
+}
+
+export function useRotarPassword(id: number) {
+  const api = useApi();
+  return useMutation({
+    mutationFn: () => resultado(api.POST('/api/convenios/{id}/rotar-password/', { params: { path: { id } } })),
+  });
+}

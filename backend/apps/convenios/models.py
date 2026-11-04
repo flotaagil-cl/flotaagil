@@ -1,4 +1,4 @@
-"""CONVENIO, según docs/diccionario-datos.md. La administración de convenios es HU-11."""
+"""CONVENIO, según docs/diccionario-datos.md. Administración en `servicios.py` (HU-11)."""
 
 import secrets
 
