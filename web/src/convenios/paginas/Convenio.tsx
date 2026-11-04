@@ -40,6 +40,7 @@ const ACCIONES_AUDITORIA: Record<string, string> = {
   DESACTIVACION: 'Desactivación',
   CAMBIO_CLAVE: 'Cambio de contraseña',
   BLOQUEO_LINK: 'Bloqueo del link por intentos fallidos',
+  DESBLOQUEO_LINK: 'Desbloqueo del link al rotar la contraseña',
 };
 
 /** HU-12: solo lectura, del más nuevo al más antiguo (RN-12). */

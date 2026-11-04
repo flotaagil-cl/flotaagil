@@ -100,6 +100,9 @@ class Viaje(models.Model):
     origen_cancelacion = models.CharField(
         max_length=14, choices=OrigenCancelacion.choices, null=True, blank=True
     )
+    # DC-27: el supervisor declara que el pasajero autorizó los avisos. No tiene cuenta: se guarda su nombre.
+    autorizacion_avisos_en = models.DateTimeField(null=True, blank=True)
+    autorizacion_avisos_supervisor = models.CharField(max_length=80, null=True, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

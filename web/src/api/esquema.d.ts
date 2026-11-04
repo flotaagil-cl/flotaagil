@@ -1986,6 +1986,36 @@ export interface components {
             access: string;
             usuario: components["schemas"]["UsuarioSesion"];
         };
+        /** @description HU-25: el supervisor pide a nombre del pasajero y declara que este autorizó los avisos (DC-27). */
+        SolicitudConvenioRequest: {
+            nombre: string;
+            /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
+            telefono: string;
+            origen_dir: string;
+            destino_dir: string;
+            /**
+             * Format: date-time
+             * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
+             */
+            recogida_en?: string | null;
+            /**
+             * @description Si no viene: DESDE_AEROPUERTO cuando hay vuelo, URBANO si no.
+             *
+             *     * `DESDE_AEROPUERTO` - Desde el aeropuerto
+             *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+             *     * `URBANO` - Urbano
+             */
+            sentido?: components["schemas"]["SentidoEnum"];
+            /** @description Solo para viajes desde el aeropuerto. */
+            vuelo?: components["schemas"]["VueloLlegadaRequest"];
+            acepta_privacidad: boolean;
+            acepta_whatsapp: boolean;
+            sitio_web?: string;
+            /** @description Quien hace la declaración: no tiene cuenta */
+            supervisor: string;
+            /** @description Declaro que el pasajero autorizó recibir avisos por WhatsApp */
+            declara_autorizacion: boolean;
+        };
         SolicitudConvenioRespuesta: {
             estado: string;
             /** Format: date-time */
@@ -3309,9 +3339,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SolicitudRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["SolicitudRequest"];
-                "multipart/form-data": components["schemas"]["SolicitudRequest"];
+                "application/json": components["schemas"]["SolicitudConvenioRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SolicitudConvenioRequest"];
+                "multipart/form-data": components["schemas"]["SolicitudConvenioRequest"];
             };
         };
         responses: {

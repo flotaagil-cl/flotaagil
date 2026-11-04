@@ -6,6 +6,7 @@ se guarda su hash, y ni ella ni el hash llegan a la auditoría ni a los logs.
 """
 
 from django.db import transaction
+from django.utils import timezone
 
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
@@ -58,6 +59,13 @@ def rotar_password(convenio: Convenio, *, usuario) -> str:
     password = nueva_password_temporal()
     convenio.set_password(password)
     # Con la contraseña nueva, un bloqueo por intentos con la anterior ya no tiene sentido.
+    if convenio.bloqueado_hasta is not None and convenio.bloqueado_hasta > timezone.now():
+        _auditar(
+            usuario,
+            convenio,
+            "DESBLOQUEO_LINK",
+            {"bloqueado_hasta": convenio.bloqueado_hasta.isoformat(), "intentos": convenio.intentos_fallidos},
+        )
     convenio.intentos_fallidos, convenio.bloqueado_hasta = 0, None
     convenio.save(update_fields=["password_hash", "intentos_fallidos", "bloqueado_hasta"])
     _auditar(usuario, convenio, "CAMBIO_CLAVE")  # RN-12

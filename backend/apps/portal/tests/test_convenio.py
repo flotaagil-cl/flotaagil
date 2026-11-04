@@ -43,7 +43,8 @@ def entrar(cliente, convenio, password=CLAVE):
 
 
 def pedir(cliente, convenio, **cambios):
-    return cliente.post(url("solicitudes", convenio), solicitud(**cambios), format="json", HTTP_ORIGIN=ORIGEN)
+    cuerpo = solicitud(**{"supervisor": "Sara Supervisora", "declara_autorizacion": True, **cambios})
+    return cliente.post(url("solicitudes", convenio), cuerpo, format="json", HTTP_ORIGIN=ORIGEN)
 
 
 @pytest.fixture
@@ -165,10 +166,26 @@ class TestBloqueo:
         self.bloquear(cliente, convenio)
         assert entrar(cliente, otro).status_code == 200
 
-    def test_rotar_la_contrasena_lo_levanta(self, cliente, convenio, administrador):
+    def test_rotar_la_contrasena_lo_levanta_y_lo_audita(self, cliente, convenio, administrador):
         self.bloquear(cliente, convenio)
+        convenio.refresh_from_db()
+        hasta = convenio.bloqueado_hasta
         nueva = convenios.rotar_password(convenio, usuario=administrador)
         assert entrar(cliente, convenio, nueva).status_code == 200
+        registro = Auditoria.objects.get(accion="DESBLOQUEO_LINK")
+        assert (registro.usuario, registro.entidad_id) == (administrador, convenio.pk)
+        assert registro.datos_previos == {"bloqueado_hasta": hasta.isoformat(), "intentos": 5}
+
+    def test_rotar_sin_bloqueo_no_registra_desbloqueo(self, convenio, administrador):
+        convenios.rotar_password(convenio, usuario=administrador)
+        assert not Auditoria.objects.filter(accion="DESBLOQUEO_LINK").exists()
+
+    def test_rotar_con_el_bloqueo_vencido_no_registra_desbloqueo(self, convenio, administrador):
+        type(convenio).objects.filter(pk=convenio.pk).update(
+            intentos_fallidos=5, bloqueado_hasta=timezone.now() - timedelta(minutes=1)
+        )
+        convenios.rotar_password(convenio, usuario=administrador)
+        assert not Auditoria.objects.filter(accion="DESBLOQUEO_LINK").exists()
 
     def test_se_ve_en_la_auditoria_del_panel(self, cliente, convenio, administrador):
         self.bloquear(cliente, convenio)
@@ -273,6 +290,28 @@ class TestReserva:
         Viaje.objects.update(creado_en=timezone.now() - timedelta(hours=1))
         tareas.expirar_solicitudes()
         assert Viaje.objects.get().estado == EstadoViaje.SOLICITADO
+
+    def test_guarda_la_autorizacion_con_fecha_y_supervisor(self, dentro, convenio):
+        """DC-27."""
+        antes = timezone.now()
+        assert pedir(dentro, convenio, supervisor="  Sara Supervisora  ").status_code == 201
+        viaje = Viaje.objects.get()
+        assert viaje.autorizacion_avisos_supervisor == "Sara Supervisora"
+        assert antes <= viaje.autorizacion_avisos_en <= timezone.now()
+
+    @pytest.mark.parametrize("valor", [False, None])
+    def test_la_declaracion_es_obligatoria(self, dentro, convenio, valor):
+        respuesta = pedir(dentro, convenio, declara_autorizacion=valor)
+        assert respuesta.status_code == 400
+        assert "declara_autorizacion" in respuesta.json()
+        assert not Viaje.objects.exists()
+
+    @pytest.mark.parametrize("valor", ["", "   ", None, "x" * 81])
+    def test_el_supervisor_es_obligatorio(self, dentro, convenio, valor):
+        respuesta = pedir(dentro, convenio, supervisor=valor)
+        assert respuesta.status_code == 400
+        assert "supervisor" in respuesta.json()
+        assert not Viaje.objects.exists()
 
     def test_valida_como_el_portal(self, dentro, convenio):
         assert "telefono" in pedir(dentro, convenio, telefono="123").json()

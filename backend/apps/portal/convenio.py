@@ -134,6 +134,9 @@ def crear_solicitud(convenio: Convenio, datos: dict) -> tuple[Viaje, dict]:
         )
         ahora = timezone.now()
         Pasajero.objects.filter(pk=viaje.pasajero_id).update(opt_in_en=ahora, privacidad_aceptada_en=ahora)
+        viaje.autorizacion_avisos_en = ahora
+        viaje.autorizacion_avisos_supervisor = datos["supervisor"]
+        viaje.save(update_fields=["autorizacion_avisos_en", "autorizacion_avisos_supervisor"])
         avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21
     return viaje, {
         "estado": viaje.estado,

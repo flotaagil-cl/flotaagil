@@ -13,6 +13,9 @@ import { ErrorApi, resultado } from '../api/resultado';
 
 export type EmpresaPublica = components['schemas']['EmpresaPublica'];
 export type Solicitud = components['schemas']['SolicitudRequest'];
+export type SolicitudConvenio = components['schemas']['SolicitudConvenioRequest'];
+/** El formulario sirve a los dos: la declaración solo existe en el link del convenio. */
+export type CuerpoSolicitud = Solicitud & Partial<Pick<SolicitudConvenio, 'supervisor' | 'declara_autorizacion'>>;
 export type SolicitudRespuesta = components['schemas']['SolicitudRespuesta'];
 export type Sentido = components['schemas']['SentidoEnum'];
 export type ClientePortal = Client<paths>;
@@ -75,7 +78,7 @@ export function useSalirConvenio(api: ClientePortal, token: string) {
 
 export function useSolicitarConvenio(api: ClientePortal, token: string) {
   return useMutation({
-    mutationFn: (solicitud: Solicitud) =>
+    mutationFn: (solicitud: SolicitudConvenio) =>
       resultado(api.POST('/api/convenio/{token}/solicitudes/', { params: { path: { token } }, body: solicitud })),
   });
 }

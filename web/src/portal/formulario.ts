@@ -11,7 +11,7 @@
 import { z } from 'zod';
 import { codigoDe, detalleDe, ErrorApi } from '../api/resultado';
 import { aIso, formatearFechaHora, instanteDeCampo, type ValorFechaHora } from '../hora/hora';
-import type { EmpresaPublica, Sentido, Solicitud } from './api';
+import type { CuerpoSolicitud, EmpresaPublica, Sentido } from './api';
 import { errorTelefono, normalizarTelefono } from './telefono';
 
 export const SENTIDOS: { valor: Sentido; texto: string }[] = [
@@ -33,6 +33,9 @@ export interface ValoresSolicitud {
   acepta_privacidad: boolean;
   acepta_whatsapp: boolean;
   sitio_web: string;
+  /** Solo en el link de convenio (DC-27). */
+  supervisor: string;
+  declara_autorizacion: boolean;
 }
 
 export const VALORES_INICIALES: ValoresSolicitud = {
@@ -46,6 +49,8 @@ export const VALORES_INICIALES: ValoresSolicitud = {
   acepta_privacidad: false,
   acepta_whatsapp: false,
   sitio_web: '',
+  supervisor: '',
+  declara_autorizacion: false,
 };
 
 /** Ruta del error en la API → campo del formulario (los 400 de DRF). */
@@ -61,10 +66,12 @@ export const CAMPOS_API: Record<string, string> = {
   'vuelo.hora_llegada': 'vuelo.hora',
   acepta_privacidad: 'acepta_privacidad',
   acepta_whatsapp: 'acepta_whatsapp',
+  supervisor: 'supervisor',
+  declara_autorizacion: 'declara_autorizacion',
 };
 
 export function camposVisibles(sentido: Sentido): string[] {
-  const base = ['nombre', 'telefono', 'sentido', 'origen_dir', 'destino_dir', 'recogida', 'acepta_privacidad', 'acepta_whatsapp'];
+  const base = ['nombre', 'telefono', 'sentido', 'origen_dir', 'destino_dir', 'recogida', 'acepta_privacidad', 'acepta_whatsapp', 'supervisor', 'declara_autorizacion'];
   return sentido === 'DESDE_AEROPUERTO' ? [...base, 'vuelo.numero', 'vuelo.hora'] : base;
 }
 
@@ -88,7 +95,7 @@ function llegadaDelVuelo(v: ValoresSolicitud): number | null {
   return numero && VUELO_IATA.test(numero) && llegada.ok ? llegada.instante : null;
 }
 
-export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number) {
+export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number, conDeclaracion = false) {
   return z
     .object({
       nombre: z.string(),
@@ -101,6 +108,8 @@ export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number) {
       acepta_privacidad: z.boolean(),
       acepta_whatsapp: z.boolean(),
       sitio_web: z.string(),
+      supervisor: z.string(),
+      declara_autorizacion: z.boolean(),
     })
     .superRefine((v, ctx) => {
       const error = (ruta: string[], message: string) => ctx.addIssue({ code: 'custom', path: ruta, message });
@@ -149,6 +158,12 @@ export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number) {
 
       if (!v.acepta_privacidad) error(['acepta_privacidad'], 'Debes aceptar el aviso de privacidad.');
       if (!v.acepta_whatsapp) error(['acepta_whatsapp'], 'Debes aceptar los avisos por WhatsApp para confirmar tu viaje.');
+      if (conDeclaracion) {
+        const supervisor = v.supervisor.trim();
+        if (!supervisor) error(['supervisor'], 'Ingresa tu nombre.');
+        else if (supervisor.length > 80) error(['supervisor'], 'Máximo 80 caracteres.');
+        if (!v.declara_autorizacion) error(['declara_autorizacion'], 'Debes declarar que el pasajero autorizó los avisos.');
+      }
     });
 }
 
@@ -158,8 +173,8 @@ function instante(valor: ValorFechaHora): string {
   return aIso(resultado.instante);
 }
 
-export function cuerpoSolicitud(v: ValoresSolicitud): Solicitud {
-  const cuerpo: Solicitud = {
+export function cuerpoSolicitud(v: ValoresSolicitud, conDeclaracion = false): CuerpoSolicitud {
+  const cuerpo: CuerpoSolicitud = {
     nombre: v.nombre.trim(),
     telefono: normalizarTelefono(v.telefono),
     sentido: v.sentido,
@@ -169,6 +184,10 @@ export function cuerpoSolicitud(v: ValoresSolicitud): Solicitud {
     acepta_whatsapp: v.acepta_whatsapp,
     sitio_web: v.sitio_web,
   };
+  if (conDeclaracion) {
+    cuerpo.supervisor = v.supervisor.trim();
+    cuerpo.declara_autorizacion = v.declara_autorizacion;
+  }
   if (v.recogida.pared) cuerpo.recogida_en = instante(v.recogida);
   const numero = normalizarVuelo(v.vuelo.numero);
   if (v.sentido === 'DESDE_AEROPUERTO' && numero) {

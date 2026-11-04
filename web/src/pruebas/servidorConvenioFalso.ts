@@ -3,7 +3,7 @@
  * un booleano. Cualquier llamada a /api/auth/ queda en `prohibidas`: este acceso no usa la sesión del panel.
  */
 
-import type { AccesoConvenio, Solicitud } from '../portal/api';
+import type { AccesoConvenio, SolicitudConvenio } from '../portal/api';
 import { AHORA_PORTAL, EMPRESA_PORTAL } from './servidorPortalFalso';
 
 export const TOKEN = 'tokenSintetico'.padEnd(43, 'x');
@@ -18,13 +18,15 @@ export class ServidorConvenioFalso {
   activo = true;
   bloqueado = false;
   intentos = 0;
-  cuerpos: Solicitud[] = [];
+  cuerpos: SolicitudConvenio[] = [];
   prohibidas: string[] = [];
   /** El próximo POST de solicitud responde que la sesión venció. */
   vencerSesion = false;
   /** Desactivan el convenio con la sesión abierta. */
   desactivarAlEnviar = false;
   fallaAcceso: 'red' | null = null;
+  /** El próximo POST de solicitud responde 400 con estos campos. */
+  errorDeCampo: Record<string, string[]> | null = null;
 
   constructor(readonly ahora = AHORA_PORTAL) {}
 
@@ -72,7 +74,8 @@ export class ServidorConvenioFalso {
       this.sesion = false;
       return json(401, { detail: 'Vencida.', code: 'sesion_convenio_vencida' });
     }
-    const cuerpo = (await peticion.json()) as Solicitud;
+    if (this.errorDeCampo) return json(400, this.errorDeCampo);
+    const cuerpo = (await peticion.json()) as SolicitudConvenio;
     this.cuerpos.push(cuerpo);
     return json(201, { estado: 'SOLICITADO', recogida_en: cuerpo.recogida_en, mensaje: 'Recibimos la solicitud.' });
   };

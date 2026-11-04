@@ -7,7 +7,7 @@ import { useEntorno } from '../entornoContexto';
 import { Campo } from '../formularios/Campo';
 import { CampoFechaHora } from '../formularios/CampoFechaHora';
 import { aIso, escribirPared, formatearFechaHora, paredDe } from '../hora/hora';
-import type { EmpresaPublica, Solicitud } from './api';
+import type { CuerpoSolicitud, EmpresaPublica } from './api';
 import {
   CAMPOS_API,
   camposVisibles,
@@ -27,16 +27,18 @@ import estilos from './portal.module.css';
 interface Props<R> {
   empresa: EmpresaPublica;
   /** Portal público o link del convenio (HU-25). */
-  solicitar: (solicitud: Solicitud) => Promise<R>;
+  solicitar: (solicitud: CuerpoSolicitud) => Promise<R>;
   intro: ReactNode;
   leyendaDatos?: string;
-  alEnviar: (enviada: { cuerpo: Solicitud; respuesta: R }) => void;
+  alEnviar: (enviada: { cuerpo: CuerpoSolicitud; respuesta: R }) => void;
+  /** Link del convenio: pide el nombre del supervisor y su declaración (DC-27). */
+  conDeclaracion?: boolean;
   alNoDisponible: () => void;
   alVencerSesion?: () => void;
 }
 
 /** Datos del viaje, validación y errores. Quien lo usa decide a dónde se envía. */
-export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos = 'Tus datos', alEnviar, alNoDisponible, alVencerSesion }: Props<R>) {
+export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos = 'Tus datos', alEnviar, conDeclaracion = false, alNoDisponible, alVencerSesion }: Props<R>) {
   const entorno = useEntorno();
   const [falla, setFalla] = useState<string | null>(null);
   const [generales, setGenerales] = useState<string[]>([]);
@@ -51,7 +53,7 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
     setError,
     formState: { errors, isSubmitting, touchedFields },
   } = useForm<ValoresSolicitud>({
-    resolver: zodResolver(esquemaSolicitud(empresa, entorno.ahora)),
+    resolver: zodResolver(esquemaSolicitud(empresa, entorno.ahora, conDeclaracion)),
     defaultValues: VALORES_INICIALES,
   });
   const [sentido, telefono, vueloNumero, recogida] = useWatch({
@@ -67,7 +69,7 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
     setFalla(null);
     setGenerales([]);
     setConfirmando(false);
-    const cuerpo = cuerpoSolicitud(valores);
+    const cuerpo = cuerpoSolicitud(valores, conDeclaracion);
     try {
       alEnviar({ cuerpo, respuesta: await solicitar(cuerpo) });
     } catch (error) {
@@ -227,6 +229,24 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
             </span>
           )}
         </div>
+        {conDeclaracion && (
+          <>
+            <div className={estilos.aceptacion}>
+              <label>
+                <input type="checkbox" aria-invalid={errors.declara_autorizacion ? true : undefined} aria-describedby="error-declaracion" {...register('declara_autorizacion')} />
+                Declaro que el pasajero autorizó recibir avisos por WhatsApp
+              </label>
+              {errors.declara_autorizacion && (
+                <span id="error-declaracion" className={estilos.errorCampo}>
+                  {errors.declara_autorizacion.message}
+                </span>
+              )}
+            </div>
+            <Campo etiqueta="Nombre del supervisor" error={errors.supervisor?.message} ayuda="Quien hace esta declaración.">
+              {(c) => <input autoComplete="name" enterKeyHint="done" {...c} {...register('supervisor')} />}
+            </Campo>
+          </>
+        )}
       </fieldset>
 
       {/* Campo trampa: fuera de pantalla, oculto para lectores de pantalla y fuera del orden de tabulación. */}

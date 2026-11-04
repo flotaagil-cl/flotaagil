@@ -35,6 +35,14 @@ def solicitud(**cambios):
 
 
 @pytest.mark.django_db
+def test_una_solicitud_del_portal_no_lleva_declaracion_de_supervisor(cliente, empresa):
+    """La declaración es solo del link de convenio (DC-27)."""
+    assert cliente.post(url(empresa), solicitud(), format="json").status_code == 201
+    viaje = Viaje.objects.get()
+    assert (viaje.autorizacion_avisos_en, viaje.autorizacion_avisos_supervisor) == (None, None)
+
+
+@pytest.mark.django_db
 class TestEmpresaPublica:
     def test_datos_publicos(self, cliente, empresa):
         respuesta = cliente.get(reverse("portal-empresa", args=[empresa.slug]))

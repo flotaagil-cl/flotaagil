@@ -9,6 +9,8 @@ import { crearEntorno, crearLocks } from '../pruebas/entornoFalso';
 import { ServidorConvenioFalso, TOKEN } from '../pruebas/servidorConvenioFalso';
 import { crearRutas } from '../rutas/tabla';
 
+const DECLARACION = 'Declaro que el pasajero autorizó recibir avisos por WhatsApp';
+
 function montar(servidor = new ServidorConvenioFalso()) {
   const locks = crearLocks();
   const { entorno } = crearEntorno({ servidor: servidor as never, locks, ahora: servidor.ahora });
@@ -24,7 +26,7 @@ async function intentar(password: string) {
   await usuario.click(screen.getByRole('button', { name: 'Entrar' }));
 }
 
-async function llenarYEnviar() {
+async function llenarYEnviar(declarar = true) {
   const usuario = userEvent.setup();
   await usuario.type(screen.getByLabelText('Nombre'), 'Ana Pasajera');
   await usuario.type(screen.getByLabelText('WhatsApp'), '+56 9 8765 4321');
@@ -33,6 +35,10 @@ async function llenarYEnviar() {
   fireEvent.change(screen.getByLabelText(/^Recogida/), { target: { value: '2026-10-30T14:00' } });
   await usuario.click(screen.getByLabelText('Acepto el aviso de privacidad.'));
   await usuario.click(screen.getByLabelText(/^Acepto recibir por WhatsApp/));
+  if (declarar) {
+    await usuario.click(screen.getByLabelText(DECLARACION));
+    await usuario.type(screen.getByLabelText('Nombre del supervisor'), '  Sara Supervisora  ');
+  }
   await usuario.click(screen.getByRole('button', { name: 'Solicitar viaje' }));
 }
 
@@ -125,6 +131,32 @@ describe('reserva (RN-07)', () => {
     expect(screen.queryByText(/Confirma respondiendo/)).not.toBeInTheDocument();
     expect(servidor.cuerpos).toHaveLength(1);
     expect(servidor.cuerpos[0].nombre).toBe('Ana Pasajera');
+  });
+
+  it('envía la declaración y el nombre del supervisor', async () => {
+    const { servidor } = montar(conSesion());
+    await screen.findByRole('heading', { name: 'Solicitar un viaje' });
+    await llenarYEnviar();
+    await screen.findByRole('heading', { name: 'Solicitud recibida' });
+    expect(servidor.cuerpos[0]).toMatchObject({ supervisor: 'Sara Supervisora', declara_autorizacion: true });
+  });
+
+  it('sin la declaración ni el nombre no se envía', async () => {
+    const { servidor } = montar(conSesion());
+    await screen.findByRole('heading', { name: 'Solicitar un viaje' });
+    await llenarYEnviar(false);
+    expect(await screen.findByText('Debes declarar que el pasajero autorizó los avisos.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre del supervisor')).toBeInvalid();
+    expect(servidor.cuerpos).toEqual([]);
+  });
+
+  it('un error del backend en la declaración se muestra en su campo', async () => {
+    const servidor = conSesion();
+    servidor.errorDeCampo = { declara_autorizacion: ['Rechazada por el servidor.'] };
+    montar(servidor);
+    await screen.findByRole('heading', { name: 'Solicitar un viaje' });
+    await llenarYEnviar();
+    expect(await screen.findByText('Rechazada por el servidor.')).toBeInTheDocument();
   });
 
   it('se puede hacer otra, con el formulario vacío', async () => {

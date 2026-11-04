@@ -14,7 +14,8 @@ import {
   useSolicitarConvenio,
   type AccesoConvenio as Acceso,
   type ClientePortal,
-  type Solicitud,
+  type CuerpoSolicitud,
+  type SolicitudConvenio,
 } from '../api';
 import { Confirmacion } from '../Confirmacion';
 import { FormularioSolicitud } from '../FormularioSolicitud';
@@ -146,7 +147,7 @@ function Contrasena({ api, token, vencida, alNoDisponible }: { api: ClientePorta
 }
 
 interface Enviada {
-  cuerpo: Solicitud;
+  cuerpo: CuerpoSolicitud;
   respuesta: { recogida_en: string; mensaje: string };
 }
 
@@ -175,7 +176,9 @@ function ConSesion({ api, token, acceso, alNoDisponible, alVencer }: { api: Clie
         <FormularioSolicitud
           key={vuelta}
           empresa={acceso}
-          solicitar={solicitar.mutateAsync}
+          // Con `conDeclaracion`, el formulario siempre agrega el supervisor y la declaración.
+          solicitar={(cuerpo) => solicitar.mutateAsync(cuerpo as SolicitudConvenio)}
+          conDeclaracion
           intro={`La reserva queda a nombre de ${acceso.cliente_nombre}, sin confirmación por WhatsApp.`}
           leyendaDatos="Datos del pasajero"
           alEnviar={setEnviada}

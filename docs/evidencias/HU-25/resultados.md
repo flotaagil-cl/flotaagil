@@ -34,6 +34,21 @@ Rama `feat/HU-25-acceso-convenio`, 2026-11-04. Prueba manual contra el stack pri
 | Salir | Borra la cookie y vuelve a la contraseña | OK (automática) |
 | Celular (390 px) | Sin desborde horizontal | OK (manual) |
 
+## Ajustes del PO (`fix/HU-25-declaracion`)
+
+Prueba manual con convenios sintéticos nuevos y las reservas 127 y 128, canceladas al terminar. Se aplicó `reservas.0009` a la base principal. Suites en esta rama: backend 1063 (98 % de líneas), web 591 (94,4 %).
+
+| Qué se probó | Esperado | Obtenido |
+|---|---|---|
+| Casilla «Declaro que el pasajero autorizó recibir avisos por WhatsApp» | Obligatoria en el formulario y en la API | OK (automática y manual) |
+| Nombre del supervisor | Obligatorio, hasta 80 caracteres | OK (automática y manual) |
+| Registro | VIAJE guarda la fecha y el supervisor | OK (automática y manual: reserva 128) |
+| Portal público | No pide ni guarda la declaración | OK (automática) |
+| Rotar con el link bloqueado | Levanta el bloqueo y registra `DESBLOQUEO_LINK` con el administrador | OK (automática y manual) |
+| Rotar sin bloqueo vigente | No registra desbloqueo | OK (automática) |
+
+El supervisor no tiene cuenta, así que «supervisor» es el nombre que escribe en el formulario: no está verificado. Lo respalda que entró con la contraseña del convenio.
+
 ## Fallos corregidos en las pruebas
 
 - **Salir no funcionaba:** el 204 sin cuerpo se trataba como error.
@@ -51,3 +66,5 @@ Rama `feat/HU-25-acceso-convenio`, 2026-11-04. Prueba manual contra el stack pri
 - `convenio-contrasena-celular.png`, `convenio-formulario-celular.png`, `convenio-confirmacion-celular.png`.
 - `convenio-no-disponible-celular.png`: convenio desactivado con la sesión abierta.
 - `convenio-bloqueado-escritorio.png`: bloqueo tras 5 intentos.
+- `convenio-declaracion-celular.png`: casilla y nombre del supervisor.
+- `panel-auditoria-desbloqueo-escritorio.png`: bloqueo y desbloqueo en la auditoría.

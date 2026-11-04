@@ -100,6 +100,26 @@ class SolicitudSerializer(serializers.Serializer):
         return datos
 
 
+class SolicitudConvenioSerializer(SolicitudSerializer):
+    """HU-25: el supervisor pide a nombre del pasajero y declara que este autorizó los avisos (DC-27)."""
+
+    supervisor = serializers.CharField(max_length=80, help_text="Quien hace la declaración: no tiene cuenta")
+    declara_autorizacion = serializers.BooleanField(
+        help_text="Declaro que el pasajero autorizó recibir avisos por WhatsApp"
+    )
+
+    def validate_supervisor(self, valor):
+        valor = valor.strip()
+        if not valor:
+            raise serializers.ValidationError("Ingresa tu nombre.")
+        return valor
+
+    def validate_declara_autorizacion(self, valor):
+        if not valor:
+            raise serializers.ValidationError("Debes declarar que el pasajero autorizó los avisos.")
+        return valor
+
+
 class SolicitudRespuestaSerializer(serializers.Serializer):
     estado = serializers.CharField()
     recogida_en = serializers.DateTimeField()

@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from apps.cuentas.origen import OrigenPanelPermitido
 
 from . import convenio as servicios
-from .serializers import EmpresaPublicaSerializer, SolicitudSerializer
+from .serializers import EmpresaPublicaSerializer, SolicitudConvenioSerializer
 from .servicios import LimiteIP
 from .views import PortalPorHora, PortalPorMinuto, _VistaPortal
 
@@ -127,7 +127,7 @@ class SolicitudConvenioView(_VistaConvenio):
     @extend_schema(
         tags=["convenio"],
         summary="Solicitar un viaje a nombre del convenio",
-        request=SolicitudSerializer,
+        request=SolicitudConvenioSerializer,
         responses={
             201: SolicitudConvenioRespuestaSerializer,
             401: OpenApiResponse(description="`sesion_convenio_vencida`"),
@@ -139,7 +139,7 @@ class SolicitudConvenioView(_VistaConvenio):
         convenio = servicios.convenio_del_link(token)
         if not servicios.sesion_valida(request.COOKIES.get(COOKIE), convenio):
             raise servicios.SesionVencida()
-        entrada = SolicitudSerializer(data=request.data)
+        entrada = SolicitudConvenioSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         _, datos = servicios.crear_solicitud(convenio, dict(entrada.validated_data))
         respuesta = Response(SolicitudConvenioRespuestaSerializer(datos).data, status=status.HTTP_201_CREATED)
