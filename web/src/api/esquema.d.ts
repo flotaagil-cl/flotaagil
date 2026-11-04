@@ -1696,7 +1696,7 @@ export interface components {
              * @description Última consulta a la API de vuelos; null = sin verificar (HU-26).
              */
             ultima_consulta_en?: string | null;
-            origen_iata?: string | null;
+            origen_icao?: string | null;
             /** Format: date-time */
             recogida_propuesta?: string | null;
             /** Format: date-time */

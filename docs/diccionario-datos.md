@@ -119,7 +119,7 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | hora_estimada | TIMESTAMPTZ | Sí |  | Última ETA informada | UTC | NULL |  |
 | estado_vuelo | VARCHAR(12) | No |  | Estado informado | PROGRAMADO \| DEMORADO \| ATERRIZADO \| CANCELADO \| DESVIADO | PROGRAMADO |  |
 | ultima_consulta_en | TIMESTAMPTZ | Sí |  | Última consulta a la API | UTC | NULL |  |
-| origen_iata | VARCHAR(4) | Sí |  | Aeropuerto de origen (DC-22) | Define el margen de RN-17 | NULL |  |
+| origen_icao | VARCHAR(4) | Sí |  | Código ICAO del origen (DC-22) | Prefijo SC = nacional; define el margen de RN-17 | NULL |  |
 | eta_referencia | TIMESTAMPTZ | Sí |  | ETA contra la que se mide el cambio (DC-22) | UTC | NULL |  |
 | recogida_propuesta | TIMESTAMPTZ | Sí |  | Nueva hora por confirmar (DC-22, RN-02) | UTC | NULL |  |
 | propuesta_en | TIMESTAMPTZ | Sí |  | Momento de la propuesta (DC-22) | UTC | NULL |  |

@@ -40,8 +40,8 @@ Con la AeroAPI falsa fallando dos veces: la propuesta apareció en el panel **a 
 
 ## Límites conocidos
 
-- **El pasajero no recibe aviso del cambio de hora:** no está en los criterios. El conductor con viaje sí se entera.
-- **Lista de aeropuertos de Chile fija en el código:** si falta uno, ese vuelo usaría el margen internacional.
+- **El pasajero no recibe aviso del cambio de hora:** queda como PR-14, porque requiere una plantilla de Meta. El conductor con viaje sí se entera.
+- **Campo `code_icao` sin confirmar con una respuesta real:** existe en la especificación oficial de AeroAPI y puede venir vacío; en ese caso se usa el margen nacional.
 - **El panel refresca la ficha cada 30 s.** La alerta en vivo llega con HU-28.
 
 ## Capturas

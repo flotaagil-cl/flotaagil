@@ -3587,7 +3587,7 @@ components:
           format: date-time
           nullable: true
           description: Última consulta a la API de vuelos; null = sin verificar (HU-26).
-        origen_iata:
+        origen_icao:
           type: string
           nullable: true
           maxLength: 4
