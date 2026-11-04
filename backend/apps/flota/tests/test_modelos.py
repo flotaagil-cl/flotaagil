@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from django.core.exceptions import ValidationError
@@ -69,6 +69,15 @@ class TestConductor:
         conductor = ConductorFactory()
         assert conductor.empresa_id == conductor.usuario.empresa_id
         assert str(conductor) == conductor.usuario.nombre
+
+    def test_la_asociacion_usa_la_fecha_de_chile(self, monkeypatch):
+        """A las 21:30 de Chile ya es el día siguiente en UTC."""
+        conductor, auto = ConductorFactory(), VehiculoFactory()
+        noche = datetime(2026, 11, 4, 0, 30, tzinfo=UTC)
+        monkeypatch.setattr(timezone, "now", lambda: noche)
+        asociacion = ConductorVehiculo.objects.create(conductor=conductor, vehiculo=auto)
+        asociacion.refresh_from_db()
+        assert asociacion.desde == date(2026, 11, 3)
 
     def test_asociacion_con_clave_compuesta(self):
         conductor, a, b = ConductorFactory(), VehiculoFactory(), VehiculoFactory()

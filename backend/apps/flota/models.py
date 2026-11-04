@@ -114,7 +114,8 @@ class ConductorVehiculo(models.Model):
     pk = models.CompositePrimaryKey("conductor_id", "vehiculo_id")
     conductor = models.ForeignKey(Conductor, on_delete=models.CASCADE, related_name="asociaciones")
     vehiculo = models.ForeignKey(Vehiculo, on_delete=models.CASCADE, related_name="asociaciones")
-    desde = models.DateField(db_default=Now())
+    # La fecha de Chile: la base trabaja en UTC y desde las 21:00 ya marcaría el día siguiente.
+    desde = models.DateField(default=timezone.localdate, db_default=Now())
 
     class Meta:
         db_table = "conductor_vehiculo"
