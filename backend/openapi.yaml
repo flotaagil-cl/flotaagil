@@ -1849,6 +1849,45 @@ paths:
           description: ''
         '409':
           description: La reserva no admite la operación en su estado actual
+  /api/viajes/{id}/forzar-cierre/:
+    post:
+      operationId: viajes_forzar_cierre_create
+      description: 'HU-05: solo con el pasajero a bordo, si el conductor no puede
+        hacerlo desde la app. Anular exige motivo; cerrar exige además método y monto
+        (RN-10). Queda en auditoría con el responsable (RN-11).'
+      summary: Forzar el cierre o la anulación de un viaje en curso
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este viaje.
+        required: true
+      tags:
+      - reservas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForzarCierreRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ForzarCierreRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ForzarCierreRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViajeDetalle'
+          description: ''
+        '409':
+          description: La reserva no admite la operación en su estado actual
   /api/whatsapp/entrante/:
     post:
       operationId: whatsapp_entrante_create
@@ -1905,6 +1944,14 @@ components:
           type: string
       required:
       - access
+    AccionEnum:
+      enum:
+      - ANULAR
+      - CERRAR
+      type: string
+      description: |-
+        * `ANULAR` - ANULAR
+        * `CERRAR` - CERRAR
     ActorEnum:
       enum:
       - CONDUCTOR
@@ -2073,6 +2120,23 @@ components:
       - posicion_fila
       - sugerido
       - ultimo_viaje_en
+    CierreForzado:
+      type: object
+      properties:
+        accion:
+          type: string
+        motivo:
+          type: string
+        usuario:
+          type: string
+        creado_en:
+          type: string
+          format: date-time
+      required:
+      - accion
+      - creado_en
+      - motivo
+      - usuario
     Conductor:
       type: object
       properties:
@@ -2467,6 +2531,27 @@ components:
       required:
       - metodo
       - monto
+    ForzarCierreRequest:
+      type: object
+      description: HU-05. Anular exige motivo; cerrar exige además método y monto
+        (RN-10, RN-11).
+      properties:
+        accion:
+          $ref: '#/components/schemas/AccionEnum'
+        motivo:
+          type: string
+          minLength: 1
+          description: Queda en auditoría (RN-11)
+          maxLength: 200
+        metodo:
+          $ref: '#/components/schemas/MetodoEnum'
+        monto:
+          type: integer
+          maximum: 500000
+          minimum: 0
+      required:
+      - accion
+      - motivo
     Historial:
       type: object
       properties:
@@ -3546,11 +3631,18 @@ components:
           nullable: true
           readOnly: true
           description: Puntaje del pasajero, de 1 a 5 (RN-14)
+        cierre_forzado:
+          allOf:
+          - $ref: '#/components/schemas/CierreForzado'
+          nullable: true
+          readOnly: true
+          description: Cierre o anulación forzada (HU-05)
       required:
       - alerta_vuelo
       - calificacion
       - canal
       - cancelable
+      - cierre_forzado
       - conductor
       - convenio
       - creado_en

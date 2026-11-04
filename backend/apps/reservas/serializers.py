@@ -284,7 +284,9 @@ class ForzarCierreSerializer(serializers.Serializer):
 
     def validate(self, datos):
         if datos["accion"] == "CERRAR":
-            faltan = {c: ["Es obligatorio para cerrar el viaje."] for c in ("metodo", "monto") if c not in datos}
+            faltan = {
+                c: ["Es obligatorio para cerrar el viaje."] for c in ("metodo", "monto") if c not in datos
+            }
             if faltan:
                 raise serializers.ValidationError(faltan)
         return datos

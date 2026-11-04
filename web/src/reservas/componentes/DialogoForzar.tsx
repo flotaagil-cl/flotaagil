@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
+import estilosFormulario from '../../formularios/formularios.module.css';
 import { useForzarCierre, type ViajeDetalle } from '../api';
 import { mensajeDeErrorApi } from '../errores';
 import { METODOS_PAGO } from '../etiquetas';
@@ -13,7 +14,7 @@ const MAXIMO_MOTIVO = 200;
 const MONTO_MAXIMO = 500_000;
 
 /** Acepta «15000» y «15.000». */
-export function leerMonto(texto: string): number | null {
+function leerMonto(texto: string): number | null {
   const limpio = texto.trim().replace(/[.\s]/g, '').replace(/^\$/, '');
   return /^\d+$/.test(limpio) ? Number(limpio) : null;
 }
@@ -105,7 +106,7 @@ export function DialogoForzar({ viaje, alCerrar, alTerminar }: Props) {
         </p>
         <Aviso tipo="error">Úsalo solo si el conductor no puede hacerlo desde la app. Queda en auditoría con tu nombre y el conductor vuelve a Disponible.</Aviso>
         {falla && <Aviso tipo="error">{falla}</Aviso>}
-        <fieldset className={estilos.opciones}>
+        <fieldset className={estilosFormulario.opciones}>
           <legend>Qué hacer</legend>
           <label>
             <input type="radio" value="CERRAR" {...register('accion')} /> Cerrar: el viaje se hizo y se cobró

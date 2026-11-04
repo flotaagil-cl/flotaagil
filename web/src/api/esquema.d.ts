@@ -951,6 +951,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/viajes/{id}/forzar-cierre/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Forzar el cierre o la anulación de un viaje en curso
+         * @description HU-05: solo con el pasajero a bordo, si el conductor no puede hacerlo desde la app. Anular exige motivo; cerrar exige además método y monto (RN-10). Queda en auditoría con el responsable (RN-11).
+         */
+        post: operations["viajes_forzar_cierre_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whatsapp/entrante/": {
         parameters: {
             query?: never;
@@ -997,6 +1017,12 @@ export interface components {
         Access: {
             access: string;
         };
+        /**
+         * @description * `ANULAR` - ANULAR
+         *     * `CERRAR` - CERRAR
+         * @enum {string}
+         */
+        AccionEnum: "ANULAR" | "CERRAR";
         /**
          * @description * `CONDUCTOR` - Conductor
          *     * `DESPACHADOR` - Despachador
@@ -1070,6 +1096,13 @@ export interface components {
             posicion_fila: number | null;
             /** @description El más apto (HU-04). No asigna: lo confirma el despachador */
             sugerido: boolean;
+        };
+        CierreForzado: {
+            accion: string;
+            motivo: string;
+            usuario: string;
+            /** Format: date-time */
+            creado_en: string;
         };
         Conductor: {
             readonly id: number;
@@ -1221,6 +1254,14 @@ export interface components {
             metodo: components["schemas"]["MetodoEnum"];
             /** @description Monto cobrado en CLP */
             monto: number;
+        };
+        /** @description HU-05. Anular exige motivo; cerrar exige además método y monto (RN-10, RN-11). */
+        ForzarCierreRequest: {
+            accion: components["schemas"]["AccionEnum"];
+            /** @description Queda en auditoría (RN-11) */
+            motivo: string;
+            metodo?: components["schemas"]["MetodoEnum"];
+            monto?: number;
         };
         Historial: {
             estado_anterior?: (components["schemas"]["EstadoViajeEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -1681,6 +1722,8 @@ export interface components {
             readonly historial: components["schemas"]["Historial"][];
             /** @description Puntaje del pasajero, de 1 a 5 (RN-14) */
             readonly calificacion: number | null;
+            /** @description Cierre o anulación forzada (HU-05) */
+            readonly cierre_forzado: components["schemas"]["CierreForzado"] | null;
         };
         Vuelo: {
             numero: string;
@@ -3337,6 +3380,41 @@ export interface operations {
                 "application/json": components["schemas"]["DecidirRecogidaRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["DecidirRecogidaRequest"];
                 "multipart/form-data": components["schemas"]["DecidirRecogidaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViajeDetalle"];
+                };
+            };
+            /** @description La reserva no admite la operación en su estado actual */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    viajes_forzar_cierre_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este viaje. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForzarCierreRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ForzarCierreRequest"];
+                "multipart/form-data": components["schemas"]["ForzarCierreRequest"];
             };
         };
         responses: {

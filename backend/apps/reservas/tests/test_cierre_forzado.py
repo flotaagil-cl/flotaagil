@@ -51,7 +51,11 @@ class TestAnular:
         viaje = viaje_de(chofer, E.PASAJERO_A_BORDO)
         forzar(api, viaje, **ANULAR)
         registro = Auditoria.objects.get(accion="ANULACION_FORZADA")
-        assert (registro.usuario, registro.entidad, registro.entidad_id) == (despachador, Entidad.VIAJE, viaje.pk)
+        assert (registro.usuario, registro.entidad, registro.entidad_id) == (
+            despachador,
+            Entidad.VIAJE,
+            viaje.pk,
+        )
         assert registro.motivo == ANULAR["motivo"]
         assert registro.datos_previos["estado"] == E.PASAJERO_A_BORDO
 
@@ -91,7 +95,11 @@ class TestCerrar:
         viaje = viaje_de(chofer, E.PASAJERO_A_BORDO)
         forzar(api, viaje, **CERRAR)
         registro = Auditoria.objects.get(accion="CIERRE_FORZADO")
-        assert (registro.usuario, registro.entidad_id, registro.motivo) == (despachador, viaje.pk, CERRAR["motivo"])
+        assert (registro.usuario, registro.entidad_id, registro.motivo) == (
+            despachador,
+            viaje.pk,
+            CERRAR["motivo"],
+        )
         assert registro.datos_previos == {"estado": E.PASAJERO_A_BORDO, "metodo": "EFECTIVO", "monto": 15000}
 
     @pytest.mark.parametrize(
@@ -172,7 +180,11 @@ class TestCuandoYQuien:
         assert forzar(api, viaje, accion="OTRA", motivo="x").status_code == 400
 
     def test_la_app_del_conductor_se_entera(
-        self, api, chofer, monkeypatch, django_capture_on_commit_callbacks  # noqa: F811
+        self,
+        api,
+        chofer,  # noqa: F811
+        monkeypatch,
+        django_capture_on_commit_callbacks,
     ):
         avisos = []
         monkeypatch.setattr(ejecucion, "avisar_viaje_actualizado", lambda c, v: avisos.append((c, v)))

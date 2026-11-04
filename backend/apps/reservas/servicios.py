@@ -312,7 +312,7 @@ def anular_forzado(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
 
 @transaction.atomic
 def cerrar_forzado(viaje: Viaje, *, motivo: str, metodo: str, monto: int, usuario) -> Viaje:
-    """RN-10 y RN-11: tampoco se finaliza sin método de pago y monto. No envía la encuesta: fue un caso anómalo."""
+    """RN-10 y RN-11: tampoco se finaliza sin método de pago y monto. Sin encuesta: fue un caso anómalo."""
     viaje = _viaje_a_bordo(viaje)
     if metodo == MetodoPago.CONVENIO and viaje.convenio_id is None:
         raise ValidationError({"metodo": ["Este viaje no pertenece a un convenio."]})

@@ -18,11 +18,11 @@ from .estados import actor_de
 from .filtros import ViajeFiltro
 from .models import EstadoViaje, Viaje
 from .serializers import (
-    ForzarCierreSerializer,
     AsignarSerializer,
     CancelarSerializer,
     CandidatoSerializer,
     DecidirRecogidaSerializer,
+    ForzarCierreSerializer,
     ViajeCrearSerializer,
     ViajeDetalleSerializer,
     ViajeEditarSerializer,
@@ -125,8 +125,9 @@ class ViajeViewSet(
         request=ForzarCierreSerializer,
         responses={200: ViajeDetalleSerializer, 409: CONFLICTO},
         description=(
-            "HU-05: solo con el pasajero a bordo, si el conductor no puede hacerlo desde la app. Anular exige "
-            "motivo; cerrar exige además método y monto (RN-10). Queda en auditoría con el responsable (RN-11)."
+            "HU-05: solo con el pasajero a bordo, si el conductor no puede hacerlo desde la app. "
+            "Anular exige motivo; cerrar exige además método y monto (RN-10). "
+            "Queda en auditoría con el responsable (RN-11)."
         ),
     )
     @action(detail=True, methods=["post"], url_path="forzar-cierre")

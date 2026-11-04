@@ -341,7 +341,7 @@ describe('cierre o anulación forzada (HU-05)', () => {
     expect(await screen.findByText('Viaje cerrado con su pago.')).toBeInTheDocument();
     expect(contexto.viajes.cuerpos.at(-1)?.cuerpo).toEqual({ accion: 'CERRAR', motivo: 'Sin señal', metodo: 'TARJETA', monto: 18500 });
     expect(screen.getByText('Cierre forzado')).toBeInTheDocument();
-    expect(screen.getByText(/Diego Despacho · /)).toBeInTheDocument();
+    expect(screen.getByText(/Diego Despacho · mié 15-07-2026/)).toBeInTheDocument();
   });
 
   it('anular solo pide motivo', async () => {
