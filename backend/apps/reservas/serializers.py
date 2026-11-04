@@ -40,7 +40,17 @@ class ConvenioResumenSerializer(serializers.Serializer):
 class VueloSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vuelo
-        fields = ["numero", "fecha", "hora_programada", "hora_estimada", "estado_vuelo", "ultima_consulta_en"]
+        fields = [
+            "numero",
+            "fecha",
+            "hora_programada",
+            "hora_estimada",
+            "estado_vuelo",
+            "ultima_consulta_en",
+            "origen_iata",
+            "recogida_propuesta",
+            "propuesta_en",
+        ]
         extra_kwargs = {
             "ultima_consulta_en": {
                 "help_text": "Última consulta a la API de vuelos; null = sin verificar (HU-26)."
@@ -220,6 +230,12 @@ class CancelarSerializer(serializers.Serializer):
 
 class AsignarSerializer(serializers.Serializer):
     conductor = serializers.IntegerField(help_text="Conductor Disponible de la empresa (RN-01, RN-03)")
+
+
+class DecidirRecogidaSerializer(serializers.Serializer):
+    recogida_propuesta = serializers.DateTimeField(
+        help_text="La hora que vio el despachador: si cambió, responde 409 y no la aplica."
+    )
 
 
 class CandidatoSerializer(serializers.Serializer):

@@ -95,10 +95,16 @@ export class ServidorViajesFalso {
 
     if (ruta === 'GET /api/viajes/') return this.listar(url);
     if (ruta === 'POST /api/viajes/') return this.crear(cuerpo as ViajeCrear);
-    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos)\/)?$/.exec(url.pathname);
+    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos|confirmar-recogida|descartar-recogida)\/)?$/.exec(url.pathname);
     const viaje = detalle && this.buscar(Number(detalle[1]));
     if (!viaje) return { estado: 404, cuerpo: { detail: 'No encontrado.' } };
     if (detalle[2] === 'candidatos') return { estado: 200, cuerpo: this.candidatos };
+    if (detalle[2] === 'confirmar-recogida' || detalle[2] === 'descartar-recogida') {
+      const propuesta = (cuerpo as { recogida_propuesta: string }).recogida_propuesta;
+      if (detalle[2] === 'confirmar-recogida') viaje.recogida_en = propuesta;
+      Object.assign(viaje, { vuelo: { ...viaje.vuelo!, recogida_propuesta: null, propuesta_en: null } });
+      return { estado: 200, cuerpo: viaje };
+    }
     if (detalle[2] === 'asignar') return this.asignar(viaje, (cuerpo as { conductor: number }).conductor);
     if (detalle[2] && peticion.method === 'POST') return this.cancelar(viaje, (cuerpo as { motivo: string }).motivo);
     if (peticion.method === 'PATCH') return this.editar(viaje, cuerpo as ViajeEditar);

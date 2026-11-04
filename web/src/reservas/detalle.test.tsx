@@ -295,6 +295,58 @@ describe('asignar conductor (HU-14)', () => {
   });
 });
 
+describe('nueva hora de recogida (HU-27)', () => {
+  const VUELO = {
+    numero: 'LA845',
+    fecha: '2026-07-15',
+    hora_programada: '2026-07-15T13:30:00Z',
+    hora_estimada: '2026-07-15T14:10:00Z',
+    estado_vuelo: 'DEMORADO' as const,
+    recogida_propuesta: '2026-07-15T14:30:00Z',
+    propuesta_en: '2026-07-15T12:00:00Z',
+  };
+  const conPropuesta = () => viajeDePrueba({ id: 8, recogida_en: '2026-07-15T13:50:00Z', vuelo: VUELO });
+
+  it('muestra la propuesta sin cambiar la recogida (RN-02)', async () => {
+    await abrirDetalle(conPropuesta());
+    const propuesta = screen.getByRole('region', { name: 'Cambió la llegada del vuelo' });
+    expect(propuesta.textContent).toContain('ahora llega mié 15-07-2026 10:10');
+    expect(propuesta.textContent).toContain('propuesta: mié 15-07-2026 10:30');
+    expect(propuesta.textContent).toContain('actual: mié 15-07-2026 09:50');
+    expect(screen.getByText('mié 15-07-2026 09:50', { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it('al confirmar cambia la recogida y envía la hora que se vio', async () => {
+    const contexto = await abrirDetalle(conPropuesta());
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar nueva hora' }));
+    expect(await screen.findByText('mié 15-07-2026 10:30', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Cambió la llegada del vuelo' })).not.toBeInTheDocument();
+    expect(contexto.viajes.cuerpos.at(-1)?.cuerpo).toEqual({ recogida_propuesta: '2026-07-15T14:30:00Z' });
+  });
+
+  it('al descartar mantiene la recogida', async () => {
+    await abrirDetalle(conPropuesta());
+    await userEvent.click(screen.getByRole('button', { name: 'Mantener la hora actual' }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Cambió la llegada del vuelo' })).not.toBeInTheDocument());
+    expect(screen.getByText('mié 15-07-2026 09:50', { selector: 'dd' })).toBeInTheDocument();
+  });
+
+  it('si la propuesta cambió mientras se miraba, avisa', async () => {
+    const contexto = await abrirDetalle(conPropuesta());
+    contexto.viajes.siguiente('POST /api/viajes/8/confirmar-recogida/', {
+      estado: 409,
+      cuerpo: { detail: 'La propuesta cambió o ya se resolvió. Revisa la hora actual.', code: 'propuesta_no_vigente' },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar nueva hora' }));
+    expect(await screen.findByText('La propuesta cambió o ya se resolvió. Revisa la hora actual.')).toBeInTheDocument();
+  });
+
+  it('sin propuesta no muestra nada', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 9, vuelo: { ...VUELO, recogida_propuesta: null, propuesta_en: null } }));
+    expect(screen.queryByRole('region', { name: 'Cambió la llegada del vuelo' })).not.toBeInTheDocument();
+  });
+});
+
 describe('esperando la respuesta del conductor (HU-15)', () => {
   it('la ficha de una reserva asignada se actualiza sola', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });

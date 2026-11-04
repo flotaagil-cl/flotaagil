@@ -127,6 +127,9 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
 
+# Consultas de monitoreo por minuto: el nivel Personal de AeroAPI permite 10 conjuntos de resultados.
+VUELOS_CONSULTAS_POR_MINUTO = env.int("VUELOS_CONSULTAS_POR_MINUTO", default=8)
+
 # Celery: worker y beat. El broker usa otra base de Redis que la caché y los canales.
 CELERY_BROKER_URL = env(
     "CELERY_BROKER_URL",
@@ -143,6 +146,11 @@ CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
 CELERY_BEAT_SCHEDULE = {
     "expirar-solicitudes-rn06": {
         "task": "apps.reservas.tareas.expirar_solicitudes",
+        "schedule": timedelta(seconds=60),
+        "options": {"expires": 60},
+    },
+    "monitorear-vuelos-hu27": {
+        "task": "apps.aeropuerto.tareas.monitorear_vuelos",
         "schedule": timedelta(seconds=60),
         "options": {"expires": 60},
     },

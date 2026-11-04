@@ -81,6 +81,12 @@ class ConfiguracionEmpresa(models.Model):
     precision_geocerca_m = _minutos(50, minimo=1)
     # DC-19: horas desde el fin del viaje en que un número suelto cuenta como respuesta a la encuesta.
     encuesta_vigencia_horas = _minutos(24, minimo=1)
+    # DC-22: monitoreo de vuelos (HU-27).
+    consulta_vuelo_desde_min = _minutos(180, minimo=1)
+    consulta_vuelo_cada_min = _minutos(30, minimo=1)
+    consulta_vuelo_final_cada_min = _minutos(10, minimo=1)
+    consulta_vuelo_final_ventana_min = _minutos(60)
+    cambio_eta_min = _minutos(15, minimo=1)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)

@@ -31,6 +31,11 @@ class Vuelo(models.Model):
         db_default=EstadoVuelo.PROGRAMADO,
     )
     ultima_consulta_en = models.DateTimeField(null=True, blank=True)
+    # DC-22: monitoreo (HU-27). La propuesta no cambia la recogida hasta que el despachador confirma (RN-02).
+    origen_iata = models.CharField(max_length=4, null=True, blank=True)
+    eta_referencia = models.DateTimeField(null=True, blank=True)
+    recogida_propuesta = models.DateTimeField(null=True, blank=True)
+    propuesta_en = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "vuelo"

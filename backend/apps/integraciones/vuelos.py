@@ -40,6 +40,7 @@ class DatosVuelo:
     hora_programada: datetime
     hora_estimada: datetime | None
     estado: str
+    origen_iata: str | None = None
 
 
 class VuelosNoDisponibles(Exception):
@@ -150,6 +151,7 @@ class ConsultorFlightAware:
                     programada,
                     estimada,
                     estado_de(vuelo, programada, estimada),
+                    (vuelo.get("origin") or {}).get("code_iata"),
                 )
             )
         return candidatos
@@ -167,7 +169,13 @@ class ConsultorFlightAware:
             if programada is None or timezone.localtime(programada).date() != dia:
                 continue
             candidatos.append(
-                DatosVuelo(vuelo.get("ident_iata") or ident, programada, None, EstadoVuelo.PROGRAMADO)
+                DatosVuelo(
+                    vuelo.get("ident_iata") or ident,
+                    programada,
+                    None,
+                    EstadoVuelo.PROGRAMADO,
+                    vuelo.get("origin_iata"),
+                )
             )
         return candidatos
 

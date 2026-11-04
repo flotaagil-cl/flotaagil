@@ -35,6 +35,7 @@ export const claves = {
 
 const VIGENCIA_MS = 30_000;
 export const ESPERA_RESPUESTA_MS = 5_000;
+export const ESPERA_VUELO_MS = 30_000;
 
 export function useViajes(consulta: ConsultaViajes) {
   const api = useApi();
@@ -54,7 +55,11 @@ export function useViaje(id: number) {
     queryFn: () => resultado(api.GET('/api/viajes/{id}/', { params: { path: { id } } })),
     staleTime: VIGENCIA_MS,
     // HU-15: mientras espera la respuesta del conductor (60 s) se vuelve a pedir, para ver si aceptó, rechazó o venció.
-    refetchInterval: (consulta) => (consulta.state.data?.estado === 'ASIGNADO' ? ESPERA_RESPUESTA_MS : false),
+    // HU-27: con vuelo se vuelve a pedir cada tanto, para ver una nueva propuesta de recogida.
+    refetchInterval: (consulta) => {
+      if (consulta.state.data?.estado === 'ASIGNADO') return ESPERA_RESPUESTA_MS;
+      return consulta.state.data?.vuelo ? ESPERA_VUELO_MS : false;
+    },
   });
 }
 
@@ -100,6 +105,22 @@ export function useCancelarViaje(id: number) {
   return useMutation({
     mutationFn: (motivo: string) =>
       resultado(api.POST('/api/viajes/{id}/cancelar/', { params: { path: { id } }, body: { motivo } })),
+    onSuccess: alTerminar.exito,
+    onError: (error) => alTerminar.error(id, error),
+  });
+}
+
+/** HU-27: el despachador confirma o descarta la nueva hora de recogida (RN-02). */
+export function useDecidirRecogida(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: ({ confirmar, recogida_propuesta }: { confirmar: boolean; recogida_propuesta: string }) =>
+      resultado(
+        confirmar
+          ? api.POST('/api/viajes/{id}/confirmar-recogida/', { params: { path: { id } }, body: { recogida_propuesta } })
+          : api.POST('/api/viajes/{id}/descartar-recogida/', { params: { path: { id } }, body: { recogida_propuesta } }),
+      ),
     onSuccess: alTerminar.exito,
     onError: (error) => alTerminar.error(id, error),
   });

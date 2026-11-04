@@ -6,6 +6,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.aeropuerto import monitoreo
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 from apps.integraciones.notificaciones import AVISO_CONFIRMACION
@@ -18,6 +19,7 @@ from .serializers import (
     AsignarSerializer,
     CancelarSerializer,
     CandidatoSerializer,
+    DecidirRecogidaSerializer,
     ViajeCrearSerializer,
     ViajeDetalleSerializer,
     ViajeEditarSerializer,
@@ -103,6 +105,35 @@ class ViajeViewSet(
         entrada.is_valid(raise_exception=True)
         servicios.cancelar_viaje(viaje, motivo=entrada.validated_data["motivo"], usuario=request.user)
         return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    def _decidir_recogida(self, request, decision):
+        viaje = self.get_object()
+        entrada = DecidirRecogidaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        decision(viaje, usuario=request.user, esperada=entrada.validated_data["recogida_propuesta"])
+        return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    @extend_schema(
+        summary="Confirmar la nueva hora de recogida",
+        tags=["reservas"],
+        request=DecidirRecogidaSerializer,
+        responses={200: ViajeDetalleSerializer, 409: CONFLICTO},
+        description="RN-02: la recogida solo cambia con esta confirmación. Queda en auditoría (HU-27).",
+    )
+    @action(detail=True, methods=["post"], url_path="confirmar-recogida")
+    def confirmar_recogida(self, request, pk=None):
+        return self._decidir_recogida(request, monitoreo.confirmar)
+
+    @extend_schema(
+        summary="Descartar la nueva hora de recogida",
+        tags=["reservas"],
+        request=DecidirRecogidaSerializer,
+        responses={200: ViajeDetalleSerializer, 409: CONFLICTO},
+        description="Mantiene la recogida. Esa ETA no se vuelve a proponer. Queda en auditoría (HU-27).",
+    )
+    @action(detail=True, methods=["post"], url_path="descartar-recogida")
+    def descartar_recogida(self, request, pk=None):
+        return self._decidir_recogida(request, monitoreo.descartar)
 
     @extend_schema(
         summary="Conductores disponibles para asignar",

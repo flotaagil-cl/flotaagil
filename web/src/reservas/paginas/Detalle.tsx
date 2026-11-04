@@ -8,6 +8,7 @@ import { useViaje, type ViajeDetalle } from '../api';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { DialogoCancelar } from '../componentes/DialogoCancelar';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
+import { PropuestaRecogida } from '../componentes/PropuestaRecogida';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
 import { ACTORES, CANALES, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
@@ -85,6 +86,8 @@ function DetalleDe({ id }: { id: number }) {
         </div>
         {!(viaje.editable && viaje.cancelable) && <p className={estilos.explicacion}>{porQueNo(viaje)}</p>}
       </div>
+
+      <PropuestaRecogida viaje={viaje} />
 
       <div className={estilos.tarjeta}>
         <h2>Datos</h2>
