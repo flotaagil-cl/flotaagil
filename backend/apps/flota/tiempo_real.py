@@ -58,6 +58,24 @@ def _enviar(empresa_id: int, mensaje: dict) -> None:
         async_to_sync(capa.group_send)(grupo_mapa(empresa_id), mensaje)
 
 
+def grupo_indicadores(empresa_id: int) -> str:
+    return f"indicadores_empresa_{empresa_id}"
+
+
+def avisar_indicadores(empresa_id: int) -> None:
+    """HU-01: cambiaron reservas, turnos o vehículos. Con robust, un corte de Redis no daña la acción.
+
+    Las posiciones GPS no pasan por aquí: no cambian los indicadores.
+    """
+
+    def enviar():
+        capa = get_channel_layer()
+        if capa is not None:
+            async_to_sync(capa.group_send)(grupo_indicadores(empresa_id), {"type": "indicadores.cambio"})
+
+    transaction.on_commit(enviar, robust=True)
+
+
 def notificar_conductor(conductor: Conductor) -> None:
     """Después del commit: estado, vehículo y última posición del conductor, o que salió del turno."""
     conductor = Conductor.objects.select_related("usuario", "vehiculo_activo").get(pk=conductor.pk)

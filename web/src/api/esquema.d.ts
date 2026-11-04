@@ -828,6 +828,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/indicadores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reservas del día por estado y vehículos en línea */
+        get: operations["indicadores_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/": {
         parameters: {
             query?: never;
@@ -1523,6 +1540,24 @@ export interface components {
              */
             confirmar: boolean;
         };
+        Indicadores: {
+            /**
+             * Format: date
+             * @description Hoy, en hora de Chile
+             */
+            fecha: string;
+            reservas: components["schemas"]["IndicadoresReservas"];
+            vehiculos: components["schemas"]["IndicadoresVehiculos"];
+        };
+        IndicadoresReservas: {
+            total: number;
+            /** @description Todos los estados, también en cero */
+            por_estado: components["schemas"]["ReservasPorEstado"][];
+        };
+        IndicadoresVehiculos: {
+            en_linea: number;
+            fuera_de_linea: number;
+        };
         InformeImportacion: {
             filas: components["schemas"]["FilaImportacion"][];
             validas: number;
@@ -1808,6 +1843,10 @@ export interface components {
         ReservaVinculada: {
             id: number;
             estado: components["schemas"]["EstadoViajeEnum"];
+        };
+        ReservasPorEstado: {
+            estado: components["schemas"]["EstadoViajeEnum"];
+            cantidad: number;
         };
         RespuestaAsignacion: {
             asignacion: number;
@@ -3428,6 +3467,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    indicadores_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Indicadores"];
+                };
             };
         };
     };

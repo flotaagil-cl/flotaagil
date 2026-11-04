@@ -43,3 +43,76 @@
 .boton:hover {
   background: var(--acento-hover);
 }
+
+/* --- Indicadores (HU-01) --- */
+
+.indicadores {
+  margin: var(--espacio-4) 0;
+}
+
+.tituloIndicadores {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-3);
+  color: var(--texto-suave);
+  font-size: 0.875rem;
+}
+
+.tituloIndicadores h2 {
+  margin: 0;
+  color: var(--texto);
+  font-size: 1.15rem;
+}
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--espacio-3);
+  margin: 0 0 var(--espacio-3);
+}
+
+.cifras > div {
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.cifras dt {
+  color: var(--texto-suave);
+  font-size: 0.875rem;
+}
+
+.cifras dd {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.porEstado {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: var(--espacio-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.porEstado a {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  padding: var(--espacio-2) var(--espacio-3);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.porEstado a:hover {
+  border-color: var(--acento);
+}

@@ -64,6 +64,8 @@ export class ServidorViajesFalso {
   alertas: AlertaDePrueba[] = [];
   /** Conductores disponibles que devuelve /candidatos/ (HU-14). */
   candidatos: Candidato[] = [];
+  /** Respuesta de /api/indicadores/ (HU-01). */
+  indicadores: unknown = { fecha: '2026-07-15', reservas: { total: 0, por_estado: [] }, vehiculos: { en_linea: 0, fuera_de_linea: 0 } };
   /** Cuerpos recibidos, por ruta («POST /api/viajes/», «PATCH /api/viajes/7/»…). */
   cuerpos: { ruta: string; cuerpo: unknown }[] = [];
   private programadas = new Map<string, Respuesta[]>();
@@ -100,6 +102,7 @@ export class ServidorViajesFalso {
     const programada = this.programadas.get(ruta)?.shift();
     if (programada) return programada;
 
+    if (ruta === 'GET /api/indicadores/') return { estado: 200, cuerpo: this.indicadores };
     if (ruta === 'GET /api/alertas/') {
       return { estado: 200, cuerpo: { count: this.alertas.length, next: null, previous: null, results: this.alertas } };
     }

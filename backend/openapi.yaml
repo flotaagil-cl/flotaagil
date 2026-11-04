@@ -1327,6 +1327,21 @@ paths:
           description: ''
         '409':
           description: '`fuera_de_ventana`: solo plantillas aprobadas (PR-11)'
+  /api/indicadores/:
+    get:
+      operationId: indicadores_retrieve
+      summary: Reservas del día por estado y vehículos en línea
+      tags:
+      - indicadores
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Indicadores'
+          description: ''
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -2993,6 +3008,44 @@ components:
             hay errores.'
       required:
       - archivo
+    Indicadores:
+      type: object
+      properties:
+        fecha:
+          type: string
+          format: date
+          description: Hoy, en hora de Chile
+        reservas:
+          $ref: '#/components/schemas/IndicadoresReservas'
+        vehiculos:
+          $ref: '#/components/schemas/IndicadoresVehiculos'
+      required:
+      - fecha
+      - reservas
+      - vehiculos
+    IndicadoresReservas:
+      type: object
+      properties:
+        total:
+          type: integer
+        por_estado:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservasPorEstado'
+          description: Todos los estados, también en cero
+      required:
+      - por_estado
+      - total
+    IndicadoresVehiculos:
+      type: object
+      properties:
+        en_linea:
+          type: integer
+        fuera_de_linea:
+          type: integer
+      required:
+      - en_linea
+      - fuera_de_linea
     InformeImportacion:
       type: object
       properties:
@@ -3592,6 +3645,16 @@ components:
       required:
       - estado
       - id
+    ReservasPorEstado:
+      type: object
+      properties:
+        estado:
+          $ref: '#/components/schemas/EstadoViajeEnum'
+        cantidad:
+          type: integer
+      required:
+      - cantidad
+      - estado
     RespuestaAsignacion:
       type: object
       properties:

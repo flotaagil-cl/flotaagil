@@ -24,7 +24,7 @@ from apps.reservas.models import EstadoViaje, HistorialEstado, MetodoPago, Viaje
 
 from .models import Conductor, EstadoConductor, PosicionGps
 from .serializers import VehiculoAsociadoSerializer, VehiculoDeclaradoSerializer
-from .tiempo_real import notificar_conductor
+from .tiempo_real import avisar_indicadores, notificar_conductor
 
 MAX_POR_LOTE = 100
 # Estados del viaje en que la posición del conductor se asocia al viaje.
@@ -275,6 +275,7 @@ class TurnoView(_VistaApp):
                     conductor.turno_inicio, conductor.turno_fin = timezone.now(), None  # DC-26
             conductor.save(update_fields=["estado", "vehiculo_activo", "turno_inicio", "turno_fin"])
             notificar_conductor(conductor)
+            avisar_indicadores(request.user.empresa_id)  # HU-01
             if conductor.estado == EstadoConductor.NO_DISPONIBLE:
                 from apps.aeropuerto.fila import salir
                 from apps.aeropuerto.models import MotivoSalidaFila

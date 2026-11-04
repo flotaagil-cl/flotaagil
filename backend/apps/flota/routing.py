@@ -8,9 +8,10 @@ from channels.security.websocket import OriginValidator
 from django.conf import settings
 from django.urls import path
 
-from .consumers import ConductorConsumer, MapaConsumer
+from .consumers import ConductorConsumer, IndicadoresConsumer, MapaConsumer
 
 websocket_urlpatterns = [
     path("ws/mapa/", OriginValidator(MapaConsumer.as_asgi(), settings.PANEL_ORIGENES)),
+    path("ws/indicadores/", OriginValidator(IndicadoresConsumer.as_asgi(), settings.PANEL_ORIGENES)),
     path("ws/conductor/", ConductorConsumer.as_asgi()),
 ]

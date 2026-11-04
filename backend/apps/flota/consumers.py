@@ -8,7 +8,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from apps.cuentas.autenticacion import ROLES_PANEL
 from apps.cuentas.ws_auth import SUBPROTOCOLO
 
-from .tiempo_real import conductores_del_mapa, grupo_mapa
+from .tiempo_real import conductores_del_mapa, grupo_indicadores, grupo_mapa
 
 # Códigos de cierre propios (4000-4999): ante 4401 el cliente renueva el access y se reconecta.
 SIN_SESION = 4401
@@ -54,6 +54,35 @@ class MapaConsumer(AsyncJsonWebsocketConsumer):
     async def receive_json(self, content, **kwargs):
         if content.get("tipo") == "ping" and await self._vigente():
             await self.send_json({"tipo": "pong"})
+
+
+class IndicadoresConsumer(AsyncJsonWebsocketConsumer):
+    """HU-01: /ws/indicadores/. Solo avisa que hay que volver a pedir los números a la API."""
+
+    grupo = None
+
+    async def connect(self):
+        usuario = self.scope.get("user")
+        if not getattr(usuario, "is_authenticated", False):
+            await self.close(code=SIN_SESION)
+            return
+        if usuario.rol not in ROLES_PANEL:
+            await self.close(code=SIN_PERMISO)
+            return
+        self.grupo = grupo_indicadores(usuario.empresa_id)
+        await self.channel_layer.group_add(self.grupo, self.channel_name)
+        await self.accept(subprotocol=SUBPROTOCOLO)
+        await self.send_json({"tipo": "inicial"})  # Al reconectarse pudo haberse perdido un cambio.
+
+    async def disconnect(self, code):
+        if self.grupo:
+            await self.channel_layer.group_discard(self.grupo, self.channel_name)
+
+    async def indicadores_cambio(self, evento):
+        if (self.scope.get("token_exp") or 0) <= time.time():
+            await self.close(code=SIN_SESION)
+            return
+        await self.send_json({"tipo": "cambio"})
 
 
 class ConductorConsumer(AsyncJsonWebsocketConsumer):

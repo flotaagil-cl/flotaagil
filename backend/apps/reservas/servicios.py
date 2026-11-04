@@ -215,6 +215,8 @@ def editar_viaje(viaje: Viaje, datos: dict, *, geocodificador=None) -> Viaje:
             viaje.save(update_fields=list(campos))
         if reemplazar_vuelo:
             _guardar_vuelo(viaje, datos.get("vuelo"))
+        if "recogida_en" in campos:
+            estados._avisar_indicadores(viaje.empresa_id)  # Puede entrar o salir de las reservas del día.
     return Viaje.objects.get(pk=viaje.pk)
 
 

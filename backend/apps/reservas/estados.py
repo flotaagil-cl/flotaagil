@@ -51,7 +51,14 @@ def actor_de(usuario) -> str:
     return ACTOR_POR_ROL[usuario.rol]
 
 
+def _avisar_indicadores(empresa_id: int) -> None:
+    from apps.flota.tiempo_real import avisar_indicadores
+
+    avisar_indicadores(empresa_id)  # HU-01
+
+
 def registrar_inicial(viaje: Viaje, *, actor: str, usuario=None) -> HistorialEstado:
+    _avisar_indicadores(viaje.empresa_id)
     return HistorialEstado.objects.create(
         viaje=viaje, estado_anterior=None, estado_nuevo=viaje.estado, actor=actor, usuario=usuario
     )
@@ -93,5 +100,6 @@ def transicionar(
             usuario=usuario,
             **(historial or {}),
         )
+        _avisar_indicadores(actual.empresa_id)
     viaje.refresh_from_db()
     return viaje

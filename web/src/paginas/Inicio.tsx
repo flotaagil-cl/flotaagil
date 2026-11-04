@@ -1,9 +1,10 @@
 import { Link } from 'react-router';
 import { hoy } from '../hora/hora';
 import { useSesion } from '../sesion/SesionProvider';
+import { Indicadores } from './Indicadores';
 import estilos from './Inicio.module.css';
 
-/** Atajos al listado filtrado. Sin números ni consultas: los indicadores son de HU-01. */
+/** Indicadores del día (HU-01) y atajos al listado filtrado. */
 export function Inicio() {
   const { estado } = useSesion();
   if (estado.fase !== 'autenticada') return null;
@@ -18,6 +19,7 @@ export function Inicio() {
       <h1>Inicio</h1>
       <p>Hola, {estado.usuario.nombre}.</p>
       <p>Panel de {estado.usuario.empresa.razon_social}.</p>
+      <Indicadores />
       <ul className={estilos.atajos} aria-label="Atajos a las reservas">
         {atajos.map((atajo) => (
           <li key={atajo.a}>

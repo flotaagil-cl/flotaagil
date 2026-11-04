@@ -13,7 +13,7 @@ from apps.cuentas.models import Rol, Usuario
 from apps.reservas.models import EstadoViaje, Viaje
 
 from .models import Conductor, ConductorVehiculo, EstadoConductor, Vehiculo
-from .tiempo_real import notificar_conductor
+from .tiempo_real import avisar_indicadores, notificar_conductor
 
 # Estados del viaje en que el vehículo está comprometido con un servicio.
 ESTADOS_VIAJE_EN_CURSO = frozenset(
@@ -70,6 +70,8 @@ def editar_vehiculo(vehiculo: Vehiculo, datos: dict, *, usuario) -> Vehiculo:
     for campo, valor in datos.items():
         setattr(vehiculo, campo, valor)
     vehiculo.save(update_fields=list(previos))
+    if "activo" in previos:
+        avisar_indicadores(vehiculo.empresa_id)  # HU-01
     accion = "EDITAR"
     if "activo" in previos:
         accion = "ACTIVAR" if vehiculo.activo else "DESACTIVAR"
@@ -86,6 +88,7 @@ def editar_vehiculo(vehiculo: Vehiculo, datos: dict, *, usuario) -> Vehiculo:
 @transaction.atomic
 def crear_vehiculos(empresa, filas: list[dict], *, usuario) -> list[Vehiculo]:
     vehiculos = Vehiculo.objects.bulk_create([Vehiculo(empresa=empresa, **fila) for fila in filas])
+    avisar_indicadores(empresa.pk)  # HU-01
     for vehiculo in vehiculos:
         auditoria.registrar(usuario=usuario, entidad=Entidad.VEHICULO, entidad_id=vehiculo.pk, accion="CREAR")
     return vehiculos
@@ -216,6 +219,7 @@ def cambiar_habilitacion(conductor: Conductor, habilitar: bool, *, usuario) -> N
             conductor.turno_fin = timezone.now()  # DC-26
             conductor.save(update_fields=["estado", "turno_fin"])
     notificar_conductor(conductor)  # HU-02: al deshabilitarse sale del mapa
+    avisar_indicadores(cuenta.empresa_id)  # HU-01
     auditoria.registrar(
         usuario=usuario,
         entidad=Entidad.USUARIO,
