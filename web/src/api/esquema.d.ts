@@ -803,6 +803,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/viajes/{id}/confirmar-recogida/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar la nueva hora de recogida
+         * @description RN-02: la recogida solo cambia con esta confirmación. Queda en auditoría (HU-27).
+         */
+        post: operations["viajes_confirmar_recogida_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/viajes/{id}/descartar-recogida/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Descartar la nueva hora de recogida
+         * @description Mantiene la recogida. Esa ETA no se vuelve a proponer. Queda en auditoría (HU-27).
+         */
+        post: operations["viajes_descartar_recogida_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whatsapp/entrante/": {
         parameters: {
             query?: never;
@@ -952,6 +992,13 @@ export interface components {
         ConvenioResumen: {
             id: number;
             cliente_nombre: string;
+        };
+        DecidirRecogidaRequest: {
+            /**
+             * Format: date-time
+             * @description La hora que vio el despachador: si cambió, responde 409 y no la aplica.
+             */
+            recogida_propuesta: string;
         };
         EmpresaPublica: {
             razon_social: string;
@@ -1439,6 +1486,11 @@ export interface components {
              * @description Última consulta a la API de vuelos; null = sin verificar (HU-26).
              */
             ultima_consulta_en?: string | null;
+            origen_iata?: string | null;
+            /** Format: date-time */
+            recogida_propuesta?: string | null;
+            /** Format: date-time */
+            propuesta_en?: string | null;
         };
         VueloEntradaRequest: {
             /** @description Código IATA, p. ej. LA123 o H2 456. */
@@ -2854,6 +2906,76 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Candidato"][];
                 };
+            };
+        };
+    };
+    viajes_confirmar_recogida_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este viaje. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecidirRecogidaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DecidirRecogidaRequest"];
+                "multipart/form-data": components["schemas"]["DecidirRecogidaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViajeDetalle"];
+                };
+            };
+            /** @description La reserva no admite la operación en su estado actual */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    viajes_descartar_recogida_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este viaje. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecidirRecogidaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DecidirRecogidaRequest"];
+                "multipart/form-data": components["schemas"]["DecidirRecogidaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViajeDetalle"];
+                };
+            };
+            /** @description La reserva no admite la operación en su estado actual */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

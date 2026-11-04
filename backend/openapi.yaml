@@ -1579,6 +1579,82 @@ paths:
                 items:
                   $ref: '#/components/schemas/Candidato'
           description: ''
+  /api/viajes/{id}/confirmar-recogida/:
+    post:
+      operationId: viajes_confirmar_recogida_create
+      description: 'RN-02: la recogida solo cambia con esta confirmación. Queda en
+        auditoría (HU-27).'
+      summary: Confirmar la nueva hora de recogida
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este viaje.
+        required: true
+      tags:
+      - reservas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecidirRecogidaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecidirRecogidaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecidirRecogidaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViajeDetalle'
+          description: ''
+        '409':
+          description: La reserva no admite la operación en su estado actual
+  /api/viajes/{id}/descartar-recogida/:
+    post:
+      operationId: viajes_descartar_recogida_create
+      description: Mantiene la recogida. Esa ETA no se vuelve a proponer. Queda en
+        auditoría (HU-27).
+      summary: Descartar la nueva hora de recogida
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este viaje.
+        required: true
+      tags:
+      - reservas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecidirRecogidaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DecidirRecogidaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DecidirRecogidaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViajeDetalle'
+          description: ''
+        '409':
+          description: La reserva no admite la operación en su estado actual
   /api/whatsapp/entrante/:
     post:
       operationId: whatsapp_entrante_create
@@ -1893,6 +1969,16 @@ components:
       required:
       - cliente_nombre
       - id
+    DecidirRecogidaRequest:
+      type: object
+      properties:
+        recogida_propuesta:
+          type: string
+          format: date-time
+          description: 'La hora que vio el despachador: si cambió, responde 409 y
+            no la aplica.'
+      required:
+      - recogida_propuesta
     EmpresaPublica:
       type: object
       properties:
@@ -3056,6 +3142,18 @@ components:
           format: date-time
           nullable: true
           description: Última consulta a la API de vuelos; null = sin verificar (HU-26).
+        origen_iata:
+          type: string
+          nullable: true
+          maxLength: 4
+        recogida_propuesta:
+          type: string
+          format: date-time
+          nullable: true
+        propuesta_en:
+          type: string
+          format: date-time
+          nullable: true
       required:
       - fecha
       - hora_programada
