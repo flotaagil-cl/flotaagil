@@ -16,6 +16,7 @@ import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
 import { alertar, pedirPermisoDeNotificaciones } from './conductor/alerta';
 import type { Accion } from './conductor/ejecucion';
+import { Recarga } from './conductor/recarga';
 import type { Pago } from './pantallas/AvanceViaje';
 import type { EstadoCanal } from './conductor/canal';
 import { Responder } from './pantallas/Responder';
@@ -45,29 +46,38 @@ export default function App() {
 
   const activa = estado.fase === 'activa';
 
-  const cargarPerfil = useCallback(async () => {
-    try {
-      const [nuevo, activo] = await Promise.all([
-        api.pedir<Perfil>('GET', '/api/app/perfil/'),
-        api.pedir<{ viaje: ViajeActivo | null }>('GET', '/api/app/viaje-activo/'),
-      ]);
-      setPerfil(nuevo);
-      setViaje(activo.viaje);
-      setFallaPerfil(null);
-    } catch (error) {
-      setFallaPerfil(error instanceof SinRed ? 'Sin conexión con el servidor.' : 'No se pudo cargar tu información.');
-    }
-  }, []);
+  // Perfil y viaje activo: gana la última lectura y, si falla o no responde, se reintenta sola.
+  const [recarga] = useState(
+    () =>
+      new Recarga(
+        () =>
+          Promise.all([
+            api.pedir<Perfil>('GET', '/api/app/perfil/'),
+            api.pedir<{ viaje: ViajeActivo | null }>('GET', '/api/app/viaje-activo/'),
+          ]),
+        ([nuevo, activo]) => {
+          setPerfil(nuevo);
+          setViaje(activo.viaje);
+          setFallaPerfil(null);
+        },
+        (error) => {
+          setFallaPerfil(error instanceof SinRed ? 'Sin conexión con el servidor.' : 'No se pudo cargar tu información.');
+        },
+      ),
+  );
+  const cargarPerfil = useCallback(() => recarga.recargar(), [recarga]);
 
   // Perfil al entrar y al volver a la app (otro dispositivo o el panel pudo cambiar el estado).
   useEffect(() => {
     if (!activa) return;
+    recarga.iniciar();
     void cargarPerfil();
     const escucha = AppNativa.addListener('resume', () => void cargarPerfil());
     return () => {
+      recarga.detener();
       void escucha.then((e) => e.remove());
     };
-  }, [activa, cargarPerfil]);
+  }, [activa, cargarPerfil, recarga]);
 
   // Si el backend dice que ya no está en turno o no hay consentimiento, se recarga el perfil (y se detiene).
   useEffect(() => {
@@ -123,10 +133,11 @@ export default function App() {
       void cargarPerfil();
       return null;
     } catch (error) {
+      // Sin respuesta no se sabe si llegó: se vuelve a leer para mostrar lo que hay en el servidor.
+      void cargarPerfil();
       if (error instanceof SinRed) return 'No se pudo conectar con el servidor. Intenta de nuevo.';
       if (error instanceof ErrorApi && error.estado === 409) {
         canal.olvidar(id);
-        void cargarPerfil();
         return error.message;
       }
       return 'No se pudo registrar tu respuesta.';
@@ -141,12 +152,10 @@ export default function App() {
       await cargarPerfil();
       return null;
     } catch (error) {
+      // Sin respuesta no se sabe si llegó, y con 409 el viaje cambió por otro lado: se muestra lo que hay ahora.
+      void cargarPerfil();
       if (error instanceof SinRed) return 'No se pudo conectar con el servidor. Intenta de nuevo.';
-      if (error instanceof ErrorApi && error.estado === 409) {
-        // El viaje cambió por otro lado (por ejemplo, se canceló): se muestra lo que hay ahora.
-        void cargarPerfil();
-        return error.message;
-      }
+      if (error instanceof ErrorApi && error.estado === 409) return error.message;
       return 'No se pudo registrar el cambio.';
     }
   }

@@ -88,7 +88,7 @@ export class CanalConductor {
     return () => this.alAsignar.delete(oyente);
   }
 
-  /** El viaje cambió sin que lo pidiera la app (EN_ZONA automático, cancelación desde el panel). */
+  /** El viaje cambió en el servidor: lo pidiera esta app o no (EN_ZONA automático, cancelación, otra acción). */
   alCambiarViaje(oyente: () => void): () => void {
     this.alCambiar.add(oyente);
     return () => this.alCambiar.delete(oyente);
@@ -156,7 +156,7 @@ export class CanalConductor {
       if (nueva) this.alAsignar.forEach((oyente) => oyente(mensaje.asignacion));
     }
     if (mensaje.tipo === 'sin_asignacion') this.olvidar(mensaje.asignacion);
-    if (mensaje.tipo === 'viaje') this.alCambiar.forEach((oyente) => oyente());
+    if (mensaje.tipo === 'viaje' || mensaje.tipo === 'sin_asignacion') this.alCambiar.forEach((oyente) => oyente());
   }
 }
 

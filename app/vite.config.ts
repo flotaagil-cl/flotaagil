@@ -12,11 +12,11 @@ export default defineConfig({
   server: { proxy: { '/api': 'http://127.0.0.1:8000', '/ws': { target: 'ws://127.0.0.1:8000', ws: true } } },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     coverage: {
       enabled: true,
       provider: 'v8',
-      include: ['src/api.ts', 'src/perfil.ts', 'src/navegacion.ts', 'src/conductor/canal.ts', 'src/sesion/sesion.ts', 'src/gps/envio.ts', 'src/gps/turno.ts', 'src/gps/muestreo.ts'],
+      include: ['src/http.ts', 'src/conductor/recarga.ts', 'src/conductor/ejecucion.ts', 'src/api.ts', 'src/perfil.ts', 'src/navegacion.ts', 'src/conductor/canal.ts', 'src/sesion/sesion.ts', 'src/gps/envio.ts', 'src/gps/turno.ts', 'src/gps/muestreo.ts'],
       thresholds: MINIMO,
     },
   },

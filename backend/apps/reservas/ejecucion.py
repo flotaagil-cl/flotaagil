@@ -41,6 +41,12 @@ def avisar_viaje_actualizado(conductor_id: int, viaje_id: int) -> None:
         async_to_sync(capa.group_send)(grupo_conductor(conductor_id), mensaje)
 
 
+def _avisar_a_la_app(viaje: Viaje) -> None:
+    """Tras el commit. Si la respuesta de la API se pierde, la app igual se entera por el canal."""
+    conductor_id, viaje_id = viaje.conductor_id, viaje.pk
+    transaction.on_commit(lambda: avisar_viaje_actualizado(conductor_id, viaje_id))
+
+
 def _del_conductor(viaje_id: int, usuario) -> Viaje:
     viaje = (
         Viaje.objects.select_for_update(of=("self",))
@@ -89,6 +95,7 @@ def en_camino(viaje_id: int, *, usuario) -> Viaje:
     if viaje.estado != EstadoViaje.ACEPTADO:
         raise EstadoNoPermitido(f"Solo un viaje aceptado pasa a En camino; este está en {viaje.estado}.")
     avisos.programar(viaje.pk, AVISO_EN_CAMINO)  # HU-21
+    _avisar_a_la_app(viaje)
     return _cambiar(viaje, EstadoViaje.EN_CAMINO, actor=Actor.CONDUCTOR, usuario=usuario)
 
 
@@ -108,6 +115,7 @@ def pasajero_a_bordo(viaje_id: int, *, usuario) -> Viaje:
         raise EstadoNoPermitido(
             f"El pasajero sube después de llegar a la zona; el viaje está en {viaje.estado}."
         )
+    _avisar_a_la_app(viaje)
     return _cambiar(viaje, EstadoViaje.PASAJERO_A_BORDO, actor=Actor.CONDUCTOR, usuario=usuario)
 
 
@@ -120,6 +128,7 @@ def finalizar(viaje_id: int, *, usuario, metodo: str, monto: int) -> Viaje:
     if metodo == MetodoPago.CONVENIO and viaje.convenio_id is None:
         raise ValidationError({"metodo": ["Este viaje no pertenece a un convenio."]})
     PagoViaje.objects.create(viaje=viaje, metodo=metodo, monto=monto)
+    _avisar_a_la_app(viaje)
     conductor_id = viaje.conductor_id
     viaje = _cambiar(viaje, EstadoViaje.FINALIZADO, actor=Actor.CONDUCTOR, usuario=usuario)
     Conductor.objects.filter(pk=conductor_id).update(estado=EstadoConductor.DISPONIBLE)

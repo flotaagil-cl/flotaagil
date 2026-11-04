@@ -318,3 +318,27 @@ def test_la_app_se_entera_de_en_zona_y_de_la_cancelacion(chofer, despachador):
     assert zona == {"tipo": "viaje", "viaje": viaje.pk}
     assert estado == 200
     assert cancelado == {"tipo": "viaje", "viaje": viaje.pk}
+
+
+@pytest.mark.django_db(transaction=True)
+def test_la_app_se_entera_por_el_canal_de_cada_accion(chofer):
+    """Si la respuesta de la API se pierde, la app se corrige con este evento (fix/app-peticiones)."""
+    viaje = viaje_de(chofer, E.ACEPTADO)
+    token = str(AccessToken.for_user(chofer.usuario))
+
+    @database_sync_to_async
+    def accion(nombre, cuerpo=None):
+        return app(chofer).post(url(nombre, viaje), cuerpo, format="json").status_code
+
+    async def prueba():
+        com = WebsocketCommunicator(application, "/ws/conductor/", subprotocols=["flotaagil", token])
+        await com.connect()
+        recibidos = []
+        pagos = {"metodo": "EFECTIVO", "monto": 1000}
+        for nombre, cuerpo in (("en-camino", None), ("a-bordo", None), ("finalizar", pagos)):
+            assert await accion(nombre, cuerpo) == 200
+            recibidos.append(await com.receive_json_from(timeout=2))
+        await com.disconnect()
+        return recibidos
+
+    assert async_to_sync(prueba)() == [{"tipo": "viaje", "viaje": viaje.pk}] * 3
