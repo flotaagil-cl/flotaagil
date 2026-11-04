@@ -28,7 +28,25 @@ HU-17 no tiene CP asignado en el backlog; estos son los casos de la HU.
 
 En el teléfono, los enlaces universales abren la app de Google Maps o de Waze si está instalada. Verificarlo en el Android real: [`docs/guia-prueba-app-android.md`](../../guia-prueba-app-android.md), prueba F.
 
+## Ajuste del PO: navegar con la dirección escrita (`fix/HU-17-navegacion-texto`)
+
+DC-30. Prueba manual contra el stack principal, sin clave de geocodificación, con el build de la app y la reserva sintética 129, recorrida hasta finalizar. Los botones se comprobaron capturando la URL que abren: sin teléfono no se abre la app real.
+
+| Qué se probó | Esperado | Obtenido |
+|---|---|---|
+| API sin clave de geocodificación | `navegar_con: DIRECCION` | OK (automática y manual) |
+| API con clave | `navegar_con: COORDENADAS` | OK (automática) |
+| Google Maps con dirección | `destination=<origen_dir o destino_dir>` | OK (automática y manual, en los dos tramos) |
+| Waze con dirección | `q=<origen_dir o destino_dir>&navigate=yes`, sin `ll` | OK (automática y manual, en los dos tramos) |
+| Espacios, tildes y `&` | Codificados | OK (automática) |
+| Con coordenadas | Igual que antes, sin la dirección | OK (automática) |
+| Backend anterior, sin el campo | Sigue con coordenadas | OK (automática) |
+| Pantalla | Pasa `navegar_con` a los dos botones | OK (automática) |
+
+**Límites:** no se comprobó en un teléfono cómo interpretan Google Maps y Waze esas direcciones (prueba F). Lo decide la clave vigente, no cómo se geocodificó cada viaje: una reserva creada antes de configurarla conserva sus puntos inventados (DC-30). El camino con coordenadas se probó solo de forma automática, porque el stack principal no tiene clave.
+
 ## Capturas
 
 - `app-viaje-en-curso-celular.png`: viaje EN_CAMINO; navega a la recogida.
 - `app-pasajero-a-bordo-celular.png`: pasajero a bordo; navega al destino.
+- `app-navegar-por-direccion-celular.png`: ajuste del PO.

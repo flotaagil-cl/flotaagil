@@ -136,3 +136,8 @@ class GeocodificadorGoogle:
 def obtener_geocodificador() -> Geocodificador:
     clave = getattr(settings, "GOOGLE_GEOCODING_API_KEY", "")
     return GeocodificadorGoogle(clave) if clave else GeocodificadorDesarrollo()
+
+
+def coordenadas_reales() -> bool:
+    """DC-30: el de desarrollo inventa puntos a partir del texto; no sirven para navegar."""
+    return not isinstance(obtener_geocodificador(), GeocodificadorDesarrollo)

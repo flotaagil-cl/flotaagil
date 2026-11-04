@@ -52,10 +52,10 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
         </p>
       )}
       <div className="navegar">
-        <button type="button" className="principal" onClick={() => void abrir(enlaceGoogleMaps(viaje.hacia))}>
+        <button type="button" className="principal" onClick={() => void abrir(enlaceGoogleMaps(viaje.hacia, viaje.navegar_con))}>
           Google Maps
         </button>
-        <button type="button" className="principal" onClick={() => void abrir(enlaceWaze(viaje.hacia))}>
+        <button type="button" className="principal" onClick={() => void abrir(enlaceWaze(viaje.hacia, viaje.navegar_con))}>
           Waze
         </button>
       </div>

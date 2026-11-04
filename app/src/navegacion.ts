@@ -1,7 +1,8 @@
 /**
  * Enlaces para navegar con Google Maps o Waze (HU-17). Son enlaces universales (https): Android los abre en la
- * app instalada y, si no está, en el navegador. Se pasan coordenadas, no la dirección, para no depender de que la
- * otra app la interprete igual.
+ * app instalada y, si no está, en el navegador. Con un geocodificador real se pasan coordenadas, para no depender de
+ * que la otra app interprete igual la dirección. Con el de desarrollo, que inventa los puntos, se pasa la dirección
+ * escrita (DC-30). Lo decide el backend.
  */
 
 export interface Punto {
@@ -10,16 +11,24 @@ export interface Punto {
   lon: number;
 }
 
+export type NavegarCon = 'COORDENADAS' | 'DIRECCION';
+
 const coordenadas = ({ lat, lon }: Punto) => `${lat.toFixed(6)},${lon.toFixed(6)}`;
 
-export function enlaceGoogleMaps(punto: Punto): string {
-  const query = new URLSearchParams({ api: '1', destination: coordenadas(punto), travelmode: 'driving' });
-  return `https://www.google.com/maps/dir/?${query.toString()}`;
+/** %20 y no «+»: se espera que ambas apps lo interpreten igual. */
+const parametros = (valores: Record<string, string>) =>
+  Object.entries(valores)
+    .map(([clave, valor]) => `${clave}=${encodeURIComponent(valor)}`)
+    .join('&');
+
+export function enlaceGoogleMaps(punto: Punto, navegarCon: NavegarCon = 'COORDENADAS'): string {
+  const destino = navegarCon === 'DIRECCION' ? punto.direccion : coordenadas(punto);
+  return `https://www.google.com/maps/dir/?${parametros({ api: '1', destination: destino, travelmode: 'driving' })}`;
 }
 
-export function enlaceWaze(punto: Punto): string {
-  const query = new URLSearchParams({ ll: coordenadas(punto), navigate: 'yes' });
-  return `https://waze.com/ul?${query.toString()}`;
+export function enlaceWaze(punto: Punto, navegarCon: NavegarCon = 'COORDENADAS'): string {
+  const destino = navegarCon === 'DIRECCION' ? parametros({ q: punto.direccion }) : parametros({ ll: coordenadas(punto) });
+  return `https://waze.com/ul?${destino}&navigate=yes`;
 }
 
 export interface ViajeActivo {
@@ -33,4 +42,5 @@ export interface ViajeActivo {
   tarifa: number | null;
   convenio: boolean;
   hacia: Punto;
+  navegar_con: NavegarCon;
 }

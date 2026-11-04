@@ -20,6 +20,7 @@ from rest_framework.views import APIView
 from apps.auditoria.models import Auditoria, Entidad
 from apps.comun.permisos import con_roles
 from apps.cuentas.models import Rol
+from apps.integraciones.geocodificador import coordenadas_reales
 from apps.reservas.models import EstadoViaje, HistorialEstado, MetodoPago, Viaje
 
 from .models import Conductor, EstadoConductor, PosicionGps
@@ -446,6 +447,10 @@ class ViajeActivoSerializer(serializers.Serializer):
     hacia = PuntoSerializer(
         help_text="A dónde navegar ahora: el origen hasta subir el pasajero, luego el destino"
     )
+    navegar_con = serializers.ChoiceField(
+        choices=["COORDENADAS", "DIRECCION"],
+        help_text="DIRECCION mientras el geocodificador sea el de desarrollo (DC-30)",
+    )
 
 
 class RespuestaViajeActivoSerializer(serializers.Serializer):
@@ -490,6 +495,7 @@ class ViajeActivoView(_VistaApp):
                     "tarifa": viaje.tarifa,
                     "convenio": viaje.convenio_id is not None,
                     "hacia": destino if viaje.estado == EstadoViaje.PASAJERO_A_BORDO else origen,
+                    "navegar_con": "COORDENADAS" if coordenadas_reales() else "DIRECCION",
                 }
             }
         )

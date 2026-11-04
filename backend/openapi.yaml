@@ -3372,6 +3372,14 @@ components:
       - total
       - totales
       - viajes
+    NavegarConEnum:
+      enum:
+      - COORDENADAS
+      - DIRECCION
+      type: string
+      description: |-
+        * `COORDENADAS` - COORDENADAS
+        * `DIRECCION` - DIRECCION
     NullEnum:
       enum:
       - null
@@ -4427,12 +4435,21 @@ components:
           - $ref: '#/components/schemas/Punto'
           description: 'A dónde navegar ahora: el origen hasta subir el pasajero,
             luego el destino'
+        navegar_con:
+          allOf:
+          - $ref: '#/components/schemas/NavegarConEnum'
+          description: |-
+            DIRECCION mientras el geocodificador sea el de desarrollo (DC-30)
+
+            * `COORDENADAS` - COORDENADAS
+            * `DIRECCION` - DIRECCION
       required:
       - convenio
       - destino
       - estado
       - hacia
       - id
+      - navegar_con
       - origen
       - pasajero
       - recogida_en

@@ -1705,6 +1705,12 @@ export interface components {
             totales: components["schemas"]["TotalPorMetodo"][];
             total: number;
         };
+        /**
+         * @description * `COORDENADAS` - COORDENADAS
+         *     * `DIRECCION` - DIRECCION
+         * @enum {string}
+         */
+        NavegarConEnum: "COORDENADAS" | "DIRECCION";
         /** @enum {unknown} */
         NullEnum: null;
         Opcion: {
@@ -2176,6 +2182,13 @@ export interface components {
             convenio: boolean;
             /** @description A dónde navegar ahora: el origen hasta subir el pasajero, luego el destino */
             hacia: components["schemas"]["Punto"];
+            /**
+             * @description DIRECCION mientras el geocodificador sea el de desarrollo (DC-30)
+             *
+             *     * `COORDENADAS` - COORDENADAS
+             *     * `DIRECCION` - DIRECCION
+             */
+            navegar_con: components["schemas"]["NavegarConEnum"];
         };
         ViajeCrearRequest: {
             pasajero: components["schemas"]["PasajeroEntradaRequest"];

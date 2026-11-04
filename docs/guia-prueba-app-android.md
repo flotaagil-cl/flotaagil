@@ -94,6 +94,7 @@ Necesita un viaje aceptado. Ingresa como `conductor2@transportes-andes.example`,
 1. **Esperado:** en Inicio aparece «Viaje en curso · En camino» con el pasajero, el origen y el destino.
 2. Pulsa **Google Maps**. **Esperado:** se abre la app de Google Maps con la ruta hacia el punto de recogida (si no está instalada, el navegador).
 3. Vuelve a FlotaÁgil y pulsa **Waze**. **Esperado:** Waze abre la navegación al mismo punto (si no está instalada, la página de Waze).
+4. Sin `GOOGLE_GEOCODING_API_KEY` en el backend, los botones envían la dirección escrita (DC-30). **Esperado:** cada app encuentra esa dirección; anota si alguna no la entiende.
 
 ## 5d. Prueba G: viaje asignado (HU-14)
 

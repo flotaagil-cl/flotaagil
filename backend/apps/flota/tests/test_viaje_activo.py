@@ -69,3 +69,24 @@ class TestViajeActivo:
     def test_solo_conductores(self, cliente, despachador):
         cliente.force_authenticate(despachador)
         assert cliente.get(URL).status_code == 403
+
+
+@pytest.mark.django_db
+class TestNavegarCon:
+    """DC-30."""
+
+    def test_con_el_geocodificador_de_desarrollo_navega_con_la_direccion(self, app, chofer, settings):
+        settings.GOOGLE_GEOCODING_API_KEY = ""
+        viaje(chofer, EstadoViaje.ACEPTADO)
+        assert app.get(URL).json()["viaje"]["navegar_con"] == "DIRECCION"
+
+    def test_con_el_geocodificador_real_navega_con_las_coordenadas(self, app, chofer, settings):
+        settings.GOOGLE_GEOCODING_API_KEY = "clave-sintetica"
+        viaje(chofer, EstadoViaje.ACEPTADO)
+        assert app.get(URL).json()["viaje"]["navegar_con"] == "COORDENADAS"
+
+    def test_la_direccion_y_las_coordenadas_siguen_disponibles(self, app, chofer, settings):
+        settings.GOOGLE_GEOCODING_API_KEY = ""
+        viaje(chofer, EstadoViaje.ACEPTADO)
+        hacia = app.get(URL).json()["viaje"]["hacia"]
+        assert hacia == {"direccion": "Aeropuerto SCL", "lat": -33.393, "lon": -70.7858}

@@ -38,6 +38,7 @@ function viajeActivo(estado: string): ViajeActivo {
     tarifa: 12000,
     convenio: false,
     hacia: punto,
+    navegar_con: 'COORDENADAS',
   };
 }
 
