@@ -17,9 +17,9 @@ from datetime import timedelta
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from apps.integraciones.notificaciones import enmascarar_telefono, obtener_notificador
+from apps.integraciones.notificaciones import enmascarar_telefono
 
-from . import estados
+from . import estados, tareas
 from .models import (
     Actor,
     Calificacion,
@@ -172,7 +172,9 @@ def procesar_entrante(datos: dict) -> str:
 
     if a_calificar:
         resultado = _calificar(a_calificar, puntaje)
-        obtener_notificador().responder(pasajero, viaje, RESPUESTAS[resultado])
+        tareas.encolar(
+            tareas.enviar_respuesta, pasajero.pk, viaje.pk if viaje else None, RESPUESTAS[resultado]
+        )
         return resultado
 
     accion = _accion(datos.get("ButtonPayload", ""), texto, viaje)
@@ -185,7 +187,7 @@ def procesar_entrante(datos: dict) -> str:
         resultado = _aplicar(viaje, accion)
     else:
         resultado = _despues_de_confirmar(viaje, accion)
-    obtener_notificador().responder(pasajero, viaje, RESPUESTAS[resultado])
+    tareas.encolar(tareas.enviar_respuesta, pasajero.pk, viaje.pk if viaje else None, RESPUESTAS[resultado])
     return resultado
 
 

@@ -7,8 +7,8 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import Throttled, ValidationError
 
-from apps.integraciones.notificaciones import obtener_notificador
 from apps.reservas import servicios as reservas
+from apps.reservas import tareas
 from apps.reservas.expiracion import vence_en
 from apps.reservas.models import Actor, Canal, EstadoViaje, Pasajero, Sentido, Viaje
 
@@ -106,7 +106,7 @@ def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
         Pasajero.objects.filter(pk=viaje.pasajero_id).update(opt_in_en=ahora, privacidad_aceptada_en=ahora)
         viaje = Viaje.objects.select_related("pasajero", "empresa__configuracion").get(pk=viaje.pk)
         expira_en = vence_en(viaje)
-        transaction.on_commit(lambda: obtener_notificador().solicitar_verificacion(viaje, expira_en))
+        tareas.al_confirmar(tareas.enviar_verificacion, viaje.pk, expira_en.isoformat())
 
     return viaje, {
         "estado": viaje.estado,

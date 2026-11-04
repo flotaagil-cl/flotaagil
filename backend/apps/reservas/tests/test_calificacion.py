@@ -67,8 +67,9 @@ class TestEncuesta:
         self, monkeypatch, chofer, pasajero, django_capture_on_commit_callbacks
     ):
         """RN-14."""
-        falso = TwilioFalso(http_error(503), http_error(503), http_error(503))
-        monkeypatch.setattr("apps.reservas.avisos.obtener_notificador", lambda: falso)
+        falso = TwilioFalso(*[http_error(503) for _ in range(6)])
+        falso.intentos = 1
+        monkeypatch.setattr("apps.reservas.tareas.obtener_notificador", lambda: falso)
         viaje = viaje_con(chofer, pasajero, E.PASAJERO_A_BORDO)
         with django_capture_on_commit_callbacks(execute=True):
             assert self.finalizar(chofer, viaje).status_code == 200

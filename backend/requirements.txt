@@ -5,8 +5,11 @@ drf-spectacular==0.30.0
 psycopg[binary]==3.3.6
 django-environ==0.14.0
 django-filter==25.2
-redis==6.4.0
+# Tope de kombu[redis] en Celery 5.5: redis<=5.2.1.
+redis==5.2.1
 # Tiempo real (HU-02): WebSocket con Channels 4 y Daphne; capa de canales en Redis.
 channels==4.3.2
 daphne==4.2.3
 channels-redis==4.3.0
+# Tareas: worker y beat, con Redis como broker.
+celery[redis]==5.5.3

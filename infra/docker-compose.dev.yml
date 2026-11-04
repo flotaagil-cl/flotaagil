@@ -44,7 +44,7 @@ services:
       redis:
         condition: service_healthy
     command: sh -c "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
-    # Sano cuando ya migró y responde: el programador espera esto.
+    # Sano cuando ya migró y responde: el worker y beat esperan esto.
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/salud/')"]
       interval: 5s
@@ -52,9 +52,9 @@ services:
       retries: 20
       start_period: 10s
 
-  # Tareas periódicas mientras no exista Celery beat: expiración de solicitudes del portal (RN-06).
-  # Misma imagen que el backend: al reconstruirlo, este servicio también recibe las dependencias nuevas.
-  programador:
+  # Celery: envío de WhatsApp, consulta de vuelos y expiraciones. Misma imagen que el backend: al reconstruirlo,
+  # también recibe las dependencias nuevas. No recarga solo al guardar: tras cambiar una tarea, reinícialo.
+  worker:
     image: flotaagil-backend
     env_file: ../backend/.env
     volumes:
@@ -63,10 +63,16 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
-    command: python manage.py expirar_pendientes --cada 60
+    command: celery -A config worker -l info --concurrency=2
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 20s
 
-  # RN-04: asignaciones sin respuesta a los 60 s vuelven a SOLICITADO (cada 5 s, mientras no exista Celery beat).
-  asignaciones:
+  # Programa las tareas periódicas: RN-06 cada 60 s y RN-04 cada 5 s. Debe haber uno solo.
+  beat:
     image: flotaagil-backend
     env_file: ../backend/.env
     volumes:
@@ -75,7 +81,7 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
-    command: python manage.py expirar_asignaciones --cada 5
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule --pidfile=
 
 volumes:
   db-datos:

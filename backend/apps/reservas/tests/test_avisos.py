@@ -19,7 +19,7 @@ from apps.integraciones.notificaciones import (
     obtener_notificador,
     texto_aviso,
 )
-from apps.reservas import avisos, servicios, verificacion
+from apps.reservas import servicios, tareas, verificacion
 from apps.reservas.models import (
     Actor,
     DireccionMensaje,
@@ -191,8 +191,9 @@ class TestEnvio:
     def test_twilio_caido_no_revierte_el_estado(
         self, monkeypatch, chofer, pasajero, django_capture_on_commit_callbacks
     ):
-        falso = TwilioFalso(http_error(503), http_error(503), http_error(503))
-        monkeypatch.setattr(avisos, "obtener_notificador", lambda: falso)
+        falso = TwilioFalso(*[http_error(503) for _ in range(6)])
+        falso.intentos = 1
+        monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
         viaje = viaje_con(chofer, pasajero, E.ACEPTADO)
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = como(chofer.usuario).post(reverse("app-en-camino", args=[viaje.pk]))
@@ -207,7 +208,7 @@ class TestEnvio:
         def falla(*_):
             raise RuntimeError("inesperado")
 
-        monkeypatch.setattr(avisos, "_enviar", falla)
+        monkeypatch.setattr(tareas.enviar_aviso, "delay", falla)
         viaje = viaje_con(chofer, pasajero, E.ACEPTADO)
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = como(chofer.usuario).post(reverse("app-en-camino", args=[viaje.pk]))

@@ -188,4 +188,5 @@ class ConsultorFlightAware:
 
 def obtener_consultor_vuelos() -> ConsultorVuelos:
     clave = getattr(settings, "FLIGHTAWARE_API_KEY", "")
-    return ConsultorFlightAware(clave) if clave else ConsultorVuelosDesarrollo()
+    # Un intento: la petición no hace esperar al usuario; los reintentos los hace la tarea `consultar_vuelo`.
+    return ConsultorFlightAware(clave, intentos=1) if clave else ConsultorVuelosDesarrollo()

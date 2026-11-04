@@ -127,6 +127,32 @@ REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
 
+# Celery: worker y beat. El broker usa otra base de Redis que la caché y los canales.
+CELERY_BROKER_URL = env(
+    "CELERY_BROKER_URL",
+    default=env("REDIS_URL", default="redis://localhost:6379/0").rsplit("/", 1)[0] + "/1",
+)
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_TASK_ACKS_LATE = True  # si el worker muere a medias, la tarea se entrega de nuevo
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Síncrono, sin worker: solo para medir o depurar. Devuelve el envío a la petición.
+CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+# `expires` evita que se acumulen si el worker estuvo detenido: cada pasada revisa todo lo vencido.
+CELERY_BEAT_SCHEDULE = {
+    "expirar-solicitudes-rn06": {
+        "task": "apps.reservas.tareas.expirar_solicitudes",
+        "schedule": timedelta(seconds=60),
+        "options": {"expires": 60},
+    },
+    "expirar-asignaciones-rn04": {
+        "task": "apps.reservas.tareas.expirar_asignaciones",
+        "schedule": timedelta(seconds=5),
+        "options": {"expires": 5},
+    },
+}
+
 # Caché compartida en Redis: contadores de throttling coherentes entre procesos (Gunicorn, workers).
 CACHES = {
     "default": {

@@ -4,7 +4,7 @@ import pytest
 from django.utils import timezone
 
 from apps.flota.models import ConductorVehiculo, EstadoConductor
-from apps.reservas import avisos, verificacion
+from apps.reservas import tareas
 from apps.reservas.tests.fabricas import ConductorFactory, PasajeroFactory, VehiculoFactory
 from apps.reservas.tests.test_whatsapp import TwilioFalso
 
@@ -12,8 +12,7 @@ from apps.reservas.tests.test_whatsapp import TwilioFalso
 @pytest.fixture
 def twilio_avisos(monkeypatch):
     falso = TwilioFalso()
-    monkeypatch.setattr(avisos, "obtener_notificador", lambda: falso)
-    monkeypatch.setattr(verificacion, "obtener_notificador", lambda: falso)
+    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
     return falso
 
 

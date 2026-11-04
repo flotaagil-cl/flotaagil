@@ -1,8 +1,8 @@
 """RN-06: una solicitud del portal que no se confirma por WhatsApp dentro del plazo de su empresa
 (CONFIGURACION_EMPRESA.expiracion_verificacion_min) se cancela.
 
-Hoy la ejecuta el comando `expirar_pendientes` (servicio `programador` del compose de desarrollo);
-más adelante la llamará Celery beat. Puede correr varias veces sin efectos duplicados.
+La ejecuta Celery beat (`apps.reservas.tareas.expirar_solicitudes`). Puede correr varias veces sin efectos
+duplicados.
 """
 
 from datetime import timedelta

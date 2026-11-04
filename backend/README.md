@@ -88,7 +88,7 @@ Protección: throttling por IP (`THROTTLE_PORTAL_MINUTO`, `THROTTLE_PORTAL_HORA`
 
 **Límites y 429.** El 429 lleva `code` para que el portal explique el caso: `limite_ip` (throttling por IP) o `limite_telefono` (varias solicitudes con el mismo número). Los límites por IP son holgados a propósito, **20/min y 200/hour** por defecto: con el wifi del aeropuerto (o cualquier NAT) muchos pasajeros comparten la misma IP pública, y un límite estricto bloquearía a pasajeros legítimos. El control principal contra abusos es el **límite por teléfono** (3 solicitudes cada 15 min por empresa), que además coincide con lo que cuesta cada solicitud: un WhatsApp de verificación.
 
-La verificación por WhatsApp está simulada (`apps/integraciones/notificaciones.py`, solo deja un log con el número enmascarado); Twilio es HU-20. Las solicitudes no confirmadas se cancelan al vencer el plazo (RN-06) con `python manage.py expirar_pendientes`, que el servicio `programador` del compose ejecuta cada 60 s.
+La verificación por WhatsApp está simulada (`apps/integraciones/notificaciones.py`, solo deja un log con el número enmascarado); Twilio es HU-20. Las solicitudes no confirmadas se cancelan al vencer el plazo (RN-06): Celery beat lo programa cada 60 s y el worker lo ejecuta; `python manage.py expirar_pendientes` hace una pasada manual.
 
 ## Autenticación
 

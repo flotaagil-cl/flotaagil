@@ -24,7 +24,7 @@ from apps.integraciones.notificaciones import (
     firma_twilio,
     obtener_notificador,
 )
-from apps.reservas import verificacion
+from apps.reservas import tareas, verificacion
 from apps.reservas.models import (
     Actor,
     DireccionMensaje,
@@ -71,7 +71,7 @@ def pendiente(empresa):
 @pytest.fixture
 def twilio(monkeypatch):
     falso = TwilioFalso()
-    monkeypatch.setattr(verificacion, "obtener_notificador", lambda: falso)
+    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
     return falso
 
 

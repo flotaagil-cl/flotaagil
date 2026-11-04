@@ -13,8 +13,9 @@
 Los avisos de estado (HU-21) usan su plantilla si está configurada (`TWILIO_PLANTILLA_AVISO_*`); si no, van
 como texto, que solo llega dentro de las 24 h desde el último mensaje del pasajero.
 
-Todo mensaje (enviado o recibido) queda en MENSAJE_WHATSAPP. Si Twilio no responde tras los reintentos, el
-mensaje queda en FAILED y la solicitud expira sola (RN-06).
+Todo mensaje (enviado o recibido) queda en MENSAJE_WHATSAPP. Los envíos corren en el worker
+(`apps.reservas.tareas`). Si Twilio no responde tras los reintentos, el mensaje queda en FAILED y la solicitud
+expira sola (RN-06).
 """
 
 import base64
@@ -108,6 +109,10 @@ class EnvioFallido(Exception):
     pass
 
 
+class EnvioTransitorio(EnvioFallido):
+    """Twilio no respondió o pidió esperar: se puede reintentar más tarde."""
+
+
 class Notificador(Protocol):
     def solicitar_verificacion(self, viaje, expira_en) -> None: ...
 
@@ -186,6 +191,8 @@ class NotificadorDesarrollo:
 
 class NotificadorTwilio:
     URL = "https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+    # False mientras a la tarea le queden reintentos: la falla transitoria se propaga en vez de registrarse.
+    definitivo = True
 
     def __init__(
         self,
@@ -240,7 +247,7 @@ class NotificadorTwilio:
                 )
             if intento < self.intentos - 1:
                 time.sleep(self.espera_base * 2**intento)  # reintento exponencial
-        raise EnvioFallido("Twilio no está disponible.")
+        raise EnvioTransitorio("Twilio no está disponible.")
 
     def _comunes(self, telefono: str) -> dict:
         return {
@@ -255,6 +262,8 @@ class NotificadorTwilio:
         try:
             sid = self._enviar(datos)
         except EnvioFallido as error:
+            if isinstance(error, EnvioTransitorio) and not self.definitivo:
+                raise  # la tarea reintenta; todavía no es una falla
             logger.error("WhatsApp a %s no enviado: %s", enmascarar_telefono(pasajero.telefono), error)
             _registrar(pasajero, viaje, tipo=tipo, cuerpo=cuerpo, sid=None, estado=EstadoEntrega.FAILED)
             return
@@ -333,6 +342,7 @@ def obtener_notificador() -> Notificador:
             settings.TWILIO_WHATSAPP_FROM,
             settings.TWILIO_PLANTILLA_VERIFICACION,
             settings.WHATSAPP_URL_BASE,
+            intentos=1,  # los reintentos los hace la tarea de Celery, con espera exponencial
             plantillas_aviso={
                 AVISO_CONFIRMACION: settings.TWILIO_PLANTILLA_AVISO_CONFIRMACION,
                 AVISO_CONDUCTOR: settings.TWILIO_PLANTILLA_AVISO_CONDUCTOR,

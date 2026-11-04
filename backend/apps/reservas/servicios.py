@@ -24,7 +24,7 @@ from apps.integraciones.geocodificador import (
 )
 from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
 
-from . import estados
+from . import estados, tareas
 from .models import EstadoViaje, OrigenCancelacion, Pasajero, Sentido, Viaje
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,8 @@ def verificar_vuelo(vuelo: dict, consultor=None) -> dict:
     - No existe una llegada de ese vuelo al aeropuerto ese día: 400 en `vuelo.numero`.
     - Existe: se guarda la hora programada de la API (corrige la informada, DC-06), la estimada y el estado.
     - La API no responde: se guarda como se informó, sin verificar (`ultima_consulta_en` vacío), para no
-      bloquear la reserva; el monitoreo (HU-27/HU-28) vuelve a consultar y avisa si sigue sin datos.
+      bloquear la reserva. La tarea `consultar_vuelo` reintenta; el monitoreo (HU-27/HU-28) avisa si sigue
+      sin datos.
     """
     consultor = consultor or obtener_consultor_vuelos()
     numero = normalizar_vuelo(vuelo["numero"])
@@ -107,7 +108,7 @@ def _guardar_vuelo(viaje: Viaje, vuelo: dict | None) -> None:
     Vuelo.objects.filter(viaje=viaje).delete()
     if vuelo:
         hora = vuelo["hora_programada"]
-        Vuelo.objects.create(
+        creado = Vuelo.objects.create(
             viaje=viaje,
             numero=normalizar_vuelo(vuelo["numero"]),
             fecha=timezone.localdate(hora),
@@ -116,6 +117,9 @@ def _guardar_vuelo(viaje: Viaje, vuelo: dict | None) -> None:
             estado_vuelo=vuelo.get("estado_vuelo") or EstadoVuelo.PROGRAMADO,
             ultima_consulta_en=vuelo.get("ultima_consulta_en"),
         )
+        if creado.ultima_consulta_en is None:
+            # La API no respondió al registrarlo: se reintenta en segundo plano.
+            tareas.al_confirmar(tareas.consultar_vuelo, creado.pk)
 
 
 def obtener_pasajero(empresa, *, nombre: str, telefono: str) -> Pasajero:
