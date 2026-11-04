@@ -54,7 +54,7 @@ describe('detalle', () => {
     ['SOLICITADO', true, true, null],
     ['EN_CAMINO', false, true, 'Ya fue despachada: se puede cancelar, pero no editar.'],
     ['FINALIZADO', false, false, 'La reserva está cerrada.'],
-    ['PASAJERO_A_BORDO', false, false, 'Ya no admite cambios desde el panel.'],
+    ['PASAJERO_A_BORDO', false, false, 'Con el pasajero a bordo solo se puede forzar el cierre o la anulación, si el conductor no puede hacerlo.'],
   ] as const)('%s: editar %s, cancelar %s', async (estado, editar, cancelar, explicacion) => {
     await abrirDetalle(viajeDePrueba({ id: 9, estado }));
     expect(Boolean(screen.queryByRole('link', { name: 'Editar' }))).toBe(editar);
@@ -292,6 +292,83 @@ describe('asignar conductor (HU-14)', () => {
   it('solo en reservas solicitadas', async () => {
     await abrirDetalle(viajeDePrueba({ id: 8, estado: 'PENDIENTE_CONFIRMACION' }));
     expect(screen.queryByRole('button', { name: 'Asignar conductor…' })).not.toBeInTheDocument();
+  });
+});
+
+describe('cierre o anulación forzada (HU-05)', () => {
+  const aBordo = () => viajeDePrueba({ id: 8, estado: 'PASAJERO_A_BORDO', tarifa: 15000, conductor: { id: 3, nombre: 'Carla Conductora' } });
+  const abrir = async () => {
+    const contexto = await abrirDetalle(aBordo());
+    await userEvent.click(screen.getByRole('button', { name: 'Forzar cierre o anulación…' }));
+    return { contexto, dialogo: await screen.findByRole('dialog', { name: /Cierre o anulación forzada/ }) };
+  };
+
+  it.each(['SOLICITADO', 'EN_CAMINO', 'EN_ZONA', 'FINALIZADO'] as const)('en %s no se ofrece', async (estado) => {
+    await abrirDetalle(viajeDePrueba({ id: 9, estado }));
+    expect(screen.queryByRole('button', { name: 'Forzar cierre o anulación…' })).not.toBeInTheDocument();
+  });
+
+  it('cerrar exige motivo y método, y precarga la tarifa', async () => {
+    const { contexto, dialogo } = await abrir();
+    expect(within(dialogo).getByRole('textbox', { name: 'Monto cobrado (CLP)' })).toHaveValue('15000');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cerrar viaje' }));
+    expect(await within(dialogo).findByText('Indica el motivo.')).toBeInTheDocument();
+    expect(within(dialogo).getByText('Elige el método de pago.')).toBeInTheDocument();
+    expect(contexto.viajes.cuerpos).toEqual([]);
+  });
+
+  it.each([
+    ['', 'Ingresa el monto cobrado, en pesos enteros.'],
+    ['15000,5', 'Ingresa el monto cobrado, en pesos enteros.'],
+    ['600.000', 'El monto máximo es $500.000.'],
+  ])('monto «%s»: %s', async (monto, mensaje) => {
+    const { dialogo } = await abrir();
+    const campo = within(dialogo).getByRole('textbox', { name: 'Monto cobrado (CLP)' });
+    await userEvent.clear(campo);
+    if (monto) await userEvent.type(campo, monto);
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cerrar viaje' }));
+    expect(await within(dialogo).findByText(mensaje)).toBeInTheDocument();
+  });
+
+  it('cerrar envía motivo, método y monto, y muestra el responsable', async () => {
+    const { contexto, dialogo } = await abrir();
+    await userEvent.type(within(dialogo).getByRole('textbox', { name: 'Motivo' }), 'Sin señal');
+    await userEvent.selectOptions(within(dialogo).getByRole('combobox', { name: 'Método de pago' }), 'Tarjeta');
+    const monto = within(dialogo).getByRole('textbox', { name: 'Monto cobrado (CLP)' });
+    await userEvent.clear(monto);
+    await userEvent.type(monto, '18.500');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Cerrar viaje' }));
+    expect(await screen.findByText('Viaje cerrado con su pago.')).toBeInTheDocument();
+    expect(contexto.viajes.cuerpos.at(-1)?.cuerpo).toEqual({ accion: 'CERRAR', motivo: 'Sin señal', metodo: 'TARJETA', monto: 18500 });
+    expect(screen.getByText('Cierre forzado')).toBeInTheDocument();
+    expect(screen.getByText(/Diego Despacho · /)).toBeInTheDocument();
+  });
+
+  it('anular solo pide motivo', async () => {
+    const { contexto, dialogo } = await abrir();
+    await userEvent.click(within(dialogo).getByRole('radio', { name: /Anular/ }));
+    expect(within(dialogo).queryByRole('combobox', { name: 'Método de pago' })).not.toBeInTheDocument();
+    await userEvent.type(within(dialogo).getByRole('textbox', { name: 'Motivo' }), 'No se completó');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Anular viaje' }));
+    expect(await screen.findByText('Viaje anulado.')).toBeInTheDocument();
+    expect(contexto.viajes.cuerpos.at(-1)?.cuerpo).toEqual({ accion: 'ANULAR', motivo: 'No se completó' });
+  });
+
+  it('un 409 se muestra en el diálogo', async () => {
+    const { contexto, dialogo } = await abrir();
+    contexto.viajes.siguiente('POST /api/viajes/8/forzar-cierre/', {
+      estado: 409,
+      cuerpo: { detail: 'Solo se fuerza con el pasajero a bordo.', code: 'conflicto_estado' },
+    });
+    await userEvent.click(within(dialogo).getByRole('radio', { name: /Anular/ }));
+    await userEvent.type(within(dialogo).getByRole('textbox', { name: 'Motivo' }), 'x');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Anular viaje' }));
+    expect(await within(dialogo).findByText('Solo se fuerza con el pasajero a bordo.')).toBeInTheDocument();
+  });
+
+  it('solo ofrece Convenio en viajes de convenio', async () => {
+    const { dialogo } = await abrir();
+    expect(within(dialogo).queryByRole('option', { name: 'Convenio' })).not.toBeInTheDocument();
   });
 });
 

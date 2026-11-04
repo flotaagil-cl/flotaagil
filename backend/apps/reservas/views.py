@@ -18,6 +18,7 @@ from .estados import actor_de
 from .filtros import ViajeFiltro
 from .models import EstadoViaje, Viaje
 from .serializers import (
+    ForzarCierreSerializer,
     AsignarSerializer,
     CancelarSerializer,
     CandidatoSerializer,
@@ -116,6 +117,34 @@ class ViajeViewSet(
         entrada = CancelarSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         servicios.cancelar_viaje(viaje, motivo=entrada.validated_data["motivo"], usuario=request.user)
+        return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    @extend_schema(
+        summary="Forzar el cierre o la anulación de un viaje en curso",
+        tags=["reservas"],
+        request=ForzarCierreSerializer,
+        responses={200: ViajeDetalleSerializer, 409: CONFLICTO},
+        description=(
+            "HU-05: solo con el pasajero a bordo, si el conductor no puede hacerlo desde la app. Anular exige "
+            "motivo; cerrar exige además método y monto (RN-10). Queda en auditoría con el responsable (RN-11)."
+        ),
+    )
+    @action(detail=True, methods=["post"], url_path="forzar-cierre")
+    def forzar_cierre(self, request, pk=None):
+        viaje = self.get_object()
+        entrada = ForzarCierreSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+        if datos["accion"] == "ANULAR":
+            servicios.anular_forzado(viaje, motivo=datos["motivo"], usuario=request.user)
+        else:
+            servicios.cerrar_forzado(
+                viaje,
+                motivo=datos["motivo"],
+                metodo=datos["metodo"],
+                monto=datos["monto"],
+                usuario=request.user,
+            )
         return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
 
     def _decidir_recogida(self, request, decision):

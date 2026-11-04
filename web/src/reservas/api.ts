@@ -126,6 +126,20 @@ export function useDecidirRecogida(id: number) {
   });
 }
 
+export type ForzarCierre = components['schemas']['ForzarCierreRequest'];
+
+/** HU-05: cierre o anulación forzada, con motivo. */
+export function useForzarCierre(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: (datos: ForzarCierre) =>
+      resultado(api.POST('/api/viajes/{id}/forzar-cierre/', { params: { path: { id } }, body: datos })),
+    onSuccess: alTerminar.exito,
+    onError: (error) => alTerminar.error(id, error),
+  });
+}
+
 export type Candidato = components['schemas']['Candidato'];
 
 /** Conductores disponibles para asignar (HU-14). Se piden al abrir el diálogo y no se guardan mucho. */

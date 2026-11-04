@@ -45,6 +45,7 @@ export function viajeDePrueba(cambios: Partial<ViajeDetalle> = {}): ViajeDetalle
     cancelable: CANCELABLES.includes(estado),
     calificacion: null,
     alerta_vuelo: null,
+    cierre_forzado: null,
     historial: [
       { estado_anterior: null, estado_nuevo: 'SOLICITADO', actor: 'DESPACHADOR', usuario: 'Diego Despacho', creado_en: '2026-10-30T12:00:00Z' },
     ],
@@ -109,10 +110,19 @@ export class ServidorViajesFalso {
     }
     if (ruta === 'GET /api/viajes/') return this.listar(url);
     if (ruta === 'POST /api/viajes/') return this.crear(cuerpo as ViajeCrear);
-    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos|confirmar-recogida|descartar-recogida)\/)?$/.exec(url.pathname);
+    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos|confirmar-recogida|descartar-recogida|forzar-cierre)\/)?$/.exec(url.pathname);
     const viaje = detalle && this.buscar(Number(detalle[1]));
     if (!viaje) return { estado: 404, cuerpo: { detail: 'No encontrado.' } };
     if (detalle[2] === 'candidatos') return { estado: 200, cuerpo: this.candidatos };
+    if (detalle[2] === 'forzar-cierre') {
+      const { accion, motivo } = cuerpo as { accion: string; motivo: string };
+      const anula = accion === 'ANULAR';
+      Object.assign(viaje, {
+        estado: anula ? 'CANCELADO' : 'FINALIZADO',
+        cierre_forzado: { accion: anula ? 'ANULACION_FORZADA' : 'CIERRE_FORZADO', motivo, usuario: 'Diego Despacho', creado_en: '2026-07-15T12:00:00Z' },
+      });
+      return { estado: 200, cuerpo: viaje };
+    }
     if (detalle[2] === 'confirmar-recogida' || detalle[2] === 'descartar-recogida') {
       const propuesta = (cuerpo as { recogida_propuesta: string }).recogida_propuesta;
       if (detalle[2] === 'confirmar-recogida') viaje.recogida_en = propuesta;

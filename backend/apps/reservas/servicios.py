@@ -25,7 +25,7 @@ from apps.integraciones.geocodificador import (
 from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
 
 from . import estados, tareas
-from .models import EstadoViaje, OrigenCancelacion, Pasajero, Sentido, Viaje
+from .models import EstadoViaje, MetodoPago, OrigenCancelacion, PagoViaje, Pasajero, Sentido, Viaje
 
 logger = logging.getLogger(__name__)
 
@@ -271,4 +271,68 @@ def cancelar_viaje(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
         )
         if conductor is not None:
             _liberar_conductor(conductor, viaje)
+    return viaje
+
+
+def _viaje_a_bordo(viaje: Viaje) -> Viaje:
+    """HU-05: solo con el pasajero a bordo. Antes de eso existe la cancelación normal."""
+    viaje = Viaje.objects.select_for_update(of=("self",)).select_related("conductor").get(pk=viaje.pk)
+    if viaje.estado != EstadoViaje.PASAJERO_A_BORDO:
+        raise ConflictoEstado(f"Solo se fuerza con el pasajero a bordo; la reserva está en {viaje.estado}.")
+    return viaje
+
+
+@transaction.atomic
+def anular_forzado(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
+    """RN-11: anulación con motivo, en auditoría con el responsable."""
+    viaje = _viaje_a_bordo(viaje)
+    conductor = viaje.conductor
+    viaje = estados.transicionar(
+        viaje,
+        EstadoViaje.CANCELADO,
+        actor=estados.actor_de(usuario),
+        usuario=usuario,
+        forzada=True,
+        desde=EstadoViaje.PASAJERO_A_BORDO,
+        motivo_cancelacion=motivo,
+        origen_cancelacion=ORIGEN_POR_ROL[usuario.rol],
+    )
+    auditoria.registrar(
+        usuario=usuario,
+        entidad=Entidad.VIAJE,
+        entidad_id=viaje.pk,
+        accion="ANULACION_FORZADA",
+        motivo=motivo,
+        datos_previos={"estado": EstadoViaje.PASAJERO_A_BORDO},
+    )
+    if conductor is not None:
+        _liberar_conductor(conductor, viaje)
+    return viaje
+
+
+@transaction.atomic
+def cerrar_forzado(viaje: Viaje, *, motivo: str, metodo: str, monto: int, usuario) -> Viaje:
+    """RN-10 y RN-11: tampoco se finaliza sin método de pago y monto. No envía la encuesta: fue un caso anómalo."""
+    viaje = _viaje_a_bordo(viaje)
+    if metodo == MetodoPago.CONVENIO and viaje.convenio_id is None:
+        raise ValidationError({"metodo": ["Este viaje no pertenece a un convenio."]})
+    conductor = viaje.conductor
+    PagoViaje.objects.create(viaje=viaje, metodo=metodo, monto=monto)
+    viaje = estados.transicionar(
+        viaje,
+        EstadoViaje.FINALIZADO,
+        actor=estados.actor_de(usuario),
+        usuario=usuario,
+        desde=EstadoViaje.PASAJERO_A_BORDO,
+    )
+    auditoria.registrar(
+        usuario=usuario,
+        entidad=Entidad.VIAJE,
+        entidad_id=viaje.pk,
+        accion="CIERRE_FORZADO",
+        motivo=motivo,
+        datos_previos={"estado": EstadoViaje.PASAJERO_A_BORDO, "metodo": metodo, "monto": monto},
+    )
+    if conductor is not None:
+        _liberar_conductor(conductor, viaje)
     return viaje

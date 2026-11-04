@@ -7,11 +7,12 @@ import { ErrorApi } from '../../api/resultado';
 import { useViaje, type ViajeDetalle } from '../api';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { DialogoCancelar } from '../componentes/DialogoCancelar';
+import { DialogoForzar } from '../componentes/DialogoForzar';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { PropuestaRecogida } from '../componentes/PropuestaRecogida';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
-import { ACTORES, ALERTAS_VUELO, CANALES, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
+import { ACTORES, ALERTAS_VUELO, CANALES, CIERRES_FORZADOS, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 
@@ -21,6 +22,7 @@ function porQueNo(viaje: ViajeDetalle): string {
   }
   if (viaje.estado === 'CANCELADO' || viaje.estado === 'FINALIZADO') return 'La reserva está cerrada.';
   if (viaje.cancelable) return 'Ya fue despachada: se puede cancelar, pero no editar.';
+  if (viaje.estado === 'PASAJERO_A_BORDO') return 'Con el pasajero a bordo solo se puede forzar el cierre o la anulación, si el conductor no puede hacerlo.';
   return 'Ya no admite cambios desde el panel.';
 }
 
@@ -34,6 +36,8 @@ function DetalleDe({ id }: { id: number }) {
   const consulta = useViaje(id);
   const [cancelando, setCancelando] = useState(false);
   const [cancelada, setCancelada] = useState(false);
+  const [forzando, setForzando] = useState(false);
+  const [forzado, setForzado] = useState<string | null>(null);
   const [asignando, setAsignando] = useState(false);
   const [asignadoA, setAsignadoA] = useState<string | null>(null);
 
@@ -65,6 +69,7 @@ function DetalleDe({ id }: { id: number }) {
       </div>
 
       {cancelada && <Aviso>Reserva cancelada.</Aviso>}
+      {forzado && <Aviso>{forzado}</Aviso>}
       {asignadoA && <Aviso>Reserva asignada a {asignadoA}. Esperando que acepte en la app (60 s).</Aviso>}
 
       <div className={estilos.tarjeta}>
@@ -84,6 +89,11 @@ function DetalleDe({ id }: { id: number }) {
               Cancelar reserva…
             </button>
           )}
+          {viaje.estado === 'PASAJERO_A_BORDO' && (
+            <button type="button" className={estilos.botonPeligro} onClick={() => setForzando(true)}>
+              Forzar cierre o anulación…
+            </button>
+          )}
         </div>
         {!(viaje.editable && viaje.cancelable) && <p className={estilos.explicacion}>{porQueNo(viaje)}</p>}
       </div>
@@ -93,6 +103,17 @@ function DetalleDe({ id }: { id: number }) {
       <div className={estilos.tarjeta}>
         <h2>Datos</h2>
         <dl className={estilos.datos}>
+          {viaje.cierre_forzado && (
+            <div>
+              <dt>{CIERRES_FORZADOS[viaje.cierre_forzado.accion] ?? viaje.cierre_forzado.accion}</dt>
+              <dd>
+                {viaje.cierre_forzado.motivo}
+                <span className={estilos.secundario}>
+                  {viaje.cierre_forzado.usuario} · {formatearFechaHora(viaje.cierre_forzado.creado_en)}
+                </span>
+              </dd>
+            </div>
+          )}
           <div>
             <dt>Recogida</dt>
             <dd>{formatearFechaHora(viaje.recogida_en)}</dd>
@@ -191,6 +212,17 @@ function DetalleDe({ id }: { id: number }) {
           ))}
         </ol>
       </div>
+
+      {forzando && (
+        <DialogoForzar
+          viaje={viaje}
+          alCerrar={() => setForzando(false)}
+          alTerminar={(texto) => {
+            setForzando(false);
+            setForzado(texto);
+          }}
+        />
+      )}
 
       {asignando && (
         <DialogoAsignar

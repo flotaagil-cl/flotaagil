@@ -84,3 +84,16 @@ export const ALERTAS_VUELO = {
   VUELO_DESVIADO: 'Vuelo desviado',
   SIN_DATOS: 'Vuelo sin datos',
 } as const;
+
+export const METODOS_PAGO = {
+  EFECTIVO: 'Efectivo',
+  TARJETA: 'Tarjeta',
+  TRANSFERENCIA: 'Transferencia',
+  CONVENIO: 'Convenio',
+} as const;
+
+/** HU-05. */
+export const CIERRES_FORZADOS: Record<string, string> = {
+  CIERRE_FORZADO: 'Cierre forzado',
+  ANULACION_FORZADA: 'Anulación forzada',
+};

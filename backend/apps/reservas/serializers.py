@@ -3,11 +3,12 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.aeropuerto.models import TipoAlertaVuelo, Vuelo
+from apps.auditoria.models import Auditoria, Entidad
 from apps.comun.validadores import normalizar_telefono, validar_telefono_e164, validar_vuelo_iata
 from apps.convenios.models import Convenio
 
 from . import estados
-from .models import Canal, HistorialEstado, Sentido, Viaje
+from .models import MONTO_MAXIMO, Canal, HistorialEstado, MetodoPago, Sentido, Viaje
 
 
 class UbicacionSerializer(serializers.Serializer):
@@ -133,12 +134,42 @@ class ViajeSerializer(serializers.ModelSerializer):
         return viaje.estado in estados.CANCELABLES
 
 
+class CierreForzadoSerializer(serializers.Serializer):
+    accion = serializers.CharField()
+    motivo = serializers.CharField()
+    usuario = serializers.CharField()
+    creado_en = serializers.DateTimeField()
+
+
 class ViajeDetalleSerializer(ViajeSerializer):
     historial = HistorialSerializer(many=True, read_only=True)
     calificacion = serializers.SerializerMethodField(help_text="Puntaje del pasajero, de 1 a 5 (RN-14)")
 
+    cierre_forzado = serializers.SerializerMethodField(help_text="Cierre o anulación forzada (HU-05)")
+
     class Meta(ViajeSerializer.Meta):
-        fields = [*ViajeSerializer.Meta.fields, "historial", "calificacion"]
+        fields = [*ViajeSerializer.Meta.fields, "historial", "calificacion", "cierre_forzado"]
+
+    @extend_schema_field(CierreForzadoSerializer(allow_null=True))
+    def get_cierre_forzado(self, viaje):
+        registro = (
+            Auditoria.objects.filter(
+                entidad=Entidad.VIAJE,
+                entidad_id=viaje.pk,
+                accion__in=("CIERRE_FORZADO", "ANULACION_FORZADA"),
+            )
+            .select_related("usuario")
+            .order_by("-id")
+            .first()
+        )
+        if registro is None:
+            return None
+        return {
+            "accion": registro.accion,
+            "motivo": registro.motivo,
+            "usuario": registro.usuario.nombre,
+            "creado_en": registro.creado_en,
+        }
 
     def get_calificacion(self, viaje) -> int | None:
         calificacion = getattr(viaje, "calificacion", None)
@@ -235,6 +266,28 @@ class CancelarSerializer(serializers.Serializer):
         if not valor:
             raise serializers.ValidationError("Indica el motivo de la cancelación.")
         return valor
+
+
+class ForzarCierreSerializer(serializers.Serializer):
+    """HU-05. Anular exige motivo; cerrar exige además método y monto (RN-10, RN-11)."""
+
+    accion = serializers.ChoiceField(choices=["ANULAR", "CERRAR"])
+    motivo = serializers.CharField(max_length=200, help_text="Queda en auditoría (RN-11)")
+    metodo = serializers.ChoiceField(choices=MetodoPago.choices, required=False)
+    monto = serializers.IntegerField(min_value=0, max_value=MONTO_MAXIMO, required=False)
+
+    def validate_motivo(self, valor):
+        valor = valor.strip()
+        if not valor:
+            raise serializers.ValidationError("Indica el motivo.")
+        return valor
+
+    def validate(self, datos):
+        if datos["accion"] == "CERRAR":
+            faltan = {c: ["Es obligatorio para cerrar el viaje."] for c in ("metodo", "monto") if c not in datos}
+            if faltan:
+                raise serializers.ValidationError(faltan)
+        return datos
 
 
 class AsignarSerializer(serializers.Serializer):
