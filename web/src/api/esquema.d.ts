@@ -792,7 +792,7 @@ export interface paths {
         };
         /**
          * Conductores disponibles para asignar
-         * @description Disponibles de la empresa con vehículo y sin viaje en ejecución (RN-01, RN-03), los más cercanos al origen primero cuando se conoce su última posición.
+         * @description Disponibles de la empresa con vehículo y sin viaje en ejecución (RN-01, RN-03), los más aptos primero: por distancia y, ante diferencias de menos de 1 km, por tiempo sin viaje (HU-04). Solo informa: nada se asigna sin confirmación (RN-02).
          */
         get: operations["viajes_candidatos_list"];
         put?: never;
@@ -897,6 +897,15 @@ export interface components {
             distancia_m: number | null;
             /** Format: date-time */
             posicion_en: string | null;
+            /** @description Posición reciente y precisa: si no, no compite ni se sugiere */
+            confiable: boolean;
+            /**
+             * Format: date-time
+             * @description Fin de su último viaje
+             */
+            ultimo_viaje_en: string | null;
+            /** @description El más apto (HU-04). No asigna: lo confirma el despachador */
+            sugerido: boolean;
         };
         Conductor: {
             readonly id: number;

@@ -1457,9 +1457,10 @@ paths:
   /api/viajes/{id}/candidatos/:
     get:
       operationId: viajes_candidatos_list
-      description: Disponibles de la empresa con vehículo y sin viaje en ejecución
-        (RN-01, RN-03), los más cercanos al origen primero cuando se conoce su última
-        posición.
+      description: 'Disponibles de la empresa con vehículo y sin viaje en ejecución
+        (RN-01, RN-03), los más aptos primero: por distancia y, ante diferencias de
+        menos de 1 km, por tiempo sin viaje (HU-04). Solo informa: nada se asigna
+        sin confirmación (RN-02).'
       summary: Conductores disponibles para asignar
       parameters:
       - in: query
@@ -1730,12 +1731,26 @@ components:
           type: string
           format: date-time
           nullable: true
+        confiable:
+          type: boolean
+          description: 'Posición reciente y precisa: si no, no compite ni se sugiere'
+        ultimo_viaje_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fin de su último viaje
+        sugerido:
+          type: boolean
+          description: 'El más apto (HU-04). No asigna: lo confirma el despachador'
       required:
+      - confiable
       - distancia_m
       - id
       - nombre
       - patente
       - posicion_en
+      - sugerido
+      - ultimo_viaje_en
     Conductor:
       type: object
       properties:
