@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/api/alertas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Registro de alertas de vuelos
+         * @description HU-28: demora, cancelación, desvío o API sin datos. Las más recientes primero.
+         */
+        get: operations["alertas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/alertas/{id}/atender/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Marcar una alerta como atendida
+         * @description HU-28: demora, cancelación, desvío o API sin datos. Las más recientes primero.
+         */
+        post: operations["alertas_atender_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/asignaciones/{id}/aceptar/": {
         parameters: {
             query?: never;
@@ -898,6 +938,20 @@ export interface components {
          * @enum {string}
          */
         ActorEnum: "CONDUCTOR" | "DESPACHADOR" | "ADMINISTRADOR" | "PASAJERO" | "SISTEMA";
+        AlertaVuelo: {
+            readonly id: number;
+            readonly viaje: number;
+            readonly numero_vuelo: string;
+            readonly tipo: components["schemas"]["TipoAlertaVueloEnum"];
+            readonly detalle: string;
+            /** Format: date-time */
+            readonly eta: string | null;
+            /** Format: date-time */
+            readonly creada_en: string;
+            /** Format: date-time */
+            readonly atendida_en: string | null;
+            readonly atendida_por: string | null;
+        };
         AsignarRequest: {
             /** @description Conductor Disponible de la empresa (RN-01, RN-03) */
             conductor: number;
@@ -1135,6 +1189,21 @@ export interface components {
          * @enum {string}
          */
         OrigenCancelacionEnum: "PASAJERO" | "DESPACHADOR" | "ADMINISTRADOR" | "SUPERVISOR" | "SISTEMA";
+        PaginatedAlertaVueloList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["AlertaVuelo"][];
+        };
         PaginatedConductorList: {
             /** @example 123 */
             count: number;
@@ -1330,6 +1399,14 @@ export interface components {
             expira_en: string;
             mensaje: string;
         };
+        /**
+         * @description * `ETA_CAMBIADA` - Cambió la llegada
+         *     * `VUELO_CANCELADO` - Vuelo cancelado
+         *     * `VUELO_DESVIADO` - Vuelo desviado
+         *     * `SIN_DATOS` - Sin datos de la API
+         * @enum {string}
+         */
+        TipoAlertaVueloEnum: "ETA_CAMBIADA" | "VUELO_CANCELADO" | "VUELO_DESVIADO" | "SIN_DATOS";
         Tokens: {
             access: string;
             refresh: string;
@@ -1408,6 +1485,8 @@ export interface components {
             vehiculo: components["schemas"]["VehiculoResumen"] | null;
             convenio: components["schemas"]["ConvenioResumen"] | null;
             readonly vuelo: components["schemas"]["Vuelo"] | null;
+            /** @description Alerta de vuelo sin atender (HU-28) */
+            readonly alerta_vuelo: (components["schemas"]["TipoAlertaVueloEnum"] | components["schemas"]["NullEnum"]) | null;
             motivo_cancelacion?: string | null;
             origen_cancelacion?: (components["schemas"]["OrigenCancelacionEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             /** Format: date-time */
@@ -1462,6 +1541,8 @@ export interface components {
             vehiculo: components["schemas"]["VehiculoResumen"] | null;
             convenio: components["schemas"]["ConvenioResumen"] | null;
             readonly vuelo: components["schemas"]["Vuelo"] | null;
+            /** @description Alerta de vuelo sin atender (HU-28) */
+            readonly alerta_vuelo: (components["schemas"]["TipoAlertaVueloEnum"] | components["schemas"]["NullEnum"]) | null;
             motivo_cancelacion?: string | null;
             origen_cancelacion?: (components["schemas"]["OrigenCancelacionEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             /** Format: date-time */
@@ -1519,6 +1600,52 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    alertas_list: {
+        parameters: {
+            query?: {
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description Solo las que nadie ha atendido */
+                pendientes?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedAlertaVueloList"];
+                };
+            };
+        };
+    };
+    alertas_atender_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este alerta de vuelo. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertaVuelo"];
+                };
+            };
+        };
+    };
     app_asignaciones_aceptar_create: {
         parameters: {
             query?: never;
