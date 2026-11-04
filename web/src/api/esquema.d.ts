@@ -1012,6 +1012,8 @@ export interface components {
             estado_nuevo: components["schemas"]["EstadoViajeEnum"];
             actor: components["schemas"]["ActorEnum"];
             readonly usuario: string;
+            manual?: boolean;
+            distancia_m?: number | null;
             /** Format: date-time */
             readonly creado_en: string;
         };

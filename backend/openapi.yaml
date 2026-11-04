@@ -2029,6 +2029,13 @@ components:
         usuario:
           type: string
           readOnly: true
+        manual:
+          type: boolean
+        distancia_m:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
         creado_en:
           type: string
           format: date-time
