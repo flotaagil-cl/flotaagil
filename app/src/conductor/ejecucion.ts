@@ -31,6 +31,8 @@ export function metodosDePago(convenio: boolean): { valor: MetodoPago; texto: st
   return convenio ? [{ valor: 'CONVENIO', texto: 'Convenio' }, ...metodos] : metodos;
 }
 
+export const nombreDelMetodo = (metodo: MetodoPago) => metodosDePago(true).find((m) => m.valor === metodo)!.texto;
+
 export type ResultadoMonto = { monto: number; error?: undefined } | { monto?: undefined; error: string };
 
 /** Acepta «15000» y «15.000». Pesos enteros, de 0 a 500.000 (PAGO_VIAJE). */

@@ -78,6 +78,9 @@ class Conductor(models.Model):
         Vehiculo, on_delete=models.PROTECT, null=True, blank=True, related_name="conductores_activos"
     )
     consentimiento_gps_en = models.DateTimeField(null=True, blank=True)
+    # DC-26: último turno. Con turno_fin NULL y estado en turno, sigue en curso.
+    turno_inicio = models.DateTimeField(null=True, blank=True)
+    turno_fin = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "conductor"

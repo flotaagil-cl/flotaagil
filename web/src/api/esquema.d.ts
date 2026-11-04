@@ -104,6 +104,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/app/mi-turno/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Viajes completados en el turno
+         * @description Los viajes FINALIZADOS del turno actual o, fuera de turno, del último. Incluye los cerrados por la central, marcados, y los totales por método de pago.
+         */
+        get: operations["app_mi_turno_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/perfil/": {
         parameters: {
             query?: never;
@@ -1322,6 +1342,23 @@ export interface components {
          * @enum {string}
          */
         MetodoEnum: "EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "CONVENIO";
+        MiTurno: {
+            en_turno: boolean;
+            /**
+             * Format: date-time
+             * @description NULL si aún no hay un turno registrado
+             */
+            inicio: string | null;
+            /**
+             * Format: date-time
+             * @description NULL mientras el turno sigue en curso
+             */
+            fin: string | null;
+            viajes: components["schemas"]["ViajeDelTurno"][];
+            /** @description Para rendir caja, solo los métodos usados */
+            totales: components["schemas"]["TotalPorMetodo"][];
+            total: number;
+        };
         /** @enum {unknown} */
         NullEnum: null;
         /**
@@ -1581,6 +1618,11 @@ export interface components {
             access: string;
             refresh: string;
         };
+        TotalPorMetodo: {
+            metodo: components["schemas"]["MetodoEnum"];
+            viajes: number;
+            monto: number;
+        };
         /**
          * @description * `DISPONIBLE` - DISPONIBLE
          *     * `NO_DISPONIBLE` - NO_DISPONIBLE
@@ -1695,6 +1737,17 @@ export interface components {
             recogida_en: string;
             tarifa?: number | null;
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
+        };
+        ViajeDelTurno: {
+            id: number;
+            /** Format: date-time */
+            finalizado_en: string;
+            origen: string;
+            destino: string;
+            monto: number;
+            metodo: components["schemas"]["MetodoEnum"];
+            /** @description Cierre forzado desde el panel (HU-05) */
+            cerrado_por_central: boolean;
         };
         ViajeDetalle: {
             readonly id: number;
@@ -1889,6 +1942,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PerfilConductor"];
+                };
+            };
+        };
+    };
+    app_mi_turno_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiTurno"];
                 };
             };
         };

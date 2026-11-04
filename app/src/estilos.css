@@ -133,6 +133,11 @@ dd {
   margin: 0;
 }
 
+/* Fila de totales de Mi turno: cada par sigue la grilla del dl. */
+.fila-total {
+  display: contents;
+}
+
 .tarjeta h2 {
   margin-top: 0;
 }

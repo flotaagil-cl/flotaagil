@@ -110,6 +110,12 @@ Para que la app use WebSocket sin cifrar hacia el PC, compila con `FLOTAAGIL_DES
 7. Pulsa **Pasajero a bordo**, elige el método de pago, escribe el monto y pulsa **Finalizar viaje**. **Esperado:** el viaje desaparece y el estado vuelve a Disponible.
 8. Si tras pulsar un botón la pantalla no cambia, espera 15 s sin tocar nada. **Esperado:** se corrige sola. Si no, anota la hora: es el fallo registrado en `docs/evidencias/HU-16/resultados.md`.
 
+## 5e. Prueba H: Mi turno (HU-18)
+
+1. Empieza el turno y completa un viaje con su pago. Pulsa **Mi turno**. **Esperado:** el viaje, con hora, origen, destino, monto y método, y los totales al final.
+2. Termina el turno y vuelve a **Mi turno**. **Esperado:** dice «Último turno» y muestra los mismos viajes.
+3. Empieza otro turno. **Esperado:** la lista parte vacía.
+
 ## 6. Prueba C: sin señal y vuelta
 
 1. Con la app en turno, activa el **modo avión** 3 minutos y luego desactívalo.

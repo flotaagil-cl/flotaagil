@@ -2,6 +2,7 @@
 conductores y editar los datos del conductor. Cada cambio queda en AUDITORIA."""
 
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
@@ -212,7 +213,8 @@ def cambiar_habilitacion(conductor: Conductor, habilitar: bool, *, usuario) -> N
         if conductor.estado != EstadoConductor.NO_DISPONIBLE:
             previos["estado"] = conductor.estado
             conductor.estado = EstadoConductor.NO_DISPONIBLE
-            conductor.save(update_fields=["estado"])
+            conductor.turno_fin = timezone.now()  # DC-26
+            conductor.save(update_fields=["estado", "turno_fin"])
     notificar_conductor(conductor)  # HU-02: al deshabilitarse sale del mapa
     auditoria.registrar(
         usuario=usuario,

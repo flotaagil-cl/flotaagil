@@ -124,6 +124,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/PerfilConductor'
           description: ''
+  /api/app/mi-turno/:
+    get:
+      operationId: app_mi_turno_retrieve
+      description: Los viajes FINALIZADOS del turno actual o, fuera de turno, del
+        último. Incluye los cerrados por la central, marcados, y los totales por método
+        de pago.
+      summary: Viajes completados en el turno
+      tags:
+      - app
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiTurno'
+          description: ''
   /api/app/perfil/:
     get:
       operationId: app_perfil_retrieve
@@ -2681,6 +2699,39 @@ components:
         * `TARJETA` - Tarjeta
         * `TRANSFERENCIA` - Transferencia
         * `CONVENIO` - Convenio
+    MiTurno:
+      type: object
+      properties:
+        en_turno:
+          type: boolean
+        inicio:
+          type: string
+          format: date-time
+          nullable: true
+          description: NULL si aún no hay un turno registrado
+        fin:
+          type: string
+          format: date-time
+          nullable: true
+          description: NULL mientras el turno sigue en curso
+        viajes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ViajeDelTurno'
+        totales:
+          type: array
+          items:
+            $ref: '#/components/schemas/TotalPorMetodo'
+          description: Para rendir caja, solo los métodos usados
+        total:
+          type: integer
+      required:
+      - en_turno
+      - fin
+      - inicio
+      - total
+      - totales
+      - viajes
     NullEnum:
       enum:
       - null
@@ -3212,6 +3263,19 @@ components:
       required:
       - access
       - refresh
+    TotalPorMetodo:
+      type: object
+      properties:
+        metodo:
+          $ref: '#/components/schemas/MetodoEnum'
+        viajes:
+          type: integer
+        monto:
+          type: integer
+      required:
+      - metodo
+      - monto
+      - viajes
     TurnoEstadoEnum:
       enum:
       - DISPONIBLE
@@ -3547,6 +3611,33 @@ components:
       - origen_dir
       - pasajero
       - recogida_en
+    ViajeDelTurno:
+      type: object
+      properties:
+        id:
+          type: integer
+        finalizado_en:
+          type: string
+          format: date-time
+        origen:
+          type: string
+        destino:
+          type: string
+        monto:
+          type: integer
+        metodo:
+          $ref: '#/components/schemas/MetodoEnum'
+        cerrado_por_central:
+          type: boolean
+          description: Cierre forzado desde el panel (HU-05)
+      required:
+      - cerrado_por_central
+      - destino
+      - finalizado_en
+      - id
+      - metodo
+      - monto
+      - origen
     ViajeDetalle:
       type: object
       properties:

@@ -9,6 +9,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import transaction
+from django.db.models import Exists, OuterRef, Subquery
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
 from rest_framework import serializers, status
@@ -16,9 +17,10 @@ from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.auditoria.models import Auditoria, Entidad
 from apps.comun.permisos import con_roles
 from apps.cuentas.models import Rol
-from apps.reservas.models import EstadoViaje, Viaje
+from apps.reservas.models import EstadoViaje, HistorialEstado, MetodoPago, Viaje
 
 from .models import Conductor, EstadoConductor, PosicionGps
 from .serializers import VehiculoAsociadoSerializer, VehiculoDeclaradoSerializer
@@ -259,14 +261,19 @@ class TurnoView(_VistaApp):
             )
             if conductor.estado == EstadoConductor.EN_VIAJE:
                 raise _conflicto("en_viaje", "Estás en un viaje: el estado cambia al terminarlo (RN-03).")
+            previo = conductor.estado
             if entrada.validated_data["estado"] == EstadoConductor.NO_DISPONIBLE:
                 conductor.estado, conductor.vehiculo_activo = EstadoConductor.NO_DISPONIBLE, None
+                if previo != EstadoConductor.NO_DISPONIBLE:
+                    conductor.turno_fin = timezone.now()  # DC-26
             else:
                 conductor.vehiculo_activo = self._vehiculo_del_turno(
                     conductor, entrada.validated_data.get("vehiculo")
                 )
                 conductor.estado = EstadoConductor.DISPONIBLE
-            conductor.save(update_fields=["estado", "vehiculo_activo"])
+                if previo == EstadoConductor.NO_DISPONIBLE:
+                    conductor.turno_inicio, conductor.turno_fin = timezone.now(), None  # DC-26
+            conductor.save(update_fields=["estado", "vehiculo_activo", "turno_inicio", "turno_fin"])
             notificar_conductor(conductor)
             if conductor.estado == EstadoConductor.NO_DISPONIBLE:
                 from apps.aeropuerto.fila import salir
@@ -311,6 +318,104 @@ class TurnoView(_VistaApp):
                 "vehiculo_ocupado", f"El vehículo {vehiculo.patente} ya está en turno con otro conductor."
             )
         return vehiculo
+
+
+# --- Mi turno (HU-18) ---
+
+
+class ViajeDelTurnoSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    finalizado_en = serializers.DateTimeField()
+    origen = serializers.CharField()
+    destino = serializers.CharField()
+    monto = serializers.IntegerField()
+    metodo = serializers.ChoiceField(choices=MetodoPago.choices)
+    cerrado_por_central = serializers.BooleanField(help_text="Cierre forzado desde el panel (HU-05)")
+
+
+class TotalPorMetodoSerializer(serializers.Serializer):
+    metodo = serializers.ChoiceField(choices=MetodoPago.choices)
+    viajes = serializers.IntegerField()
+    monto = serializers.IntegerField()
+
+
+class MiTurnoSerializer(serializers.Serializer):
+    en_turno = serializers.BooleanField()
+    inicio = serializers.DateTimeField(allow_null=True, help_text="NULL si aún no hay un turno registrado")
+    fin = serializers.DateTimeField(allow_null=True, help_text="NULL mientras el turno sigue en curso")
+    viajes = ViajeDelTurnoSerializer(many=True)
+    totales = TotalPorMetodoSerializer(many=True, help_text="Para rendir caja, solo los métodos usados")
+    total = serializers.IntegerField()
+
+
+def _viajes_del_turno(conductor: Conductor) -> list[Viaje]:
+    """Viajes finalizados entre el inicio y el fin del turno (DC-26), del más antiguo al más nuevo."""
+    if conductor.turno_inicio is None:
+        return []
+    finalizado_en = HistorialEstado.objects.filter(
+        viaje=OuterRef("pk"), estado_nuevo=EstadoViaje.FINALIZADO
+    ).values("creado_en")[:1]
+    viajes = (
+        Viaje.objects.filter(conductor=conductor, estado=EstadoViaje.FINALIZADO, pago__isnull=False)
+        .select_related("pago")
+        .annotate(
+            finalizado_en=Subquery(finalizado_en),
+            cerrado_por_central=Exists(
+                Auditoria.objects.filter(
+                    entidad=Entidad.VIAJE, entidad_id=OuterRef("pk"), accion="CIERRE_FORZADO"
+                )
+            ),
+        )
+        .filter(finalizado_en__gte=conductor.turno_inicio)
+        .order_by("finalizado_en")
+    )
+    if conductor.turno_fin is not None:
+        viajes = viajes.filter(finalizado_en__lte=conductor.turno_fin)
+    return list(viajes)
+
+
+class MiTurnoView(_VistaApp):
+    @extend_schema(
+        tags=["app"],
+        summary="Viajes completados en el turno",
+        responses=MiTurnoSerializer,
+        description=(
+            "Los viajes FINALIZADOS del turno actual o, fuera de turno, del último. "
+            "Incluye los cerrados por la central, marcados, y los totales por método de pago."
+        ),
+    )
+    def get(self, request):
+        conductor = Conductor.objects.get(usuario=request.user)
+        viajes = _viajes_del_turno(conductor)
+        totales = {
+            metodo: {
+                "metodo": metodo,
+                "viajes": sum(1 for v in viajes if v.pago.metodo == metodo),
+                "monto": sum(v.pago.monto for v in viajes if v.pago.metodo == metodo),
+            }
+            for metodo in MetodoPago.values
+        }
+        return Response(
+            {
+                "en_turno": conductor.estado in EN_TURNO,
+                "inicio": conductor.turno_inicio,
+                "fin": conductor.turno_fin,
+                "viajes": [
+                    {
+                        "id": v.pk,
+                        "finalizado_en": v.finalizado_en,
+                        "origen": v.origen_dir,
+                        "destino": v.destino_dir,
+                        "monto": v.pago.monto,
+                        "metodo": v.pago.metodo,
+                        "cerrado_por_central": v.cerrado_por_central,
+                    }
+                    for v in viajes
+                ],
+                "totales": [t for t in totales.values() if t["viajes"]],
+                "total": sum(v.pago.monto for v in viajes),
+            }
+        )
 
 
 # --- Viaje activo (HU-17) ---

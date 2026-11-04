@@ -12,6 +12,7 @@ import { CambiarPassword } from './pantallas/CambiarPassword';
 import { Consentimiento } from './pantallas/Consentimiento';
 import { Inicio } from './pantallas/Inicio';
 import { Login } from './pantallas/Login';
+import { MiTurno, type ResumenDelTurno } from './pantallas/MiTurno';
 import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
 import { alertar, pedirPermisoDeNotificaciones } from './conductor/alerta';
@@ -33,6 +34,8 @@ export default function App() {
   const [rastreo, setRastreo] = useState<EstadoRastreo>(rastreador.estado);
   const [enVivo, setEnVivo] = useState<EstadoCanal>(canal.estado);
   const [avisoOculto, setAvisoOculto] = useState<number | null>(null);
+  const [enMiTurno, setEnMiTurno] = useState(false);
+  const cargarMiTurno = useCallback(() => api.pedir<ResumenDelTurno>('GET', '/api/app/mi-turno/'), []);
 
   useEffect(() => sesion.suscribir(setEstado), []);
   useEffect(() => cola.suscribir(setEnvio), []);
@@ -166,6 +169,7 @@ export default function App() {
     cola.vaciarSinEnviar();
     setPerfil(null);
     setViaje(null);
+    setEnMiTurno(false);
     await sesion.logout();
   }
 
@@ -215,6 +219,7 @@ export default function App() {
   if (!perfil.consentimiento_gps_en) {
     return <Consentimiento alAceptar={async () => setPerfil(await api.pedir<Perfil>('POST', '/api/app/consentimiento/'))} />;
   }
+  if (enMiTurno) return <MiTurno cargar={cargarMiTurno} volver={() => setEnMiTurno(false)} />;
   return (
     <Inicio
       usuario={estado.usuario}
@@ -227,6 +232,7 @@ export default function App() {
       rastreo={rastreo}
       cambiarTurno={cambiarTurno}
       actualizar={() => void cargarPerfil()}
+      verMiTurno={() => setEnMiTurno(true)}
       abrirAjustes={() => void abrirAjustes()}
       cerrarSesion={() => void cerrarSesion()}
     />
