@@ -59,3 +59,12 @@ class ConvenioCreadoSerializer(ConvenioDetalleSerializer):
 
 class PasswordNuevaSerializer(serializers.Serializer):
     password = serializers.CharField(help_text="Se entrega una sola vez. La anterior deja de servir.")
+
+
+class RegistroAuditoriaSerializer(serializers.Serializer):
+    """HU-12: quién, qué y cuándo. Sin datos previos: el criterio pide usuario, acción y fecha."""
+
+    id = serializers.IntegerField()
+    accion = serializers.CharField()
+    usuario = serializers.CharField(source="usuario.nombre")
+    creado_en = serializers.DateTimeField()

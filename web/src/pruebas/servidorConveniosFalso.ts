@@ -23,6 +23,7 @@ export class ServidorConveniosFalso {
   convenios: ConvenioDetalle[] = [];
   cuerpos: { ruta: string; cuerpo: unknown }[] = [];
   password = 'ClaveSintetica23';
+  auditoria: components['schemas']['RegistroAuditoria'][] = [];
   private programadas = new Map<string, Respuesta[]>();
   private readonly anterior: ServidorAuthFalso['api'];
 
@@ -58,11 +59,17 @@ export class ServidorConveniosFalso {
       this.convenios.push(nuevo);
       return { estado: 201, cuerpo: { ...nuevo, password: this.password } };
     }
-    const detalle = /^\/api\/convenios\/(\d+)\/(rotar-password\/)?$/.exec(url.pathname);
+    const detalle = /^\/api\/convenios\/(\d+)\/(rotar-password\/|auditoria\/)?$/.exec(url.pathname);
     const convenio = detalle && this.convenios.find((c) => c.id === Number(detalle[1]));
     if (!convenio) return { estado: 404, cuerpo: { detail: 'No encontrado.' } };
+    if (detalle[2] === 'auditoria/') {
+      const pagina = Number(url.searchParams.get('page') ?? 1);
+      const filas = this.auditoria.slice((pagina - 1) * 25, pagina * 25);
+      return { estado: 200, cuerpo: { count: this.auditoria.length, next: this.auditoria.length > pagina * 25 ? 'x' : null, previous: pagina > 1 ? 'x' : null, results: filas } };
+    }
     if (detalle[2]) {
       this.password = `${this.password}N`;
+      this.auditoria.unshift({ id: this.auditoria.length + 1, accion: 'CAMBIO_CLAVE', usuario: 'Ana Admin', creado_en: '2026-07-15T12:00:00Z' });
       return { estado: 200, cuerpo: { password: this.password } };
     }
     if (peticion.method === 'PATCH') Object.assign(convenio, cuerpo);

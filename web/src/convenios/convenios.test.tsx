@@ -180,3 +180,60 @@ describe('ficha', () => {
     expect(await screen.findByText(/No se pudo copiar/)).toBeInTheDocument();
   });
 });
+
+describe('auditoría del convenio (HU-12, CP-24)', () => {
+  const REGISTRO = { id: 1, accion: 'CREACION', usuario: 'Ana Admin', creado_en: '2026-07-15T12:00:00Z' };
+  const abrirConvenio = (registros = [REGISTRO]) => {
+    const contexto = montar('/convenios/5');
+    contexto.convenios.convenios = [convenioDePrueba({ id: 5 })];
+    contexto.convenios.auditoria = registros;
+    return contexto;
+  };
+
+  it('muestra fecha, acción y usuario', async () => {
+    abrirConvenio();
+    const fila = (await screen.findByText('Creación')).closest('tr')!;
+    expect(within(fila).getByText('Ana Admin')).toBeInTheDocument();
+    expect(within(fila).getByText('mié 15-07-2026 08:00')).toBeInTheDocument();
+  });
+
+  it('una acción sin etiqueta se muestra tal cual', async () => {
+    abrirConvenio([{ ...REGISTRO, accion: 'OTRA_ACCION' }]);
+    expect(await screen.findByText('OTRA_ACCION')).toBeInTheDocument();
+  });
+
+  it('sin registros lo dice', async () => {
+    abrirConvenio([]);
+    expect(await screen.findByText('Aún no hay registros.')).toBeInTheDocument();
+  });
+
+  it('rotar actualiza la auditoría sin recargar', async () => {
+    abrirConvenio();
+    await screen.findByText('Creación');
+    await userEvent.click(screen.getByRole('button', { name: 'Rotar contraseña' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rotar' }));
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Listo' }));
+    expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();
+  });
+
+  it('pagina', async () => {
+    abrirConvenio(Array.from({ length: 26 }, (_, i) => ({ ...REGISTRO, id: i + 1, accion: i === 25 ? 'EDICION' : 'CREACION' })));
+    await screen.findAllByText('Creación');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
+    expect(await screen.findByText('Edición de datos')).toBeInTheDocument();
+  });
+
+  it('una falla ofrece reintentar', async () => {
+    const { convenios } = montar('/convenios/5');
+    convenios.convenios = [convenioDePrueba({ id: 5 })];
+    convenios.siguiente('GET /api/convenios/5/auditoria/', { estado: 500, cuerpo: {} });
+    await userEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByText('Aún no hay registros.')).toBeInTheDocument();
+  });
+
+  it('no ofrece modificar los registros', async () => {
+    abrirConvenio();
+    const tabla = await screen.findByRole('table', { name: 'Auditoría del convenio' });
+    expect(within(tabla).queryByRole('button')).not.toBeInTheDocument();
+  });
+});

@@ -4,11 +4,12 @@ import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import estilos from '../../componentes/panel.module.css';
 import { useEntorno } from '../../entornoContexto';
-import { FallaDeCarga, NoEncontrado } from '../../flota/componentes/comunes';
+import { Celda, Esqueleto, FallaDeCarga, NoEncontrado, Paginacion } from '../../flota/componentes/comunes';
+import { formatearFechaHora } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 import { mensajeDeErrorApi } from '../../reservas/errores';
-import { useConvenio, useEditarConvenio, useRotarPassword, type ConvenioDetalle } from '../api';
+import { useAuditoriaConvenio, useConvenio, useEditarConvenio, useRotarPassword, type ConvenioDetalle } from '../api';
 import { DialogoPassword, FormularioConvenio } from '../componentes';
 
 const VOLVER = '/convenios';
@@ -30,6 +31,54 @@ function ConvenioDe({ id }: { id: number }) {
     return <FallaDeCarga error={consulta.error} que="el convenio" reintentar={() => void consulta.refetch()} />;
   }
   return <Ficha convenio={consulta.data} />;
+}
+
+const ACCIONES_AUDITORIA: Record<string, string> = {
+  CREACION: 'Creación',
+  EDICION: 'Edición de datos',
+  ACTIVACION: 'Activación',
+  DESACTIVACION: 'Desactivación',
+  CAMBIO_CLAVE: 'Cambio de contraseña',
+};
+
+/** HU-12: solo lectura, del más nuevo al más antiguo (RN-12). */
+function Auditoria({ id }: { id: number }) {
+  const [pagina, setPagina] = useState(1);
+  const consulta = useAuditoriaConvenio(id, pagina);
+  return (
+    <div className={estilos.tarjeta}>
+      <h2>Auditoría</h2>
+      {consulta.isPending ? (
+        <Esqueleto etiqueta="Cargando la auditoría" columnas={3} />
+      ) : consulta.isError ? (
+        <FallaDeCarga error={consulta.error} que="la auditoría" reintentar={() => void consulta.refetch()} />
+      ) : consulta.data.results.length === 0 ? (
+        <p className={estilos.explicacion}>Aún no hay registros.</p>
+      ) : (
+        <>
+          <table className={estilos.tabla} aria-label="Auditoría del convenio" aria-busy={consulta.isPlaceholderData || undefined}>
+            <thead>
+              <tr>
+                <th scope="col">Fecha</th>
+                <th scope="col">Acción</th>
+                <th scope="col">Usuario</th>
+              </tr>
+            </thead>
+            <tbody>
+              {consulta.data.results.map((registro) => (
+                <tr key={registro.id}>
+                  <Celda titulo="Fecha">{formatearFechaHora(registro.creado_en)}</Celda>
+                  <Celda titulo="Acción">{ACCIONES_AUDITORIA[registro.accion] ?? registro.accion}</Celda>
+                  <Celda titulo="Usuario">{registro.usuario}</Celda>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <Paginacion anterior={Boolean(consulta.data.previous)} siguiente={Boolean(consulta.data.next)} pagina={pagina} ir={setPagina} />
+        </>
+      )}
+    </div>
+  );
 }
 
 type Confirmando = 'rotar' | 'estado' | null;
@@ -179,6 +228,8 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
           </div>
         )}
       </div>
+
+      <Auditoria id={convenio.id} />
 
       {password && <DialogoPassword password={password} cliente={convenio.cliente_nombre} alCerrar={() => setPassword(null)} />}
     </section>

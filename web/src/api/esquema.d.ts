@@ -657,6 +657,26 @@ export interface paths {
         patch: operations["convenios_partial_update"];
         trace?: never;
     };
+    "/api/convenios/{id}/auditoria/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Auditoría del convenio
+         * @description Quién y cuándo cambió el convenio, del más nuevo al más antiguo (RN-12). Solo lectura.
+         */
+        get: operations["convenios_auditoria_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/convenios/{id}/rotar-password/": {
         parameters: {
             query?: never;
@@ -1415,6 +1435,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Convenio"][];
         };
+        PaginatedRegistroAuditoriaList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RegistroAuditoria"][];
+        };
         PaginatedVehiculoList: {
             /** @example 123 */
             count: number;
@@ -1528,6 +1563,14 @@ export interface components {
         };
         RefreshRequest: {
             refresh: string;
+        };
+        /** @description HU-12: quién, qué y cuándo. Sin datos previos: el criterio pide usuario, acción y fecha. */
+        RegistroAuditoria: {
+            id: number;
+            accion: string;
+            usuario: string;
+            /** Format: date-time */
+            creado_en: string;
         };
         RespuestaAsignacion: {
             asignacion: number;
@@ -2875,6 +2918,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+        };
+    };
+    convenios_auditoria_list: {
+        parameters: {
+            query?: {
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRegistroAuditoriaList"];
                 };
             };
         };

@@ -5,6 +5,7 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.auditoria.models import Auditoria, Entidad
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 
@@ -17,6 +18,7 @@ from .serializers import (
     ConvenioEditarSerializer,
     ConvenioSerializer,
     PasswordNuevaSerializer,
+    RegistroAuditoriaSerializer,
 )
 
 
@@ -102,3 +104,20 @@ class ConvenioViewSet(
     def rotar_password(self, request, pk=None):
         password = servicios.rotar_password(self.get_object(), usuario=request.user)
         return Response({"password": password})
+
+    @extend_schema(
+        summary="Auditoría del convenio",
+        tags=["convenios"],
+        responses=RegistroAuditoriaSerializer(many=True),
+        description="Quién y cuándo cambió el convenio, del más nuevo al más antiguo (RN-12). Solo lectura.",
+    )
+    @action(detail=True, methods=["get"], filterset_class=None, filter_backends=[])
+    def auditoria(self, request, pk=None):
+        convenio = self.get_object()
+        registros = (
+            Auditoria.objects.filter(entidad=Entidad.CONVENIO, entidad_id=convenio.pk)
+            .select_related("usuario")
+            .order_by("-creado_en", "-id")
+        )
+        pagina = self.paginate_queryset(registros)
+        return self.get_paginated_response(RegistroAuditoriaSerializer(pagina, many=True).data)

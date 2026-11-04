@@ -243,3 +243,62 @@ class TestPermisos:
         datos = crear(api).json()
         convenio = Convenio.objects.get(pk=datos["id"])
         assert check_password(datos["password"], convenio.password_hash)
+
+
+@pytest.mark.django_db
+class TestAuditoriaConsultable:
+    """HU-12 · CP-24 (RN-12)."""
+
+    def consultar(self, api, convenio, **parametros):
+        return api.get(reverse("convenio-auditoria", args=[convenio.pk]), parametros)
+
+    def test_muestra_quien_que_y_cuando_del_mas_nuevo_al_mas_antiguo(self, api, administrador):
+        convenio = Convenio.objects.get(pk=crear(api).json()["id"])
+        api.post(rotar(convenio))
+        api.patch(detalle(convenio), {"activo": False}, format="json")
+        api.patch(detalle(convenio), {"activo": True}, format="json")
+        respuesta = self.consultar(api, convenio)
+        assert respuesta.status_code == 200
+        filas = respuesta.json()["results"]
+        assert [f["accion"] for f in filas] == ["ACTIVACION", "DESACTIVACION", "CAMBIO_CLAVE", "CREACION"]
+        assert {f["usuario"] for f in filas} == {administrador.nombre}
+        assert all(f["creado_en"] for f in filas)
+
+    def test_no_expone_datos_previos_ni_credenciales(self, api):
+        creado = crear(api).json()
+        convenio = Convenio.objects.get(pk=creado["id"])
+        api.patch(detalle(convenio), {"cliente_nombre": "Otro nombre"}, format="json")
+        contenido = self.consultar(api, convenio).content.decode()
+        assert creado["password"] not in contenido
+        assert convenio.password_hash not in contenido
+        assert convenio.token_link not in contenido
+        assert "datos_previos" not in contenido
+
+    def test_solo_los_de_ese_convenio(self, api):
+        uno = Convenio.objects.get(pk=crear(api).json()["id"])
+        otro = Convenio.objects.get(pk=crear(api, cliente_nombre="Otro").json()["id"])
+        api.post(rotar(otro))
+        assert [f["accion"] for f in self.consultar(api, uno).json()["results"]] == ["CREACION"]
+
+    def test_pagina(self, api):
+        convenio = Convenio.objects.get(pk=crear(api).json()["id"])
+        for _ in range(25):
+            api.post(rotar(convenio))
+        primera = self.consultar(api, convenio).json()
+        assert (primera["count"], len(primera["results"])) == (26, 25)
+        assert len(self.consultar(api, convenio, page=2).json()["results"]) == 1
+
+    def test_es_de_solo_lectura(self, api):
+        convenio = Convenio.objects.get(pk=crear(api).json()["id"])
+        ruta = reverse("convenio-auditoria", args=[convenio.pk])
+        assert api.post(ruta, {}, format="json").status_code == 405
+        assert api.delete(ruta).status_code == 405
+        assert api.patch(ruta, {}, format="json").status_code == 405
+
+    def test_otra_empresa_404(self, api, otra_empresa):
+        """RN-13."""
+        assert self.consultar(api, ConvenioFactory(empresa=otra_empresa)).status_code == 404
+
+    def test_despachador_403(self, cliente, despachador, empresa):
+        cliente.force_authenticate(despachador)
+        assert self.consultar(cliente, ConvenioFactory(empresa=empresa)).status_code == 403

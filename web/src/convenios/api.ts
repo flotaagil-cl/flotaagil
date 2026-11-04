@@ -34,6 +34,18 @@ export function useConvenio(id: number) {
   });
 }
 
+export type RegistroAuditoria = components['schemas']['RegistroAuditoria'];
+
+/** HU-12: quién y cuándo cambió el convenio (RN-12). */
+export function useAuditoriaConvenio(id: number, pagina: number) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['convenios', 'auditoria', id, pagina],
+    queryFn: () => resultado(api.GET('/api/convenios/{id}/auditoria/', { params: { path: { id }, query: { page: pagina } } })),
+    placeholderData: keepPreviousData,
+  });
+}
+
 export function useCrearConvenio() {
   const api = useApi();
   const cliente = useQueryClient();
@@ -58,7 +70,9 @@ export function useEditarConvenio(id: number) {
 
 export function useRotarPassword(id: number) {
   const api = useApi();
+  const cliente = useQueryClient();
   return useMutation({
     mutationFn: () => resultado(api.POST('/api/convenios/{id}/rotar-password/', { params: { path: { id } } })),
+    onSuccess: () => void cliente.invalidateQueries({ queryKey: ['convenios', 'auditoria', id] }),
   });
 }
