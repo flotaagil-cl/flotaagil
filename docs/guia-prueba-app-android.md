@@ -108,7 +108,7 @@ Para que la app use WebSocket sin cifrar hacia el PC, compila con `FLOTAAGIL_DES
 
 6. Con el viaje aceptado, pulsa **Voy en camino** y acércate a menos de 150 m del punto de recogida. **Esperado:** sin tocar nada, aparece «Llegaste al punto de recogida». Si no aparece, anota la precisión del GPS y pulsa **Pasajero a bordo** igual.
 7. Pulsa **Pasajero a bordo**, elige el método de pago, escribe el monto y pulsa **Finalizar viaje**. **Esperado:** el viaje desaparece y el estado vuelve a Disponible.
-8. Si tras pulsar un botón la pantalla no cambia, anota la hora y pulsa **Actualizar**: es el fallo intermitente registrado en `docs/evidencias/HU-16/resultados.md`.
+8. Si tras pulsar un botón la pantalla no cambia, espera 15 s sin tocar nada. **Esperado:** se corrige sola. Si no, anota la hora: es el fallo registrado en `docs/evidencias/HU-16/resultados.md`.
 
 ## 6. Prueba C: sin señal y vuelta
 

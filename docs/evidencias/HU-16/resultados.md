@@ -39,7 +39,7 @@ Historial de la reserva 102: `… ACEPTADO (CONDUCTOR) → EN_CAMINO (CONDUCTOR)
 - **Sin resolver, intermitente:** en 1 de 3 recorridos manuales la pantalla siguió mostrando «Aceptado» durante 30 s tras pulsar «Voy en camino».
   - El backend sí registró EN_CAMINO. En su registro aparece `GET /perfil/`, pero no `GET /viaje-activo/`, así que esa lectura no se completó.
   - No se encontró la causa. No se repitió en el recorrido siguiente, ni en 600 lecturas de esos dos endpoints (300 directas y 300 por el proxy de Vite), sin ningún cuelgue.
-  - La app no pone tiempo límite a sus peticiones, así que una lectura colgada no se reintenta sola. Si reaparece en el teléfono, ese es el primer lugar donde mirar.
+  - La app no ponía tiempo límite a sus peticiones, así que una lectura colgada no se reintentaba sola. **Corregido en `fix/app-peticiones`**: si la respuesta no llega, la pantalla se corrige sola. La causa de que esa petición no respondiera sigue sin conocerse.
 
 ## Capturas
 
