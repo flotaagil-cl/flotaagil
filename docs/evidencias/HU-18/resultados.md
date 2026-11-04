@@ -35,7 +35,12 @@ Rama `feat/HU-18-mi-turno`, 2026-11-04. Prueba manual contra el stack principal,
 
 - **Hora de cada viaje:** la de su paso a FINALIZADO en HISTORIAL_ESTADO.
 - **Fallo corregido en las pruebas:** la fecha salía como `4-11`, porque `es-CL` no rellena el día.
-- **Primer intento de la prueba manual:** expiró esperando la pantalla de inicio, justo después de migrar. Un diagnóstico separado y la repetición funcionaron; no se confirmó la causa.
+- **Primer intento de la prueba manual:** expiró esperando la pantalla de inicio, justo después de migrar. Causa no confirmada. Lo que muestran los registros del backend (hora UTC):
+  - El script obtuvo sus tokens a las 16:41:15, pero el POST de login del navegador **nunca llegó al backend**. El siguiente es de las 16:42:11, ya del diagnóstico.
+  - No fue la migración ni el backend: ya estaba migrado, y otro cliente recibió 200 en `/api/app/perfil/` a las 16:41:29.
+  - Por lo tanto, se perdió entre la página y el proxy del Vite de `app/`. La pantalla no se capturó, así que no se sabe más.
+  - No se reprodujo: funcionó la repetición, y después 3 de 3 logins justo tras un `migrate`, estos por el build de la app, porque ese Vite ya no estaba activo.
+- **Hallazgo aparte, de esa misma prueba:** entre las 16:37:48 y las 16:41 UTC, `/api/app/perfil/` y `/ws/conductor/` fallaron en el stack principal para un cliente conectado, porque el modelo se editó antes de aplicar la migración: el código montado se recarga solo. Desde HU-25 la migración se aplica en el mismo paso que la edición.
 
 ## Límites conocidos
 

@@ -34,7 +34,6 @@ Al cambiar de reporte se veían un instante los datos del anterior bajo el títu
 
 ## Límites conocidos
 
-- **DC-29 está por aprobar:** sin comisiones, qué fecha usa cada reporte y cómo se calcula la tasa.
 - **El CSV se arma completo en memoria.**
 - **Sin abrir el archivo en Excel:** se comprobaron el formato y la codificación.
 

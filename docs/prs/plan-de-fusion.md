@@ -7,7 +7,7 @@ Para Carlos. Son 4 PR hacia `main`, uno por sprint, **en este orden**.
 | 1 | Sprint 1 | `feat/HU-20-whatsapp` | `main` | #9, #13, #16, #20, #22, #23, #27 |
 | 2 | Sprint 2 | `feat/HU-24-calificacion` | `main` | #8, #17, #18, #19, #24, #25 |
 | 3 | Sprint 3 | `fix/HU-27-origen-icao` | `main` | #10, #14, #28, #29, #30 |
-| 4 | Sprint 4 | `feat/HU-06-reportes` | `main` | #7, #11, #12, #15, #21, #26, #31 |
+| 4 | Sprint 4 | `docs/plan-fusion-sprint4` | `main` | #7, #11, #12, #15, #21, #26, #31 |
 
 ## Antes de empezar
 
@@ -59,7 +59,7 @@ Un commit nuevo en la rama de un PR no llega solo a las siguientes, porque `merg
   - Una prueba de flota falla entre las 21:00 y las 24:00 de Chile, porque la fecha salía de la base en UTC. Si pasa, vuelve a correr el CI después de esa hora.
   - Dos pruebas largas de formularios de la web pueden superar los 5 s en una máquina lenta. Vuelve a correr el CI.
 - **Tras fusionar el PR 2 o el 3:** quien tenga el entorno levantado debe correr `docker compose -f infra/docker-compose.dev.yml build backend`, `up -d --remove-orphans` y las migraciones. El PR 3 trae Celery y quita los servicios `programador` y `asignaciones`.
-- **Tras fusionar el PR 4:** migraciones y reinicio de `worker` y `beat`. Trae tres migraciones y la tarea `enviar_chat`.
+- **Tras fusionar el PR 4:** migraciones y reinicio de `worker` y `beat`. Trae cuatro migraciones y la tarea `enviar_chat`.
 - **Los PR abiertos** de Dependabot (#1 a #4) y #32 no son parte de este plan. Dependabot propondrá subir `redis` a más de 5.2.1: no se debe aceptar sin subir también Celery.
 
 Según CLAUDE.md, después de cada PR corresponde la línea base del sprint (`v0.1`, `v0.2`, `v0.3`, `v0.4`).
@@ -217,7 +217,9 @@ Twilio, FlightAware y Google Maps con dobles; geocerca y fila sin GPS real.
 
 ## PR 4: Sprint 4
 
-**Rama de origen:** `feat/HU-06-reportes` · **Rama base:** `main`
+**Rama de origen:** `docs/plan-fusion-sprint4` · **Rama base:** `main`
+
+Es la punta de la cadena e incluye todo lo anterior: `feat/HU-05-cierre-forzado`, `feat/HU-18-mi-turno`, `feat/HU-12-auditoria-convenios`, `feat/HU-25-acceso-convenio`, `feat/HU-30-chat-whatsapp`, `feat/HU-01-indicadores`, `feat/HU-06-reportes`, `fix/HU-01-senal`, `fix/HU-25-declaracion` y `fix/HU-17-navegacion-texto`. No hay que abrir un PR por cada una.
 
 **Antes de abrirlo:** paso 5, con esta rama.
 
@@ -235,6 +237,7 @@ Closes #15
 Closes #21
 Closes #26
 Closes #31
+Refs #20
 Refs #25
 
 ### Qué incluye
@@ -247,9 +250,15 @@ Refs #25
 - HU-25: acceso de convenio con link protegido.
 - HU-30: chat de WhatsApp desde el panel.
 
-### Decisiones
+### También incluye
 
-DC-25 a DC-27 siguen las decisiones del PO. **DC-28 y DC-29 están pendientes de aprobación:** qué es «en línea», quién ve los indicadores, sin comisiones en la liquidación y qué fecha usa cada reporte.
+- `fix/HU-01-senal` (`Refs #7`): vehículos en línea con señal y sin señal.
+- `fix/HU-25-declaracion` (`Refs #26`): declaración del supervisor, guardada con fecha y nombre, y desbloqueo en auditoría.
+- `fix/HU-17-navegacion-texto` (`Refs #20`): con el geocodificador de desarrollo, Google Maps y Waze navegan con la dirección escrita.
+
+### Decisiones del PO
+
+DC-25 a DC-30 aprobadas o tomadas por el PO. **Para confirmar:** en DC-27, «supervisor» es el nombre que escribe en el formulario, porque no tiene cuenta.
 
 ### Cómo revisarlo
 
@@ -257,12 +266,11 @@ Detalle en `docs/prs/HU-XX.md` y resultados en `docs/evidencias/HU-XX/`.
 
 ### Para revisar
 
-- Migraciones: `flota.0004`, `convenios.0002` y `auditoria.0004` (`usuario_id` pasa a NULL).
+- Migraciones: `flota.0004`, `convenios.0002`, `auditoria.0004` (`usuario_id` pasa a NULL) y `reservas.0009`.
 - Tras fusionar: migrar y reiniciar `worker` y `beat`.
 - Nginx debe reenviar `/ws/indicadores/`, igual que `/ws/mapa/`.
-- HU-25: confirmar que el supervisor acepta los avisos en nombre del pasajero.
 
 ### Sin probar contra el servicio real
 
-Twilio con un doble y el notificador de desarrollo. Mi turno, sin probar en un teléfono.
+Twilio con un doble y el notificador de desarrollo. Mi turno y la navegación con la dirección escrita, sin probar en un teléfono.
 ```
