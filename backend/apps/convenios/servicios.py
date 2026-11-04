@@ -57,6 +57,8 @@ def rotar_password(convenio: Convenio, *, usuario) -> str:
     convenio = Convenio.objects.select_for_update().get(pk=convenio.pk)
     password = nueva_password_temporal()
     convenio.set_password(password)
-    convenio.save(update_fields=["password_hash"])
+    # Con la contraseña nueva, un bloqueo por intentos con la anterior ya no tiene sentido.
+    convenio.intentos_fallidos, convenio.bloqueado_hasta = 0, None
+    convenio.save(update_fields=["password_hash", "intentos_fallidos", "bloqueado_hasta"])
     _auditar(usuario, convenio, "CAMBIO_CLAVE")  # RN-12
     return password

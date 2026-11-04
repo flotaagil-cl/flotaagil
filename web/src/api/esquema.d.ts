@@ -609,6 +609,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/convenio/{token}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Estado del link del convenio
+         * @description Datos para el formulario y si hay sesión. Con sesión, cuenta como uso y la renueva.
+         */
+        get: operations["convenio_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenio/{token}/salir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cerrar la sesión del convenio */
+        post: operations["convenio_salir_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenio/{token}/sesion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Entrar con la contraseña del convenio
+         * @description Deja la sesión en una cookie httpOnly, que vence tras 2 h sin uso (configurable).
+         */
+        post: operations["convenio_sesion_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenio/{token}/solicitudes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Solicitar un viaje a nombre del convenio
+         * @description Queda SOLICITADO y con el convenio, sin verificar el teléfono por WhatsApp (RN-07).
+         */
+        post: operations["convenio_solicitudes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/convenios/": {
         parameters: {
             query?: never;
@@ -1052,6 +1129,17 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Sin sesión no revela de qué cliente es el convenio. */
+        AccesoConvenio: {
+            razon_social: string;
+            slug: string;
+            anticipacion_minima_min: number;
+            expiracion_verificacion_min: number;
+            /** @description Minutos que se suman a la llegada del vuelo cuando no se indica la recogida (RN-17). */
+            margen_nacional_min: number;
+            sesion_activa: boolean;
+            cliente_nombre: string | null;
+        };
         /** @enum {string} */
         AccesoEnum: "SIN_PASSWORD" | "TEMPORAL" | "TEMPORAL_VENCIDA" | "ACTIVA";
         Access: {
@@ -1183,6 +1271,9 @@ export interface components {
         ConductorResumen: {
             id: number;
             nombre: string;
+        };
+        ContrasenaRequest: {
+            password: string;
         };
         Convenio: {
             readonly id: number;
@@ -1568,7 +1659,7 @@ export interface components {
         RegistroAuditoria: {
             id: number;
             accion: string;
-            usuario: string;
+            usuario?: string | null;
             /** Format: date-time */
             creado_en: string;
         };
@@ -1608,9 +1699,18 @@ export interface components {
             usuario: components["schemas"]["UsuarioSesion"];
             refresh: string;
         };
+        SesionConvenio: {
+            cliente_nombre: string;
+        };
         SesionPanel: {
             access: string;
             usuario: components["schemas"]["UsuarioSesion"];
+        };
+        SolicitudConvenioRespuesta: {
+            estado: string;
+            /** Format: date-time */
+            recogida_en: string;
+            mensaje: string;
         };
         /** @description HU-19: solicitud de viaje sin cuenta. */
         SolicitudRequest: {
@@ -2819,6 +2919,143 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["InformeImportacion"];
                 };
+            };
+        };
+    };
+    convenio_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccesoConvenio"];
+                };
+            };
+            /** @description Link inexistente o convenio inactivo (RN-08) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenio_salir_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenio_sesion_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContrasenaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ContrasenaRequest"];
+                "multipart/form-data": components["schemas"]["ContrasenaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SesionConvenio"];
+                };
+            };
+            /** @description `credenciales_invalidas` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Link inexistente o convenio inactivo (RN-08) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `convenio_bloqueado`: 5 intentos fallidos (DC-27) */
+            423: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenio_solicitudes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitudRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SolicitudRequest"];
+                "multipart/form-data": components["schemas"]["SolicitudRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudConvenioRespuesta"];
+                };
+            };
+            /** @description `sesion_convenio_vencida` */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Link inexistente o convenio inactivo (RN-08) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

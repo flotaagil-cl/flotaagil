@@ -49,6 +49,7 @@ export const DIFERIDOS = [
   'src/portal/LayoutPortal.tsx',
   'src/portal/paginas/Solicitar.tsx',
   'src/portal/paginas/Privacidad.tsx',
+  'src/portal/paginas/AccesoConvenio.tsx',
 ];
 
 /** Desde dónde se mira y qué no puede cargar. `desde: null` = el paquete inicial. */
@@ -60,6 +61,7 @@ export const REGLAS = [
   { desde: 'src/portal/LayoutPortal.tsx', nombre: '/solicitar (marco)', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/Solicitar.tsx', nombre: '/solicitar (formulario)', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/Privacidad.tsx', nombre: '/solicitar/privacidad', prohibido: PANEL_Y_SESION },
+  { desde: 'src/portal/paginas/AccesoConvenio.tsx', nombre: '/convenio (link)', prohibido: PANEL_Y_SESION },
 ];
 
 /** Deben aparecer en el build: si no, la regla que los prohíbe no estaría probando nada. */

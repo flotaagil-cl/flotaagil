@@ -30,7 +30,10 @@ class AuditoriaQuerySet(models.QuerySet):
 
 class Auditoria(models.Model):
     empresa = models.ForeignKey("cuentas.Empresa", on_delete=models.PROTECT, related_name="+")
-    usuario = models.ForeignKey("cuentas.Usuario", on_delete=models.PROTECT, related_name="+")
+    # DC-27: NULL solo en eventos sin usuario autenticado, como el bloqueo del link de un convenio.
+    usuario = models.ForeignKey(
+        "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
     entidad = models.CharField(max_length=30, choices=Entidad.choices)
     entidad_id = models.BigIntegerField()
     accion = models.CharField(max_length=30)

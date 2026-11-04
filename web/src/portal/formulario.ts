@@ -191,6 +191,7 @@ export type FallaEnvio =
   | { tipo: 'campos'; cuerpo: unknown }
   | { tipo: 'limite'; mensaje: string }
   | { tipo: 'no_disponible' }
+  | { tipo: 'sesion_vencida' }
   | { tipo: 'incierto' }
   | { tipo: 'otro'; mensaje: string };
 
@@ -201,6 +202,7 @@ export function clasificarFalla(error: unknown): FallaEnvio {
   if (estado === 0 || estado >= 500) return { tipo: 'incierto' };
   if (estado === 400) return { tipo: 'campos', cuerpo: error.cuerpo };
   if (estado === 404) return { tipo: 'no_disponible' };
+  if (estado === 401 && codigoDe(error) === 'sesion_convenio_vencida') return { tipo: 'sesion_vencida' };
   if (estado === 429) {
     const codigo = codigoDe(error);
     if (codigo === 'limite_ip' || codigo === 'limite_telefono') return { tipo: 'limite', mensaje: MENSAJES_PORTAL[codigo] };

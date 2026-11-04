@@ -958,6 +958,122 @@ paths:
                 $ref: '#/components/schemas/InformeImportacion'
           description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
             el archivo no sirve, el error viene en `archivo`.'
+  /api/convenio/{token}/:
+    get:
+      operationId: convenio_retrieve
+      description: Datos para el formulario y si hay sesión. Con sesión, cuenta como
+        uso y la renueva.
+      summary: Estado del link del convenio
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - convenio
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccesoConvenio'
+          description: ''
+        '404':
+          description: Link inexistente o convenio inactivo (RN-08)
+  /api/convenio/{token}/salir/:
+    post:
+      operationId: convenio_salir_create
+      summary: Cerrar la sesión del convenio
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - convenio
+      responses:
+        '204':
+          description: No response body
+  /api/convenio/{token}/sesion/:
+    post:
+      operationId: convenio_sesion_create
+      description: Deja la sesión en una cookie httpOnly, que vence tras 2 h sin uso
+        (configurable).
+      summary: Entrar con la contraseña del convenio
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - convenio
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContrasenaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ContrasenaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ContrasenaRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SesionConvenio'
+          description: ''
+        '401':
+          description: '`credenciales_invalidas`'
+        '404':
+          description: Link inexistente o convenio inactivo (RN-08)
+        '423':
+          description: '`convenio_bloqueado`: 5 intentos fallidos (DC-27)'
+  /api/convenio/{token}/solicitudes/:
+    post:
+      operationId: convenio_solicitudes_create
+      description: Queda SOLICITADO y con el convenio, sin verificar el teléfono por
+        WhatsApp (RN-07).
+      summary: Solicitar un viaje a nombre del convenio
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - convenio
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolicitudRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolicitudRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudConvenioRespuesta'
+          description: ''
+        '401':
+          description: '`sesion_convenio_vencida`'
+        '404':
+          description: Link inexistente o convenio inactivo (RN-08)
   /api/convenios/:
     get:
       operationId: convenios_list
@@ -1978,6 +2094,38 @@ paths:
           description: Firma inválida
 components:
   schemas:
+    AccesoConvenio:
+      type: object
+      description: Sin sesión no revela de qué cliente es el convenio.
+      properties:
+        razon_social:
+          type: string
+          maxLength: 120
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          maxLength: 50
+        anticipacion_minima_min:
+          type: integer
+        expiracion_verificacion_min:
+          type: integer
+        margen_nacional_min:
+          type: integer
+          description: Minutos que se suman a la llegada del vuelo cuando no se indica
+            la recogida (RN-17).
+        sesion_activa:
+          type: boolean
+        cliente_nombre:
+          type: string
+          nullable: true
+      required:
+      - anticipacion_minima_min
+      - cliente_nombre
+      - expiracion_verificacion_min
+      - margen_nacional_min
+      - razon_social
+      - sesion_activa
+      - slug
     AccesoEnum:
       enum:
       - SIN_PASSWORD
@@ -2312,6 +2460,15 @@ components:
       required:
       - id
       - nombre
+    ContrasenaRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+      required:
+      - password
     Convenio:
       type: object
       properties:
@@ -3147,6 +3304,7 @@ components:
           type: string
         usuario:
           type: string
+          nullable: true
         creado_en:
           type: string
           format: date-time
@@ -3154,7 +3312,6 @@ components:
       - accion
       - creado_en
       - id
-      - usuario
     RespuestaAsignacion:
       type: object
       properties:
@@ -3230,6 +3387,13 @@ components:
       - access
       - refresh
       - usuario
+    SesionConvenio:
+      type: object
+      properties:
+        cliente_nombre:
+          type: string
+      required:
+      - cliente_nombre
     SesionPanel:
       type: object
       properties:
@@ -3240,6 +3404,20 @@ components:
       required:
       - access
       - usuario
+    SolicitudConvenioRespuesta:
+      type: object
+      properties:
+        estado:
+          type: string
+        recogida_en:
+          type: string
+          format: date-time
+        mensaje:
+          type: string
+      required:
+      - estado
+      - mensaje
+      - recogida_en
     SolicitudRequest:
       type: object
       description: 'HU-19: solicitud de viaje sin cuenta.'

@@ -54,11 +54,8 @@ def _hora_de_recogida(datos: dict, config):
     return datos["vuelo"]["hora_llegada"] + timedelta(minutes=config.margen_nacional_min)
 
 
-def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
-    """Crea la reserva en PENDIENTE_CONFIRMACION y pide la verificación por WhatsApp.
-
-    Devuelve el viaje (None si la solicitud vino de un bot) y los datos de la respuesta.
-    """
+def vuelo_y_recogida(empresa, datos: dict) -> tuple[dict | None, object]:
+    """Vuelo verificado y hora de recogida, que debe respetar la anticipación mínima. También para HU-25."""
     config = empresa.configuracion
     vuelo_verificado = None
     if datos.get("vuelo"):
@@ -74,6 +71,16 @@ def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
         raise ValidationError(
             {"recogida_en": [f"La recogida debe ser al menos {minutos} minutos después de ahora."]}
         )
+    return vuelo_verificado, recogida
+
+
+def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
+    """Crea la reserva en PENDIENTE_CONFIRMACION y pide la verificación por WhatsApp.
+
+    Devuelve el viaje (None si la solicitud vino de un bot) y los datos de la respuesta.
+    """
+    config = empresa.configuracion
+    vuelo_verificado, recogida = vuelo_y_recogida(empresa, datos)
 
     if datos.get("sitio_web"):
         # Campo trampa: se responde como si nada para no darle pistas al bot.

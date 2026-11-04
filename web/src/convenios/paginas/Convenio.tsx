@@ -39,6 +39,7 @@ const ACCIONES_AUDITORIA: Record<string, string> = {
   ACTIVACION: 'Activación',
   DESACTIVACION: 'Desactivación',
   CAMBIO_CLAVE: 'Cambio de contraseña',
+  BLOQUEO_LINK: 'Bloqueo del link por intentos fallidos',
 };
 
 /** HU-12: solo lectura, del más nuevo al más antiguo (RN-12). */
@@ -69,7 +70,7 @@ function Auditoria({ id }: { id: number }) {
                 <tr key={registro.id}>
                   <Celda titulo="Fecha">{formatearFechaHora(registro.creado_en)}</Celda>
                   <Celda titulo="Acción">{ACCIONES_AUDITORIA[registro.accion] ?? registro.accion}</Celda>
-                  <Celda titulo="Usuario">{registro.usuario}</Celda>
+                  <Celda titulo="Usuario">{registro.usuario ?? 'Sin usuario'}</Celda>
                 </tr>
               ))}
             </tbody>

@@ -391,3 +391,8 @@
     padding-bottom: var(--espacio-4);
   }
 }
+
+/* Salir del link del convenio (HU-25). */
+.salir {
+  margin-top: var(--espacio-3);
+}

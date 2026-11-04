@@ -23,6 +23,9 @@ class Convenio(models.Model):
     password_hash = models.CharField(max_length=128)
     # RN-08: desactivar el convenio invalida su link sin afectar el historial.
     activo = models.BooleanField(default=True, db_default=True)
+    # DC-27: bloqueo del link tras intentos fallidos (HU-25), igual que en USUARIO.
+    intentos_fallidos = models.PositiveSmallIntegerField(default=0, db_default=0)
+    bloqueado_hasta = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "convenio"

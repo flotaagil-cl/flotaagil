@@ -235,6 +235,11 @@ PANEL_ORIGENES = env.list("PANEL_ORIGENES", default=[])
 LOGIN_MAX_INTENTOS = 5
 LOGIN_BLOQUEO = timedelta(minutes=env.int("LOGIN_BLOQUEO_MIN", default=15))
 
+# HU-25 (DC-27): link del convenio. Bloqueo por convenio y sesión que vence por inactividad.
+CONVENIO_MAX_INTENTOS = env.int("CONVENIO_MAX_INTENTOS", default=5)
+CONVENIO_BLOQUEO = timedelta(minutes=env.int("CONVENIO_BLOQUEO_MIN", default=15))
+CONVENIO_SESION = timedelta(minutes=env.int("CONVENIO_SESION_MIN", default=120))
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "FlotaÁgil API",
     "DESCRIPTION": "API de FlotaÁgil: panel web, portal del pasajero y app del conductor.",

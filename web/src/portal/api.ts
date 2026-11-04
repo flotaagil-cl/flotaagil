@@ -5,11 +5,11 @@
  * del portal no cargan nada de src/sesion/ (lo verifica scripts/verificar-carga.mjs).
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import createClient, { type Client } from 'openapi-fetch';
 import type { Entorno } from '../entorno';
 import type { components, paths } from '../api/esquema';
-import { resultado } from '../api/resultado';
+import { ErrorApi, resultado } from '../api/resultado';
 
 export type EmpresaPublica = components['schemas']['EmpresaPublica'];
 export type Solicitud = components['schemas']['SolicitudRequest'];
@@ -23,6 +23,7 @@ export function crearClientePortal(e: Entorno): ClientePortal {
 
 export const claves = {
   empresa: (slug: string) => ['portal', 'empresa', slug] as const,
+  convenio: (token: string) => ['convenio', token] as const,
 };
 
 export function useEmpresa(api: ClientePortal, slug: string) {
@@ -38,5 +39,43 @@ export function useSolicitar(api: ClientePortal, slug: string) {
   return useMutation({
     mutationFn: (solicitud: Solicitud) =>
       resultado(api.POST('/api/portal/{slug}/solicitudes/', { params: { path: { slug } }, body: solicitud })),
+  });
+}
+
+/** HU-25: link del convenio. La sesión va en una cookie httpOnly: el navegador no guarda nada legible. */
+export type AccesoConvenio = components['schemas']['AccesoConvenio'];
+
+export function useAccesoConvenio(api: ClientePortal, token: string) {
+  return useQuery({
+    queryKey: claves.convenio(token),
+    queryFn: () => resultado(api.GET('/api/convenio/{token}/', { params: { path: { token } } })),
+  });
+}
+
+export function useEntrarConvenio(api: ClientePortal, token: string) {
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: (password: string) =>
+      resultado(api.POST('/api/convenio/{token}/sesion/', { params: { path: { token } }, body: { password } })),
+    onSuccess: () => cliente.invalidateQueries({ queryKey: claves.convenio(token) }),
+  });
+}
+
+export function useSalirConvenio(api: ClientePortal, token: string) {
+  const cliente = useQueryClient();
+  return useMutation({
+    // Responde 204, sin cuerpo: `resultado` espera datos.
+    mutationFn: async () => {
+      const { response } = await api.POST('/api/convenio/{token}/salir/', { params: { path: { token } } });
+      if (!response.ok) throw new ErrorApi(response.status, null);
+    },
+    onSuccess: () => cliente.invalidateQueries({ queryKey: claves.convenio(token) }),
+  });
+}
+
+export function useSolicitarConvenio(api: ClientePortal, token: string) {
+  return useMutation({
+    mutationFn: (solicitud: Solicitud) =>
+      resultado(api.POST('/api/convenio/{token}/solicitudes/', { params: { path: { token } }, body: solicitud })),
   });
 }

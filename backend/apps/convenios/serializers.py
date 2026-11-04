@@ -66,5 +66,5 @@ class RegistroAuditoriaSerializer(serializers.Serializer):
 
     id = serializers.IntegerField()
     accion = serializers.CharField()
-    usuario = serializers.CharField(source="usuario.nombre")
+    usuario = serializers.CharField(source="usuario.nombre", allow_null=True, default=None)
     creado_en = serializers.DateTimeField()

@@ -24,6 +24,7 @@ urlpatterns = [
     path("api/whatsapp/entrante/", WebhookEntranteView.as_view(), name="whatsapp-entrante"),
     path("api/whatsapp/estado/", WebhookEstadoView.as_view(), name="whatsapp-estado"),
     path("api/portal/", include("apps.portal.urls")),
+    path("api/convenio/", include("apps.portal.convenio_urls")),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
 ]
 

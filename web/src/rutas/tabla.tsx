@@ -159,6 +159,12 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
       ],
     },
     {
+      // Link del convenio (HU-25): tampoco usa la sesión del panel.
+      path: '/convenio/:token',
+      lazy: async () => ({ Component: (await import('../portal/paginas/AccesoConvenio')).AccesoConvenio }),
+      ...comunes,
+    },
+    {
       path: '*',
       lazy: async () => ({ Component: (await import('../paginas/NoEncontrada')).NoEncontrada }),
       ...comunes,
