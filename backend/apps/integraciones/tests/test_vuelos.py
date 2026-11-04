@@ -86,11 +86,15 @@ class TestFlightAware:
         assert parametros["end"].startswith("2026-11-06T00:00:00")
 
     def test_entrega_el_origen(self):
-        datos = FlightAwareFalso([vuelo(origin={"code_iata": "LIM"})]).consultar("LA123", INFORMADA)
-        assert datos.origen_iata == "LIM"
+        datos = FlightAwareFalso([vuelo(origin={"code_icao": "SPJC", "code_iata": "LIM"})]).consultar(
+            "LA123", INFORMADA
+        )
+        assert datos.origen_icao == "SPJC"
+        sin = FlightAwareFalso([vuelo(origin=None)]).consultar("LA123", INFORMADA)
+        assert sin.origen_icao is None
         lejos = datetime(2026, 10, 20, 12, 0, tzinfo=SANTIAGO)
-        fila = {"ident_iata": "LA123", "scheduled_in": "2026-11-05T12:40:00Z", "origin_iata": "ANF"}
-        assert FlightAwareFalso([fila], ahora=lejos).consultar("LA123", INFORMADA).origen_iata == "ANF"
+        fila = {"ident_iata": "LA123", "scheduled_in": "2026-11-05T12:40:00Z", "origin_icao": "SCFA"}
+        assert FlightAwareFalso([fila], ahora=lejos).consultar("LA123", INFORMADA).origen_icao == "SCFA"
 
     def test_no_existe(self):
         assert (

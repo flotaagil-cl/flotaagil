@@ -47,7 +47,7 @@ class VueloSerializer(serializers.ModelSerializer):
             "hora_estimada",
             "estado_vuelo",
             "ultima_consulta_en",
-            "origen_iata",
+            "origen_icao",
             "recogida_propuesta",
             "propuesta_en",
         ]

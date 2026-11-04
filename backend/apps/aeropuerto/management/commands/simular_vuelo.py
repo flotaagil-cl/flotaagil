@@ -1,6 +1,6 @@
 """Desarrollo: simula lo que informaría la API de vuelos, sin FlightAware (HU-27).
 
-python manage.py simular_vuelo <viaje_id> --eta-min 40 [--estado DEMORADO] [--origen LIM]
+python manage.py simular_vuelo <viaje_id> --eta-min 40 [--estado DEMORADO] [--origen SPJC]
 """
 
 from datetime import timedelta
@@ -22,7 +22,7 @@ class Command(BaseCommand):
             "--eta-min", type=int, default=0, help="Minutos de cambio sobre la hora programada"
         )
         parser.add_argument("--estado", choices=EstadoVuelo.values, default=EstadoVuelo.DEMORADO)
-        parser.add_argument("--origen", default=None, help="IATA del aeropuerto de origen")
+        parser.add_argument("--origen", default=None, help="ICAO del aeropuerto de origen")
 
     def handle(self, *args, viaje, eta_min, estado, origen, **opciones):
         if not settings.DEBUG:

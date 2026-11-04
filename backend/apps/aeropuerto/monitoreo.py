@@ -23,13 +23,8 @@ from apps.auditoria.models import Entidad
 from . import alertas
 from .models import EstadoVuelo, Vuelo
 
-# Aeropuertos con vuelos comerciales en Chile: un vuelo desde otro origen usa el margen internacional.
-# fmt: off
-AEROPUERTOS_DE_CHILE = frozenset({
-    "ARI", "IQQ", "CJC", "ANF", "CPO", "LSC", "ZCO", "PMC", "ZAL", "ZOS", "WPU", "CCP",
-    "BBA", "GXQ", "PUQ", "WCA", "SCL", "TLX", "FTE", "IPC", "YAI", "LOB", "ESR", "PNT",
-})
-# fmt: on
+# Los códigos ICAO de los aeropuertos de Chile empiezan con SC (SCEL = Santiago, SCFA = Antofagasta…).
+PREFIJO_ICAO_CHILE = "SC"
 ESTADOS_FINALES = (EstadoVuelo.ATERRIZADO, EstadoVuelo.CANCELADO, EstadoVuelo.DESVIADO)
 # Después de esto no se sigue gastando consultas en un vuelo que la API nunca marcó como aterrizado.
 HORAS_TRAS_LA_LLEGADA = 2
@@ -57,14 +52,15 @@ def eta_de(vuelo: Vuelo):
     return vuelo.hora_estimada or vuelo.hora_programada
 
 
-def es_internacional(origen_iata: str | None) -> bool:
-    return bool(origen_iata) and origen_iata not in AEROPUERTOS_DE_CHILE
+def es_internacional(origen_icao: str | None) -> bool:
+    """Sin código conocido, nacional (DC-12): la API puede no entregarlo."""
+    return bool(origen_icao) and not origen_icao.upper().startswith(PREFIJO_ICAO_CHILE)
 
 
 def margen_de(vuelo: Vuelo, configuracion) -> timedelta:
     minutos = (
         configuracion.margen_internacional_min
-        if es_internacional(vuelo.origen_iata)
+        if es_internacional(vuelo.origen_icao)
         else configuracion.margen_nacional_min
     )
     return timedelta(minutes=minutos)
@@ -119,7 +115,7 @@ def aplicar(vuelo_id: int, datos) -> Vuelo:
     vuelo.hora_programada = datos.hora_programada
     vuelo.hora_estimada = datos.hora_estimada
     vuelo.estado_vuelo = datos.estado
-    vuelo.origen_iata = datos.origen_iata or vuelo.origen_iata
+    vuelo.origen_icao = datos.origen_icao or vuelo.origen_icao
     vuelo.ultima_consulta_en = timezone.now()
 
     eta = eta_de(vuelo)

@@ -131,14 +131,35 @@ class TestPropuesta:
     def test_nueva_hora_es_eta_mas_margen_nacional(self, empresa):
         """RN-17."""
         vuelo = vuelo_de(empresa)
-        resultado = monitoreo.aplicar(vuelo.pk, datos_con(vuelo, 40, origen="ANF"))
+        resultado = monitoreo.aplicar(vuelo.pk, datos_con(vuelo, 40, origen="SCFA"))
         assert resultado.recogida_propuesta == vuelo.hora_programada + timedelta(minutes=60)
-        assert resultado.origen_iata == "ANF"
+        assert resultado.origen_icao == "SCFA"
 
     def test_nueva_hora_es_eta_mas_margen_internacional(self, empresa):
         vuelo = vuelo_de(empresa)
-        resultado = monitoreo.aplicar(vuelo.pk, datos_con(vuelo, 40, origen="LIM"))
+        resultado = monitoreo.aplicar(vuelo.pk, datos_con(vuelo, 40, origen="SPJC"))
         assert resultado.recogida_propuesta == vuelo.hora_programada + timedelta(minutes=75)
+
+    @pytest.mark.parametrize(
+        ("origen", "internacional"),
+        [
+            ("SCEL", False),
+            ("SCFA", False),
+            ("scip", False),  # Isla de Pascua
+            ("SPJC", True),
+            ("SAEZ", True),
+            ("KMIA", True),
+            ("", False),
+            (None, False),
+        ],
+    )
+    def test_nacional_si_el_icao_empieza_con_sc(self, origen, internacional):
+        assert monitoreo.es_internacional(origen) is internacional
+
+    def test_un_dato_nuevo_vacio_no_borra_el_origen_conocido(self, empresa):
+        vuelo = vuelo_de(empresa)
+        monitoreo.aplicar(vuelo.pk, datos_con(vuelo, 0, origen="SPJC"))
+        assert monitoreo.aplicar(vuelo.pk, datos_con(vuelo, 0)).origen_icao == "SPJC"
 
     def test_sin_origen_conocido_usa_el_nacional(self, empresa):
         """DC-12."""
