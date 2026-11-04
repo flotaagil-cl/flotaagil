@@ -2,18 +2,20 @@
 
 Todo cambio de estado pasa por la máquina de estados. EN_ZONA se marca solo cuando una posición precisa cae
 dentro de `RADIO_ZONA_M` del origen (actor SISTEMA). Si el GPS no lo logra, el conductor igual puede indicar
-que el pasajero subió: se registra EN_ZONA con actor CONDUCTOR y luego PASAJERO_A_BORDO (DC-17).
+que el pasajero subió: se registra EN_ZONA con actor CONDUCTOR, marcado como manual y con su distancia al
+origen (DC-20), y luego PASAJERO_A_BORDO (DC-17).
 """
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
-from apps.flota.models import Conductor, EstadoConductor
+from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
 from apps.integraciones.notificaciones import AVISO_EN_CAMINO, AVISO_EN_ZONA, AVISO_ENCUESTA
 
@@ -51,9 +53,32 @@ def _del_conductor(viaje_id: int, usuario) -> Viaje:
     return viaje
 
 
-def _cambiar(viaje: Viaje, nuevo: str, *, actor: str, usuario=None) -> Viaje:
+def _salida(viaje: Viaje) -> HistorialEstado | None:
+    return (
+        HistorialEstado.objects.filter(viaje=viaje, estado_nuevo=EstadoViaje.EN_CAMINO)
+        .order_by("-id")
+        .first()
+    )
+
+
+def _distancia_al_origen(viaje: Viaje) -> int | None:
+    """Metros entre el origen y la última posición del conductor desde que salió. None si no envió ninguna:
+    una posición de antes de salir no dice dónde estaba al indicar la llegada."""
+    salida = _salida(viaje)
+    posiciones = PosicionGps.objects.filter(conductor_id=viaje.conductor_id)
+    if salida:
+        posiciones = posiciones.filter(registrada_en__gte=salida.creado_en)
+    ultima = (
+        posiciones.annotate(al_origen=Distance("punto", viaje.origen_geo)).order_by("-registrada_en").first()
+    )
+    return None if ultima is None else round(ultima.al_origen.m)
+
+
+def _cambiar(viaje: Viaje, nuevo: str, *, actor: str, usuario=None, historial: dict | None = None) -> Viaje:
     try:
-        return estados.transicionar(viaje, nuevo, desde=viaje.estado, actor=actor, usuario=usuario)
+        return estados.transicionar(
+            viaje, nuevo, desde=viaje.estado, actor=actor, usuario=usuario, historial=historial
+        )
     except estados.TransicionInvalida as error:
         raise EstadoNoPermitido(str(error)) from error
 
@@ -72,7 +97,13 @@ def pasajero_a_bordo(viaje_id: int, *, usuario) -> Viaje:
     viaje = _del_conductor(viaje_id, usuario)
     if viaje.estado == EstadoViaje.EN_CAMINO:
         # DC-17: la geocerca no lo marcó (GPS impreciso): queda registrado que lo indicó el conductor.
-        viaje = _cambiar(viaje, EstadoViaje.EN_ZONA, actor=Actor.CONDUCTOR, usuario=usuario)
+        viaje = _cambiar(
+            viaje,
+            EstadoViaje.EN_ZONA,
+            actor=Actor.CONDUCTOR,
+            usuario=usuario,
+            historial={"manual": True, "distancia_m": _distancia_al_origen(viaje)},
+        )
     if viaje.estado != EstadoViaje.EN_ZONA:
         raise EstadoNoPermitido(
             f"El pasajero sube después de llegar a la zona; el viaje está en {viaje.estado}."
@@ -110,11 +141,7 @@ def marcar_en_zona(conductor: Conductor, posiciones: list[dict]) -> bool:
         if viaje is None:
             return False
         conductor_id, viaje_id = conductor.pk, viaje.pk
-        cambio = (
-            HistorialEstado.objects.filter(viaje=viaje, estado_nuevo=EstadoViaje.EN_CAMINO)
-            .order_by("-id")
-            .first()
-        )
+        cambio = _salida(viaje)
         for posicion in posiciones:
             precision = posicion.get("precision_m")
             if precision is None or precision > configuracion.precision_geocerca_m:

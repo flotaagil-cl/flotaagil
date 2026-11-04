@@ -143,6 +143,8 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | estado_nuevo | VARCHAR(20) | No |  | Estado resultante | Transición válida (Anexo F) | — |  |
 | actor | VARCHAR(14) | No |  | Tipo de actor | CONDUCTOR \| DESPACHADOR \| PASAJERO \| SISTEMA | — |  |
 | usuario_id | BIGINT | Sí | FK | Usuario responsable | → USUARIO.id | NULL |  |
+| manual | BOOLEAN | No |  | Llegada indicada por el conductor, sin geocerca (DC-20) | — | false |  |
+| distancia_m | INTEGER | Sí |  | Metros al origen en una llegada manual (DC-20) | ≥ 0 | NULL |  |
 | creado_en | TIMESTAMPTZ | No |  | Momento de la transición | UTC | now() |  |
 
 ## PAGO_VIAJE

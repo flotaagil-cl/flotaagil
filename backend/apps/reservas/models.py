@@ -149,6 +149,9 @@ class HistorialEstado(models.Model):
     usuario = models.ForeignKey(
         "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
+    # DC-20: EN_ZONA indicado por el conductor (DC-17) y su distancia al origen en ese momento.
+    manual = models.BooleanField(default=False, db_default=False)
+    distancia_m = models.PositiveIntegerField(null=True, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

@@ -53,7 +53,7 @@ class HistorialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HistorialEstado
-        fields = ["estado_anterior", "estado_nuevo", "actor", "usuario", "creado_en"]
+        fields = ["estado_anterior", "estado_nuevo", "actor", "usuario", "manual", "distancia_m", "creado_en"]
 
 
 def _ubicacion(direccion, punto) -> dict:

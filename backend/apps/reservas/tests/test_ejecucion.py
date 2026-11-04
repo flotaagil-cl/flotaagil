@@ -120,6 +120,40 @@ class TestSecuencia:
         assert app(chofer).post(url("a-bordo", viaje)).json()["estado"] == "PASAJERO_A_BORDO"
         cambio = HistorialEstado.objects.get(viaje=viaje, estado_nuevo=E.EN_ZONA)
         assert cambio.actor == Actor.CONDUCTOR
+        assert cambio.manual is True
+        assert cambio.distancia_m is None  # no envió ninguna posición desde que salió
+
+    def test_manual_guarda_la_distancia_de_la_ultima_posicion(self, chofer):
+        """DC-20: 0,004° de latitud son unos 445 m."""
+        viaje = viaje_de(chofer, E.EN_CAMINO)
+        enviar(chofer, posicion(LEJOS - 0.004), posicion(LEJOS, segundos=1))
+        app(chofer).post(url("a-bordo", viaje))
+        cambio = HistorialEstado.objects.get(viaje=viaje, estado_nuevo=E.EN_ZONA)
+        assert cambio.manual is True
+        assert 435 <= cambio.distancia_m <= 455
+
+    def test_posicion_de_antes_de_salir_no_cuenta_como_distancia(self, chofer):
+        viaje = viaje_de(chofer, E.EN_CAMINO)
+        enviar(chofer, posicion(LEJOS, segundos=-120))
+        app(chofer).post(url("a-bordo", viaje))
+        assert HistorialEstado.objects.get(viaje=viaje, estado_nuevo=E.EN_ZONA).distancia_m is None
+
+    def test_la_geocerca_no_es_manual(self, chofer):
+        viaje = viaje_de(chofer, E.EN_CAMINO)
+        enviar(chofer, posicion(CERCA))
+        cambio = HistorialEstado.objects.get(viaje=viaje, estado_nuevo=E.EN_ZONA)
+        assert (cambio.manual, cambio.distancia_m, cambio.actor) == (False, None, Actor.SISTEMA)
+
+    def test_el_panel_recibe_la_trazabilidad(self, chofer, despachador):
+        viaje = viaje_de(chofer, E.EN_CAMINO)
+        enviar(chofer, posicion(LEJOS))
+        app(chofer).post(url("a-bordo", viaje))
+        cliente = APIClient()
+        cliente.force_authenticate(despachador)
+        historial = cliente.get(reverse("viaje-detail", args=[viaje.pk])).data["historial"]
+        zona = next(c for c in historial if c["estado_nuevo"] == E.EN_ZONA)
+        assert zona["manual"] is True
+        assert 435 <= zona["distancia_m"] <= 455
 
     def test_solo_el_conductor_del_viaje(self, chofer, empresa):
         otro = ConductorFactory(usuario__empresa=empresa)

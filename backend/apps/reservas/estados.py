@@ -65,12 +65,14 @@ def transicionar(
     usuario=None,
     forzada: bool = False,
     desde: str | None = None,
+    historial: dict | None = None,
     **campos,
 ) -> Viaje:
     """Cambia el estado con bloqueo de fila, valida la transición y registra el historial.
 
     `desde` exige que el viaje siga en ese estado al bloquearlo: evita, por ejemplo, que la expiración
-    cancele una solicitud que el pasajero confirmó en el mismo instante.
+    cancele una solicitud que el pasajero confirmó en el mismo instante. `historial` agrega datos al registro
+    de la transición (DC-20).
     """
     with transaction.atomic():
         actual = Viaje.objects.select_for_update().get(pk=viaje.pk)
@@ -84,7 +86,12 @@ def transicionar(
             setattr(actual, campo, valor)
         actual.save(update_fields=["estado", *campos])
         HistorialEstado.objects.create(
-            viaje=actual, estado_anterior=anterior, estado_nuevo=nuevo, actor=actor, usuario=usuario
+            viaje=actual,
+            estado_anterior=anterior,
+            estado_nuevo=nuevo,
+            actor=actor,
+            usuario=usuario,
+            **(historial or {}),
         )
     viaje.refresh_from_db()
     return viaje

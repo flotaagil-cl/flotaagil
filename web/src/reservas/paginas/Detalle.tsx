@@ -175,6 +175,14 @@ function DetalleDe({ id }: { id: number }) {
                 {formatearFechaHora(cambio.creado_en)} · {ACTORES[cambio.actor]}
                 {cambio.usuario ? ` · ${cambio.usuario}` : ''}
               </span>
+              {cambio.manual && (
+                <span className={estilos.secundario}>
+                  Indicado a mano, sin geocerca ·{' '}
+                  {cambio.distancia_m === null || cambio.distancia_m === undefined
+                    ? 'sin posición GPS desde que salió'
+                    : `a ${new Intl.NumberFormat('es-CL').format(cambio.distancia_m)} m del origen`}
+                </span>
+              )}
             </li>
           ))}
         </ol>

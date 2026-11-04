@@ -59,6 +59,26 @@ describe('detalle', () => {
     if (explicacion) expect(screen.getByText(explicacion)).toBeInTheDocument();
   });
 
+  it('el historial distingue la llegada manual y su distancia (DC-20)', async () => {
+    const paso = (distancia_m: number | null) => ({
+      estado_anterior: 'EN_CAMINO' as const,
+      estado_nuevo: 'EN_ZONA' as const,
+      actor: 'CONDUCTOR' as const,
+      usuario: 'Carla Conductora',
+      manual: true,
+      distancia_m,
+      creado_en: '2026-07-15T12:01:00Z',
+    });
+    await abrirDetalle(viajeDePrueba({ id: 12, estado: 'EN_ZONA', historial: [paso(1320), paso(null)] }));
+    expect(screen.getByText(/Indicado a mano, sin geocerca · a 1\.320 m del origen/)).toBeInTheDocument();
+    expect(screen.getByText(/Indicado a mano, sin geocerca · sin posición GPS desde que salió/)).toBeInTheDocument();
+  });
+
+  it('una llegada por geocerca no muestra esa marca', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 13, estado: 'EN_ZONA' }));
+    expect(screen.queryByText(/Indicado a mano/)).not.toBeInTheDocument();
+  });
+
   it('muestra la calificación solo si el pasajero respondió (RN-14)', async () => {
     await abrirDetalle(viajeDePrueba({ id: 10, estado: 'FINALIZADO', calificacion: 4 }));
     expect(screen.getByText('4 de 5')).toBeInTheDocument();
