@@ -904,6 +904,8 @@ export interface components {
              * @description Fin de su último viaje
              */
             ultimo_viaje_en: string | null;
+            /** @description Lugar en la fila del aeropuerto (HU-29) */
+            posicion_fila: number | null;
             /** @description El más apto (HU-04). No asigna: lo confirma el despachador */
             sugerido: boolean;
         };
@@ -1059,6 +1061,14 @@ export interface components {
         LotePosicionesRequest: {
             posiciones: components["schemas"]["PosicionRequest"][];
         };
+        LugarEnFila: {
+            /** @description Su lugar en la fila: 1 es el siguiente (RN-16) */
+            posicion: number;
+            total: number;
+            zona: string;
+            /** Format: date-time */
+            ingreso_en: string;
+        };
         /**
          * @description * `EFECTIVO` - Efectivo
          *     * `TARJETA` - Tarjeta
@@ -1174,6 +1184,7 @@ export interface components {
             /** Format: date-time */
             readonly consentimiento_gps_en: string | null;
             readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
+            readonly fila: components["schemas"]["LugarEnFila"] | null;
         };
         PosicionRequest: {
             /** Format: double */

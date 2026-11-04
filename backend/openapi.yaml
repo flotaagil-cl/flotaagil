@@ -1739,6 +1739,10 @@ components:
           format: date-time
           nullable: true
           description: Fin de su último viaje
+        posicion_fila:
+          type: integer
+          nullable: true
+          description: Lugar en la fila del aeropuerto (HU-29)
         sugerido:
           type: boolean
           description: 'El más apto (HU-04). No asigna: lo confirma el despachador'
@@ -1749,6 +1753,7 @@ components:
       - nombre
       - patente
       - posicion_en
+      - posicion_fila
       - sugerido
       - ultimo_viaje_en
     Conductor:
@@ -2127,6 +2132,24 @@ components:
             $ref: '#/components/schemas/PosicionRequest'
       required:
       - posiciones
+    LugarEnFila:
+      type: object
+      properties:
+        posicion:
+          type: integer
+          description: 'Su lugar en la fila: 1 es el siguiente (RN-16)'
+        total:
+          type: integer
+        zona:
+          type: string
+        ingreso_en:
+          type: string
+          format: date-time
+      required:
+      - ingreso_en
+      - posicion
+      - total
+      - zona
     MetodoEnum:
       enum:
       - EFECTIVO
@@ -2360,9 +2383,15 @@ components:
           items:
             $ref: '#/components/schemas/VehiculoAsociado'
           readOnly: true
+        fila:
+          allOf:
+          - $ref: '#/components/schemas/LugarEnFila'
+          nullable: true
+          readOnly: true
       required:
       - consentimiento_gps_en
       - estado
+      - fila
       - id
       - nombre
       - vehiculo_activo
