@@ -231,6 +231,23 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | datos_previos | JSONB | Sí |  | Valores anteriores | Sin contraseñas ni hashes | NULL |  |
 | creado_en | TIMESTAMPTZ | No |  | Fecha | UTC | now() |  |
 
+## ALERTA_VUELO
+
+Agregada por DC-23 (HU-28).
+
+| Columna | Tipo | Nulo | Clave | Descripción | Dominio / restricción | Defecto | Clasificación |
+|---|---|---|---|---|---|---|---|
+| id | BIGINT | No | PK | Identificador | Autoincremental | — |  |
+| empresa_id | BIGINT | No | FK | Empresa | → EMPRESA.id | — |  |
+| viaje_id | BIGINT | No | FK | Reserva afectada | → VIAJE.id | — |  |
+| numero_vuelo | VARCHAR(8) | No |  | Vuelo al momento de la alerta | — | — |  |
+| tipo | VARCHAR(16) | No |  | Motivo | ETA_CAMBIADA \| VUELO_CANCELADO \| VUELO_DESVIADO \| SIN_DATOS | — |  |
+| detalle | VARCHAR(200) | No |  | Texto mostrado | — | — |  |
+| eta | TIMESTAMPTZ | Sí |  | ETA informada | UTC | NULL |  |
+| creada_en | TIMESTAMPTZ | No |  | Fecha | UTC | now() |  |
+| atendida_en | TIMESTAMPTZ | Sí |  | Cuándo se atendió | NULL mientras está pendiente | NULL |  |
+| atendida_por | BIGINT | Sí | FK | Quién la atendió | → USUARIO.id; NULL si la resolvió el sistema | NULL |  |
+
 ## Relaciones
 
 | Origen | Destino | Cardinalidad |
