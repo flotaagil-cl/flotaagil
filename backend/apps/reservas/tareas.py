@@ -21,7 +21,7 @@ from apps.aeropuerto.models import Vuelo
 from apps.integraciones.notificaciones import EnvioTransitorio, obtener_notificador
 from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
 
-from .models import Pasajero, Viaje
+from .models import EstadoEntrega, MensajeWhatsapp, Pasajero, Viaje
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,27 @@ def enviar_respuesta(self, pasajero_id: int, viaje_id: int | None, texto: str) -
     viaje = _viaje_para_mensaje(viaje_id) if viaje_id else None
     if pasajero is not None:
         _enviar(self, lambda n: n.responder(pasajero, viaje, texto))
+
+
+@shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
+def enviar_chat(self, mensaje_id: int) -> None:
+    """HU-30. Sin SID ni falla: un reintento o una repetición de la tarea no lo envía dos veces."""
+    mensaje = (
+        MensajeWhatsapp.objects.select_related("pasajero")
+        .filter(pk=mensaje_id, proveedor_sid__isnull=True, estado_entrega=EstadoEntrega.QUEUED)
+        .first()
+    )
+    if mensaje is not None:
+        _enviar(self, lambda n: n.enviar_mensaje(mensaje))
+
+
+def encolar_chat(mensaje_id: int) -> None:
+    """Sin broker, el mensaje queda en FAILED: el despachador tiene que verlo, no creer que salió."""
+    try:
+        enviar_chat.delay(mensaje_id)
+    except ErrorDeBroker:
+        logger.exception("No se pudo encolar el mensaje %s del chat.", mensaje_id)
+        MensajeWhatsapp.objects.filter(pk=mensaje_id).update(estado_entrega=EstadoEntrega.FAILED)
 
 
 @shared_task(bind=True, max_retries=REINTENTOS_VUELO)

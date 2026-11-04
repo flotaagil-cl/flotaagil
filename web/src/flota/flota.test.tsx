@@ -38,6 +38,7 @@ describe('menú y permisos', () => {
       'Mapa',
       'Vehículos',
       'Conductores',
+      'Conversaciones',
       'Convenios',
     ]);
   });

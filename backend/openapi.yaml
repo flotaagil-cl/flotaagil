@@ -1245,6 +1245,88 @@ paths:
               schema:
                 $ref: '#/components/schemas/PasswordNueva'
           description: ''
+  /api/conversaciones/:
+    get:
+      operationId: conversaciones_list
+      summary: Bandeja de conversaciones, la más reciente primero
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      tags:
+      - conversaciones
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConversacionList'
+          description: ''
+  /api/conversaciones/{id}/:
+    get:
+      operationId: conversaciones_retrieve
+      summary: Conversación con un pasajero
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este pasajero.
+        required: true
+      tags:
+      - conversaciones
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversacionDetalle'
+          description: ''
+  /api/conversaciones/{id}/mensajes/:
+    post:
+      operationId: conversaciones_mensajes_create
+      description: Queda registrado con quien lo escribió y lo envía el worker, con
+        reintentos.
+      summary: Responder dentro de la ventana de 24 h
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este pasajero.
+        required: true
+      tags:
+      - conversaciones
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MensajeNuevoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MensajeNuevoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MensajeNuevoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Mensaje'
+          description: ''
+        '409':
+          description: '`fuera_de_ventana`: solo plantillas aprobadas (PR-11)'
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -2586,6 +2668,92 @@ components:
       required:
       - cliente_nombre
       - id
+    Conversacion:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: El pasajero
+        nombre:
+          type: string
+        telefono:
+          type: string
+        ultimo_mensaje:
+          type: string
+        ultima_direccion:
+          $ref: '#/components/schemas/DireccionMensajeEnum'
+        ultimo_en:
+          type: string
+          format: date-time
+        ventana_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          description: Hasta cuándo admite texto libre; NULL si el pasajero nunca
+            escribió
+        dentro_ventana:
+          type: boolean
+        reserva:
+          allOf:
+          - $ref: '#/components/schemas/ReservaVinculada'
+          nullable: true
+          description: La más reciente del pasajero
+      required:
+      - dentro_ventana
+      - id
+      - nombre
+      - reserva
+      - telefono
+      - ultima_direccion
+      - ultimo_en
+      - ultimo_mensaje
+      - ventana_hasta
+    ConversacionDetalle:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: El pasajero
+        nombre:
+          type: string
+        telefono:
+          type: string
+        ultimo_mensaje:
+          type: string
+        ultima_direccion:
+          $ref: '#/components/schemas/DireccionMensajeEnum'
+        ultimo_en:
+          type: string
+          format: date-time
+        ventana_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          description: Hasta cuándo admite texto libre; NULL si el pasajero nunca
+            escribió
+        dentro_ventana:
+          type: boolean
+        reserva:
+          allOf:
+          - $ref: '#/components/schemas/ReservaVinculada'
+          nullable: true
+          description: La más reciente del pasajero
+        mensajes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Mensaje'
+          description: Los últimos 200, en orden
+      required:
+      - dentro_ventana
+      - id
+      - mensajes
+      - nombre
+      - reserva
+      - telefono
+      - ultima_direccion
+      - ultimo_en
+      - ultimo_mensaje
+      - ventana_hasta
     DecidirRecogidaRequest:
       type: object
       properties:
@@ -2596,6 +2764,14 @@ components:
             no la aplica.'
       required:
       - recogida_propuesta
+    DireccionMensajeEnum:
+      enum:
+      - ENTRANTE
+      - SALIENTE
+      type: string
+      description: |-
+        * `ENTRANTE` - Entrante
+        * `SALIENTE` - Saliente
     EmpresaPublica:
       type: object
       properties:
@@ -2657,6 +2833,20 @@ components:
         * `DISPONIBLE` - Disponible
         * `NO_DISPONIBLE` - No disponible
         * `EN_VIAJE` - En viaje
+    EstadoEntregaEnum:
+      enum:
+      - QUEUED
+      - SENT
+      - DELIVERED
+      - READ
+      - FAILED
+      type: string
+      description: |-
+        * `QUEUED` - En cola
+        * `SENT` - Enviado
+        * `DELIVERED` - Entregado
+        * `READ` - Leído
+        * `FAILED` - Falló
     EstadoViaje:
       type: object
       properties:
@@ -2874,6 +3064,63 @@ components:
       - posicion
       - total
       - zona
+    Mensaje:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        direccion:
+          allOf:
+          - $ref: '#/components/schemas/DireccionMensajeEnum'
+          readOnly: true
+        tipo:
+          allOf:
+          - $ref: '#/components/schemas/MensajeTipoEnum'
+          readOnly: true
+        cuerpo:
+          type: string
+          readOnly: true
+        estado_entrega:
+          allOf:
+          - $ref: '#/components/schemas/EstadoEntregaEnum'
+          readOnly: true
+        usuario:
+          type: string
+          nullable: true
+        viaje:
+          type: integer
+          readOnly: true
+          nullable: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - creado_en
+      - cuerpo
+      - direccion
+      - estado_entrega
+      - id
+      - tipo
+      - viaje
+    MensajeNuevoRequest:
+      type: object
+      properties:
+        texto:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      required:
+      - texto
+    MensajeTipoEnum:
+      enum:
+      - PLANTILLA
+      - SESION
+      type: string
+      description: |-
+        * `PLANTILLA` - Plantilla
+        * `SESION` - Sesión
     MetodoEnum:
       enum:
       - EFECTIVO
@@ -3005,6 +3252,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Convenio'
+    PaginatedConversacionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversacion'
     PaginatedRegistroAuditoriaList:
       type: object
       required:
@@ -3311,6 +3581,16 @@ components:
       required:
       - accion
       - creado_en
+      - id
+    ReservaVinculada:
+      type: object
+      properties:
+        id:
+          type: integer
+        estado:
+          $ref: '#/components/schemas/EstadoViajeEnum'
+      required:
+      - estado
       - id
     RespuestaAsignacion:
       type: object

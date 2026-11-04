@@ -120,6 +120,8 @@ class Notificador(Protocol):
 
     def avisar(self, viaje, tipo: str) -> None: ...
 
+    def enviar_mensaje(self, mensaje) -> None: ...
+
 
 def _registrar(pasajero, viaje, *, tipo: str, cuerpo: str, sid: str | None, estado: str):
     from apps.reservas.models import DireccionMensaje, MensajeWhatsapp
@@ -136,6 +138,16 @@ def _registrar(pasajero, viaje, *, tipo: str, cuerpo: str, sid: str | None, esta
 
 
 class NotificadorDesarrollo:
+    def enviar_mensaje(self, mensaje) -> None:
+        from apps.reservas.models import EstadoEntrega
+
+        mensaje.proveedor_sid = f"DEV-{uuid.uuid4().hex[:30]}"
+        mensaje.estado_entrega = EstadoEntrega.SENT
+        mensaje.save(update_fields=["proveedor_sid", "estado_entrega"])
+        logger.info(
+            "[WhatsApp simulado] Mensaje del chat a %s.", enmascarar_telefono(mensaje.pasajero.telefono)
+        )
+
     def solicitar_verificacion(self, viaje, expira_en) -> None:
         from apps.reservas.models import EstadoEntrega, TipoMensaje
 
@@ -288,6 +300,24 @@ class NotificadorTwilio:
         self._enviar_y_registrar(
             viaje.pasajero, viaje, tipo=TipoMensaje.PLANTILLA, cuerpo=cuerpo, datos=datos
         )
+
+    def enviar_mensaje(self, mensaje) -> None:
+        """HU-30: el mensaje ya está registrado; aquí queda con su SID o, si no se pudo, en FAILED."""
+        from apps.reservas.models import EstadoEntrega
+
+        datos = self._comunes(mensaje.pasajero.telefono) | {"Body": mensaje.cuerpo}
+        try:
+            mensaje.proveedor_sid = self._enviar(datos)
+        except EnvioFallido as error:
+            if isinstance(error, EnvioTransitorio) and not self.definitivo:
+                raise  # la tarea reintenta; todavía no es una falla
+            logger.error(
+                "WhatsApp a %s no enviado: %s", enmascarar_telefono(mensaje.pasajero.telefono), error
+            )
+            mensaje.estado_entrega = EstadoEntrega.FAILED
+            mensaje.save(update_fields=["estado_entrega"])
+            return
+        mensaje.save(update_fields=["proveedor_sid"])
 
     def responder(self, pasajero, viaje, texto: str) -> None:
         """Mensaje de sesión: solo dentro de las 24 h desde el último mensaje del pasajero (regla de

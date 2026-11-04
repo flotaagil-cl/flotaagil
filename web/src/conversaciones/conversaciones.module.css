@@ -1,0 +1,47 @@
+.hilo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin: var(--espacio-4) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entrante,
+.saliente {
+  max-width: min(32rem, 85%);
+  padding: var(--espacio-2) var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.entrante {
+  align-self: flex-start;
+  background: var(--superficie);
+}
+
+.saliente {
+  align-self: flex-end;
+  background: var(--info-fondo);
+  border-color: var(--info-borde);
+}
+
+.cuerpo {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.detalle,
+.fallido {
+  font-size: 0.8rem;
+}
+
+.detalle {
+  color: var(--texto-suave);
+}
+
+.fallido {
+  color: var(--error-texto);
+  font-weight: 600;
+}

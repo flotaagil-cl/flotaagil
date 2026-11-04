@@ -17,10 +17,10 @@ import { fileURLToPath } from 'node:url';
 
 /** Panel y sesión: lo que una ruta sin sesión no debe cargar. */
 export const PANEL_Y_SESION =
-  /^src\/(sesion|reservas|flota|mapa|alertas|convenios)\/|^src\/api\/(cliente|auth)\.ts$|^src\/componentes\/Layout\.tsx$|^src\/rutas\/RutaAutenticada\.tsx$|^src\/paginas\/(Login|Inicio)\.tsx$/;
+  /^src\/(sesion|reservas|flota|mapa|alertas|convenios|conversaciones)\/|^src\/api\/(cliente|auth)\.ts$|^src\/componentes\/Layout\.tsx$|^src\/rutas\/RutaAutenticada\.tsx$|^src\/paginas\/(Login|Inicio)\.tsx$/;
 export const RESERVAS = /^src\/reservas\//;
 /** El login (con sesión) no carga pantallas del panel (reservas, flota) ni el portal. */
-export const RESERVAS_Y_PORTAL = /^src\/(reservas|flota|mapa|convenios|portal)\//;
+export const RESERVAS_Y_PORTAL = /^src\/(reservas|flota|mapa|convenios|conversaciones|portal)\//;
 
 /** Módulos que deben llegar con lazy (entrada de un chunk dinámico). */
 export const DIFERIDOS = [
@@ -38,6 +38,8 @@ export const DIFERIDOS = [
   'src/convenios/paginas/Convenios.tsx',
   'src/convenios/paginas/ConvenioNuevo.tsx',
   'src/convenios/paginas/Convenio.tsx',
+  'src/conversaciones/paginas/Conversaciones.tsx',
+  'src/conversaciones/paginas/Conversacion.tsx',
   'src/flota/paginas/Vehiculos.tsx',
   'src/flota/paginas/VehiculoNuevo.tsx',
   'src/flota/paginas/Vehiculo.tsx',

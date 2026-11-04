@@ -106,6 +106,18 @@ export const pantallasDelPanel: RouteObject[] = [
     ],
   },
   {
+    path: 'conversaciones',
+    handle: { titulo: 'Conversaciones', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversaciones')).Conversaciones }) },
+      {
+        path: ':id',
+        lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversacion')).Conversacion }),
+        handle: { titulo: 'Conversación', roles: ROLES_PANEL } satisfies Manejo,
+      },
+    ],
+  },
+  {
     path: 'convenios',
     handle: { titulo: 'Convenios', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
     children: [

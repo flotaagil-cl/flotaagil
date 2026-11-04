@@ -774,6 +774,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/conversaciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Bandeja de conversaciones, la más reciente primero */
+        get: operations["conversaciones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversaciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Conversación con un pasajero */
+        get: operations["conversaciones_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/conversaciones/{id}/mensajes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Responder dentro de la ventana de 24 h
+         * @description Queda registrado con quien lo escribió y lo envía el worker, con reintentos.
+         */
+        post: operations["conversaciones_mensajes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/": {
         parameters: {
             query?: never;
@@ -1314,6 +1368,44 @@ export interface components {
             id: number;
             cliente_nombre: string;
         };
+        Conversacion: {
+            /** @description El pasajero */
+            id: number;
+            nombre: string;
+            telefono: string;
+            ultimo_mensaje: string;
+            ultima_direccion: components["schemas"]["DireccionMensajeEnum"];
+            /** Format: date-time */
+            ultimo_en: string;
+            /**
+             * Format: date-time
+             * @description Hasta cuándo admite texto libre; NULL si el pasajero nunca escribió
+             */
+            ventana_hasta: string | null;
+            dentro_ventana: boolean;
+            /** @description La más reciente del pasajero */
+            reserva: components["schemas"]["ReservaVinculada"] | null;
+        };
+        ConversacionDetalle: {
+            /** @description El pasajero */
+            id: number;
+            nombre: string;
+            telefono: string;
+            ultimo_mensaje: string;
+            ultima_direccion: components["schemas"]["DireccionMensajeEnum"];
+            /** Format: date-time */
+            ultimo_en: string;
+            /**
+             * Format: date-time
+             * @description Hasta cuándo admite texto libre; NULL si el pasajero nunca escribió
+             */
+            ventana_hasta: string | null;
+            dentro_ventana: boolean;
+            /** @description La más reciente del pasajero */
+            reserva: components["schemas"]["ReservaVinculada"] | null;
+            /** @description Los últimos 200, en orden */
+            mensajes: components["schemas"]["Mensaje"][];
+        };
         DecidirRecogidaRequest: {
             /**
              * Format: date-time
@@ -1321,6 +1413,12 @@ export interface components {
              */
             recogida_propuesta: string;
         };
+        /**
+         * @description * `ENTRANTE` - Entrante
+         *     * `SALIENTE` - Saliente
+         * @enum {string}
+         */
+        DireccionMensajeEnum: "ENTRANTE" | "SALIENTE";
         EmpresaPublica: {
             razon_social: string;
             slug: string;
@@ -1345,6 +1443,15 @@ export interface components {
          * @enum {string}
          */
         EstadoConductorEnum: "DISPONIBLE" | "NO_DISPONIBLE" | "EN_VIAJE";
+        /**
+         * @description * `QUEUED` - En cola
+         *     * `SENT` - Enviado
+         *     * `DELIVERED` - Entregado
+         *     * `READ` - Leído
+         *     * `FAILED` - Falló
+         * @enum {string}
+         */
+        EstadoEntregaEnum: "QUEUED" | "SENT" | "DELIVERED" | "READ" | "FAILED";
         EstadoViaje: {
             viaje: number;
             estado: string;
@@ -1445,6 +1552,26 @@ export interface components {
             /** Format: date-time */
             ingreso_en: string;
         };
+        Mensaje: {
+            readonly id: number;
+            readonly direccion: components["schemas"]["DireccionMensajeEnum"];
+            readonly tipo: components["schemas"]["MensajeTipoEnum"];
+            readonly cuerpo: string;
+            readonly estado_entrega: components["schemas"]["EstadoEntregaEnum"];
+            usuario?: string | null;
+            readonly viaje: number | null;
+            /** Format: date-time */
+            readonly creado_en: string;
+        };
+        MensajeNuevoRequest: {
+            texto: string;
+        };
+        /**
+         * @description * `PLANTILLA` - Plantilla
+         *     * `SESION` - Sesión
+         * @enum {string}
+         */
+        MensajeTipoEnum: "PLANTILLA" | "SESION";
         /**
          * @description * `EFECTIVO` - Efectivo
          *     * `TARJETA` - Tarjeta
@@ -1525,6 +1652,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Convenio"][];
+        };
+        PaginatedConversacionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Conversacion"][];
         };
         PaginatedRegistroAuditoriaList: {
             /** @example 123 */
@@ -1662,6 +1804,10 @@ export interface components {
             usuario?: string | null;
             /** Format: date-time */
             creado_en: string;
+        };
+        ReservaVinculada: {
+            id: number;
+            estado: components["schemas"]["EstadoViajeEnum"];
         };
         RespuestaAsignacion: {
             asignacion: number;
@@ -3203,6 +3349,85 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PasswordNueva"];
                 };
+            };
+        };
+    };
+    conversaciones_list: {
+        parameters: {
+            query?: {
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedConversacionList"];
+                };
+            };
+        };
+    };
+    conversaciones_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este pasajero. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionDetalle"];
+                };
+            };
+        };
+    };
+    conversaciones_mensajes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este pasajero. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MensajeNuevoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MensajeNuevoRequest"];
+                "multipart/form-data": components["schemas"]["MensajeNuevoRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Mensaje"];
+                };
+            };
+            /** @description `fuera_de_ventana`: solo plantillas aprobadas (PR-11) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
