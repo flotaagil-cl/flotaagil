@@ -37,5 +37,3 @@ Tarea técnica sin issue propio. Base para HU-13, HU-14, HU-16 y HU-17.
 
 - Prueba en teléfono real: `docs/guia-prueba-app-android.md`.
 - Intervalo nativo del GPS (A2 de la PoC) y consumo de batería (A1): HU-13 / HU-02.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

@@ -17,5 +17,3 @@ Refs #19
 ### Pruebas
 
 Las suites completas y una prueba manual: reserva con llegada manual vista en el panel.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

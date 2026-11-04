@@ -24,5 +24,3 @@ Refs #8
 ### Pruebas
 
 Detalle en `docs/evidencias/feat-mapa-google/resultados.md`.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

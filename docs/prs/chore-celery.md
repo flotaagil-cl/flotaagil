@@ -32,5 +32,3 @@ Sin issue propio: tarea técnica pedida por el equipo. El `Refs #8` del commit d
 ### Pruebas
 
 727 pruebas en verde. Detalle en `docs/evidencias/chore-celery/resultados.md`.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

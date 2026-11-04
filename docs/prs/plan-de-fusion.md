@@ -10,12 +10,12 @@ Para Carlos. Son 3 PR hacia `main`, uno por sprint, **en este orden**. El PR del
 
 ## Antes de empezar
 
-- **Hace falta una terminal entre un PR y el siguiente.** Abrir, revisar y fusionar se hace desde la web. Lo único que no se puede hacer ahí es el paso 5.
-- **No uses el botón «Update branch» en los PR 2 y 3.** Generaría conflictos: las ramas están encadenadas y la fusión es *squash*.
+- **Carlos solo usa la web.** Abre, revisa y fusiona ahí. El paso 5 requiere una terminal y **lo hace Claude desde el PC de Renato**, cuando Renato le avisa que se fusionó el PR.
+- **No uses el botón «Update branch» en los PR 2 y 3, ni abras uno antes de que Renato confirme el paso 5.** Generaría conflictos: las ramas están encadenadas y la fusión es *squash*.
 - **Revisión:** el ruleset exige una aprobación. Si tú abres el PR, lo aprueba Renato.
 - **Estos PR son grandes** (el 1 toca muchos archivos). Conviene revisar cada uno con su `docs/prs/HU-XX.md` y sus evidencias en `docs/evidencias/`.
 
-## Por qué hay un paso en terminal
+## Por qué hay un paso fuera de la web
 
 El ruleset solo permite *squash* y exige que la rama esté al día con `main`. Al fusionar el PR 1 con *squash*, la rama del PR 2 no tiene ese commit en su historial, y GitHub volvería a mostrar todo el Sprint 1 con conflictos.
 
@@ -25,34 +25,31 @@ El ruleset solo permite *squash* y exige que la rama esté al día con `main`. A
 
 Repite 1 a 5 para cada PR, en orden.
 
-1. **Abrir el PR** en https://github.com/flotaagil/flotaagil/compare. En «base» elige `main`; en «compare», la rama de origen. Copia el título y el cuerpo de abajo.
-2. **Esperar el CI** (`ci` debe quedar en verde).
-3. **Revisar y aprobar** (Renato).
-4. **Fusionar** con «Squash and merge».
-5. **Preparar la rama del PR siguiente,** antes de abrirlo:
+| Paso | Quién | Qué |
+|---|---|---|
+| 1 | Carlos, en la web | **Abrir el PR** en https://github.com/flotaagil/flotaagil/compare. En «base» elige `main`; en «compare», la rama de origen. Copia el título y el cuerpo de abajo. |
+| 2 | Carlos, en la web | **Esperar el CI:** `ci` debe quedar en verde. |
+| 3 | Renato | **Revisar y aprobar.** |
+| 4 | Carlos, en la web | **Fusionar** con «Squash and merge», y avisarle a Renato. |
+| 5 | Claude, desde el PC de Renato | **Preparar la rama del PR siguiente,** cuando Renato avisa que se fusionó. Confirma cuando el siguiente PR se puede abrir. |
 
-   ```sh
-   git fetch origin
-   git switch <rama del PR siguiente>
-   git pull
-   git merge -s ours --no-edit origin/main
-   git push
-   ```
+Tras el PR 3 el paso 5 no hace falta, hasta que exista el PR del Sprint 4.
 
-   Comprueba que en «compare» el PR muestre solo los cambios de ese sprint, y sigue en el paso 1 con él.
+### Lo que hace el paso 5
 
-No hagas este paso antes del PR 1. Tras el PR 3 tampoco hace falta, hasta que exista el PR del Sprint 4.
+```sh
+git fetch origin
+git switch <rama del PR siguiente>
+git pull
+git merge -s ours --no-edit origin/main
+git push
+```
+
+Después, Claude comprueba que la rama tenga el mismo contenido que antes y que `main` sea su antecesor.
 
 ### Si hay cambios durante la revisión
 
-Un commit nuevo en la rama de un PR no llega solo a las siguientes, porque `merge -s ours` descarta el contenido que trae `main`. Antes del paso 5, llévalo a la rama siguiente:
-
-```sh
-git switch <rama del PR siguiente>
-git merge <rama del PR recién fusionado>
-```
-
-Resuelve los conflictos si los hay, y recién después sigue con el paso 5.
+Un commit nuevo en la rama de un PR no llega solo a las siguientes, porque `merge -s ours` descarta el contenido que trae `main`. Avísale a Renato al pedir el paso 5: Claude lleva primero esos commits a la rama siguiente, con `git merge <rama del PR recién fusionado>`, y resuelve los conflictos si los hay.
 
 ## Riesgos conocidos
 
@@ -107,8 +104,6 @@ Detalle por historia en `docs/prs/HU-XX.md`, y resultados en `docs/evidencias/HU
 ### Sin probar contra el servicio real
 
 Twilio y FlightAware se probaron con dobles.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 ---
@@ -155,8 +150,6 @@ Detalle por historia en `docs/prs/HU-XX.md`, y resultados en `docs/evidencias/HU
 ### Sin probar contra el servicio real
 
 Twilio se probó con un doble. Geocerca y notificaciones, sin GPS real ni teléfono.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
 ---
@@ -216,6 +209,4 @@ Detalle en `docs/prs/` y resultados en `docs/evidencias/`.
 ### Sin probar contra el servicio real
 
 Twilio, FlightAware y Google Maps con dobles; geocerca y fila sin GPS real.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```

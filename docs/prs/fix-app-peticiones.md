@@ -23,5 +23,3 @@ Detalle en `docs/evidencias/fix-app-peticiones/resultados.md`. Sin el tiempo lí
 
 - La causa de la petición colgada en HU-16 sigue sin conocerse; se corrigió la consecuencia.
 - Sin probar con CapacitorHttp en un teléfono.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)

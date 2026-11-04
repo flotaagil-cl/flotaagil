@@ -24,5 +24,3 @@ Refs #16
 ### Para revisar
 
 - Un cambio de estado se refleja por el canal, pero deshabilitar la cuenta de un conductor que ya está fuera de turno no cambia nada en el mapa. Por eso, en otra sesión del panel esa cuenta se ve actualizada solo al recargar la pantalla.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
