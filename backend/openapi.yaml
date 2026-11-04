@@ -940,6 +940,147 @@ paths:
                 $ref: '#/components/schemas/InformeImportacion'
           description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
             el archivo no sirve, el error viene en `archivo`.'
+  /api/convenios/:
+    get:
+      operationId: convenios_list
+      description: 'HU-11: solo el administrador de la empresa.'
+      summary: Listar convenios con su volumen de reservas
+      parameters:
+      - in: query
+        name: activo
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Cliente o RUT
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConvenioList'
+          description: ''
+    post:
+      operationId: convenios_create
+      description: Genera el token del link (256 bits) y la contraseña, que se entrega
+        una sola vez.
+      summary: Crear un convenio
+      tags:
+      - convenios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvenioCrearRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConvenioCrearRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConvenioCrearRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioCreado'
+          description: ''
+  /api/convenios/{id}/:
+    get:
+      operationId: convenios_retrieve
+      description: 'HU-11: solo el administrador de la empresa.'
+      summary: Detalle de un convenio, con el token de su link
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
+          description: ''
+    patch:
+      operationId: convenios_partial_update
+      description: Desactivar invalida el link sin afectar el historial (RN-08). Se
+        audita (RN-12).
+      summary: Editar, activar o desactivar un convenio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConvenioEditarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConvenioEditarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConvenioEditarRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
+          description: ''
+  /api/convenios/{id}/rotar-password/:
+    post:
+      operationId: convenios_rotar_password_create
+      description: La anterior deja de servir. La nueva se entrega una sola vez. Se
+        audita (RN-12).
+      summary: Rotar la contraseña del convenio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordNueva'
+          description: ''
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -2059,6 +2200,113 @@ components:
       required:
       - id
       - nombre
+    Convenio:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cliente_nombre:
+          type: string
+          readOnly: true
+        cliente_rut:
+          type: string
+          readOnly: true
+        activo:
+          type: boolean
+          readOnly: true
+        reservas:
+          type: integer
+          readOnly: true
+          description: Reservas hechas con este convenio
+      required:
+      - activo
+      - cliente_nombre
+      - cliente_rut
+      - id
+      - reservas
+    ConvenioCreado:
+      type: object
+      description: 'Incluye el token del link: es una credencial, por eso no va en
+        el listado.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cliente_nombre:
+          type: string
+          readOnly: true
+        cliente_rut:
+          type: string
+          readOnly: true
+        activo:
+          type: boolean
+          readOnly: true
+        reservas:
+          type: integer
+          readOnly: true
+          description: Reservas hechas con este convenio
+        token_link:
+          type: string
+          readOnly: true
+        password:
+          type: string
+          readOnly: true
+          description: Se entrega una sola vez
+      required:
+      - activo
+      - cliente_nombre
+      - cliente_rut
+      - id
+      - password
+      - reservas
+      - token_link
+    ConvenioCrearRequest:
+      type: object
+      properties:
+        cliente_nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        cliente_rut:
+          type: string
+          minLength: 1
+          description: 12345678-9, con o sin puntos
+          maxLength: 14
+      required:
+      - cliente_nombre
+      - cliente_rut
+    ConvenioDetalle:
+      type: object
+      description: 'Incluye el token del link: es una credencial, por eso no va en
+        el listado.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cliente_nombre:
+          type: string
+          readOnly: true
+        cliente_rut:
+          type: string
+          readOnly: true
+        activo:
+          type: boolean
+          readOnly: true
+        reservas:
+          type: integer
+          readOnly: true
+          description: Reservas hechas con este convenio
+        token_link:
+          type: string
+          readOnly: true
+      required:
+      - activo
+      - cliente_nombre
+      - cliente_rut
+      - id
+      - reservas
+      - token_link
     ConvenioResumen:
       type: object
       properties:
@@ -2411,6 +2659,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Conductor'
+    PaginatedConvenioList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Convenio'
     PaginatedVehiculoList:
       type: object
       required:
@@ -2485,6 +2756,14 @@ components:
       - id
       - nombre
       - telefono
+    PasswordNueva:
+      type: object
+      properties:
+        password:
+          type: string
+          description: Se entrega una sola vez. La anterior deja de servir.
+      required:
+      - password
     PasswordTemporal:
       type: object
       properties:
@@ -2522,6 +2801,21 @@ components:
         licencia_vence:
           type: string
           format: date
+    PatchedConvenioEditarRequest:
+      type: object
+      properties:
+        cliente_nombre:
+          type: string
+          minLength: 1
+          maxLength: 120
+        cliente_rut:
+          type: string
+          minLength: 1
+          description: 12345678-9, con o sin puntos
+          maxLength: 14
+        activo:
+          type: boolean
+          description: False invalida el link sin borrar el historial (RN-08)
     PatchedVehiculoEditarRequest:
       type: object
       description: 'La patente no se edita: otra patente es otro vehículo.'

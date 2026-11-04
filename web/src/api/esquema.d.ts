@@ -589,6 +589,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/convenios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar convenios con su volumen de reservas
+         * @description HU-11: solo el administrador de la empresa.
+         */
+        get: operations["convenios_list"];
+        put?: never;
+        /**
+         * Crear un convenio
+         * @description Genera el token del link (256 bits) y la contraseña, que se entrega una sola vez.
+         */
+        post: operations["convenios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenios/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalle de un convenio, con el token de su link
+         * @description HU-11: solo el administrador de la empresa.
+         */
+        get: operations["convenios_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar, activar o desactivar un convenio
+         * @description Desactivar invalida el link sin afectar el historial (RN-08). Se audita (RN-12).
+         */
+        patch: operations["convenios_partial_update"];
+        trace?: never;
+    };
+    "/api/convenios/{id}/rotar-password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotar la contraseña del convenio
+         * @description La anterior deja de servir. La nueva se entrega una sola vez. Se audita (RN-12).
+         */
+        post: operations["convenios_rotar_password_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/": {
         parameters: {
             query?: never;
@@ -1043,6 +1111,41 @@ export interface components {
             id: number;
             nombre: string;
         };
+        Convenio: {
+            readonly id: number;
+            readonly cliente_nombre: string;
+            readonly cliente_rut: string;
+            readonly activo: boolean;
+            /** @description Reservas hechas con este convenio */
+            readonly reservas: number;
+        };
+        /** @description Incluye el token del link: es una credencial, por eso no va en el listado. */
+        ConvenioCreado: {
+            readonly id: number;
+            readonly cliente_nombre: string;
+            readonly cliente_rut: string;
+            readonly activo: boolean;
+            /** @description Reservas hechas con este convenio */
+            readonly reservas: number;
+            readonly token_link: string;
+            /** @description Se entrega una sola vez */
+            readonly password: string;
+        };
+        ConvenioCrearRequest: {
+            cliente_nombre: string;
+            /** @description 12345678-9, con o sin puntos */
+            cliente_rut: string;
+        };
+        /** @description Incluye el token del link: es una credencial, por eso no va en el listado. */
+        ConvenioDetalle: {
+            readonly id: number;
+            readonly cliente_nombre: string;
+            readonly cliente_rut: string;
+            readonly activo: boolean;
+            /** @description Reservas hechas con este convenio */
+            readonly reservas: number;
+            readonly token_link: string;
+        };
         ConvenioResumen: {
             id: number;
             cliente_nombre: string;
@@ -1219,6 +1322,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Conductor"][];
         };
+        PaginatedConvenioList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Convenio"][];
+        };
         PaginatedVehiculoList: {
             /** @example 123 */
             count: number;
@@ -1259,6 +1377,10 @@ export interface components {
             nombre: string;
             telefono: string;
         };
+        PasswordNueva: {
+            /** @description Se entrega una sola vez. La anterior deja de servir. */
+            password: string;
+        };
         PasswordTemporal: {
             /** @description Se muestra una sola vez. No se guarda en texto plano. */
             password_temporal: string;
@@ -1275,6 +1397,13 @@ export interface components {
             licencia_clase?: components["schemas"]["LicenciaClaseEnum"];
             /** Format: date */
             licencia_vence?: string;
+        };
+        PatchedConvenioEditarRequest: {
+            cliente_nombre?: string;
+            /** @description 12345678-9, con o sin puntos */
+            cliente_rut?: string;
+            /** @description False invalida el link sin borrar el historial (RN-08) */
+            activo?: boolean;
         };
         /** @description La patente no se edita: otra patente es otro vehículo. */
         PatchedVehiculoEditarRequest: {
@@ -2531,6 +2660,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InformeImportacion"];
+                };
+            };
+        };
+    };
+    convenios_list: {
+        parameters: {
+            query?: {
+                activo?: boolean;
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+                /** @description Cliente o RUT */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedConvenioList"];
+                };
+            };
+        };
+    };
+    convenios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConvenioCrearRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConvenioCrearRequest"];
+                "multipart/form-data": components["schemas"]["ConvenioCrearRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioCreado"];
+                };
+            };
+        };
+    };
+    convenios_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+        };
+    };
+    convenios_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedConvenioEditarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedConvenioEditarRequest"];
+                "multipart/form-data": components["schemas"]["PatchedConvenioEditarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+        };
+    };
+    convenios_rotar_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordNueva"];
                 };
             };
         };
