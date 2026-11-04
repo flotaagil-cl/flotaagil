@@ -109,7 +109,8 @@ class ViajeViewSet(
         tags=["reservas"],
         responses=CandidatoSerializer(many=True),
         description="Disponibles de la empresa con vehículo y sin viaje en ejecución (RN-01, RN-03), los más "
-        "cercanos al origen primero cuando se conoce su última posición.",
+        "aptos primero: por distancia y, ante diferencias de menos de 1 km, por tiempo sin viaje (HU-04). "
+        "Solo informa: nada se asigna sin confirmación (RN-02).",
     )
     @action(detail=True, methods=["get"], pagination_class=None)
     def candidatos(self, request, pk=None):

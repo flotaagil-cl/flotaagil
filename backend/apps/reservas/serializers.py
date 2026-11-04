@@ -228,3 +228,10 @@ class CandidatoSerializer(serializers.Serializer):
     patente = serializers.CharField()
     distancia_m = serializers.IntegerField(allow_null=True, help_text="Desde su última posición al origen")
     posicion_en = serializers.DateTimeField(allow_null=True)
+    confiable = serializers.BooleanField(
+        help_text="Posición reciente y precisa: si no, no compite ni se sugiere"
+    )
+    ultimo_viaje_en = serializers.DateTimeField(allow_null=True, help_text="Fin de su último viaje")
+    sugerido = serializers.BooleanField(
+        help_text="El más apto (HU-04). No asigna: lo confirma el despachador"
+    )

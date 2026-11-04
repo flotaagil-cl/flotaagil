@@ -7,6 +7,9 @@ import { MENSAJES } from '../api/errores';
 import { ESPERA_RESPUESTA_MS } from './api';
 import { esperarListado, montarPanel } from '../pruebas/montar';
 import { viajeDePrueba } from '../pruebas/servidorViajesFalso';
+import type { components } from '../api/esquema';
+
+type Candidato = components['schemas']['Candidato'];
 
 async function abrirDetalle(viaje = viajeDePrueba({ id: 8 })) {
   const contexto = montarPanel(`/reservas/${viaje.id}`);
@@ -189,35 +192,73 @@ describe('vuelo verificado (HU-26)', () => {
 });
 
 describe('asignar conductor (HU-14)', () => {
-  it('lista los disponibles por cercanía y asigna', async () => {
+  const candidato = (id: number, nombre: string, cambios: Partial<Candidato> = {}): Candidato => ({
+    id,
+    nombre,
+    patente: `BCDF${id}0`,
+    distancia_m: 850,
+    posicion_en: '2026-11-03T15:00:00Z',
+    confiable: true,
+    ultimo_viaje_en: null,
+    sugerido: false,
+    ...cambios,
+  });
+
+  async function abrirDialogo(candidatos: Candidato[]) {
     const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO' }));
-    contexto.viajes.candidatos = [
-      { id: 3, nombre: 'Carla Conductora', patente: 'BCDF10', distancia_m: 850, posicion_en: '2026-11-03T15:00:00Z' },
-      { id: 4, nombre: 'Pedro Soto', patente: 'GHJK20', distancia_m: 4200, posicion_en: '2026-11-03T15:00:00Z' },
-      { id: 5, nombre: 'Ana Ríos', patente: 'KLMN30', distancia_m: null, posicion_en: null },
-    ];
+    contexto.viajes.candidatos = candidatos;
     await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
-    const dialogo = await screen.findByRole('dialog', { name: 'Asignar la reserva #8' });
-    const lista = await within(dialogo).findByRole('list', { name: 'Conductores disponibles' });
-    expect(within(lista).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
-      expect.stringContaining('a 850 m del origen'),
-      expect.stringContaining('a 4,2 km del origen'),
-      expect.stringContaining('sin posición reciente del origen'),
+    return { contexto, dialogo: await screen.findByRole('dialog', { name: 'Asignar la reserva #8' }) };
+  }
+
+  it('propone al sugerido, con distancia y último viaje, y asigna al confirmar', async () => {
+    const { dialogo } = await abrirDialogo([
+      candidato(3, 'Carla Conductora', { sugerido: true, ultimo_viaje_en: '2026-07-15T14:00:00Z' }),
+      candidato(4, 'Pedro Soto', { distancia_m: 4200 }),
     ]);
-    await userEvent.click(within(lista).getByRole('button', { name: 'Asignar a Carla Conductora' }));
+    const sugerido = await within(dialogo).findByRole('list', { name: 'Conductor sugerido' });
+    expect(sugerido.textContent).toContain('Sugerido: Carla Conductora');
+    expect(sugerido.textContent).toContain('a 850 m del origen');
+    expect(sugerido.textContent).toContain('último viaje mié 15-07-2026 10:00');
+    // Abrir el diálogo no asigna nada (RN-02).
+    expect(screen.getByRole('heading', { name: 'Reserva #8 Solicitado' })).toBeInTheDocument();
+    await userEvent.click(within(sugerido).getByRole('button', { name: 'Asignar a Carla Conductora' }));
     expect(await screen.findByText('Reserva asignada a Carla Conductora. Esperando que acepte en la app (60 s).')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Reserva #8 Asignado' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Asignar conductor…' })).not.toBeInTheDocument();
   });
 
+  it('el desplegable ofrece al resto de los disponibles', async () => {
+    const { dialogo } = await abrirDialogo([
+      candidato(3, 'Carla Conductora', { sugerido: true }),
+      candidato(4, 'Pedro Soto', { distancia_m: 4200 }),
+      candidato(5, 'Ana Ríos', { distancia_m: null, posicion_en: null, confiable: false }),
+    ]);
+    const desplegable = await within(dialogo).findByRole('combobox', { name: 'Otro conductor disponible' });
+    expect(within(desplegable).getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Elige un conductor…',
+      'Pedro Soto · BCDF40 · a 4,2 km',
+      'Ana Ríos · BCDF50 · sin posición (no reciente)',
+    ]);
+    const asignarElegido = within(dialogo).getByRole('button', { name: 'Asignar al elegido' });
+    expect(asignarElegido).toBeDisabled();
+    await userEvent.selectOptions(desplegable, 'Pedro Soto · BCDF40 · a 4,2 km');
+    await userEvent.click(asignarElegido);
+    expect(await screen.findByText('Reserva asignada a Pedro Soto. Esperando que acepte en la app (60 s).')).toBeInTheDocument();
+  });
+
+  it('sin sugerencia lo explica y deja elegir', async () => {
+    const { dialogo } = await abrirDialogo([candidato(5, 'Ana Ríos', { confiable: false })]);
+    expect(await within(dialogo).findByText(/Sin sugerencia: ningún conductor tiene una posición reciente/)).toBeInTheDocument();
+    expect(within(dialogo).getByRole('combobox', { name: 'Conductor disponible' })).toBeInTheDocument();
+  });
+
   it('un 409 se muestra en el diálogo', async () => {
-    const contexto = await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO' }));
-    contexto.viajes.candidatos = [{ id: 3, nombre: 'Carla Conductora', patente: 'BCDF10', distancia_m: 850, posicion_en: null }];
+    const { contexto } = await abrirDialogo([candidato(3, 'Carla Conductora', { sugerido: true })]);
     contexto.viajes.siguiente('POST /api/viajes/8/asignar/', {
       estado: 409,
       cuerpo: { detail: 'Carla Conductora ya tiene un viaje en ejecución (RN-03).', code: 'asignacion_no_permitida' },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor…' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Asignar a Carla Conductora' }));
     expect(await screen.findByText('Carla Conductora ya tiene un viaje en ejecución (RN-03).')).toBeInTheDocument();
   });

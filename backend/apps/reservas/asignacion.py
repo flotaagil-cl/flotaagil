@@ -11,9 +11,10 @@ from datetime import timedelta
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.conf import settings
 from django.contrib.gis.db.models.functions import Distance
 from django.db import transaction
-from django.db.models import OuterRef, Subquery
+from django.db.models import Max, OuterRef, Subquery
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
@@ -23,7 +24,16 @@ from apps.flota.tiempo_real import notificar_conductor
 from apps.integraciones.notificaciones import AVISO_CONDUCTOR
 
 from . import avisos, estados
-from .models import Actor, Asignacion, EstadoViaje, OrigenSugerencia, ResultadoAsignacion, Viaje
+from .models import (
+    Actor,
+    Asignacion,
+    EstadoViaje,
+    HistorialEstado,
+    OrigenSugerencia,
+    ResultadoAsignacion,
+    Sentido,
+    Viaje,
+)
 
 SEGUNDOS_PARA_RESPONDER = 60  # RN-04
 # Estados en que el viaje ocupa al conductor (RN-03).
@@ -42,6 +52,12 @@ class AsignacionNoPermitida(APIException):
     default_detail = "No se puede asignar este viaje ahora."
 
 
+# HU-04: diferencias de distancia menores a esto se deciden por el tiempo desde el último viaje.
+EMPATE_M = 1000
+# Anexo D: una precisión mayor no es confiable (igual que el mapa).
+PRECISION_CONFIABLE_M = 100
+
+
 def grupo_conductor(conductor_id: int) -> str:
     return f"conductor_{conductor_id}"
 
@@ -52,11 +68,43 @@ def con_viaje_en_ejecucion(empresa_id: int):
     ).values("conductor_id")
 
 
+def _posicion_confiable(posicion, ahora) -> bool:
+    """Misma regla que el mapa (HU-02): reciente y precisa. Si no, no dice dónde está el conductor."""
+    if posicion is None or (posicion.precision_m or 0) > PRECISION_CONFIABLE_M:
+        return False
+    return ahora - posicion.registrada_en <= timedelta(seconds=settings.POSICION_CONFIABLE_SEGUNDOS)
+
+
+def _por_tiempo_sin_viaje(fila: dict):
+    """Quien lleva más tiempo sin viaje primero; sin viajes terminados, antes que todos."""
+    ultimo = fila["ultimo_viaje_en"]
+    return (ultimo is not None, ultimo or timezone.now(), fila["nombre"])
+
+
+def _ordenar(filas: list[dict]) -> list[dict]:
+    """HU-04: por distancia y, ante diferencias de menos de 1 km, por tiempo desde el último viaje. Los grupos
+    se arman desde el más cercano: quien esté a menos de 1 km de él empata, y el siguiente abre otro grupo."""
+    confiables = sorted((f for f in filas if f["confiable"]), key=lambda f: f["distancia_m"])
+    resto = sorted(
+        (f for f in filas if not f["confiable"]),
+        key=lambda f: (f["distancia_m"] is None, f["distancia_m"] or 0, f["nombre"]),
+    )
+    ordenados = []
+    while confiables:
+        base = confiables[0]["distancia_m"]
+        grupo = [f for f in confiables if f["distancia_m"] - base < EMPATE_M]
+        confiables = confiables[len(grupo) :]
+        ordenados += sorted(grupo, key=_por_tiempo_sin_viaje)
+    return ordenados + resto
+
+
 def candidatos(viaje: Viaje) -> list[dict]:
-    """Conductores Disponibles de la empresa sin viaje en ejecución, los más cercanos al origen primero (si se
-    conoce su última posición). La sugerencia automática es HU-04; aquí el despachador elige (MANUAL)."""
+    """Conductores Disponibles de la empresa sin viaje en ejecución (RN-01, RN-03), los más aptos primero.
+    Solo informa: nada se asigna hasta que el despachador lo confirma (RN-02). Con posición no confiable no
+    compite ni se sugiere. En recogidas en aeropuerto no se sugiere por distancia: lo decide la fila
+    (HU-29)."""
     ultima = PosicionGps.objects.filter(conductor=OuterRef("pk")).order_by("-registrada_en")
-    conductores = (
+    conductores = list(
         Conductor.objects.filter(
             usuario__empresa_id=viaje.empresa_id,
             usuario__activo=True,
@@ -67,13 +115,20 @@ def candidatos(viaje: Viaje) -> list[dict]:
         .select_related("usuario", "vehiculo_activo")
         .annotate(ultima_id=Subquery(ultima.values("pk")[:1]))
     )
-    conductores = list(conductores)
     posiciones = {
         p.pk: p
         for p in PosicionGps.objects.filter(
             pk__in=[c.ultima_id for c in conductores if c.ultima_id]
         ).annotate(distancia=Distance("punto", viaje.origen_geo))
     }
+    ultimos_viajes = dict(
+        HistorialEstado.objects.filter(
+            estado_nuevo=EstadoViaje.FINALIZADO, viaje__conductor__in=[c.pk for c in conductores]
+        )
+        .values_list("viaje__conductor")
+        .annotate(ultimo=Max("creado_en"))
+    )
+    ahora = timezone.now()
     filas = []
     for conductor in conductores:
         posicion = posiciones.get(conductor.ultima_id)
@@ -84,9 +139,15 @@ def candidatos(viaje: Viaje) -> list[dict]:
                 "patente": conductor.vehiculo_activo.patente,
                 "distancia_m": round(posicion.distancia.m) if posicion else None,
                 "posicion_en": posicion.registrada_en if posicion else None,
+                "confiable": _posicion_confiable(posicion, ahora),
+                "ultimo_viaje_en": ultimos_viajes.get(conductor.pk),
+                "sugerido": False,
             }
         )
-    return sorted(filas, key=lambda f: (f["distancia_m"] is None, f["distancia_m"] or 0, f["nombre"]))
+    filas = _ordenar(filas)
+    if filas and filas[0]["confiable"] and viaje.sentido != Sentido.DESDE_AEROPUERTO:
+        filas[0]["sugerido"] = True
+    return filas
 
 
 def datos_para_la_app(asignacion: Asignacion) -> dict:
@@ -153,6 +214,8 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} no tiene vehículo declarado (RN-05).")
         if Viaje.objects.filter(conductor=conductor, estado__in=EN_EJECUCION).exists():
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} ya tiene un viaje en ejecución (RN-03).")
+        sugerido = next((f["id"] for f in candidatos(viaje) if f["sugerido"]), None)
+        origen = OrigenSugerencia.DISTANCIA if conductor.pk == sugerido else OrigenSugerencia.MANUAL
         try:
             viaje = estados.transicionar(
                 viaje,
@@ -166,7 +229,7 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
         except estados.TransicionInvalida as error:
             raise AsignacionNoPermitida(str(error)) from error
         asignacion = Asignacion.objects.create(
-            viaje=viaje, conductor=conductor, despachador=usuario, origen_sugerencia=OrigenSugerencia.MANUAL
+            viaje=viaje, conductor=conductor, despachador=usuario, origen_sugerencia=origen
         )
         asignacion = Asignacion.objects.select_related("viaje__pasajero", "viaje__vuelo").get(
             pk=asignacion.pk

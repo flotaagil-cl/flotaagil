@@ -6,10 +6,15 @@ import { defineConfig } from 'vite';
 // plugins nativos se prueban en el emulador y en el teléfono (docs/guia-prueba-app-android.md).
 const MINIMO = { lines: 70, functions: 70, branches: 70, statements: 70 };
 
+declare const process: { env: Record<string, string | undefined> };
+
+// Backend de desarrollo; otro destino sirve para probar contra un stack aislado.
+const BACKEND = process.env.PROXY_BACKEND ?? 'http://127.0.0.1:8000';
+
 export default defineConfig({
   plugins: [react()],
   // Desarrollo en el navegador (`npm run dev` con VITE_API_URL vacío): la API queda en el mismo origen.
-  server: { proxy: { '/api': 'http://127.0.0.1:8000', '/ws': { target: 'ws://127.0.0.1:8000', ws: true } } },
+  server: { proxy: { '/api': BACKEND, '/ws': { target: BACKEND.replace(/^http/, 'ws'), ws: true } } },
   test: {
     environment: 'node',
     include: ['src/**/*.test.{ts,tsx}'],

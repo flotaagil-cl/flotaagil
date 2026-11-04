@@ -35,6 +35,11 @@ function informeDeModulos(): Plugin {
   };
 }
 
+declare const process: { env: Record<string, string | undefined> };
+
+// Backend de desarrollo; otro destino sirve para probar contra un stack aislado.
+const BACKEND = process.env.PROXY_BACKEND ?? 'http://127.0.0.1:8000';
+
 export default defineConfig({
   plugins: [react(), informeDeModulos()],
   build: { manifest: true },
@@ -42,10 +47,12 @@ export default defineConfig({
     // En desarrollo el panel y la API quedan en el mismo origen: la cookie del refresh (Path=/api/auth/)
     // viaja sin CORS. El proxy reenvía Origin tal como lo manda el navegador (http://localhost:5173).
     // /ws: WebSocket del mapa en tiempo real (HU-02), mismo origen que el panel.
-    proxy: { '/api': 'http://127.0.0.1:8000', '/ws': { target: 'ws://127.0.0.1:8000', ws: true } },
+    proxy: { '/api': BACKEND, '/ws': { target: BACKEND.replace(/^http/, 'ws'), ws: true } },
   },
   test: {
     environment: 'jsdom',
+    // Los formularios largos con userEvent superan los 5 s por defecto si la máquina está cargada.
+    testTimeout: 20_000,
     setupFiles: ['./src/pruebas/setup.ts'],
     restoreMocks: true,
     coverage: {
