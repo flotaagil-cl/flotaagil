@@ -16,6 +16,8 @@ const CANCELABLES: EstadoViaje[] = ['PENDIENTE_CONFIRMACION', 'SOLICITADO', 'ACE
 
 type Historial = components['schemas']['Historial'];
 
+export type AlertaDePrueba = components['schemas']['AlertaVuelo'];
+
 let siguienteId = 100;
 
 /** Reserva completa con valores sintéticos; `cambios` reemplaza lo que haga falta. */
@@ -42,6 +44,7 @@ export function viajeDePrueba(cambios: Partial<ViajeDetalle> = {}): ViajeDetalle
     editable: EDITABLES.includes(estado),
     cancelable: CANCELABLES.includes(estado),
     calificacion: null,
+    alerta_vuelo: null,
     historial: [
       { estado_anterior: null, estado_nuevo: 'SOLICITADO', actor: 'DESPACHADOR', usuario: 'Diego Despacho', creado_en: '2026-10-30T12:00:00Z' },
     ],
@@ -56,6 +59,8 @@ function resumen(viaje: ViajeDetalle): Omit<ViajeDetalle, 'historial'> {
 
 export class ServidorViajesFalso {
   viajes: ViajeDetalle[] = [];
+  /** Alertas de vuelo sin atender (HU-28). */
+  alertas: AlertaDePrueba[] = [];
   /** Conductores disponibles que devuelve /candidatos/ (HU-14). */
   candidatos: Candidato[] = [];
   /** Cuerpos recibidos, por ruta («POST /api/viajes/», «PATCH /api/viajes/7/»…). */
@@ -88,11 +93,20 @@ export class ServidorViajesFalso {
 
   private async atender(peticion: Request, url: URL): Promise<Respuesta> {
     const ruta = `${peticion.method} ${url.pathname}`;
-    const cuerpo = peticion.method === 'GET' ? undefined : await peticion.json();
+    const texto = peticion.method === 'GET' ? '' : await peticion.text();
+    const cuerpo = texto ? JSON.parse(texto) : undefined;
     if (cuerpo !== undefined) this.cuerpos.push({ ruta, cuerpo });
     const programada = this.programadas.get(ruta)?.shift();
     if (programada) return programada;
 
+    if (ruta === 'GET /api/alertas/') {
+      return { estado: 200, cuerpo: { count: this.alertas.length, next: null, previous: null, results: this.alertas } };
+    }
+    const atender = /^POST \/api\/alertas\/(\d+)\/atender\/$/.exec(ruta);
+    if (atender) {
+      this.alertas = this.alertas.filter((a) => a.id !== Number(atender[1]));
+      return { estado: 200, cuerpo: {} };
+    }
     if (ruta === 'GET /api/viajes/') return this.listar(url);
     if (ruta === 'POST /api/viajes/') return this.crear(cuerpo as ViajeCrear);
     const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos|confirmar-recogida|descartar-recogida)\/)?$/.exec(url.pathname);

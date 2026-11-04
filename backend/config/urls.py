@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/auth/", include("apps.cuentas.urls")),
     path("api/", include("apps.reservas.urls")),
     path("api/", include("apps.flota.urls")),
+    path("api/", include("apps.aeropuerto.urls")),
     path("api/app/", include("apps.flota.app_urls")),
     path("api/whatsapp/entrante/", WebhookEntranteView.as_view(), name="whatsapp-entrante"),
     path("api/whatsapp/estado/", WebhookEstadoView.as_view(), name="whatsapp-estado"),

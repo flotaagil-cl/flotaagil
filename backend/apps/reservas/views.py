@@ -1,12 +1,14 @@
 """API de reservas (HU-03): listar con filtros, crear, ver, editar antes del despacho y cancelar con motivo.
 Solo administrador y despachador, y solo viajes de su empresa (RN-13). No hay borrado."""
 
+from django.db.models import Prefetch
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.aeropuerto import monitoreo
+from apps.aeropuerto.models import AlertaVuelo
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 from apps.integraciones.notificaciones import AVISO_CONFIRMACION
@@ -47,7 +49,17 @@ class ViajeViewSet(
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = (
+            super()
+            .get_queryset()
+            .prefetch_related(
+                Prefetch(
+                    "alertas_vuelo",
+                    queryset=AlertaVuelo.objects.filter(atendida_en__isnull=True).order_by("-id"),
+                    to_attr="alertas_abiertas",
+                )
+            )
+        )
         if self.action == "retrieve":
             queryset = queryset.prefetch_related("historial__usuario")
         return queryset

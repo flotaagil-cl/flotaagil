@@ -1,6 +1,6 @@
 from django.contrib.gis import admin
 
-from .models import FilaAeropuerto, Geocerca
+from .models import AlertaVuelo, FilaAeropuerto, Geocerca
 
 
 @admin.register(Geocerca)
@@ -16,3 +16,9 @@ class FilaAeropuertoAdmin(admin.ModelAdmin):
     list_display = ["conductor", "geocerca", "ingreso_en", "salida_en", "motivo_salida"]
     list_filter = ["geocerca", "motivo_salida"]
     readonly_fields = ["geocerca", "conductor", "ingreso_en", "salida_en", "motivo_salida"]
+
+
+@admin.register(AlertaVuelo)
+class AlertaVueloAdmin(admin.ModelAdmin):
+    list_display = ["tipo", "viaje", "numero_vuelo", "creada_en", "atendida_en", "atendida_por"]
+    list_filter = ["tipo", "empresa"]

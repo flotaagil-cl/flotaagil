@@ -6,7 +6,7 @@ import { ErrorApi } from '../../api/resultado';
 import { useViajes, type Canal, type EstadoViaje, type Sentido } from '../api';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { mensajeDeErrorApi } from '../errores';
-import { CANALES, ESTADOS, ORDEN_ESTADOS, ORDENES, SENTIDOS, type Orden } from '../etiquetas';
+import { CANALES, ESTADOS, ORDEN_ESTADOS, ORDENES, SENTIDOS, type Orden, ALERTAS_VUELO } from '../etiquetas';
 import {
   cambiarFiltros,
   consultaDeFiltros,
@@ -311,6 +311,7 @@ export function Listado() {
                     </Celda>
                     <Celda titulo="Estado">
                       <EstadoEtiqueta estado={viaje.estado ?? 'SOLICITADO'} />
+                      {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
                     </Celda>
                     <Celda titulo="Conductor">{viaje.conductor?.nombre ?? '—'}</Celda>
                   </tr>

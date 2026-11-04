@@ -8,7 +8,7 @@ from django.db import OperationalError
 
 from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
 
-from . import monitoreo
+from . import alertas, monitoreo
 from .models import Vuelo
 
 logger = logging.getLogger(__name__)
@@ -58,10 +58,12 @@ def consultar_estado_vuelo(self, vuelo_id: int) -> None:
         if self.request.retries < self.max_retries:
             raise self.retry(exc=error, countdown=ESPERA_CONSULTA_S * 2**self.request.retries) from error
         logger.warning("Vuelo %s sin datos tras los reintentos: %s", vuelo.numero, error)
+        alertas.sin_datos(vuelo.viaje, vuelo)
         _liberar_consulta(vuelo_id)
         return
     if datos is None:
         logger.warning("Vuelo %s sin datos: no aparece en la API.", vuelo.numero)
+        alertas.sin_datos(vuelo.viaje, vuelo)
     else:
         monitoreo.aplicar(vuelo_id, datos)
     _liberar_consulta(vuelo_id)

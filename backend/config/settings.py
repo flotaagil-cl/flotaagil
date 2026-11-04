@@ -247,6 +247,7 @@ SPECTACULAR_SETTINGS = {
         "CanalEnum": "apps.reservas.models.Canal",
         "CanalPanelEnum": ["TELEFONO", "WHATSAPP", "CONVENIO"],
         "EstadoConductorEnum": "apps.flota.models.EstadoConductor",
+        "TipoAlertaVueloEnum": "apps.aeropuerto.models.TipoAlertaVuelo",
     },
 }
 

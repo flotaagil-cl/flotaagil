@@ -11,7 +11,7 @@ import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { PropuestaRecogida } from '../componentes/PropuestaRecogida';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
-import { ACTORES, CANALES, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
+import { ACTORES, ALERTAS_VUELO, CANALES, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 
@@ -57,6 +57,7 @@ function DetalleDe({ id }: { id: number }) {
       <div className={estilos.encabezado}>
         <h1>
           Reserva #{viaje.id} {viaje.estado && <EstadoEtiqueta estado={viaje.estado} />}
+          {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
         </h1>
         <Link to="/reservas" className={estilos.botonSecundario}>
           Volver a las reservas

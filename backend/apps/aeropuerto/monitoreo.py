@@ -20,6 +20,7 @@ from rest_framework.exceptions import APIException
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
 
+from . import alertas
 from .models import EstadoVuelo, Vuelo
 
 # Aeropuertos con vuelos comerciales en Chile: un vuelo desde otro origen usa el margen internacional.
@@ -114,6 +115,7 @@ def aplicar(vuelo_id: int, datos) -> Vuelo:
     viaje = Viaje.objects.select_related("empresa__configuracion").get(pk=vuelo.viaje_id)
     configuracion = viaje.empresa.configuracion
     referencia = vuelo.eta_referencia or vuelo.hora_programada
+    estado_anterior = vuelo.estado_vuelo
     vuelo.hora_programada = datos.hora_programada
     vuelo.hora_estimada = datos.hora_estimada
     vuelo.estado_vuelo = datos.estado
@@ -121,11 +123,13 @@ def aplicar(vuelo_id: int, datos) -> Vuelo:
     vuelo.ultima_consulta_en = timezone.now()
 
     eta = eta_de(vuelo)
+    umbral = timedelta(minutes=configuracion.cambio_eta_min)
+    cambio_eta = abs(eta - referencia) >= umbral
     propuesta = None
     if (
         viaje.estado in _estados_ajustables()
         and datos.estado not in (EstadoVuelo.CANCELADO, EstadoVuelo.DESVIADO)
-        and abs(eta - referencia) >= timedelta(minutes=configuracion.cambio_eta_min)
+        and cambio_eta
     ):
         propuesta = eta + margen_de(vuelo, configuracion)
         if abs(propuesta - viaje.recogida_en) < timedelta(minutes=1):
@@ -134,6 +138,9 @@ def aplicar(vuelo_id: int, datos) -> Vuelo:
         vuelo.propuesta_en = timezone.now() if propuesta else None
     vuelo.recogida_propuesta = propuesta
     vuelo.save()
+    alertas.al_recibir_datos(
+        viaje, vuelo, estado_anterior=estado_anterior, hubo_cambio_eta=cambio_eta, umbral=umbral
+    )
     return vuelo
 
 
@@ -172,6 +179,7 @@ def confirmar(viaje, *, usuario, esperada):
         datos_previos={"recogida_en": anterior.isoformat(), "eta": eta_de(vuelo).isoformat()},
     )
     _resolver(vuelo)
+    alertas.atender_cambio_eta(viaje, usuario=usuario)
     if viaje.conductor_id:
         conductor_id, viaje_id = viaje.conductor_id, viaje.pk
         transaction.on_commit(lambda: avisar_viaje_actualizado(conductor_id, viaje_id))
@@ -192,4 +200,5 @@ def descartar(viaje, *, usuario, esperada):
         datos_previos={"recogida_propuesta": vuelo.recogida_propuesta.isoformat()},
     )
     _resolver(vuelo)
+    alertas.atender_cambio_eta(viaje, usuario=usuario)
     return viaje

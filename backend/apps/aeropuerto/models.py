@@ -101,3 +101,39 @@ class FilaAeropuerto(models.Model):
 
     def __str__(self):
         return f"{self.conductor} en {self.geocerca}"
+
+
+class TipoAlertaVuelo(models.TextChoices):
+    ETA_CAMBIADA = "ETA_CAMBIADA", "Cambió la llegada"
+    VUELO_CANCELADO = "VUELO_CANCELADO", "Vuelo cancelado"
+    VUELO_DESVIADO = "VUELO_DESVIADO", "Vuelo desviado"
+    SIN_DATOS = "SIN_DATOS", "Sin datos de la API"
+
+
+class AlertaVuelo(models.Model):
+    """ALERTA_VUELO (DC-23): registro de las alertas de HU-28. Se conserva aunque se edite el vuelo. Con
+    `atendida_en` y sin `atendida_por`, la resolvió el sistema."""
+
+    empresa = models.ForeignKey("cuentas.Empresa", on_delete=models.CASCADE, related_name="+")
+    viaje = models.ForeignKey("reservas.Viaje", on_delete=models.CASCADE, related_name="alertas_vuelo")
+    numero_vuelo = models.CharField(max_length=8)
+    tipo = models.CharField(max_length=16, choices=TipoAlertaVuelo.choices)
+    detalle = models.CharField(max_length=200)
+    eta = models.DateTimeField(null=True, blank=True)
+    creada_en = models.DateTimeField(db_default=Now(), editable=False)
+    atendida_en = models.DateTimeField(null=True, blank=True)
+    atendida_por = models.ForeignKey(
+        "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+
+    class Meta:
+        db_table = "alerta_vuelo"
+        verbose_name = "alerta de vuelo"
+        verbose_name_plural = "alertas de vuelos"
+        constraints = [
+            models.CheckConstraint(condition=Q(tipo__in=TipoAlertaVuelo.values), name="alerta_tipo_valido"),
+        ]
+        indexes = [models.Index(fields=["empresa", "atendida_en"], name="alerta_pendientes")]
+
+    def __str__(self):
+        return f"{self.tipo} · viaje {self.viaje_id}"

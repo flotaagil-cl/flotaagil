@@ -76,3 +76,11 @@ export const ORDENES = {
 } as const;
 
 export type Orden = keyof typeof ORDENES;
+
+/** HU-28: marca de la reserva con una alerta de vuelo sin atender. */
+export const ALERTAS_VUELO = {
+  ETA_CAMBIADA: 'Cambió la llegada del vuelo',
+  VUELO_CANCELADO: 'Vuelo cancelado',
+  VUELO_DESVIADO: 'Vuelo desviado',
+  SIN_DATOS: 'Vuelo sin datos',
+} as const;

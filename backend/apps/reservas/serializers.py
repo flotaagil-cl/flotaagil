@@ -2,7 +2,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from apps.aeropuerto.models import Vuelo
+from apps.aeropuerto.models import TipoAlertaVuelo, Vuelo
 from apps.comun.validadores import normalizar_telefono, validar_telefono_e164, validar_vuelo_iata
 from apps.convenios.models import Convenio
 
@@ -76,6 +76,7 @@ class ViajeSerializer(serializers.ModelSerializer):
     vehiculo = VehiculoResumenSerializer(allow_null=True)
     convenio = ConvenioResumenSerializer(allow_null=True)
     vuelo = serializers.SerializerMethodField()
+    alerta_vuelo = serializers.SerializerMethodField(help_text="Alerta de vuelo sin atender (HU-28)")
     origen = serializers.SerializerMethodField()
     destino = serializers.SerializerMethodField()
     editable = serializers.SerializerMethodField()
@@ -97,12 +98,20 @@ class ViajeSerializer(serializers.ModelSerializer):
             "vehiculo",
             "convenio",
             "vuelo",
+            "alerta_vuelo",
             "motivo_cancelacion",
             "origen_cancelacion",
             "creado_en",
             "editable",
             "cancelable",
         ]
+
+    @extend_schema_field(serializers.ChoiceField(choices=TipoAlertaVuelo.choices, allow_null=True))
+    def get_alerta_vuelo(self, viaje):
+        abiertas = getattr(viaje, "alertas_abiertas", None)
+        if abiertas is None:
+            abiertas = viaje.alertas_vuelo.filter(atendida_en__isnull=True).order_by("-id")
+        return next((a.tipo for a in abiertas), None)
 
     @extend_schema_field(VueloSerializer(allow_null=True))
     def get_vuelo(self, viaje):

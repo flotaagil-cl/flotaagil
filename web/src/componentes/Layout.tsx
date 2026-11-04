@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useMatches, useNavigate } from 'react-router';
+import { AlertasVuelo } from '../alertas/AlertasVuelo';
 import type { Manejo } from '../rutas/tabla';
 import { entradasDeMenu } from '../rutas/tabla';
 import { useRutas } from '../rutas/contexto';
@@ -66,7 +67,10 @@ export function Layout() {
           ))}
         </ul>
       </nav>
-      <main className={estilos.contenido}>{permitido ? <Outlet /> : <SinPermiso />}</main>
+      <main className={estilos.contenido}>
+        {usuario.rol !== 'CONDUCTOR' && <AlertasVuelo />}
+        {permitido ? <Outlet /> : <SinPermiso />}
+      </main>
     </div>
   );
 }
