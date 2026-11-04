@@ -105,3 +105,12 @@
   font-size: 0.9rem;
   color: var(--texto-suave);
 }
+
+/* Google Maps necesita una altura explícita; la misma proporción del esquemático. */
+.mapaGoogle {
+  width: 100%;
+  aspect-ratio: 1000 / 640;
+  min-height: 280px;
+  border-radius: 8px;
+  overflow: hidden;
+}

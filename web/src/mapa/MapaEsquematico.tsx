@@ -13,8 +13,8 @@ interface Props {
 
 /**
  * Adaptador de desarrollo del mapa (HU-02): dibuja los conductores sobre una cuadrícula proyectada a partir de sus
- * coordenadas, sin servicios externos ni claves. Con `VITE_GOOGLE_MAPS_KEY` se usará Google Maps JS (PR-12) con
- * las mismas propiedades. Los marcadores también están en la lista accesible de la página.
+ * coordenadas, sin servicios externos ni claves. Se usa sin `VITE_GOOGLE_MAPS_KEY` o si Google Maps no carga (PR-12).
+ * Los marcadores también están en la lista accesible de la página.
  */
 export function MapaEsquematico({ conductores, seleccionado, alSeleccionar, ahora }: Props) {
   const zona = encuadre(conductores);

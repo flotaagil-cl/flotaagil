@@ -6,6 +6,7 @@ import { useSesion } from '../sesion/SesionProvider';
 import { ConexionMapa, urlDelMapa, type CrearSocket, type EstadoMapa } from './conexion';
 import { antiguedad, confianza, type ConductorMapa } from './estado';
 import { MapaEsquematico } from './MapaEsquematico';
+import { MapaGoogle } from './MapaGoogle';
 import propios from './mapa.module.css';
 
 const ESTADOS = { DISPONIBLE: 'Disponible', EN_VIAJE: 'En viaje' } as const;
@@ -22,14 +23,19 @@ function hace(segundos: number | null): string {
   return `hace ${Math.floor(segundos / 60)} min`;
 }
 
-/** Mapa en tiempo real de los conductores en turno (HU-02). `crearSocket` se reemplaza en las pruebas. */
+/**
+ * Mapa en tiempo real de los conductores en turno (HU-02). Con clave usa Google Maps; sin ella, o si no carga, el
+ * esquemático. La clave va en `web/.env`, que está ignorado. `crearSocket` se reemplaza en las pruebas.
+ */
 export function Mapa({ crearSocket }: { crearSocket?: CrearSocket }) {
+  const claveMapa = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
   const entorno = useEntorno();
   const { sesion } = useSesion();
   const conexion = useMemo(() => new ConexionMapa(urlDelMapa(entorno.origen), sesion, crearSocket, () => entorno.ahora()), [entorno, sesion, crearSocket]);
   const [estado, setEstado] = useState<EstadoMapa>(conexion.estado);
   const [seleccionado, setSeleccionado] = useState<number | null>(null);
   const [ahora, setAhora] = useState(() => entorno.ahora());
+  const [fallaGoogle, setFallaGoogle] = useState(false);
 
   useEffect(() => {
     const quitar = conexion.suscribir(setEstado);
@@ -66,8 +72,21 @@ export function Mapa({ crearSocket }: { crearSocket?: CrearSocket }) {
       </div>
       {estado.fase === 'reconectando' && <Aviso tipo="error">Se perdió la conexión en vivo. Reintentando…</Aviso>}
 
+      {claveMapa && fallaGoogle && <Aviso tipo="error">No se pudo cargar Google Maps: se muestra el mapa esquemático.</Aviso>}
+
       <div className={propios.disposicion}>
-        <MapaEsquematico conductores={conductores} seleccionado={seleccionado} alSeleccionar={setSeleccionado} ahora={momento} />
+        {claveMapa && !fallaGoogle ? (
+          <MapaGoogle
+            clave={claveMapa}
+            conductores={conductores}
+            seleccionado={seleccionado}
+            alSeleccionar={setSeleccionado}
+            ahora={momento}
+            alFallar={() => setFallaGoogle(true)}
+          />
+        ) : (
+          <MapaEsquematico conductores={conductores} seleccionado={seleccionado} alSeleccionar={setSeleccionado} ahora={momento} />
+        )}
         <div>
           {elegido && <Ficha conductor={elegido} ahora={momento} />}
           {conductores.length === 0 && estado.fase === 'conectado' ? (

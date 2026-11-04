@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
 import { ConexionMapa, urlDelMapa, type SocketMinimo } from './conexion';
 import { aplicar, confianza, encuadre, type ConductorMapa } from './estado';
+import { olvidarCargaDeGoogleMaps } from './googleMaps';
 
 const AHORA = Date.parse('2026-11-03T15:00:00Z');
 
@@ -179,6 +180,46 @@ describe('pantalla del mapa', () => {
     montarPanel('/', { email: 'despacho@andes.example' });
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
     expect(within(menu).getByRole('link', { name: 'Mapa' })).toHaveAttribute('href', '/mapa');
+  });
+
+  describe('elige el adaptador según la clave', () => {
+    const scriptsDeGoogle = () => document.head.querySelectorAll('script[src*="maps.googleapis.com"]');
+
+    beforeEach(() => {
+      vi.stubGlobal('WebSocket', SocketFalso);
+      olvidarCargaDeGoogleMaps();
+    });
+
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      scriptsDeGoogle().forEach((s) => s.remove());
+    });
+
+    it('sin clave: mapa esquemático y nada externo', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_KEY', '');
+      montarPanel('/mapa', { email: 'despacho@andes.example' });
+      expect(await screen.findByRole('img', { name: 'Mapa de conductores en turno' })).toBeInTheDocument();
+      expect(scriptsDeGoogle()).toHaveLength(0);
+    });
+
+    it('con clave: carga Google Maps y no dibuja el esquemático', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_KEY', 'clave-sintetica');
+      montarPanel('/mapa', { email: 'despacho@andes.example' });
+      expect(await screen.findByRole('region', { name: 'Mapa de conductores en turno' })).toBeInTheDocument();
+      expect(screen.queryByRole('img', { name: 'Mapa de conductores en turno' })).not.toBeInTheDocument();
+      expect(scriptsDeGoogle()).toHaveLength(1);
+    });
+
+    it('si no carga vuelve al esquemático y lo avisa', async () => {
+      vi.stubEnv('VITE_GOOGLE_MAPS_KEY', 'clave-sintetica');
+      montarPanel('/mapa', { email: 'despacho@andes.example' });
+      await screen.findByRole('region', { name: 'Mapa de conductores en turno' });
+      act(() => {
+        scriptsDeGoogle()[0].dispatchEvent(new Event('error'));
+      });
+      expect(await screen.findByText('No se pudo cargar Google Maps: se muestra el mapa esquemático.')).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: 'Mapa de conductores en turno' })).toBeInTheDocument();
+    });
   });
 
   it('sin conexión avisa que reintenta', async () => {

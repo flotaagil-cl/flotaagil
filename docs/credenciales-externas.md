@@ -6,7 +6,7 @@ Qué hay que conseguir para pasar de los adaptadores de desarrollo a los servici
 |---|---|---|
 | Twilio (WhatsApp) | Registra los mensajes y las respuestas se simulan con `simular_whatsapp` | Listo, probado solo con un doble |
 | FlightAware AeroAPI | Todo vuelo existe, salvo los que empiezan con `ZZ` | Listo, probado solo con respuestas simuladas |
-| Google Maps (mapa) | Mapa esquemático | **Falta escribir el adaptador** |
+| Google Maps (mapa) | Mapa esquemático | Listo, probado solo con un doble de la API |
 | Google Geocoding (direcciones) | Coordenadas simuladas dentro de la zona | Listo, probado solo con respuestas simuladas |
 
 Ninguno se ha probado todavía contra el servicio real. Los precios y límites de esta página pueden haber cambiado: confírmalos antes de contratar.
@@ -114,9 +114,13 @@ No confirmé los precios ni el crédito mensual: revisa la página de precios de
 | Dónde | Variable | Qué activa |
 |---|---|---|
 | `backend/.env` | `GOOGLE_GEOCODING_API_KEY` | Direcciones reales en el panel y el portal, **ya funciona al ponerla** |
-| `web/.env` | `VITE_GOOGLE_MAPS_KEY` | **Hoy no activa nada** |
+| `web/.env` | `VITE_GOOGLE_MAPS_KEY` | Mapa de Google en la pantalla Mapa del panel |
 
-`VITE_GOOGLE_MAPS_KEY` se fija al compilar, así que hay que volver a hacer el build. El mapa sigue siendo el esquemático hasta escribir el adaptador de Google Maps con las mismas propiedades de `MapaEsquematico` (PR-12). Es trabajo pendiente: hace falta una clave para poder probarlo.
+`VITE_GOOGLE_MAPS_KEY` se fija al compilar: en desarrollo, reinicia Vite; en producción, vuelve a hacer el build. **Queda dentro del JavaScript que recibe el navegador**, y por eso la restricción por dominio es obligatoria. `web/.env` está ignorado: no la subas al repositorio.
+
+Sin clave se muestra el mapa esquemático, sin cargar nada externo. Si Google rechaza la clave o el script no carga, el panel vuelve al esquemático y lo avisa.
+
+**Falta probarlo con una clave real.** El adaptador usa `google.maps.Marker`, que Google marca como obsoleto en favor de `AdvancedMarkerElement`, aunque sigue disponible: la alternativa exige crear un Map ID en la consola. Si Google lo retira, hay que migrar ese adaptador.
 
 ## Fuentes
 
