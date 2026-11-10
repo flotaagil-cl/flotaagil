@@ -36,12 +36,6 @@ def api(cliente, administrador):
     return cliente
 
 
-def crear(api, **cambios):
-    return api.post(
-        LISTA, {"cliente_nombre": "Minera Sintética S.A.", "cliente_rut": RUT} | cambios, format="json"
-    )
-
-
 def registro(**cambios):
     datos = {
         "cliente_nombre": "Constructora Sintética SpA",
@@ -255,10 +249,18 @@ class TestRestablecer:
 
 @pytest.mark.django_db
 class TestAdministracion:
-    def test_crea_sin_cuenta_y_aprobado(self, api):
-        respuesta = crear(api)
-        assert respuesta.status_code == 201
-        assert (respuesta.data["estado"], respuesta.data["tiene_cuenta"]) == ("APROBADO", False)
+    def test_el_administrador_no_crea_convenios(self, api):
+        """Decisión del PO (DC-35): los convenios llegan solo por el registro del portal."""
+        respuesta = api.post(LISTA, {"cliente_nombre": "Minera", "cliente_rut": RUT}, format="json")
+        assert respuesta.status_code == 405
+        assert not Convenio.objects.exists()
+
+    def test_sin_cuenta_es_historial_edita_y_desactiva_pero_no_reactiva(self, api, empresa):
+        convenio = ConvenioFactory(empresa=empresa)
+        assert api.patch(detalle(convenio), {"direccion": "Calle 1"}, format="json").status_code == 200
+        assert api.post(accion("desactivar", convenio)).data["estado"] == "INACTIVO"
+        respuesta = api.post(accion("activar", convenio))
+        assert (respuesta.status_code, respuesta.data["code"]) == (409, "sin_cuenta")
 
     def test_edita_y_audita_lo_anterior(self, api, empresa):
         convenio = con_cuenta(empresa)
@@ -364,12 +366,12 @@ class TestAuditoriaConsultable:
     def consultar(self, api, convenio, **parametros):
         return api.get(reverse("convenio-auditoria", args=[convenio.pk]), parametros)
 
-    def test_muestra_quien_que_y_cuando_del_mas_nuevo_al_mas_antiguo(self, api, administrador):
-        convenio = Convenio.objects.get(pk=crear(api).json()["id"])
+    def test_muestra_quien_que_y_cuando_del_mas_nuevo_al_mas_antiguo(self, api, administrador, empresa):
+        convenio = con_cuenta(empresa)
         api.post(accion("desactivar", convenio))
         api.post(accion("activar", convenio))
         filas = self.consultar(api, convenio).json()["results"]
-        assert [f["accion"] for f in filas] == ["ACTIVACION", "DESACTIVACION", "CREACION"]
+        assert [f["accion"] for f in filas] == ["ACTIVACION", "DESACTIVACION"]
         assert {f["usuario"] for f in filas} == {administrador.nombre}
 
     def test_no_expone_datos_previos_ni_credenciales(self, api, empresa):
@@ -379,15 +381,15 @@ class TestAuditoriaConsultable:
         assert temporal not in contenido
         assert "datos_previos" not in contenido
 
-    def test_pagina(self, api):
-        convenio = Convenio.objects.get(pk=crear(api).json()["id"])
-        for i in range(25):
+    def test_pagina(self, api, empresa):
+        convenio = ConvenioFactory(empresa=empresa)
+        for i in range(26):
             api.patch(detalle(convenio), {"direccion": f"Calle {i}"}, format="json")
         primera = self.consultar(api, convenio).json()
         assert (primera["count"], len(primera["results"])) == (26, 25)
 
     def test_es_de_solo_lectura_y_aislada(self, api, otra_empresa, cliente, despachador, empresa):
-        convenio = Convenio.objects.get(pk=crear(api).json()["id"])
+        convenio = ConvenioFactory(empresa=empresa)
         assert (
             api.post(reverse("convenio-auditoria", args=[convenio.pk]), {}, format="json").status_code == 405
         )

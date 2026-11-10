@@ -153,11 +153,6 @@ export const pantallasDelPanel: RouteObject[] = [
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../convenios/paginas/Convenios')).Convenios }) },
       {
-        path: 'nuevo',
-        lazy: async () => ({ Component: (await import('../convenios/paginas/ConvenioNuevo')).ConvenioNuevo }),
-        handle: { titulo: 'Nuevo convenio' } satisfies Manejo,
-      },
-      {
         path: ':id',
         lazy: async () => ({ Component: (await import('../convenios/paginas/Convenio')).Convenio }),
         handle: { titulo: 'Convenio' } satisfies Manejo,

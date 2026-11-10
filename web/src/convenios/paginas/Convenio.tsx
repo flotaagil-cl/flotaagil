@@ -213,6 +213,7 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
       <div className={estilos.tarjeta}>
         <h2>Estado y acceso</h2>
         {convenio.estado === 'EN_REVISION' && <p>La empresa se registró desde el portal y espera tu revisión.</p>}
+        {!convenio.tiene_cuenta && <p>Convenio anterior al registro en el portal, sin cuenta: queda como historial.</p>}
         {confirmando ? (
           <div role="alertdialog" aria-labelledby="pregunta-convenio">
             <p id="pregunta-convenio">{PREGUNTAS[confirmando].texto}</p>
@@ -257,7 +258,7 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                 Desactivar convenio
               </button>
             )}
-            {convenio.estado === 'INACTIVO' && (
+            {convenio.estado === 'INACTIVO' && convenio.tiene_cuenta && (
               <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('activar')}>
                 Activar convenio
               </button>

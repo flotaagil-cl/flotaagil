@@ -13,7 +13,6 @@ from apps.flota.serializers import PasswordTemporalSerializer
 from . import servicios
 from .models import Convenio, EstadoConvenio
 from .serializers import (
-    ConvenioCrearSerializer,
     ConvenioDetalleSerializer,
     ConvenioEditarSerializer,
     ConvenioSerializer,
@@ -69,20 +68,6 @@ class ConvenioViewSet(
 
     def _detalle(self, convenio):
         return ConvenioDetalleSerializer(self.get_queryset().get(pk=convenio.pk)).data
-
-    @extend_schema(
-        summary="Crear un convenio sin cuenta",
-        tags=["convenios"],
-        request=ConvenioCrearSerializer,
-        responses={201: ConvenioDetalleSerializer},
-        description="HU-34: queda APROBADO y sin cuenta, para las reservas que ingresa la central. Las "
-        "empresas con cuenta se registran solas en el portal.",
-    )
-    def create(self, request):
-        entrada = ConvenioCrearSerializer(data=request.data)
-        entrada.is_valid(raise_exception=True)
-        convenio = servicios.crear(request.user.empresa, dict(entrada.validated_data), usuario=request.user)
-        return Response(self._detalle(convenio), status=status.HTTP_201_CREATED)
 
     @extend_schema(
         summary="Editar los datos de un convenio",

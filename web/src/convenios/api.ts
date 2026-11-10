@@ -7,7 +7,6 @@ import { useApi } from '../sesion/SesionProvider';
 
 export type Convenio = components['schemas']['Convenio'];
 export type ConvenioDetalle = components['schemas']['ConvenioDetalle'];
-export type ConvenioCrear = NonNullable<paths['/api/convenios/']['post']['requestBody']>['content']['application/json'];
 export type ConvenioEditar = NonNullable<paths['/api/convenios/{id}/']['patch']['requestBody']>['content']['application/json'];
 export type ConsultaConvenios = NonNullable<paths['/api/convenios/']['get']['parameters']['query']>;
 
@@ -43,15 +42,6 @@ export function useAuditoriaConvenio(id: number, pagina: number) {
     queryKey: ['convenios', 'auditoria', id, pagina],
     queryFn: () => resultado(api.GET('/api/convenios/{id}/auditoria/', { params: { path: { id }, query: { page: pagina } } })),
     placeholderData: keepPreviousData,
-  });
-}
-
-export function useCrearConvenio() {
-  const api = useApi();
-  const cliente = useQueryClient();
-  return useMutation({
-    mutationFn: (datos: ConvenioCrear) => resultado(api.POST('/api/convenios/', { body: datos })),
-    onSuccess: () => void cliente.invalidateQueries({ queryKey: claves.todo }),
   });
 }
 

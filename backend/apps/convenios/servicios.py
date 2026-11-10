@@ -3,7 +3,9 @@ RN-12: los cambios de estado y de contraseña quedan en auditoría inmutable.
 
 HU-34 (DC-35): la empresa cliente se registra en el portal y queda EN_REVISION con su cuenta (USUARIO de rol
 CONVENIO). El administrador la aprueba o la rechaza con motivo, y se le avisa por correo. Puede editar los
-datos, desactivar y reactivar, y restablecer la contraseña con una temporal (DC-14). No crea cuentas.
+datos, desactivar y reactivar, y restablecer la contraseña con una temporal (DC-14). No crea convenios ni
+cuentas (decisión del PO del 2026-11-10): los convenios sin cuenta, anteriores a HU-34, quedan como
+historial y solo admiten editar los datos y desactivarlos.
 """
 
 from django.contrib.auth.password_validation import validate_password
@@ -101,14 +103,6 @@ def registrar(empresa, datos: dict) -> Convenio:
 
 
 @transaction.atomic
-def crear(empresa, datos: dict, *, usuario) -> Convenio:
-    """Convenio sin cuenta, para reservas que ingresa la central (canal CONVENIO del panel)."""
-    convenio = Convenio.objects.create(empresa=empresa, estado=EstadoConvenio.APROBADO, **datos)
-    _auditar(usuario, convenio, "CREACION")
-    return convenio
-
-
-@transaction.atomic
 def editar(convenio: Convenio, datos: dict, *, usuario) -> Convenio:
     convenio = _bloquear(convenio)
     datos = {campo: valor for campo, valor in datos.items() if campo in CAMPOS_EDITABLES}
@@ -180,6 +174,11 @@ def desactivar(convenio: Convenio, *, usuario) -> Convenio:
 def activar(convenio: Convenio, *, usuario) -> Convenio:
     convenio = _bloquear(convenio)
     _exigir(convenio, EstadoConvenio.INACTIVO)
+    if convenio.usuario_id is None:
+        # Sin cuenta es historial (anterior a HU-34): una vez desactivado no vuelve.
+        raise EstadoNoPermitido(
+            "Este convenio no tiene cuenta: es historial y no se reactiva.", code="sin_cuenta"
+        )
     convenio.estado = EstadoConvenio.APROBADO
     convenio.save(update_fields=["estado"])
     if convenio.usuario_id:

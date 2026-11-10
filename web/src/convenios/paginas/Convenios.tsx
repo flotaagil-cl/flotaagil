@@ -24,10 +24,8 @@ export function Convenios() {
     <section>
       <div className={estilos.encabezado}>
         <h1>Convenios</h1>
-        <Link to="/convenios/nuevo" className={estilos.boton}>
-          Nuevo convenio
-        </Link>
       </div>
+      <p>Las empresas cliente se registran en el portal y quedan en revisión hasta que las apruebes.</p>
 
       <div className={estilos.filtros}>
         <div className={estilos.camposFiltro} data-abierto="true">
@@ -64,10 +62,7 @@ export function Convenios() {
             </>
           ) : (
             <>
-              <p>Aún no hay convenios.</p>
-              <Link to="/convenios/nuevo" className={estilos.boton}>
-                Nuevo convenio
-              </Link>
+              <p>Aún no hay convenios. Las empresas cliente se registran desde el portal.</p>
             </>
           )}
         </div>

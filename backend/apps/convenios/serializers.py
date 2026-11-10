@@ -76,11 +76,6 @@ class _DatosConvenio(serializers.Serializer):
         return _rut(valor)
 
 
-class ConvenioCrearSerializer(_DatosConvenio):
-    """Convenio sin cuenta, para las reservas que ingresa la central (HU-34: el administrador no crea
-    cuentas)."""
-
-
 class ConvenioEditarSerializer(_DatosConvenio):
     pass
 

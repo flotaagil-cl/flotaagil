@@ -54,25 +54,19 @@ describe('listado', () => {
     expect(screen.getByRole('link', { name: 'Banco Sur' })).toBeInTheDocument();
   });
 
-  it('sin convenios invita a crear; con filtros, a quitarlos', async () => {
+  it('sin convenios explica el registro; con filtros, invita a quitarlos', async () => {
     montar('/convenios?estado=APROBADO');
     expect(await screen.findByText('Ningún convenio coincide con los filtros.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
-    expect(await screen.findByText('Aún no hay convenios.')).toBeInTheDocument();
+    expect(await screen.findByText(/Aún no hay convenios. Las empresas cliente se registran desde el portal/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nuevo convenio' })).not.toBeInTheDocument();
   });
 });
 
-describe('crear sin cuenta', () => {
-  it('crea aprobado y abre la ficha, sin contraseña', async () => {
-    const { convenios, router } = montar('/convenios/nuevo');
-    await userEvent.type(await screen.findByLabelText('Cliente'), 'Minera Nueva');
-    await userEvent.type(screen.getByLabelText('RUT'), '76543210-3');
-    await userEvent.click(screen.getByRole('button', { name: 'Crear convenio' }));
-    await screen.findByRole('heading', { name: /Minera Nueva/ });
-    expect(router.state.location.pathname).toMatch(/^\/convenios\/\d+$/);
-    expect(screen.getByText('Sin cuenta')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(convenios.convenios).toHaveLength(1);
+describe('sin creación', () => {
+  it('el administrador no tiene «Nuevo convenio» y la ruta no existe', async () => {
+    montar('/convenios/nuevo');
+    expect(await screen.findByRole('link', { name: 'Volver a los convenios' })).toBeInTheDocument();
   });
 });
 
@@ -134,9 +128,11 @@ describe('ficha', () => {
     expect(within(dialogo).getByText(convenios.password)).toBeInTheDocument();
   });
 
-  it('sin cuenta no ofrece restablecer', async () => {
-    await abrir({ tiene_cuenta: false, encargado_email: null });
+  it('sin cuenta es historial: no ofrece restablecer ni reactivar', async () => {
+    await abrir({ tiene_cuenta: false, encargado_email: null, estado: 'INACTIVO', activo: false });
+    expect(screen.getByText(/queda como historial/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Restablecer contraseña' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Activar convenio' })).not.toBeInTheDocument();
   });
 
   it('una falla se informa', async () => {
