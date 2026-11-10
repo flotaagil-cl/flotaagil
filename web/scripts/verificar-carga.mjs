@@ -36,7 +36,6 @@ export const DIFERIDOS = [
   'src/reservas/paginas/Editar.tsx',
   'src/mapa/Mapa.tsx',
   'src/convenios/paginas/Convenios.tsx',
-  'src/convenios/paginas/ConvenioNuevo.tsx',
   'src/convenios/paginas/Convenio.tsx',
   'src/conversaciones/paginas/Conversaciones.tsx',
   'src/conversaciones/paginas/Conversacion.tsx',
@@ -58,6 +57,7 @@ export const DIFERIDOS = [
   'src/caja/Caja.tsx',
   'src/cuentas-web/MiConvenio.tsx',
   'src/cuentas-web/MisReservas.tsx',
+  'src/reservas/paginas/Contingencia.tsx',
 ];
 
 /** Desde dónde se mira y qué no puede cargar. `desde: null` = el paquete inicial. */
