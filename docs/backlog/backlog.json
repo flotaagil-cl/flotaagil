@@ -521,6 +521,122 @@
         "HU-20"
       ],
       "estado_cambio": "Nueva (reemplaza HU-22 y HU-23)"
+    },
+    {
+      "id": "HU-31",
+      "titulo": "Historial de turnos y cierre de caja",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como administrador, quiero ver los turnos de cada conductor y cuadrar el efectivo que rinde, para detectar diferencias de caja.",
+      "criterios": "TURNO con hora de inicio, término y motivo (CONDUCTOR, CUENTA_DESHABILITADA, CIERRE_ADMINISTRATIVO); a lo más un turno abierto por conductor. Cambiar de vehículo cierra el turno y abre otro. El viaje guarda su turno al aceptarse. Mi turno lee TURNO. CIERRE_CAJA por turno terminado y sin viajes en ejecución: efectivo registrado, rendido, diferencia y observación obligatoria si hay diferencia; uno por turno; solo administrador; en auditoría. La liquidación de HU-06 sigue por día de pago.",
+      "prioridad": "Por definir",
+      "sp": 5,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-10",
+        "RN-12"
+      ],
+      "casos_prueba": [
+        "CP-36"
+      ],
+      "depende_de": [
+        "HU-18",
+        "HU-05"
+      ],
+      "estado_cambio": "Nueva (CC-12)"
+    },
+    {
+      "id": "HU-32",
+      "titulo": "Reserva de contingencia",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como despachador, quiero ingresar los viajes anotados durante una caída del sistema con su folio y sus horas reales, para que queden registrados y conciliados.",
+      "criterios": "Canal CONTINGENCIA con folio único por empresa. El viaje se crea finalizado (método y monto) o cancelado (motivo) con las horas reales, sin pasar por la máquina de estados, con el historial marcado como contingencia. Sin avisos de WhatsApp ni encuesta. Hora real en el pasado y como máximo 7 días atrás (configurable). Se liga al turno del conductor que contenga la hora real, si existe. Reporte de conciliación por folio y auditoría.",
+      "prioridad": "Por definir",
+      "sp": 3,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-10",
+        "RN-11"
+      ],
+      "casos_prueba": [
+        "CP-37"
+      ],
+      "depende_de": [
+        "HU-03",
+        "HU-06",
+        "HU-31"
+      ],
+      "estado_cambio": "Nueva (CC-15)"
+    },
+    {
+      "id": "HU-33",
+      "titulo": "Inicio de sesión web único",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como usuario web, quiero una sola pantalla de inicio de sesión que me lleve a mi vista, para no depender de links distintos según mi rol.",
+      "criterios": "Un solo login web para administrador, despachador, convenio y pasajero, con la cookie del panel; cada rol llega a su vista; la app del conductor no cambia. El portal ofrece continuar como invitado, iniciar sesión, crear cuenta y registrar mi empresa. Adaptador de correo: consola en desarrollo y Amazon SES por configuración.",
+      "prioridad": "Por definir",
+      "sp": 5,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [],
+      "depende_de": [],
+      "estado_cambio": "Nueva (CC-16)"
+    },
+    {
+      "id": "HU-34",
+      "titulo": "Autoregistro de convenios con aprobación",
+      "epica": "Convenios",
+      "label_epica": "epica:convenios",
+      "historia": "Como empresa cliente, quiero registrarme y, una vez aprobada, reservar con mi cuenta, para no depender de un link y una contraseña compartida.",
+      "criterios": "Registro con razón social, RUT, dirección, encargado y contraseña; cuenta de rol CONVENIO. Estados EN_REVISION, APROBADO, RECHAZADO e INACTIVO; en revisión entra pero no reserva. El administrador aprueba o rechaza con motivo, en auditoría y con correo; edita, desactiva (RN-08) y restablece con una temporal (DC-14). Formulario público con límite de intentos y trampa anti-bots. La reserva del convenio no se verifica (RN-07) y conserva la declaración de avisos ligada al usuario. El convenio ve sus reservas. Reemplaza el link con token.",
+      "prioridad": "Por definir",
+      "sp": 9,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-07",
+        "RN-08",
+        "RN-12"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-33"
+      ],
+      "estado_cambio": "Nueva (CC-16); reemplaza el link de HU-11 y HU-25"
+    },
+    {
+      "id": "HU-35",
+      "titulo": "Cuenta de pasajero opcional",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero crear una cuenta opcional para ver mis reservas y no verificar mi teléfono cada vez, sin perder la opción de reservar como invitado.",
+      "criterios": "Cuenta por empresa con nombre, teléfono, correo y contraseña; se activa al confirmar el teléfono por WhatsApp y se liga al pasajero, con sus reservas anteriores. Con cuenta activa no se verifica otra vez; se mantiene el límite por hora. Ve sus reservas e historial y cancela solo sin conductor (RN-09). Recuperación por correo y bloqueo tras 5 intentos. Eliminar la cuenta deja las reservas como de invitado. El invitado sigue igual.",
+      "prioridad": "Por definir",
+      "sp": 10,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-06",
+        "RN-09"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-33",
+        "HU-20"
+      ],
+      "estado_cambio": "Nueva (CC-16)"
     }
   ],
   "tareas": [

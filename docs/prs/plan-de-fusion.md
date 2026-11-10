@@ -1,6 +1,6 @@
-# Plan de fusión: Sprints 1 a 4
+# Plan de fusión: Sprints 1 a 4, cambios CC-12, CC-15 y CC-16, y ramas sueltas
 
-Para Carlos. Son 4 PR hacia `main`, uno por sprint, **en este orden**.
+Para Carlos. Son 5 PR encadenados hacia `main`, **en este orden**, y después 4 PR cortos de ramas que quedaron fuera de la cadena (ver «Ramas fuera de la cadena»).
 
 | PR | Sprint | Rama de origen | Rama base | Issues que cierra |
 |---|---|---|---|---|
@@ -8,6 +8,7 @@ Para Carlos. Son 4 PR hacia `main`, uno por sprint, **en este orden**.
 | 2 | Sprint 2 | `feat/HU-24-calificacion` | `main` | #8, #17, #18, #19, #24, #25 |
 | 3 | Sprint 3 | `fix/HU-27-origen-icao` | `main` | #10, #14, #28, #29, #30 |
 | 4 | Sprint 4 | `docs/plan-fusion-sprint4` | `main` | #7, #11, #12, #15, #21, #26, #31 |
+| 5 | Cambios CC-12, CC-15 y CC-16 | `feat/HU-35-cuenta-pasajero` (punta de la cadena nueva) | `main` | #36, #37, #38, #39, #40 |
 
 ## Antes de empezar
 
@@ -34,7 +35,7 @@ Repite 1 a 5 para cada PR, en orden.
 | 4 | Carlos, en la web | **Fusionar** con «Squash and merge», y avisarle a Renato. |
 | 5 | Claude, desde el PC de Renato | **Preparar la rama del PR siguiente,** cuando Renato avisa que se fusionó. Confirma cuando el siguiente PR se puede abrir. |
 
-Tras el PR 4 el paso 5 ya no hace falta.
+Tras el PR 5 el paso 5 ya no hace falta en la cadena. Las ramas fuera de la cadena usan su propio paso, descrito abajo.
 
 ### Lo que hace el paso 5
 
@@ -62,7 +63,40 @@ Un commit nuevo en la rama de un PR no llega solo a las siguientes, porque `merg
 - **Tras fusionar el PR 4:** migraciones y reinicio de `worker` y `beat`. Trae cuatro migraciones y la tarea `enviar_chat`.
 - **Los PR abiertos** de Dependabot (#1 a #4) y #32 no son parte de este plan. Dependabot propondrá subir `redis` a más de 5.2.1: no se debe aceptar sin subir también Celery.
 
-Según CLAUDE.md, después de cada PR corresponde la línea base del sprint (`v0.1`, `v0.2`, `v0.3`, `v0.4`).
+Según CLAUDE.md, después de cada PR corresponde la línea base del sprint (`v0.1`, `v0.2`, `v0.3`, `v0.4`). El PR 5 no tiene línea base asignada: los cambios CC-12, CC-15 y CC-16 no tienen sprint definido.
+
+## Ramas fuera de la cadena
+
+Cuatro ramas salieron de `main` en el Sprint 0 y no están en ninguna de las cinco ramas de origen: si no se abre su PR, no llegan a `main`. Se simuló su fusión (`git merge-tree`) contra la punta de la cadena nueva: **ninguna tiene conflictos**.
+
+| Orden | Rama | Qué trae | PR | Cierra |
+|---|---|---|---|---|
+| 6 | `chore/sprint0-script` | `docs/sprint0_github.py` (script del Sprint 0) y una línea en los README | #32, ya abierto | — |
+| 7 | `docs/agregar-carlos` | CODEOWNERS con `@ceal2013` en `backend/` e `infra/`; la línea de Carlos en `CLAUDE.md` | Por abrir | — |
+| 8 | `docs/flujo-tablero` | La regla del flujo del tablero en `CLAUDE.md` (Closes en el PR que termina la HU, Refs en los parciales) | Por abrir | — |
+| 9 | `docs/backlog-sprint1` | Criterios detallados de HU-03 y HU-19, avance de HU-26 y `docs/backlog/pendientes.md`, `llevar-a-github.sh` | Por abrir | — |
+
+**Cuándo:** después del PR 5, una por una, en este orden. Son solo documentación y no cambian el comportamiento.
+
+**Cómo** (para cada una):
+
+| Paso | Quién | Qué |
+|---|---|---|
+| 1 | Claude, desde el PC de Renato | Actualizar la rama con `main` con un merge normal (**no** `-s ours`: estas ramas no están en `main` y su contenido debe llegar). Comprobar que no haya conflictos y subirla. |
+| 2 | Carlos, en la web | Abrir el PR (o usar #32) con base `main`, esperar el CI y pedir revisión a Renato. |
+| 3 | Carlos, en la web | Fusionar con «Squash and merge». |
+
+```sh
+git fetch origin
+git switch <rama>
+git pull
+git merge --no-edit origin/main
+git push
+```
+
+**`CLAUDE.md` y Carlos:** `chore/estabilizacion-docs` (PR 5) ya cambia la fila de Carlos al mismo texto que `docs/agregar-carlos` (`ceal2013`). Un cambio idéntico en ambos lados no produce conflicto, y el PR 7 queda solo con CODEOWNERS. Si al revisarlo Carlos usa otro usuario, se corrige en el PR 7.
+
+**`docs/backlog-sprint1`:** fue un borrador del backlog del Sprint 1. Al revisarlo, decidir si sus criterios detallados de HU-03 y HU-19 reemplazan los del backlog actual (que ya tiene HU-31 a HU-35) o si la rama se cierra sin fusionar.
 
 ---
 
