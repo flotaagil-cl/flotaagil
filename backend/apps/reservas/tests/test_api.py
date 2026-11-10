@@ -238,7 +238,7 @@ class TestIngresar:
         assert respuesta.data["estado"] == "SOLICITADO"
 
     def test_convenio_inactivo(self, api, despachador):
-        convenio = ConvenioFactory(empresa=despachador.empresa, activo=False)
+        convenio = ConvenioFactory(empresa=despachador.empresa, estado="INACTIVO")
         respuesta = api.post(LISTA, reserva(canal="CONVENIO", convenio=convenio.pk), format="json")
         assert respuesta.status_code == 400
 

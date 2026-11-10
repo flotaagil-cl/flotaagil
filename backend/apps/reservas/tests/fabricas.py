@@ -58,7 +58,6 @@ class ConvenioFactory(factory.django.DjangoModelFactory):
     empresa = factory.SubFactory(EmpresaFactory)
     cliente_nombre = factory.Sequence(lambda n: f"Cliente corporativo {n}")
     cliente_rut = factory.Sequence(_rut(95000000))
-    password_hash = factory.LazyFunction(lambda: "pbkdf2_sha256$sintetico")
 
 
 class PasajeroFactory(factory.django.DjangoModelFactory):

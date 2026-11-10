@@ -112,6 +112,11 @@ class Viaje(models.Model):
     # DC-27: el supervisor declara que el pasajero autorizó los avisos. No tiene cuenta: se guarda su nombre.
     autorizacion_avisos_en = models.DateTimeField(null=True, blank=True)
     autorizacion_avisos_supervisor = models.CharField(max_length=80, null=True, blank=True)
+    # DC-35 (HU-34): desde las cuentas de convenio la declaración queda ligada al usuario que reserva.
+    # El nombre escrito (DC-27) se conserva solo en las reservas hechas con el link anterior.
+    autorizacion_avisos_por = models.ForeignKey(
+        "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

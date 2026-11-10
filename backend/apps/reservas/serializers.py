@@ -5,7 +5,7 @@ from rest_framework import serializers
 from apps.aeropuerto.models import TipoAlertaVuelo, Vuelo
 from apps.auditoria.models import Auditoria, Entidad
 from apps.comun.validadores import normalizar_telefono, validar_telefono_e164, validar_vuelo_iata
-from apps.convenios.models import Convenio
+from apps.convenios.models import Convenio, EstadoConvenio
 
 from . import estados
 from .models import MONTO_MAXIMO, Canal, EstadoViaje, HistorialEstado, MetodoPago, Sentido, Viaje
@@ -219,7 +219,9 @@ class _ConvenioDeLaEmpresa(serializers.PrimaryKeyRelatedField):
     """Solo convenios activos de la empresa del usuario (RN-08, RN-13)."""
 
     def get_queryset(self):
-        return Convenio.objects.filter(empresa_id=self.context["request"].user.empresa_id, activo=True)
+        return Convenio.objects.filter(
+            empresa_id=self.context["request"].user.empresa_id, estado=EstadoConvenio.APROBADO
+        )
 
 
 class ViajeCrearSerializer(serializers.Serializer):

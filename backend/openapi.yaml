@@ -999,122 +999,6 @@ paths:
                 $ref: '#/components/schemas/InformeImportacion'
           description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
             el archivo no sirve, el error viene en `archivo`.'
-  /api/convenio/{token}/:
-    get:
-      operationId: convenio_retrieve
-      description: Datos para el formulario y si hay sesión. Con sesión, cuenta como
-        uso y la renueva.
-      summary: Estado del link del convenio
-      parameters:
-      - in: path
-        name: token
-        schema:
-          type: string
-        required: true
-      tags:
-      - convenio
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AccesoConvenio'
-          description: ''
-        '404':
-          description: Link inexistente o convenio inactivo (RN-08)
-  /api/convenio/{token}/salir/:
-    post:
-      operationId: convenio_salir_create
-      summary: Cerrar la sesión del convenio
-      parameters:
-      - in: path
-        name: token
-        schema:
-          type: string
-        required: true
-      tags:
-      - convenio
-      responses:
-        '204':
-          description: No response body
-  /api/convenio/{token}/sesion/:
-    post:
-      operationId: convenio_sesion_create
-      description: Deja la sesión en una cookie httpOnly, que vence tras 2 h sin uso
-        (configurable).
-      summary: Entrar con la contraseña del convenio
-      parameters:
-      - in: path
-        name: token
-        schema:
-          type: string
-        required: true
-      tags:
-      - convenio
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ContrasenaRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ContrasenaRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ContrasenaRequest'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SesionConvenio'
-          description: ''
-        '401':
-          description: '`credenciales_invalidas`'
-        '404':
-          description: Link inexistente o convenio inactivo (RN-08)
-        '423':
-          description: '`convenio_bloqueado`: 5 intentos fallidos (DC-27)'
-  /api/convenio/{token}/solicitudes/:
-    post:
-      operationId: convenio_solicitudes_create
-      description: Queda SOLICITADO y con el convenio, sin verificar el teléfono por
-        WhatsApp (RN-07).
-      summary: Solicitar un viaje a nombre del convenio
-      parameters:
-      - in: path
-        name: token
-        schema:
-          type: string
-        required: true
-      tags:
-      - convenio
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SolicitudConvenioRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SolicitudConvenioRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SolicitudConvenioRequest'
-        required: true
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SolicitudConvenioRespuesta'
-          description: ''
-        '401':
-          description: '`sesion_convenio_vencida`'
-        '404':
-          description: Link inexistente o convenio inactivo (RN-08)
   /api/convenios/:
     get:
       operationId: convenios_list
@@ -1122,9 +1006,19 @@ paths:
       summary: Listar convenios con su volumen de reservas
       parameters:
       - in: query
-        name: activo
+        name: estado
         schema:
-          type: boolean
+          type: string
+          enum:
+          - APROBADO
+          - EN_REVISION
+          - INACTIVO
+          - RECHAZADO
+        description: |-
+          * `EN_REVISION` - En revisión
+          * `APROBADO` - Aprobado
+          * `RECHAZADO` - Rechazado
+          * `INACTIVO` - Inactivo
       - name: page
         required: false
         in: query
@@ -1149,9 +1043,9 @@ paths:
           description: ''
     post:
       operationId: convenios_create
-      description: Genera el token del link (256 bits) y la contraseña, que se entrega
-        una sola vez.
-      summary: Crear un convenio
+      description: 'HU-34: queda APROBADO y sin cuenta, para las reservas que ingresa
+        la central. Las empresas con cuenta se registran solas en el portal.'
+      summary: Crear un convenio sin cuenta
       tags:
       - convenios
       requestBody:
@@ -1173,13 +1067,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ConvenioCreado'
+                $ref: '#/components/schemas/ConvenioDetalle'
           description: ''
   /api/convenios/{id}/:
     get:
       operationId: convenios_retrieve
       description: 'HU-11: solo el administrador de la empresa.'
-      summary: Detalle de un convenio, con el token de su link
+      summary: Detalle de un convenio
       parameters:
       - in: path
         name: id
@@ -1200,9 +1094,9 @@ paths:
           description: ''
     patch:
       operationId: convenios_partial_update
-      description: Desactivar invalida el link sin afectar el historial (RN-08). Se
-        audita (RN-12).
-      summary: Editar, activar o desactivar un convenio
+      description: Razón social, RUT, dirección y encargado. El estado cambia con
+        sus acciones. Se audita.
+      summary: Editar los datos de un convenio
       parameters:
       - in: path
         name: id
@@ -1232,6 +1126,56 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConvenioDetalle'
           description: ''
+  /api/convenios/{id}/activar/:
+    post:
+      operationId: convenios_activar_create
+      description: 'HU-11: solo el administrador de la empresa.'
+      summary: Reactivar un convenio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
+          description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
+  /api/convenios/{id}/aprobar/:
+    post:
+      operationId: convenios_aprobar_create
+      description: Queda en auditoría y se avisa al encargado por correo.
+      summary: Aprobar un convenio en revisión
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
+          description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
   /api/convenios/{id}/auditoria/:
     get:
       operationId: convenios_auditoria_list
@@ -1262,12 +1206,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedRegistroAuditoriaList'
           description: ''
-  /api/convenios/{id}/rotar-password/:
+  /api/convenios/{id}/desactivar/:
     post:
-      operationId: convenios_rotar_password_create
-      description: La anterior deja de servir. La nueva se entrega una sola vez. Se
-        audita (RN-12).
-      summary: Rotar la contraseña del convenio
+      operationId: convenios_desactivar_create
+      description: 'RN-08: la cuenta pierde el acceso al instante; el historial no
+        cambia. Se audita.'
+      summary: Desactivar un convenio
       parameters:
       - in: path
         name: id
@@ -1284,8 +1228,73 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PasswordNueva'
+                $ref: '#/components/schemas/ConvenioDetalle'
           description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
+  /api/convenios/{id}/rechazar/:
+    post:
+      operationId: convenios_rechazar_create
+      description: Exige motivo; queda en auditoría y se avisa al encargado por correo.
+      summary: Rechazar un convenio en revisión
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RechazoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RechazoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RechazoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
+          description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
+  /api/convenios/{id}/restablecer-password/:
+    post:
+      operationId: convenios_restablecer_password_create
+      description: 'DC-14: temporal que se muestra una vez y obliga a cambiarla. Se
+        audita (RN-12).'
+      summary: Restablecer la contraseña de la cuenta del convenio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordTemporal'
+          description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
   /api/conversaciones/:
     get:
       operationId: conversaciones_list
@@ -1383,6 +1392,74 @@ paths:
               schema:
                 $ref: '#/components/schemas/Indicadores'
           description: ''
+  /api/mi-convenio/:
+    get:
+      operationId: mi_convenio_retrieve
+      summary: Mi convenio y su estado
+      tags:
+      - mi-convenio
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiConvenio'
+          description: ''
+  /api/mi-convenio/reservas/:
+    get:
+      operationId: mi_convenio_reservas_list
+      summary: Reservas del convenio, de la más reciente a la más antigua
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      tags:
+      - mi-convenio
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReservaDelConvenioList'
+          description: ''
+  /api/mi-convenio/solicitudes/:
+    post:
+      operationId: mi_convenio_solicitudes_create
+      description: 'RN-07: queda SOLICITADO sin verificación por WhatsApp. La declaración
+        de avisos queda ligada al usuario que reserva (DC-35).'
+      summary: Pedir un viaje a nombre del convenio
+      tags:
+      - mi-convenio
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudConvenioRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolicitudConvenioRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolicitudConvenioRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudRespuesta'
+          description: ''
+        '409':
+          description: '`convenio_no_aprobado`: en revisión o rechazado'
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -1406,6 +1483,64 @@ paths:
           description: ''
         '404':
           description: Empresa inexistente o inactiva
+  /api/portal/{slug}/registro-empresa/:
+    post:
+      operationId: portal_registro_empresa_create
+      description: |-
+        HU-34: la empresa cliente se registra y queda EN_REVISION. Mismos límites que el portal y campo
+        trampa.
+      summary: Registrar una empresa con convenio
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroConvenioRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegistroConvenioRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegistroConvenioRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          description: 'Registrada: queda en revisión hasta que el administrador la
+            apruebe'
+        '400':
+          description: Datos inválidos o correo no disponible
+        '404':
+          description: Empresa inexistente o inactiva
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                PorIP:
+                  value:
+                    detail: Se enviaron demasiadas solicitudes desde esta conexión.
+                      Espera un momento e intenta de nuevo.
+                    code: limite_ip
+                  summary: Por IP
+                PorTeléfono:
+                  value:
+                    detail: Ya enviaste varias solicitudes con este número. Espera
+                      unos minutos e intenta de nuevo.
+                    code: limite_telefono
+                  summary: Por teléfono
+          description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
+            IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
+            (varias solicitudes con el mismo número).'
   /api/portal/{slug}/solicitudes/:
     post:
       operationId: portal_solicitudes_create
@@ -2469,38 +2604,6 @@ paths:
           description: Firma inválida
 components:
   schemas:
-    AccesoConvenio:
-      type: object
-      description: Sin sesión no revela de qué cliente es el convenio.
-      properties:
-        razon_social:
-          type: string
-          maxLength: 120
-        slug:
-          type: string
-          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
-          maxLength: 50
-        anticipacion_minima_min:
-          type: integer
-        expiracion_verificacion_min:
-          type: integer
-        margen_nacional_min:
-          type: integer
-          description: Minutos que se suman a la llegada del vuelo cuando no se indica
-            la recogida (RN-17).
-        sesion_activa:
-          type: boolean
-        cliente_nombre:
-          type: string
-          nullable: true
-      required:
-      - anticipacion_minima_min
-      - cliente_nombre
-      - expiracion_verificacion_min
-      - margen_nacional_min
-      - razon_social
-      - sesion_activa
-      - slug
     AccesoEnum:
       enum:
       - SIN_PASSWORD
@@ -2915,15 +3018,6 @@ components:
       required:
       - id
       - nombre
-    ContrasenaRequest:
-      type: object
-      properties:
-        password:
-          type: string
-          minLength: 1
-          maxLength: 128
-      required:
-      - password
     Convenio:
       type: object
       properties:
@@ -2936,9 +3030,18 @@ components:
         cliente_rut:
           type: string
           readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/EstadoConvenioEnum'
+          readOnly: true
         activo:
           type: boolean
+          description: 'Compatibilidad con HU-11: un convenio vigente es uno aprobado.'
           readOnly: true
+        tiene_cuenta:
+          type: boolean
+          readOnly: true
+          description: Si la empresa cliente tiene cuenta (HU-34)
         reservas:
           type: integer
           readOnly: true
@@ -2947,46 +3050,15 @@ components:
       - activo
       - cliente_nombre
       - cliente_rut
+      - estado
       - id
       - reservas
-    ConvenioCreado:
-      type: object
-      description: 'Incluye el token del link: es una credencial, por eso no va en
-        el listado.'
-      properties:
-        id:
-          type: integer
-          readOnly: true
-        cliente_nombre:
-          type: string
-          readOnly: true
-        cliente_rut:
-          type: string
-          readOnly: true
-        activo:
-          type: boolean
-          readOnly: true
-        reservas:
-          type: integer
-          readOnly: true
-          description: Reservas hechas con este convenio
-        token_link:
-          type: string
-          readOnly: true
-        password:
-          type: string
-          readOnly: true
-          description: Se entrega una sola vez
-      required:
-      - activo
-      - cliente_nombre
-      - cliente_rut
-      - id
-      - password
-      - reservas
-      - token_link
+      - tiene_cuenta
     ConvenioCrearRequest:
       type: object
+      description: |-
+        Convenio sin cuenta, para las reservas que ingresa la central (HU-34: el administrador no crea
+        cuentas).
       properties:
         cliente_nombre:
           type: string
@@ -2997,13 +3069,27 @@ components:
           minLength: 1
           description: 12345678-9, con o sin puntos
           maxLength: 14
+        direccion:
+          type: string
+          nullable: true
+          maxLength: 200
+        encargado_nombre:
+          type: string
+          nullable: true
+          maxLength: 80
+        encargado_telefono:
+          nullable: true
+          oneOf:
+          - type: string
+            maxLength: 16
+            pattern: ^\+[1-9]\d{7,14}$
+          - type: string
+            maxLength: 0
       required:
       - cliente_nombre
       - cliente_rut
     ConvenioDetalle:
       type: object
-      description: 'Incluye el token del link: es una credencial, por eso no va en
-        el listado.'
       properties:
         id:
           type: integer
@@ -3014,23 +3100,72 @@ components:
         cliente_rut:
           type: string
           readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/EstadoConvenioEnum'
+          readOnly: true
         activo:
           type: boolean
+          description: 'Compatibilidad con HU-11: un convenio vigente es uno aprobado.'
           readOnly: true
+        tiene_cuenta:
+          type: boolean
+          readOnly: true
+          description: Si la empresa cliente tiene cuenta (HU-34)
         reservas:
           type: integer
           readOnly: true
           description: Reservas hechas con este convenio
-        token_link:
+        direccion:
           type: string
+          readOnly: true
+          nullable: true
+        encargado_nombre:
+          type: string
+          readOnly: true
+          nullable: true
+        encargado_email:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        encargado_telefono:
+          type: string
+          readOnly: true
+          nullable: true
+        motivo_rechazo:
+          type: string
+          readOnly: true
+          nullable: true
+        revisado_por:
+          type: string
+          readOnly: true
+          nullable: true
+        revisado_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        creado_en:
+          type: string
+          format: date-time
           readOnly: true
       required:
       - activo
       - cliente_nombre
       - cliente_rut
+      - creado_en
+      - direccion
+      - encargado_email
+      - encargado_nombre
+      - encargado_telefono
+      - estado
       - id
+      - motivo_rechazo
       - reservas
-      - token_link
+      - revisado_en
+      - revisado_por
+      - tiene_cuenta
     ConvenioResumen:
       type: object
       properties:
@@ -3206,6 +3341,18 @@ components:
         * `DISPONIBLE` - Disponible
         * `NO_DISPONIBLE` - No disponible
         * `EN_VIAJE` - En viaje
+    EstadoConvenioEnum:
+      enum:
+      - EN_REVISION
+      - APROBADO
+      - RECHAZADO
+      - INACTIVO
+      type: string
+      description: |-
+        * `EN_REVISION` - En revisión
+        * `APROBADO` - Aprobado
+        * `RECHAZADO` - Rechazado
+        * `INACTIVO` - Inactivo
     EstadoEntregaEnum:
       enum:
       - QUEUED
@@ -3554,6 +3701,46 @@ components:
         * `TARJETA` - Tarjeta
         * `TRANSFERENCIA` - Transferencia
         * `CONVENIO` - Convenio
+    MiConvenio:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        cliente_nombre:
+          type: string
+          maxLength: 120
+        cliente_rut:
+          type: string
+          maxLength: 12
+        direccion:
+          type: string
+          nullable: true
+          maxLength: 200
+        encargado_nombre:
+          type: string
+          nullable: true
+          maxLength: 80
+        encargado_telefono:
+          type: string
+          nullable: true
+          maxLength: 16
+        estado:
+          $ref: '#/components/schemas/EstadoConvenioEnum'
+        motivo_rechazo:
+          type: string
+          nullable: true
+          maxLength: 200
+        empresa:
+          type: string
+        empresa_slug:
+          type: string
+      required:
+      - cliente_nombre
+      - cliente_rut
+      - empresa
+      - empresa_slug
+      - id
     MiTurno:
       type: object
       properties:
@@ -3761,6 +3948,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RegistroAuditoria'
+    PaginatedReservaDelConvenioList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservaDelConvenio'
     PaginatedVehiculoList:
       type: object
       required:
@@ -3835,14 +4045,6 @@ components:
       - id
       - nombre
       - telefono
-    PasswordNueva:
-      type: object
-      properties:
-        password:
-          type: string
-          description: Se entrega una sola vez. La anterior deja de servir.
-      required:
-      - password
     PasswordTemporal:
       type: object
       properties:
@@ -3892,9 +4094,22 @@ components:
           minLength: 1
           description: 12345678-9, con o sin puntos
           maxLength: 14
-        activo:
-          type: boolean
-          description: False invalida el link sin borrar el historial (RN-08)
+        direccion:
+          type: string
+          nullable: true
+          maxLength: 200
+        encargado_nombre:
+          type: string
+          nullable: true
+          maxLength: 80
+        encargado_telefono:
+          nullable: true
+          oneOf:
+          - type: string
+            maxLength: 16
+            pattern: ^\+[1-9]\d{7,14}$
+          - type: string
+            maxLength: 0
     PatchedVehiculoEditarRequest:
       type: object
       description: 'La patente no se edita: otra patente es otro vehículo.'
@@ -4018,6 +4233,15 @@ components:
       - direccion
       - lat
       - lon
+    RechazoRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - motivo
     RefreshRequest:
       type: object
       properties:
@@ -4045,6 +4269,53 @@ components:
       - accion
       - creado_en
       - id
+    RegistroConvenioRequest:
+      type: object
+      description: 'HU-34: formulario público de registro de la empresa cliente.'
+      properties:
+        cliente_nombre:
+          type: string
+          minLength: 1
+          description: Razón social
+          maxLength: 120
+        cliente_rut:
+          type: string
+          minLength: 1
+          maxLength: 14
+        direccion:
+          type: string
+          minLength: 1
+          maxLength: 200
+        encargado_nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 120
+        encargado_telefono:
+          type: string
+          minLength: 1
+          maxLength: 16
+          pattern: ^\+[1-9]\d{7,14}$
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        sitio_web:
+          type: string
+          description: 'Campo trampa: debe ir vacío'
+      required:
+      - cliente_nombre
+      - cliente_rut
+      - direccion
+      - email
+      - encargado_nombre
+      - encargado_telefono
+      - password
     Reporte:
       type: object
       properties:
@@ -4141,6 +4412,34 @@ components:
       - recogida_en
       - resultado
       - termino_en
+    ReservaDelConvenio:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/EstadoViajeEnum'
+        estado_texto:
+          type: string
+        pasajero:
+          type: string
+        origen_dir:
+          type: string
+          maxLength: 200
+        destino_dir:
+          type: string
+          maxLength: 200
+        recogida_en:
+          type: string
+          format: date-time
+      required:
+      - destino_dir
+      - estado_texto
+      - id
+      - origen_dir
+      - pasajero
+      - recogida_en
     ReservaVinculada:
       type: object
       properties:
@@ -4248,13 +4547,6 @@ components:
       - access
       - refresh
       - usuario
-    SesionConvenio:
-      type: object
-      properties:
-        cliente_nombre:
-          type: string
-      required:
-      - cliente_nombre
     SesionPanel:
       type: object
       properties:
@@ -4267,8 +4559,9 @@ components:
       - usuario
     SolicitudConvenioRequest:
       type: object
-      description: 'HU-25: el supervisor pide a nombre del pasajero y declara que
-        este autorizó los avisos (DC-27).'
+      description: |-
+        HU-34: la cuenta del convenio pide a nombre del pasajero y declara que este autorizó los avisos. La
+        declaración queda ligada al usuario que reserva (DC-35).
       properties:
         nombre:
           type: string
@@ -4313,11 +4606,6 @@ components:
         sitio_web:
           type: string
           writeOnly: true
-        supervisor:
-          type: string
-          minLength: 1
-          description: 'Quien hace la declaración: no tiene cuenta'
-          maxLength: 80
         declara_autorizacion:
           type: boolean
           description: Declaro que el pasajero autorizó recibir avisos por WhatsApp
@@ -4328,22 +4616,7 @@ components:
       - destino_dir
       - nombre
       - origen_dir
-      - supervisor
       - telefono
-    SolicitudConvenioRespuesta:
-      type: object
-      properties:
-        estado:
-          type: string
-        recogida_en:
-          type: string
-          format: date-time
-        mensaje:
-          type: string
-      required:
-      - estado
-      - mensaje
-      - recogida_en
     SolicitudRequest:
       type: object
       description: 'HU-19: solicitud de viaje sin cuenta.'

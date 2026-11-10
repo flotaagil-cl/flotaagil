@@ -32,6 +32,9 @@ ACTOR_POR_ROL = {
     Rol.ADMINISTRADOR: Actor.ADMINISTRADOR,
     Rol.DESPACHADOR: Actor.DESPACHADOR,
     Rol.CONDUCTOR: Actor.CONDUCTOR,
+    # HU-34 y HU-35: las cuentas web del cliente actúan como el pasajero, con su usuario en el historial.
+    Rol.CONVENIO: Actor.PASAJERO,
+    Rol.PASAJERO: Actor.PASAJERO,
 }
 
 

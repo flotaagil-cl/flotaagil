@@ -6,8 +6,8 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.comun.validadores import digito_verificador
-from apps.convenios.models import Convenio
-from apps.cuentas.models import Rol
+from apps.convenios.models import Convenio, EstadoConvenio
+from apps.cuentas.models import Rol, Usuario
 
 from . import estados, servicios
 from .models import Actor, Canal, EstadoViaje, MetodoPago, OrigenCancelacion, PagoViaje, Sentido, Viaje
@@ -82,13 +82,25 @@ def _convenio(empresa, numero_empresa: int, password: str) -> Convenio:
     cuerpo = str(96000000 + numero_empresa)
     convenio = Convenio.objects.filter(empresa=empresa).first()
     if convenio is None:
-        convenio = Convenio(
+        # HU-34: convenio aprobado con la cuenta de su encargado (rol CONVENIO).
+        usuario = Usuario(
+            empresa=empresa,
+            email=f"convenio@{empresa.slug}.example",
+            nombre=f"Encargada Demo {numero_empresa + 1}",
+            rol=Rol.CONVENIO,
+        )
+        usuario.set_password(password)
+        usuario.save()
+        convenio = Convenio.objects.create(
             empresa=empresa,
             cliente_nombre=f"Minera Demo {numero_empresa + 1} S.A.",
             cliente_rut=f"{cuerpo}-{digito_verificador(cuerpo)}",
+            direccion="Av. Apoquindo 3000, Las Condes",
+            encargado_nombre=usuario.nombre,
+            encargado_telefono=f"+5690002{numero_empresa}001",
+            estado=EstadoConvenio.APROBADO,
+            usuario=usuario,
         )
-        convenio.set_password(password)
-        convenio.save()
     return convenio
 
 

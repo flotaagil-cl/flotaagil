@@ -254,6 +254,7 @@ SPECTACULAR_SETTINGS = {
         "EstadoConductorEnum": "apps.flota.models.EstadoConductor",
         "TipoAlertaVueloEnum": "apps.aeropuerto.models.TipoAlertaVuelo",
         "DireccionMensajeEnum": "apps.reservas.models.DireccionMensaje",
+        "EstadoConvenioEnum": "apps.convenios.models.EstadoConvenio",
     },
 }
 

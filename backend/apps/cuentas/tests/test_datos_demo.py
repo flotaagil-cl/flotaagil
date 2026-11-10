@@ -27,7 +27,7 @@ class TestDatosDemo:
         call_command("datos_demo", password="clave-demo-123")
         nombres = list(Usuario.objects.order_by("email").values_list("nombre", flat=True))
         call_command("datos_demo", password="clave-demo-123")
-        assert Usuario.objects.count() == 12
+        assert Usuario.objects.count() == 14  # HU-34: una cuenta de convenio por empresa
         assert list(Usuario.objects.order_by("email").values_list("nombre", flat=True)) == nombres
 
     def test_carga_flota_y_viajes_en_todos_los_estados(self, settings):

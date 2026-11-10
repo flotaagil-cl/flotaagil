@@ -10,6 +10,8 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from apps.comun.excepciones import error_con_codigo
+from apps.convenios import servicios as convenios
+from apps.convenios.serializers import RegistroConvenioSerializer
 from apps.cuentas.models import Empresa
 from apps.cuentas.serializers import ErrorSerializer
 
@@ -98,3 +100,41 @@ class SolicitudPortalView(_VistaPortal):
         entrada.is_valid(raise_exception=True)
         _, respuesta = servicios.crear_solicitud(empresa, dict(entrada.validated_data))
         return Response(SolicitudRespuestaSerializer(respuesta).data, status=status.HTTP_201_CREATED)
+
+
+class RegistroEmpresaView(_VistaPortal):
+    """HU-34: la empresa cliente se registra y queda EN_REVISION. Mismos límites que el portal y campo
+    trampa."""
+
+    throttle_classes = [PortalPorMinuto, PortalPorHora]
+
+    def throttled(self, request, wait):
+        raise servicios.LimiteIP(wait)
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Registrar una empresa con convenio",
+        request=RegistroConvenioSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Registrada: queda en revisión hasta que el administrador la apruebe"
+            ),
+            400: OpenApiResponse(description="Datos inválidos o correo no disponible"),
+            404: OpenApiResponse(description="Empresa inexistente o inactiva"),
+            429: LIMITE,
+        },
+    )
+    def post(self, request, slug):
+        empresa = _empresa(slug)
+        entrada = RegistroConvenioSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        if not entrada.validated_data.get("sitio_web"):
+            convenios.registrar(empresa, entrada.validated_data)
+        # Con el campo trampa lleno se responde igual, sin crear nada.
+        return Response(
+            {
+                "estado": "EN_REVISION",
+                "mensaje": "Recibimos el registro. Te avisaremos por correo cuando se revise.",
+            },
+            status=status.HTTP_201_CREATED,
+        )
