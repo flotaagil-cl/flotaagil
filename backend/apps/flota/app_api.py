@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Exists, F, OuterRef, Subquery
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
@@ -37,6 +37,8 @@ ESTADOS_CON_VIAJE = (
     EstadoViaje.PASAJERO_A_BORDO,
 )
 EN_TURNO = (EstadoConductor.DISPONIBLE, EstadoConductor.EN_VIAJE)
+# Espacio de los bloqueos consultivos que ponen en serie los lotes de posiciones de cada conductor.
+CLAVE_LOTES_GPS = 31_000
 
 
 class FueraDeTurno(APIException):
@@ -190,7 +192,11 @@ class PosicionesView(_VistaApp):
         ]
         with transaction.atomic():
             # En serie por conductor: el conteo de recibidas no se mezcla con otro lote simultáneo.
-            list(Conductor.objects.select_for_update().filter(pk=conductor.pk).values_list("pk"))
+            # Es un bloqueo consultivo y no de la fila del conductor (CP-14): al insertar posiciones con
+            # `viaje_id`, la FK toma KEY SHARE sobre el viaje; con la fila del conductor tomada, eso invertía
+            # el orden del sistema (viaje y luego conductor) y podía cruzarse con una cancelación.
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT pg_advisory_xact_lock(%s, %s)", [CLAVE_LOTES_GPS, conductor.pk])
             antes = PosicionGps.objects.filter(conductor=conductor).count()
             previa = PosicionGps.objects.filter(conductor=conductor).order_by("-registrada_en").first()
             PosicionGps.objects.bulk_create(nuevas, ignore_conflicts=True)
@@ -202,14 +208,18 @@ class PosicionesView(_VistaApp):
                 vigencia = timedelta(seconds=settings.POSICION_CONFIABLE_SEGUNDOS)
                 if previa is None or previa.registrada_en < ahora - vigencia:
                     avisar_indicadores(request.user.empresa_id)
-                # HU-16: EN_ZONA automático por geocerca (import aquí: reservas depende de flota).
-                from apps.reservas.ejecucion import marcar_en_zona
-
-                marcar_en_zona(conductor, validas)
-                # HU-29: ingreso a la fila del aeropuerto.
+                # HU-29: ingreso a la fila del aeropuerto, en serie por conductor (una entrada abierta).
                 from apps.aeropuerto.fila import registrar_posiciones
 
                 registrar_posiciones(conductor, validas)
+        if recibidas:
+            # HU-16: EN_ZONA automático por geocerca (import aquí: reservas depende de flota). Va después de
+            # soltar la fila del conductor: marcar_en_zona bloquea el viaje, y el orden en todo el sistema es
+            # viaje y luego conductor (CP-14). Dentro del bloqueo del conductor podía cruzarse con una
+            # cancelación o un cierre forzado del mismo viaje y terminar en deadlock.
+            from apps.reservas.ejecucion import marcar_en_zona
+
+            marcar_en_zona(conductor, validas)
         return Response(
             {"recibidas": recibidas, "repetidas": len(validas) - recibidas, "descartadas": descartadas},
             status=status.HTTP_201_CREATED,
