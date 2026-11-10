@@ -11,4 +11,6 @@ urlpatterns = [
     path("app/logout/", views.LogoutAppView.as_view(), name="auth-app-logout"),
     path("password/", views.CambiarPasswordView.as_view(), name="auth-password"),
     path("yo/", views.YoView.as_view(), name="auth-yo"),
+    path("recuperar/", views.RecuperarView.as_view(), name="auth-recuperar"),
+    path("recuperar/confirmar/", views.RecuperarConfirmarView.as_view(), name="auth-recuperar-confirmar"),
 ]

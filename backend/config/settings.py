@@ -287,3 +287,7 @@ if CORREO_PROVEEDOR == "ses":
     EMAIL_TIMEOUT = 10
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# HU-35: dirección pública de la web, para los enlaces de los correos (recuperar la contraseña).
+WEB_URL_BASE = env("WEB_URL_BASE", default="http://localhost:5173").rstrip("/")
+PASSWORD_RESET_TIMEOUT = env.int("RECUPERAR_PASSWORD_HORAS", default=2) * 3600

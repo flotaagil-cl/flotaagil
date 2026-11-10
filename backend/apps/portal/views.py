@@ -14,9 +14,15 @@ from apps.convenios import servicios as convenios
 from apps.convenios.serializers import RegistroConvenioSerializer
 from apps.cuentas.models import Empresa
 from apps.cuentas.serializers import ErrorSerializer
+from apps.reservas import cuentas_pasajero
 
 from . import servicios
-from .serializers import EmpresaPublicaSerializer, SolicitudRespuestaSerializer, SolicitudSerializer
+from .serializers import (
+    CrearCuentaSerializer,
+    EmpresaPublicaSerializer,
+    SolicitudRespuestaSerializer,
+    SolicitudSerializer,
+)
 
 
 class PortalPorMinuto(AnonRateThrottle):
@@ -135,6 +141,42 @@ class RegistroEmpresaView(_VistaPortal):
             {
                 "estado": "EN_REVISION",
                 "mensaje": "Recibimos el registro. Te avisaremos por correo cuando se revise.",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class CrearCuentaView(_VistaPortal):
+    """HU-35: crea la cuenta pendiente y envía el WhatsApp para confirmarla. Mismos límites que el portal."""
+
+    throttle_classes = [PortalPorMinuto, PortalPorHora]
+
+    def throttled(self, request, wait):
+        raise servicios.LimiteIP(wait)
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Crear una cuenta de pasajero",
+        request=CrearCuentaSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Pendiente: se activa al responder «CONFIRMAR CUENTA» por WhatsApp"
+            ),
+            400: OpenApiResponse(description="Datos inválidos o correo no disponible"),
+            404: OpenApiResponse(description="Empresa inexistente o inactiva"),
+            429: LIMITE,
+        },
+    )
+    def post(self, request, slug):
+        empresa = _empresa(slug)
+        entrada = CrearCuentaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        if not entrada.validated_data.get("sitio_web"):
+            cuentas_pasajero.registrar(empresa, entrada.validated_data)
+        return Response(
+            {
+                "estado": "PENDIENTE",
+                "mensaje": "Te enviamos un WhatsApp. Responde CONFIRMAR CUENTA para activarla.",
             },
             status=status.HTTP_201_CREATED,
         )

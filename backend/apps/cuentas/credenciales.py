@@ -19,7 +19,7 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
 
-from .models import Usuario
+from .models import Rol, Usuario
 
 # Sin caracteres que se confunden al dictarlos o copiarlos a mano: 0/O/o, 1/l/I/i.
 ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
@@ -106,3 +106,70 @@ def estado_de_acceso(usuario: Usuario) -> str:
         vence = usuario.password_temporal_vence
         return "TEMPORAL_VENCIDA" if vence is not None and vence <= timezone.now() else "TEMPORAL"
     return "ACTIVA"
+
+
+# --- HU-35: recuperar la contraseña por correo (cuentas web de pasajero y convenio) ---
+
+ROLES_RECUPERABLES = (Rol.PASAJERO, Rol.CONVENIO)
+
+
+def pedir_recuperacion(email: str) -> None:
+    """Envía el enlace si el correo es de una cuenta activa de pasajero o convenio. No dice si existe."""
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+
+    from .tareas import al_confirmar_correo
+
+    usuario = Usuario.objects.filter(
+        email__iexact=email.strip(), activo=True, rol__in=ROLES_RECUPERABLES
+    ).first()
+    if usuario is None or not usuario.has_usable_password():
+        return
+    uid = urlsafe_base64_encode(force_bytes(usuario.pk))
+    enlace = f"{settings.WEB_URL_BASE}/recuperar/{uid}/{default_token_generator.make_token(usuario)}"
+    al_confirmar_correo(
+        usuario.email,
+        "Recupera tu contraseña de FlotaÁgil",
+        f"Hola {usuario.nombre}:\n\nPara elegir una contraseña nueva abre este enlace (vence en "
+        f"{settings.PASSWORD_RESET_TIMEOUT // 3600} horas y sirve una sola vez):\n\n{enlace}\n\n"
+        "Si no lo pediste, ignora este correo.\n",
+    )
+
+
+@transaction.atomic
+def confirmar_recuperacion(uid: str, token: str, nueva: str) -> None:
+    from django.contrib.auth.tokens import default_token_generator
+    from django.utils.encoding import force_str
+    from django.utils.http import urlsafe_base64_decode
+
+    invalido = ValidationError({"token": ["El enlace no es válido o ya venció. Pide uno nuevo."]})
+    try:
+        pk = int(force_str(urlsafe_base64_decode(uid)))
+    except (TypeError, ValueError, OverflowError):
+        raise invalido from None
+    usuario = (
+        Usuario.objects.select_for_update().filter(pk=pk, activo=True, rol__in=ROLES_RECUPERABLES).first()
+    )
+    if usuario is None or not default_token_generator.check_token(usuario, token):
+        raise invalido
+    try:
+        validate_password(nueva, usuario)
+    except ErrorDeDjango as error:
+        raise ValidationError({"password": list(error.messages)}) from error
+    usuario.set_password(nueva)  # invalida el token: forma parte de su firma
+    usuario.debe_cambiar_password, usuario.password_temporal_vence = False, None
+    usuario.intentos_fallidos, usuario.bloqueado_hasta = 0, None
+    usuario.save(
+        update_fields=[
+            "password",
+            "debe_cambiar_password",
+            "password_temporal_vence",
+            "intentos_fallidos",
+            "bloqueado_hasta",
+        ]
+    )
+    revocar_sesiones(usuario)
+    auditoria.registrar(
+        usuario=usuario, entidad=Entidad.USUARIO, entidad_id=usuario.pk, accion="RECUPERAR_PASSWORD"
+    )

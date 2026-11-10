@@ -8,4 +8,5 @@ urlpatterns = [
     path(
         "<slug:slug>/registro-empresa/", views.RegistroEmpresaView.as_view(), name="portal-registro-empresa"
     ),
+    path("<slug:slug>/cuenta/", views.CrearCuentaView.as_view(), name="portal-crear-cuenta"),
 ]

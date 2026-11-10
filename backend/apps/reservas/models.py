@@ -361,3 +361,43 @@ class Calificacion(models.Model):
 
     def __str__(self):
         return f"Viaje {self.viaje_id}: {self.puntaje}"
+
+
+class CuentaPasajero(models.Model):
+    """HU-35 (DC-36): cuenta web opcional del pasajero, por empresa.
+
+    Se crea con el usuario inactivo y se activa cuando el pasajero responde «CONFIRMAR CUENTA» por WhatsApp
+    desde el teléfono que declaró. Recién ahí `pasajero` apunta al PASAJERO de ese teléfono en la empresa y la
+    cuenta ve sus reservas, incluidas las anteriores de invitado. Eliminar la cuenta borra esta fila y
+    anonimiza al usuario: el pasajero y sus reservas quedan como de invitado.
+    """
+
+    usuario = models.OneToOneField(
+        "cuentas.Usuario", on_delete=models.PROTECT, related_name="cuenta_pasajero"
+    )
+    empresa = models.ForeignKey("cuentas.Empresa", on_delete=models.PROTECT, related_name="+")
+    nombre = models.CharField(max_length=80, validators=[validar_no_vacio])
+    telefono = models.CharField(max_length=16, validators=[validar_telefono_e164])
+    pasajero = models.ForeignKey(
+        Pasajero, on_delete=models.PROTECT, null=True, blank=True, related_name="cuentas"
+    )
+    confirmada_en = models.DateTimeField(null=True, blank=True)
+    creada_en = models.DateTimeField(db_default=Now(), editable=False)
+
+    class Meta:
+        db_table = "cuenta_pasajero"
+        constraints = [
+            # Un teléfono confirmado tiene a lo más una cuenta por empresa.
+            models.UniqueConstraint(
+                fields=["empresa", "telefono"],
+                condition=Q(confirmada_en__isnull=False),
+                name="cuenta_pasajero_telefono_unico",
+            ),
+            models.CheckConstraint(
+                condition=Q(confirmada_en__isnull=True) | Q(pasajero__isnull=False),
+                name="cuenta_pasajero_confirmada_con_pasajero",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Cuenta de {self.nombre}"

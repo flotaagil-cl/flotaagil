@@ -17,8 +17,8 @@ no dependa del texto.
 import contextlib
 
 from django.conf import settings
-from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
-from rest_framework import status
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema, inline_serializer
+from rest_framework import serializers, status
 from rest_framework.parsers import JSONParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -29,6 +29,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.comun.excepciones import error_con_codigo
 
+from . import credenciales
 from .autenticacion import (
     CANAL_APP,
     CANAL_PANEL,
@@ -344,3 +345,43 @@ class CambiarPasswordView(APIView):
             _poner_cookie(respuesta, str(refresh), vida_cookie(refresh))
             return respuesta
         return Response({"access": str(refresh.access_token), "refresh": str(refresh)})
+
+
+class RecuperarSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class RecuperarView(_ThrottleLogin, _VistaAuth):
+    @extend_schema(
+        tags=["auth"],
+        summary="Pedir el enlace para recuperar la contraseña (pasajero o convenio)",
+        request=RecuperarSerializer,
+        responses={202: None, 429: ERROR_THROTTLE},
+        description="HU-35: responde 202 siempre, exista o no la cuenta. El enlace vence y sirve una vez.",
+    )
+    def post(self, request):
+        entrada = RecuperarSerializer(data=request.data)
+        if entrada.is_valid():
+            credenciales.pedir_recuperacion(entrada.validated_data["email"])
+        return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class RecuperarConfirmarView(_ThrottleLogin, _VistaAuth):
+    @extend_schema(
+        tags=["auth"],
+        summary="Elegir la contraseña nueva con el enlace del correo",
+        request=inline_serializer(
+            "RecuperarConfirmar",
+            {
+                "uid": serializers.CharField(),
+                "token": serializers.CharField(),
+                "password": serializers.CharField(),
+            },
+        ),
+        responses={204: None, 400: ERROR_VALIDACION, 429: ERROR_THROTTLE},
+        description="Cierra todas las sesiones y levanta el bloqueo por intentos. Queda en auditoría.",
+    )
+    def post(self, request):
+        uid, token, password = (str(request.data.get(c, "")) for c in ("uid", "token", "password"))
+        credenciales.confirmar_recuperacion(uid, token, password)
+        return Response(status=status.HTTP_204_NO_CONTENT)

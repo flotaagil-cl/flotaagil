@@ -64,6 +64,10 @@ RESPUESTAS = {
     "ya_calificada": "Ya habíamos registrado tu calificación de este viaje. ¡Gracias!",
     "no_vigente": "Esa solicitud ya no está vigente (se anuló o ya fue respondida). Si necesitas un viaje, "
     "pide uno nuevo.",
+    # HU-35: confirmación de la cuenta web del pasajero.
+    "cuenta_confirmada": "¡Listo! Tu cuenta quedó activa. Ya puedes iniciar sesión y ver tus reservas.",
+    "cuenta_no_vigente": "No encontramos una cuenta pendiente para este número, o el plazo venció. "
+    "Créala de nuevo.",
 }
 
 
@@ -169,6 +173,13 @@ def procesar_entrante(datos: dict) -> str:
             )
     except IntegrityError:
         return "repetido"  # el mismo webhook llegó dos veces a la vez
+
+    from .cuentas_pasajero import confirmar_por_whatsapp
+
+    resultado_cuenta = confirmar_por_whatsapp(telefono, texto)
+    if resultado_cuenta is not None:
+        tareas.encolar(tareas.enviar_respuesta, pasajero.pk, None, RESPUESTAS[resultado_cuenta])
+        return resultado_cuenta
 
     if a_calificar:
         resultado = _calificar(a_calificar, puntaje)

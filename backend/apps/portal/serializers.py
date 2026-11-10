@@ -123,3 +123,28 @@ class SolicitudRespuestaSerializer(serializers.Serializer):
         "(DC-31): la reserva queda SOLICITADO sin pedir confirmación.",
     )
     mensaje = serializers.CharField()
+
+
+class CrearCuentaSerializer(serializers.Serializer):
+    """HU-35: cuenta opcional del pasajero en la empresa del portal."""
+
+    nombre = serializers.CharField(max_length=80)
+    telefono = serializers.CharField(
+        max_length=24, help_text="WhatsApp en formato E.164, p. ej. +56912345678."
+    )
+    email = serializers.EmailField(max_length=120)
+    password = serializers.CharField(max_length=128, write_only=True)
+    sitio_web = serializers.CharField(
+        required=False, allow_blank=True, help_text="Campo trampa: debe ir vacío"
+    )
+
+    def validate_nombre(self, valor):
+        valor = valor.strip()
+        if not valor:
+            raise serializers.ValidationError("Ingresa tu nombre.")
+        return valor
+
+    def validate_telefono(self, valor):
+        telefono = normalizar_telefono(valor)
+        validar_telefono_e164(telefono)
+        return telefono

@@ -502,6 +502,70 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: '`throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN).'
+  /api/auth/recuperar/:
+    post:
+      operationId: auth_recuperar_create
+      description: 'HU-35: responde 202 siempre, exista o no la cuenta. El enlace
+        vence y sirve una vez.'
+      summary: Pedir el enlace para recuperar la contraseña (pasajero o convenio)
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecuperarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecuperarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecuperarRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          description: No response body
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: '`throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN).'
+  /api/auth/recuperar/confirmar/:
+    post:
+      operationId: auth_recuperar_confirmar_create
+      description: Cierra todas las sesiones y levanta el bloqueo por intentos. Queda
+        en auditoría.
+      summary: Elegir la contraseña nueva con el enlace del correo
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecuperarConfirmarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecuperarConfirmarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecuperarConfirmarRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+        '400':
+          description: 'Datos inválidos: errores por campo.'
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: '`throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN).'
   /api/auth/refresh/:
     post:
       operationId: auth_refresh_create
@@ -1460,6 +1524,113 @@ paths:
           description: ''
         '409':
           description: '`convenio_no_aprobado`: en revisión o rechazado'
+  /api/mi-cuenta/:
+    get:
+      operationId: mi_cuenta_retrieve
+      summary: Mi cuenta
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiCuenta'
+          description: ''
+        '409':
+          description: '`cuenta_sin_confirmar`'
+    delete:
+      operationId: mi_cuenta_destroy
+      description: Borra la credencial y el correo; las reservas y el pasajero quedan
+        como de invitado.
+      summary: Eliminar mi cuenta
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/mi-cuenta/reservas/:
+    get:
+      operationId: mi_cuenta_reservas_list
+      summary: Mis reservas, incluidas las de invitado, con su historial
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMiReservaList'
+          description: ''
+  /api/mi-cuenta/reservas/{id}/cancelar/:
+    post:
+      operationId: mi_cuenta_reservas_cancelar_create
+      summary: Cancelar una reserva sin conductor asignado (RN-09)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiReserva'
+          description: ''
+        '404':
+          description: No response body
+        '409':
+          description: '`con_conductor`'
+  /api/mi-cuenta/solicitudes/:
+    post:
+      operationId: mi_cuenta_solicitudes_create
+      description: Queda SOLICITADO sin verificación por WhatsApp; se mantiene el
+        límite por teléfono.
+      summary: Pedir un viaje con mi cuenta
+      tags:
+      - mi-cuenta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudCuentaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolicitudCuentaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolicitudCuentaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudRespuesta'
+          description: ''
+        '429':
+          description: '`limite_telefono`'
   /api/portal/{slug}/:
     get:
       operationId: portal_retrieve
@@ -1483,6 +1654,62 @@ paths:
           description: ''
         '404':
           description: Empresa inexistente o inactiva
+  /api/portal/{slug}/cuenta/:
+    post:
+      operationId: portal_cuenta_create
+      description: 'HU-35: crea la cuenta pendiente y envía el WhatsApp para confirmarla.
+        Mismos límites que el portal.'
+      summary: Crear una cuenta de pasajero
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CrearCuentaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CrearCuentaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CrearCuentaRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          description: 'Pendiente: se activa al responder «CONFIRMAR CUENTA» por WhatsApp'
+        '400':
+          description: Datos inválidos o correo no disponible
+        '404':
+          description: Empresa inexistente o inactiva
+        '429':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                PorIP:
+                  value:
+                    detail: Se enviaron demasiadas solicitudes desde esta conexión.
+                      Espera un momento e intenta de nuevo.
+                    code: limite_ip
+                  summary: Por IP
+                PorTeléfono:
+                  value:
+                    detail: Ya enviaste varias solicitudes con este número. Espera
+                      unos minutos e intenta de nuevo.
+                    code: limite_telefono
+                  summary: Por teléfono
+          description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
+            IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
+            (varias solicitudes con el mismo número).'
   /api/portal/{slug}/registro-empresa/:
     post:
       operationId: portal_registro_empresa_create
@@ -3262,6 +3489,37 @@ components:
       - ultimo_en
       - ultimo_mensaje
       - ventana_hasta
+    CrearCuentaRequest:
+      type: object
+      description: 'HU-35: cuenta opcional del pasajero en la empresa del portal.'
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        telefono:
+          type: string
+          minLength: 1
+          description: WhatsApp en formato E.164, p. ej. +56912345678.
+          maxLength: 24
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 120
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        sitio_web:
+          type: string
+          description: 'Campo trampa: debe ir vacío'
+      required:
+      - email
+      - nombre
+      - password
+      - telefono
     DecidirRecogidaRequest:
       type: object
       properties:
@@ -3741,6 +3999,64 @@ components:
       - empresa
       - empresa_slug
       - id
+    MiCuenta:
+      type: object
+      properties:
+        nombre:
+          type: string
+        email:
+          type: string
+          format: email
+        telefono:
+          type: string
+        empresa:
+          type: string
+        empresa_slug:
+          type: string
+      required:
+      - email
+      - empresa
+      - empresa_slug
+      - nombre
+      - telefono
+    MiReserva:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/EstadoViajeEnum'
+        estado_texto:
+          type: string
+        canal:
+          $ref: '#/components/schemas/CanalEnum'
+        origen_dir:
+          type: string
+          maxLength: 200
+        destino_dir:
+          type: string
+          maxLength: 200
+        recogida_en:
+          type: string
+          format: date-time
+        cancelable:
+          type: boolean
+          readOnly: true
+        historial:
+          type: array
+          items:
+            $ref: '#/components/schemas/Historial'
+          readOnly: true
+      required:
+      - canal
+      - cancelable
+      - destino_dir
+      - estado_texto
+      - historial
+      - id
+      - origen_dir
+      - recogida_en
     MiTurno:
       type: object
       properties:
@@ -3925,6 +4241,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Conversacion'
+    PaginatedMiReservaList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MiReserva'
     PaginatedRegistroAuditoriaList:
       type: object
       required:
@@ -4242,6 +4581,31 @@ components:
           maxLength: 200
       required:
       - motivo
+    RecuperarConfirmarRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+        token:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required:
+      - password
+      - token
+      - uid
+    RecuperarRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     RefreshRequest:
       type: object
       properties:
@@ -4617,6 +4981,58 @@ components:
       - nombre
       - origen_dir
       - telefono
+    SolicitudCuentaRequest:
+      type: object
+      description: 'Los datos del pasajero salen de la cuenta: nombre y teléfono se
+        ignoran si vienen.'
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        telefono:
+          type: string
+          minLength: 1
+          maxLength: 24
+        origen_dir:
+          type: string
+          minLength: 1
+          maxLength: 200
+        destino_dir:
+          type: string
+          minLength: 1
+          maxLength: 200
+        recogida_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Obligatoria, salvo en viajes desde el aeropuerto con vuelo:
+            ahí se calcula si no viene.'
+        sentido:
+          allOf:
+          - $ref: '#/components/schemas/SentidoEnum'
+          description: |-
+            Si no viene: DESDE_AEROPUERTO cuando hay vuelo, URBANO si no.
+
+            * `DESDE_AEROPUERTO` - Desde el aeropuerto
+            * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+            * `URBANO` - Urbano
+        vuelo:
+          allOf:
+          - $ref: '#/components/schemas/VueloLlegadaRequest'
+          description: Solo para viajes desde el aeropuerto.
+        acepta_privacidad:
+          type: boolean
+        acepta_whatsapp:
+          type: boolean
+        sitio_web:
+          type: string
+          writeOnly: true
+      required:
+      - acepta_privacidad
+      - acepta_whatsapp
+      - destino_dir
+      - origen_dir
     SolicitudRequest:
       type: object
       description: 'HU-19: solicitud de viaje sin cuenta.'
