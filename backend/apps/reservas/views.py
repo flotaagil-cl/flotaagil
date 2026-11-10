@@ -13,7 +13,7 @@ from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 
-from . import asignacion, avisos, servicios
+from . import asignacion, avisos, contingencia, servicios
 from .estados import actor_de
 from .filtros import ViajeFiltro
 from .models import EstadoViaje, Viaje
@@ -23,6 +23,7 @@ from .serializers import (
     CandidatoSerializer,
     DecidirRecogidaSerializer,
     ForzarCierreSerializer,
+    ReservaContingenciaSerializer,
     ViajeCrearSerializer,
     ViajeDetalleSerializer,
     ViajeEditarSerializer,
@@ -118,6 +119,27 @@ class ViajeViewSet(
         entrada.is_valid(raise_exception=True)
         servicios.cancelar_viaje(viaje, motivo=entrada.validated_data["motivo"], usuario=request.user)
         return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    @extend_schema(
+        summary="Ingresar una reserva de contingencia",
+        tags=["reservas"],
+        request=ReservaContingenciaSerializer,
+        responses={201: ViajeDetalleSerializer, 400: OpenApiResponse(description="Datos o horas inválidos")},
+        description=(
+            "HU-32 (DC-33): un viaje anotado durante una caída, ya FINALIZADO (conductor, método y monto) o "
+            "CANCELADO (motivo), con sus horas reales: pasadas y de hasta `contingencia_max_dias` atrás. El "
+            "historial queda marcado como contingencia, sin avisos ni encuesta. Queda en auditoría "
+            "(`RESERVA_CONTINGENCIA`)."
+        ),
+    )
+    @action(detail=False, methods=["post"], url_path="contingencia")
+    def contingencia(self, request):
+        entrada = ReservaContingenciaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        viaje = contingencia.crear(request.user.empresa, entrada.validated_data, usuario=request.user)
+        return Response(
+            ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data, status=status.HTTP_201_CREATED
+        )
 
     @extend_schema(
         summary="Forzar el cierre o la anulación de un viaje en curso",

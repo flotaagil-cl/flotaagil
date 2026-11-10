@@ -30,7 +30,7 @@ from apps.convenios.models import Convenio
 from apps.cuentas.models import Rol
 from apps.flota.models import Conductor
 
-from .models import EstadoViaje, MetodoPago, OrigenCancelacion, Viaje
+from .models import Canal, EstadoViaje, MetodoPago, OrigenCancelacion, Viaje
 
 CIERRE = "CIERRE_FORZADO"
 ANULACION = "ANULACION_FORZADA"
@@ -70,6 +70,19 @@ COLUMNAS = {
         _col("monto", "Monto", "pesos"),
         _col("forzado", "Cierre o anulación forzada"),
         _col("calificacion", "Calificación", "entero"),
+    ],
+    # HU-32 (DC-33): conciliación de las reservas de contingencia con la hoja en papel, por folio.
+    "contingencia": [
+        _col("folio", "Folio"),
+        _col("id", "Reserva", "entero"),
+        _col("recogida", "Recogida real", "fecha_hora"),
+        _col("resultado", "Resultado"),
+        _col("conductor", "Conductor"),
+        _col("turno", "Turno"),
+        _col("metodo", "Método de pago"),
+        _col("monto", "Monto", "pesos"),
+        _col("ingresado_por", "Ingresado por"),
+        _col("ingresado_en", "Ingresado", "fecha_hora"),
     ],
 }
 
@@ -261,7 +274,48 @@ def _totales_historial(viajes) -> dict:
     return {"id": viajes.count(), "monto": sum(montos)}
 
 
-CALCULOS = {"liquidacion": liquidacion, "facturacion": facturacion, "cancelaciones": cancelaciones}
+def contingencia(empresa_id: int, filtros: dict) -> tuple[list, dict]:
+    """Reservas de contingencia según el día de recogida real, por folio. «Sin turno» si no se encontró."""
+    viajes = (
+        _por_recogida(empresa_id, filtros)
+        .filter(canal=Canal.CONTINGENCIA)
+        .select_related("conductor__usuario", "pago")
+        .order_by("folio_contingencia")
+    )
+    autores = dict(
+        Auditoria.objects.filter(
+            entidad=Entidad.VIAJE, accion="RESERVA_CONTINGENCIA", entidad_id__in=[v.pk for v in viajes]
+        ).values_list("entidad_id", "usuario__nombre")
+    )
+    filas = []
+    for viaje in viajes:
+        pago = getattr(viaje, "pago", None)
+        filas.append(
+            {
+                "folio": viaje.folio_contingencia,
+                "id": viaje.pk,
+                "recogida": viaje.recogida_en,
+                "resultado": viaje.get_estado_display(),
+                "conductor": viaje.conductor.usuario.nombre if viaje.conductor else None,
+                "turno": f"Turno {viaje.turno_id}" if viaje.turno_id else "Sin turno",
+                "metodo": pago.get_metodo_display() if pago else None,
+                "monto": pago.monto if pago else None,
+                "ingresado_por": autores.get(viaje.pk),
+                "ingresado_en": viaje.creado_en,
+            }
+        )
+    return filas, {
+        "folio": f"Total, {len(filas)} folios",
+        "monto": sum(f["monto"] or 0 for f in filas),
+    }
+
+
+CALCULOS = {
+    "liquidacion": liquidacion,
+    "facturacion": facturacion,
+    "cancelaciones": cancelaciones,
+    "contingencia": contingencia,
+}
 
 
 def _texto_csv(valor, tipo: str) -> str:

@@ -42,6 +42,7 @@ export const CANALES: Record<Canal, string> = {
   WHATSAPP: 'WhatsApp',
   WEB: 'Portal web',
   CONVENIO: 'Convenio',
+  CONTINGENCIA: 'Contingencia',
 };
 
 export const ACTORES: Record<components['schemas']['ActorEnum'], string> = {

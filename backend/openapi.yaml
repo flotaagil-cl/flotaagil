@@ -1501,6 +1501,7 @@ paths:
           type: string
           enum:
           - cancelaciones
+          - contingencia
           - facturacion
           - historial
           - liquidacion
@@ -1550,6 +1551,7 @@ paths:
           type: string
           enum:
           - cancelaciones
+          - contingencia
           - facturacion
           - historial
           - liquidacion
@@ -1862,6 +1864,7 @@ paths:
         schema:
           type: string
           enum:
+          - CONTINGENCIA
           - CONVENIO
           - TELEFONO
           - WEB
@@ -1871,6 +1874,7 @@ paths:
           * `WHATSAPP` - WhatsApp
           * `TELEFONO` - Teléfono
           * `CONVENIO` - Convenio
+          * `CONTINGENCIA` - Contingencia
       - in: query
         name: desde
         schema:
@@ -2162,6 +2166,7 @@ paths:
         schema:
           type: string
           enum:
+          - CONTINGENCIA
           - CONVENIO
           - TELEFONO
           - WEB
@@ -2171,6 +2176,7 @@ paths:
           * `WHATSAPP` - WhatsApp
           * `TELEFONO` - Teléfono
           * `CONVENIO` - Convenio
+          * `CONTINGENCIA` - Contingencia
       - in: query
         name: desde
         schema:
@@ -2388,6 +2394,39 @@ paths:
           description: ''
         '409':
           description: La reserva no admite la operación en su estado actual
+  /api/viajes/contingencia/:
+    post:
+      operationId: viajes_contingencia_create
+      description: 'HU-32 (DC-33): un viaje anotado durante una caída, ya FINALIZADO
+        (conductor, método y monto) o CANCELADO (motivo), con sus horas reales: pasadas
+        y de hasta `contingencia_max_dias` atrás. El historial queda marcado como
+        contingencia, sin avisos ni encuesta. Queda en auditoría (`RESERVA_CONTINGENCIA`).'
+      summary: Ingresar una reserva de contingencia
+      tags:
+      - reservas
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaContingenciaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReservaContingenciaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReservaContingenciaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViajeDetalle'
+          description: ''
+        '400':
+          description: Datos o horas inválidos
   /api/whatsapp/entrante/:
     post:
       operationId: whatsapp_entrante_create
@@ -2585,12 +2624,14 @@ components:
       - WHATSAPP
       - TELEFONO
       - CONVENIO
+      - CONTINGENCIA
       type: string
       description: |-
         * `WEB` - Portal web
         * `WHATSAPP` - WhatsApp
         * `TELEFONO` - Teléfono
         * `CONVENIO` - Convenio
+        * `CONTINGENCIA` - Contingencia
     CanalPanelEnum:
       enum:
       - TELEFONO
@@ -3302,6 +3343,8 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
+        contingencia:
+          type: boolean
         creado_en:
           type: string
           format: date-time
@@ -4034,6 +4077,70 @@ components:
       - next
       - previous
       - totales
+    ReservaContingenciaRequest:
+      type: object
+      description: 'HU-32 (DC-33): viaje anotado durante una caída, con sus horas
+        reales.'
+      properties:
+        folio:
+          type: string
+          minLength: 1
+          description: Folio de la hoja de contingencia; único en la empresa
+          pattern: ^[A-Za-z0-9-]{1,20}$
+        pasajero:
+          $ref: '#/components/schemas/PasajeroEntradaRequest'
+        sentido:
+          allOf:
+          - $ref: '#/components/schemas/SentidoEnum'
+          default: URBANO
+        origen_dir:
+          type: string
+          minLength: 1
+          maxLength: 200
+        destino_dir:
+          type: string
+          minLength: 1
+          maxLength: 200
+        tarifa:
+          type: integer
+          minimum: 0
+          nullable: true
+        resultado:
+          $ref: '#/components/schemas/ResultadoEnum'
+        recogida_en:
+          type: string
+          format: date-time
+          description: Hora real de recogida (o la pedida, si se canceló)
+        termino_en:
+          type: string
+          format: date-time
+          description: Hora real de término o de cancelación
+        conductor:
+          type: integer
+          nullable: true
+          description: Obligatorio si finalizó
+        metodo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MetodoEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        monto:
+          type: integer
+          maximum: 500000
+          minimum: 0
+          nullable: true
+        motivo:
+          type: string
+          description: Si se canceló
+          maxLength: 200
+      required:
+      - destino_dir
+      - folio
+      - origen_dir
+      - pasajero
+      - recogida_en
+      - resultado
+      - termino_en
     ReservaVinculada:
       type: object
       properties:
@@ -4079,6 +4186,14 @@ components:
           nullable: true
       required:
       - viaje
+    ResultadoEnum:
+      enum:
+      - FINALIZADO
+      - CANCELADO
+      type: string
+      description: |-
+        * `FINALIZADO` - FINALIZADO
+        * `CANCELADO` - CANCELADO
     ResultadoLote:
       type: object
       properties:
@@ -4593,6 +4708,10 @@ components:
           $ref: '#/components/schemas/EstadoViajeEnum'
         canal:
           $ref: '#/components/schemas/CanalEnum'
+        folio_contingencia:
+          type: string
+          nullable: true
+          maxLength: 20
         sentido:
           $ref: '#/components/schemas/SentidoEnum'
         pasajero:
@@ -4802,6 +4921,10 @@ components:
           $ref: '#/components/schemas/EstadoViajeEnum'
         canal:
           $ref: '#/components/schemas/CanalEnum'
+        folio_contingencia:
+          type: string
+          nullable: true
+          maxLength: 20
         sentido:
           $ref: '#/components/schemas/SentidoEnum'
         pasajero:

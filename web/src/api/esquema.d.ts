@@ -1287,6 +1287,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/viajes/contingencia/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingresar una reserva de contingencia
+         * @description HU-32 (DC-33): un viaje anotado durante una caída, ya FINALIZADO (conductor, método y monto) o CANCELADO (motivo), con sus horas reales: pasadas y de hasta `contingencia_max_dias` atrás. El historial queda marcado como contingencia, sin avisos ni encuesta. Queda en auditoría (`RESERVA_CONTINGENCIA`).
+         */
+        post: operations["viajes_contingencia_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whatsapp/entrante/": {
         parameters: {
             query?: never;
@@ -1391,9 +1411,10 @@ export interface components {
          *     * `WHATSAPP` - WhatsApp
          *     * `TELEFONO` - Teléfono
          *     * `CONVENIO` - Convenio
+         *     * `CONTINGENCIA` - Contingencia
          * @enum {string}
          */
-        CanalEnum: "WEB" | "WHATSAPP" | "TELEFONO" | "CONVENIO";
+        CanalEnum: "WEB" | "WHATSAPP" | "TELEFONO" | "CONVENIO" | "CONTINGENCIA";
         /**
          * @description * `TELEFONO` - TELEFONO
          *     * `WHATSAPP` - WHATSAPP
@@ -1684,6 +1705,7 @@ export interface components {
             readonly usuario: string;
             manual?: boolean;
             distancia_m?: number | null;
+            contingencia?: boolean;
             /** Format: date-time */
             readonly creado_en: string;
         };
@@ -2038,6 +2060,34 @@ export interface components {
             next: string | null;
             previous: string | null;
         };
+        /** @description HU-32 (DC-33): viaje anotado durante una caída, con sus horas reales. */
+        ReservaContingenciaRequest: {
+            /** @description Folio de la hoja de contingencia; único en la empresa */
+            folio: string;
+            pasajero: components["schemas"]["PasajeroEntradaRequest"];
+            /** @default URBANO */
+            sentido: components["schemas"]["SentidoEnum"];
+            origen_dir: string;
+            destino_dir: string;
+            tarifa?: number | null;
+            resultado: components["schemas"]["ResultadoEnum"];
+            /**
+             * Format: date-time
+             * @description Hora real de recogida (o la pedida, si se canceló)
+             */
+            recogida_en: string;
+            /**
+             * Format: date-time
+             * @description Hora real de término o de cancelación
+             */
+            termino_en: string;
+            /** @description Obligatorio si finalizó */
+            conductor?: number | null;
+            metodo?: (components["schemas"]["MetodoEnum"] | components["schemas"]["NullEnum"]) | null;
+            monto?: number | null;
+            /** @description Si se canceló */
+            motivo?: string;
+        };
         ReservaVinculada: {
             id: number;
             estado: components["schemas"]["EstadoViajeEnum"];
@@ -2055,6 +2105,12 @@ export interface components {
         RespuestaViajeActivo: {
             viaje: components["schemas"]["ViajeActivo"] | null;
         };
+        /**
+         * @description * `FINALIZADO` - FINALIZADO
+         *     * `CANCELADO` - CANCELADO
+         * @enum {string}
+         */
+        ResultadoEnum: "FINALIZADO" | "CANCELADO";
         ResultadoLote: {
             /** @description Guardadas ahora */
             recibidas: number;
@@ -2273,6 +2329,7 @@ export interface components {
             readonly id: number;
             estado?: components["schemas"]["EstadoViajeEnum"];
             canal: components["schemas"]["CanalEnum"];
+            folio_contingencia?: string | null;
             sentido?: components["schemas"]["SentidoEnum"];
             pasajero: components["schemas"]["PasajeroResumen"];
             readonly origen: components["schemas"]["Ubicacion"];
@@ -2347,6 +2404,7 @@ export interface components {
             readonly id: number;
             estado?: components["schemas"]["EstadoViajeEnum"];
             canal: components["schemas"]["CanalEnum"];
+            folio_contingencia?: string | null;
             sentido?: components["schemas"]["SentidoEnum"];
             pasajero: components["schemas"]["PasajeroResumen"];
             readonly origen: components["schemas"]["Ubicacion"];
@@ -3882,7 +3940,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Reporte que se pide */
-                tipo: "cancelaciones" | "facturacion" | "historial" | "liquidacion";
+                tipo: "cancelaciones" | "contingencia" | "facturacion" | "historial" | "liquidacion";
             };
             cookie?: never;
         };
@@ -3911,7 +3969,7 @@ export interface operations {
             header?: never;
             path: {
                 /** @description Reporte que se pide */
-                tipo: "cancelaciones" | "facturacion" | "historial" | "liquidacion";
+                tipo: "cancelaciones" | "contingencia" | "facturacion" | "historial" | "liquidacion";
             };
             cookie?: never;
         };
@@ -4184,8 +4242,9 @@ export interface operations {
                  *     * `WHATSAPP` - WhatsApp
                  *     * `TELEFONO` - Teléfono
                  *     * `CONVENIO` - Convenio
+                 *     * `CONTINGENCIA` - Contingencia
                  */
-                canal?: "CONVENIO" | "TELEFONO" | "WEB" | "WHATSAPP";
+                canal?: "CONTINGENCIA" | "CONVENIO" | "TELEFONO" | "WEB" | "WHATSAPP";
                 desde?: string;
                 /**
                  * @description Repetible: ?estado=A&estado=B
@@ -4400,8 +4459,9 @@ export interface operations {
                  *     * `WHATSAPP` - WhatsApp
                  *     * `TELEFONO` - Teléfono
                  *     * `CONVENIO` - Convenio
+                 *     * `CONTINGENCIA` - Contingencia
                  */
-                canal?: "CONVENIO" | "TELEFONO" | "WEB" | "WHATSAPP";
+                canal?: "CONTINGENCIA" | "CONVENIO" | "TELEFONO" | "WEB" | "WHATSAPP";
                 desde?: string;
                 /**
                  * @description Repetible: ?estado=A&estado=B
@@ -4555,6 +4615,38 @@ export interface operations {
             };
             /** @description La reserva no admite la operación en su estado actual */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    viajes_contingencia_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReservaContingenciaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReservaContingenciaRequest"];
+                "multipart/form-data": components["schemas"]["ReservaContingenciaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViajeDetalle"];
+                };
+            };
+            /** @description Datos o horas inválidos */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

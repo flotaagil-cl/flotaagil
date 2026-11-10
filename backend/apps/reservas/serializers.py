@@ -8,7 +8,7 @@ from apps.comun.validadores import normalizar_telefono, validar_telefono_e164, v
 from apps.convenios.models import Convenio
 
 from . import estados
-from .models import MONTO_MAXIMO, Canal, HistorialEstado, MetodoPago, Sentido, Viaje
+from .models import MONTO_MAXIMO, Canal, EstadoViaje, HistorialEstado, MetodoPago, Sentido, Viaje
 
 
 class UbicacionSerializer(serializers.Serializer):
@@ -64,7 +64,16 @@ class HistorialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HistorialEstado
-        fields = ["estado_anterior", "estado_nuevo", "actor", "usuario", "manual", "distancia_m", "creado_en"]
+        fields = [
+            "estado_anterior",
+            "estado_nuevo",
+            "actor",
+            "usuario",
+            "manual",
+            "distancia_m",
+            "contingencia",
+            "creado_en",
+        ]
 
 
 def _ubicacion(direccion, punto) -> dict:
@@ -89,6 +98,7 @@ class ViajeSerializer(serializers.ModelSerializer):
             "id",
             "estado",
             "canal",
+            "folio_contingencia",
             "sentido",
             "pasajero",
             "origen",
@@ -318,3 +328,28 @@ class CandidatoSerializer(serializers.Serializer):
     sugerido = serializers.BooleanField(
         help_text="El más apto (HU-04). No asigna: lo confirma el despachador"
     )
+
+
+class ReservaContingenciaSerializer(serializers.Serializer):
+    """HU-32 (DC-33): viaje anotado durante una caída, con sus horas reales."""
+
+    folio = serializers.RegexField(
+        r"^[A-Za-z0-9-]{1,20}$", help_text="Folio de la hoja de contingencia; único en la empresa"
+    )
+    pasajero = PasajeroEntradaSerializer()
+    sentido = serializers.ChoiceField(choices=Sentido.choices, default=Sentido.URBANO)
+    origen_dir = serializers.CharField(max_length=200)
+    destino_dir = serializers.CharField(max_length=200)
+    tarifa = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    resultado = serializers.ChoiceField(choices=[EstadoViaje.FINALIZADO, EstadoViaje.CANCELADO])
+    recogida_en = serializers.DateTimeField(help_text="Hora real de recogida (o la pedida, si se canceló)")
+    termino_en = serializers.DateTimeField(help_text="Hora real de término o de cancelación")
+    conductor = serializers.IntegerField(required=False, allow_null=True, help_text="Obligatorio si finalizó")
+    metodo = serializers.ChoiceField(choices=MetodoPago.choices, required=False, allow_null=True)
+    monto = serializers.IntegerField(min_value=0, max_value=MONTO_MAXIMO, required=False, allow_null=True)
+    motivo = serializers.CharField(
+        max_length=200, required=False, allow_blank=True, help_text="Si se canceló"
+    )
+
+    def validate_folio(self, valor):
+        return valor.upper()

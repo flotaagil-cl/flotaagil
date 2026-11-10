@@ -51,6 +51,8 @@ class Canal(models.TextChoices):
     WHATSAPP = "WHATSAPP", "WhatsApp"
     TELEFONO = "TELEFONO", "Teléfono"
     CONVENIO = "CONVENIO", "Convenio"
+    # DC-33 (HU-32): viajes anotados durante una caída del sistema e ingresados después.
+    CONTINGENCIA = "CONTINGENCIA", "Contingencia"
 
 
 class Sentido(models.TextChoices):
@@ -86,6 +88,8 @@ class Viaje(models.Model):
         "flota.Turno", on_delete=models.PROTECT, null=True, blank=True, related_name="viajes"
     )
     canal = models.CharField(max_length=12, choices=Canal.choices)
+    # DC-33 (HU-32): folio de la hoja de contingencia; único por empresa y obligatorio con ese canal.
+    folio_contingencia = models.CharField(max_length=20, null=True, blank=True)
     sentido = models.CharField(
         max_length=16, choices=Sentido.choices, default=Sentido.URBANO, db_default=Sentido.URBANO
     )
@@ -134,6 +138,16 @@ class Viaje(models.Model):
                 | (~Q(canal=Canal.CONVENIO) & Q(convenio__isnull=True)),
                 name="viaje_convenio_segun_canal",
             ),
+            models.CheckConstraint(
+                condition=Q(canal=Canal.CONTINGENCIA, folio_contingencia__isnull=False)
+                | (~Q(canal=Canal.CONTINGENCIA) & Q(folio_contingencia__isnull=True)),
+                name="viaje_folio_segun_canal",
+            ),
+            models.UniqueConstraint(
+                fields=["empresa", "folio_contingencia"],
+                condition=Q(folio_contingencia__isnull=False),
+                name="viaje_folio_unico_por_empresa",
+            ),
         ]
 
     def __str__(self):
@@ -160,6 +174,8 @@ class HistorialEstado(models.Model):
     # DC-20: EN_ZONA indicado por el conductor (DC-17) y su distancia al origen en ese momento.
     manual = models.BooleanField(default=False, db_default=False)
     distancia_m = models.PositiveIntegerField(null=True, blank=True)
+    # DC-33: transición registrada después, con la hora real anotada durante una caída (HU-32).
+    contingencia = models.BooleanField(default=False, db_default=False)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

@@ -90,6 +90,8 @@ class ConfiguracionEmpresa(models.Model):
     # DC-31: días en que un teléfono verificado por WhatsApp no se vuelve a verificar en el portal (P1.1).
     # Con 0, toda solicitud del portal se verifica.
     vigencia_verificacion_dias = _minutos(90)
+    # DC-33: antigüedad máxima de la hora real de una reserva de contingencia (HU-32).
+    contingencia_max_dias = _minutos(7, minimo=1)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)

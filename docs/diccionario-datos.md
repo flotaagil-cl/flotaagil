@@ -94,7 +94,9 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | convenio_id | BIGINT | Sí | FK | Convenio, si es corporativo | → CONVENIO.id | NULL |  |
 | conductor_id | BIGINT | Sí | FK | Conductor asignado | → CONDUCTOR.id | NULL |  |
 | vehiculo_id | BIGINT | Sí | FK | Vehículo usado | → VEHICULO.id | NULL |  |
-| canal | VARCHAR(12) | No |  | Canal de ingreso | WEB \| WHATSAPP \| TELEFONO \| CONVENIO | — |  |
+| canal | VARCHAR(12) | No |  | Canal de ingreso | WEB \| WHATSAPP \| TELEFONO \| CONVENIO \| CONTINGENCIA (DC-33) | — |  |
+| folio_contingencia | VARCHAR(20) | Sí | UK (empresa) | Folio de la hoja de contingencia (DC-33) | Obligatorio solo con canal CONTINGENCIA | NULL |  |
+| turno_id | BIGINT | Sí | FK | Turno en que se aceptó (DC-32) | → TURNO.id | NULL |  |
 | sentido | VARCHAR(16) | No |  | Tipo de trayecto | DESDE_AEROPUERTO \| HACIA_AEROPUERTO \| URBANO | URBANO |  |
 | origen_dir | VARCHAR(200) | No |  | Dirección de recogida | Texto no vacío | — | Personal |
 | origen_geo | GEOGRAPHY(Point,4326) | No |  | Coordenadas de recogida | Dentro de la RM | — | Ubicación |
@@ -149,6 +151,7 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | usuario_id | BIGINT | Sí | FK | Usuario responsable | → USUARIO.id | NULL |  |
 | manual | BOOLEAN | No |  | Llegada indicada por el conductor, sin geocerca (DC-20) | — | false |  |
 | distancia_m | INTEGER | Sí |  | Metros al origen en una llegada manual (DC-20) | ≥ 0 | NULL |  |
+| contingencia | BOOLEAN | No |  | Transición ingresada después de una caída, con su hora real (DC-33) | — | false |  |
 | creado_en | TIMESTAMPTZ | No |  | Momento de la transición | UTC | now() |  |
 
 ## PAGO_VIAJE
