@@ -1105,34 +1105,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedConvenioList'
           description: ''
-    post:
-      operationId: convenios_create
-      description: 'HU-34: queda APROBADO y sin cuenta, para las reservas que ingresa
-        la central. Las empresas con cuenta se registran solas en el portal.'
-      summary: Crear un convenio sin cuenta
-      tags:
-      - convenios
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConvenioCrearRequest'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ConvenioCrearRequest'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ConvenioCrearRequest'
-        required: true
-      security:
-      - jwtAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConvenioDetalle'
-          description: ''
   /api/convenios/{id}/:
     get:
       operationId: convenios_retrieve
@@ -2789,6 +2761,25 @@ paths:
           description: ''
         '400':
           description: Datos o horas inválidos
+  /api/viajes/contingencia/conductores/:
+    get:
+      operationId: viajes_contingencia_conductores_list
+      description: 'HU-32: todos los conductores de la empresa, activos o no, para
+        anotar quién viajó.'
+      summary: Conductores para una reserva de contingencia
+      tags:
+      - reservas
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConductorContingencia'
+          description: ''
   /api/whatsapp/entrante/:
     post:
       operationId: whatsapp_entrante_create
@@ -3198,6 +3189,16 @@ components:
       - telefono
       - vehiculo_activo
       - vehiculos
+    ConductorContingencia:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+      required:
+      - id
+      - nombre
     ConductorCrearRequest:
       type: object
       description: 'Alta: los datos del conductor más el correo de acceso. La cuenta
@@ -3281,40 +3282,6 @@ components:
       - id
       - reservas
       - tiene_cuenta
-    ConvenioCrearRequest:
-      type: object
-      description: |-
-        Convenio sin cuenta, para las reservas que ingresa la central (HU-34: el administrador no crea
-        cuentas).
-      properties:
-        cliente_nombre:
-          type: string
-          minLength: 1
-          maxLength: 120
-        cliente_rut:
-          type: string
-          minLength: 1
-          description: 12345678-9, con o sin puntos
-          maxLength: 14
-        direccion:
-          type: string
-          nullable: true
-          maxLength: 200
-        encargado_nombre:
-          type: string
-          nullable: true
-          maxLength: 80
-        encargado_telefono:
-          nullable: true
-          oneOf:
-          - type: string
-            maxLength: 16
-            pattern: ^\+[1-9]\d{7,14}$
-          - type: string
-            maxLength: 0
-      required:
-      - cliente_nombre
-      - cliente_rut
     ConvenioDetalle:
       type: object
       properties:

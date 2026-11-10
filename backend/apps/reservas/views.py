@@ -1,9 +1,9 @@
 """API de reservas (HU-03): listar con filtros, crear, ver, editar antes del despacho y cancelar con motivo.
 Solo administrador y despachador, y solo viajes de su empresa (RN-13). No hay borrado."""
 
-from django.db.models import Prefetch
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import mixins, status, viewsets
+from django.db.models import F, Prefetch
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -119,6 +119,33 @@ class ViajeViewSet(
         entrada.is_valid(raise_exception=True)
         servicios.cancelar_viaje(viaje, motivo=entrada.validated_data["motivo"], usuario=request.user)
         return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    @extend_schema(
+        summary="Conductores para una reserva de contingencia",
+        tags=["reservas"],
+        responses=inline_serializer(
+            "ConductorContingencia",
+            {"id": serializers.IntegerField(), "nombre": serializers.CharField()},
+            many=True,
+        ),
+        description="HU-32: todos los conductores de la empresa, activos o no, para anotar quién viajó.",
+    )
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="contingencia/conductores",
+        pagination_class=None,
+        filter_backends=[],
+    )
+    def conductores_contingencia(self, request):
+        from apps.flota.models import Conductor
+
+        filas = (
+            Conductor.objects.filter(usuario__empresa_id=request.user.empresa_id)
+            .order_by("usuario__nombre")
+            .values("id", nombre=F("usuario__nombre"))
+        )
+        return Response(list(filas))
 
     @extend_schema(
         summary="Ingresar una reserva de contingencia",

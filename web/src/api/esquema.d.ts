@@ -682,11 +682,7 @@ export interface paths {
          */
         get: operations["convenios_list"];
         put?: never;
-        /**
-         * Crear un convenio sin cuenta
-         * @description HU-34: queda APROBADO y sin cuenta, para las reservas que ingresa la central. Las empresas con cuenta se registran solas en el portal.
-         */
-        post: operations["convenios_create"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1520,6 +1516,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/viajes/contingencia/conductores/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Conductores para una reserva de contingencia
+         * @description HU-32: todos los conductores de la empresa, activos o no, para anotar quién viajó.
+         */
+        get: operations["viajes_contingencia_conductores_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/whatsapp/entrante/": {
         parameters: {
             query?: never;
@@ -1708,6 +1724,10 @@ export interface components {
             readonly password_temporal_vence: string | null;
             readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
         };
+        ConductorContingencia: {
+            id: number;
+            nombre: string;
+        };
         /** @description Alta: los datos del conductor más el correo de acceso. La cuenta queda sin contraseña utilizable. */
         ConductorCrearRequest: {
             nombre: string;
@@ -1736,18 +1756,6 @@ export interface components {
             readonly tiene_cuenta: boolean;
             /** @description Reservas hechas con este convenio */
             readonly reservas: number;
-        };
-        /**
-         * @description Convenio sin cuenta, para las reservas que ingresa la central (HU-34: el administrador no crea
-         *     cuentas).
-         */
-        ConvenioCrearRequest: {
-            cliente_nombre: string;
-            /** @description 12345678-9, con o sin puntos */
-            cliente_rut: string;
-            direccion?: string | null;
-            encargado_nombre?: string | null;
-            encargado_telefono?: (string) | null;
         };
         ConvenioDetalle: {
             readonly id: number;
@@ -3921,31 +3929,6 @@ export interface operations {
             };
         };
     };
-    convenios_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConvenioCrearRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ConvenioCrearRequest"];
-                "multipart/form-data": components["schemas"]["ConvenioCrearRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConvenioDetalle"];
-                };
-            };
-        };
-    };
     convenios_retrieve: {
         parameters: {
             query?: never;
@@ -5370,6 +5353,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    viajes_contingencia_conductores_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConductorContingencia"][];
+                };
             };
         };
     };

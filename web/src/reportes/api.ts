@@ -7,7 +7,7 @@ import { useApi } from '../sesion/SesionProvider';
 
 export type Reporte = components['schemas']['Reporte'];
 export type Columna = components['schemas']['Columna'];
-export type TipoReporte = 'liquidacion' | 'facturacion' | 'cancelaciones' | 'historial';
+export type TipoReporte = 'liquidacion' | 'facturacion' | 'cancelaciones' | 'historial' | 'contingencia';
 
 export interface FiltrosReporte {
   desde: string;

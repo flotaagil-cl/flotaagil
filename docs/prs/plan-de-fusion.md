@@ -8,7 +8,7 @@ Para Carlos. Son 5 PR encadenados hacia `main`, **en este orden**, y después 4 
 | 2 | Sprint 2 | `feat/HU-24-calificacion` | `main` | #8, #17, #18, #19, #24, #25 |
 | 3 | Sprint 3 | `fix/HU-27-origen-icao` | `main` | #10, #14, #28, #29, #30 |
 | 4 | Sprint 4 | `docs/plan-fusion-sprint4` | `main` | #7, #11, #12, #15, #21, #26, #31 |
-| 5 | Cambios CC-12, CC-15 y CC-16 | `feat/HU-35-cuenta-pasajero` (punta de la cadena nueva) | `main` | #36, #37, #38, #39, #40 |
+| 5 | Cambios CC-12, CC-15 y CC-16 | `fix/estabilizacion-pantallas` (punta de la cadena nueva) | `main` | #33 a #40 |
 
 ## Antes de empezar
 
@@ -313,9 +313,9 @@ Twilio con un doble y el notificador de desarrollo. Mi turno y la navegación co
 
 ## PR 5: cambios CC-12, CC-15 y CC-16
 
-**Rama de origen:** `feat/HU-35-cuenta-pasajero` · **Rama base:** `main`
+**Rama de origen:** `fix/estabilizacion-pantallas` · **Rama base:** `main`
 
-Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero`.
+Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero` → `fix/estabilizacion-pantallas`.
 
 **Antes de abrirlo:** paso 5, con esta rama.
 
@@ -349,16 +349,18 @@ Refs #23
 - HU-33: inicio de sesión web único por rol y adaptador de correo.
 - HU-34: autoregistro de convenios con aprobación; se retira el link con token de HU-11 y HU-25.
 - HU-35: cuenta de pasajero opcional.
+- Pantallas pendientes: formulario de contingencia y conciliación por folio, «Terminar turno» del administrador y sin creación de convenios por el administrador (decisión del PO sobre DC-35).
 
 ### Cómo revisarlo
 
-Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-36 en `docs/diccionario-cambios.md`.
+Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-36 (DC-36 provisorio hasta la plantilla de Meta) y PR-15 en `docs/diccionario-cambios.md`.
 
 ### Para revisar
 
 - Migraciones: `cuentas.0007` a `0009`, `flota.0005` y `0006` (pasa el último turno de DC-26 a TURNO), `auditoria.0005`, `reservas.0010` a `0013` y `convenios.0003`, que **no tiene reversa** (retira los tokens y las contraseñas de los links).
 - Tras fusionar: migrar y reiniciar `worker` y `beat`. Nuevas variables en `.env.example`: `CORREO_*`, `SES_SMTP_*`, `WEB_URL_BASE` y `RECUPERAR_PASSWORD_HORAS`.
-- Los links de convenio anteriores dejan de funcionar: las empresas deben registrarse en el portal.
+- Los links de convenio anteriores dejan de funcionar: las empresas deben registrarse en el portal. Los convenios sin cuenta quedan como historial.
+- El administrador ya no crea convenios: `POST /api/convenios/` responde 405.
 
 ### Sin probar contra el servicio real
 

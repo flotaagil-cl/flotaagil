@@ -90,6 +90,9 @@ export function Listado() {
         <Link to="/reservas/nueva" className={estilos.boton}>
           Nueva reserva
         </Link>
+        <Link to="/reservas/contingencia" className={estilos.botonSecundario}>
+          Reserva de contingencia
+        </Link>
       </div>
 
       <div className={estilos.filtros}>

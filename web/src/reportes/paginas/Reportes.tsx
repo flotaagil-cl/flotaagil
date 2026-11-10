@@ -13,6 +13,11 @@ const TIPOS: { valor: TipoReporte; texto: string; ayuda: string }[] = [
   { valor: 'facturacion', texto: 'Facturación por convenio', ayuda: 'Viajes finalizados de cada convenio, por día del pago.' },
   { valor: 'cancelaciones', texto: 'Cancelaciones', ayuda: 'Tasa de cancelación por origen, sobre las reservas con recogida en el período.' },
   { valor: 'historial', texto: 'Historial de viajes', ayuda: 'Todas las reservas con recogida en el período.' },
+  {
+    valor: 'contingencia',
+    texto: 'Conciliación de contingencia',
+    ayuda: 'Reservas de contingencia por folio, según el día de recogida real, con sus montos. «Sin turno»: el conductor no tenía un turno que contuviera la hora real.',
+  },
 ];
 
 const numero = new Intl.NumberFormat('es-CL');

@@ -304,8 +304,10 @@ def contingencia(empresa_id: int, filtros: dict) -> tuple[list, dict]:
                 "ingresado_en": viaje.creado_en,
             }
         )
+    sin_turno = sum(1 for f in filas if f["conductor"] and f["turno"] == "Sin turno")
     return filas, {
         "folio": f"Total, {len(filas)} folios",
+        "turno": f"{sin_turno} sin turno",
         "monto": sum(f["monto"] or 0 for f in filas),
     }
 

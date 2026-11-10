@@ -275,6 +275,27 @@ class TestReporte:
         assert finalizada["monto"] == 15000
         assert finalizada["ingresado_por"]
         assert datos["totales"]["monto"] == 15000
+        assert datos["totales"]["turno"] == "0 sin turno"  # el cancelado no tiene conductor
+
+    def test_cuenta_los_viajes_sin_turno(self, cliente, api, administrador, chofer):
+        api.post(URL, finalizado(chofer, folio="C-0010"), format="json")
+        cliente.force_authenticate(administrador)
+        datos = cliente.get(
+            reverse("reporte", args=["contingencia"]), {"desde": hace(30).date().isoformat()}
+        ).json()
+        assert datos["totales"]["turno"] == "1 sin turno"
+
+
+@pytest.mark.django_db
+class TestConductoresParaElFormulario:
+    def test_todos_los_de_la_empresa_para_el_despachador(self, api, chofer, otra_empresa):
+        ConductorFactory(usuario__empresa=otra_empresa)
+        filas = api.get(reverse("viaje-conductores-contingencia")).json()
+        assert filas == [{"id": chofer.pk, "nombre": chofer.usuario.nombre}]
+
+    def test_el_conductor_no(self, cliente, conductor):
+        cliente.force_authenticate(conductor.usuario if hasattr(conductor, "usuario") else conductor)
+        assert cliente.get(reverse("viaje-conductores-contingencia")).status_code == 403
 
     def test_la_liquidacion_usa_la_hora_real_de_pago(self, cliente, api, administrador, chofer):
         api.post(
