@@ -1,8 +1,9 @@
 """CONVENIO, según docs/diccionario-datos.md, con los cambios de HU-34 (DC-35).
 
 Desde HU-34 la empresa cliente se registra sola y queda EN_REVISION hasta que el administrador la aprueba.
-Entra con una cuenta propia (USUARIO de rol CONVENIO, `usuario`): el link con token y la contraseña compartida de
-HU-11 y HU-25 se retiraron. Los convenios anteriores quedaron APROBADO sin cuenta, con su historial intacto.
+Entra con una cuenta propia (USUARIO de rol CONVENIO, `usuario`): el link con token y la contraseña
+compartida de HU-11 y HU-25 se retiraron. Los convenios anteriores quedaron APROBADO sin cuenta, con su
+historial intacto.
 Administración en `servicios.py`.
 """
 

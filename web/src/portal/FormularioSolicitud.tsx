@@ -26,12 +26,12 @@ import estilos from './portal.module.css';
 
 interface Props<R> {
   empresa: EmpresaPublica;
-  /** Portal público o link del convenio (HU-25). */
+  /** Portal público o cuenta del convenio (HU-34). */
   solicitar: (solicitud: CuerpoSolicitud) => Promise<R>;
   intro: ReactNode;
   leyendaDatos?: string;
   alEnviar: (enviada: { cuerpo: CuerpoSolicitud; respuesta: R }) => void;
-  /** Link del convenio: pide el nombre del supervisor y su declaración (DC-27). */
+  /** Cuenta del convenio (HU-34): pide la declaración de avisos, ligada al usuario que reserva. */
   conDeclaracion?: boolean;
   alNoDisponible: () => void;
   alVencerSesion?: () => void;
@@ -242,9 +242,6 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
                 </span>
               )}
             </div>
-            <Campo etiqueta="Nombre del supervisor" error={errors.supervisor?.message} ayuda="Quien hace esta declaración.">
-              {(c) => <input autoComplete="name" enterKeyHint="done" {...c} {...register('supervisor')} />}
-            </Campo>
           </>
         )}
       </fieldset>

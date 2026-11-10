@@ -33,8 +33,7 @@ export interface ValoresSolicitud {
   acepta_privacidad: boolean;
   acepta_whatsapp: boolean;
   sitio_web: string;
-  /** Solo en el link de convenio (DC-27). */
-  supervisor: string;
+  /** Solo en la cuenta del convenio (HU-34). */
   declara_autorizacion: boolean;
 }
 
@@ -49,7 +48,6 @@ export const VALORES_INICIALES: ValoresSolicitud = {
   acepta_privacidad: false,
   acepta_whatsapp: false,
   sitio_web: '',
-  supervisor: '',
   declara_autorizacion: false,
 };
 
@@ -66,12 +64,11 @@ export const CAMPOS_API: Record<string, string> = {
   'vuelo.hora_llegada': 'vuelo.hora',
   acepta_privacidad: 'acepta_privacidad',
   acepta_whatsapp: 'acepta_whatsapp',
-  supervisor: 'supervisor',
   declara_autorizacion: 'declara_autorizacion',
 };
 
 export function camposVisibles(sentido: Sentido): string[] {
-  const base = ['nombre', 'telefono', 'sentido', 'origen_dir', 'destino_dir', 'recogida', 'acepta_privacidad', 'acepta_whatsapp', 'supervisor', 'declara_autorizacion'];
+  const base = ['nombre', 'telefono', 'sentido', 'origen_dir', 'destino_dir', 'recogida', 'acepta_privacidad', 'acepta_whatsapp', 'declara_autorizacion'];
   return sentido === 'DESDE_AEROPUERTO' ? [...base, 'vuelo.numero', 'vuelo.hora'] : base;
 }
 
@@ -108,7 +105,6 @@ export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number, c
       acepta_privacidad: z.boolean(),
       acepta_whatsapp: z.boolean(),
       sitio_web: z.string(),
-      supervisor: z.string(),
       declara_autorizacion: z.boolean(),
     })
     .superRefine((v, ctx) => {
@@ -159,9 +155,6 @@ export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number, c
       if (!v.acepta_privacidad) error(['acepta_privacidad'], 'Debes aceptar el aviso de privacidad.');
       if (!v.acepta_whatsapp) error(['acepta_whatsapp'], 'Debes aceptar los avisos por WhatsApp para confirmar tu viaje.');
       if (conDeclaracion) {
-        const supervisor = v.supervisor.trim();
-        if (!supervisor) error(['supervisor'], 'Ingresa tu nombre.');
-        else if (supervisor.length > 80) error(['supervisor'], 'Máximo 80 caracteres.');
         if (!v.declara_autorizacion) error(['declara_autorizacion'], 'Debes declarar que el pasajero autorizó los avisos.');
       }
     });
@@ -185,7 +178,6 @@ export function cuerpoSolicitud(v: ValoresSolicitud, conDeclaracion = false): Cu
     sitio_web: v.sitio_web,
   };
   if (conDeclaracion) {
-    cuerpo.supervisor = v.supervisor.trim();
     cuerpo.declara_autorizacion = v.declara_autorizacion;
   }
   if (v.recogida.pared) cuerpo.recogida_en = instante(v.recogida);

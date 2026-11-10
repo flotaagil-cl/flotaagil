@@ -1,8 +1,8 @@
-/** HU-11: administrar convenios con link y contraseña (CP-22, RN-08). */
+/** HU-11 y HU-34: administrar convenios con autoregistro y aprobación (RN-08, RN-12). */
 
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
 import { convenioDePrueba, ServidorConveniosFalso } from '../pruebas/servidorConveniosFalso';
 
@@ -33,65 +33,46 @@ describe('listado', () => {
     const { convenios } = montar('/convenios');
     convenios.convenios = [
       convenioDePrueba({ id: 1, cliente_nombre: 'Minera Norte', reservas: 1234 }),
-      convenioDePrueba({ id: 2, cliente_nombre: 'Banco Sur', activo: false, reservas: 0 }),
+      convenioDePrueba({ id: 2, cliente_nombre: 'Banco Sur', estado: 'EN_REVISION', activo: false, reservas: 0 }),
     ];
     const enlace = await screen.findByRole('link', { name: 'Minera Norte' });
     const fila = enlace.closest('tr')!;
     expect(within(fila).getByText('1.234')).toBeInTheDocument();
-    expect(within(fila).getByText('Activo')).toBeInTheDocument();
-    expect(screen.getByText('Inactivo')).toBeInTheDocument();
-    expect(screen.getByText('2 convenios')).toBeInTheDocument();
+    expect(within(fila).getByText('Aprobado')).toBeInTheDocument();
+    expect(within(screen.getByRole('link', { name: 'Banco Sur' }).closest('tr')!).getByText('En revisión')).toBeInTheDocument();
   });
 
   it('filtra por estado', async () => {
     const { convenios } = montar('/convenios');
-    convenios.convenios = [convenioDePrueba({ cliente_nombre: 'Minera Norte' }), convenioDePrueba({ cliente_nombre: 'Banco Sur', activo: false })];
-    await screen.findByRole('link', { name: 'Banco Sur' });
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Estado' }), 'Activos');
-    await waitFor(() => expect(screen.queryByRole('link', { name: 'Banco Sur' })).not.toBeInTheDocument());
-    expect(screen.getByRole('link', { name: 'Minera Norte' })).toBeInTheDocument();
+    convenios.convenios = [
+      convenioDePrueba({ cliente_nombre: 'Minera Norte' }),
+      convenioDePrueba({ cliente_nombre: 'Banco Sur', estado: 'EN_REVISION', activo: false }),
+    ];
+    await screen.findByRole('link', { name: 'Minera Norte' });
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Estado' }), 'En revisión');
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Minera Norte' })).not.toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'Banco Sur' })).toBeInTheDocument();
   });
 
   it('sin convenios invita a crear; con filtros, a quitarlos', async () => {
-    montar('/convenios?activo=true');
+    montar('/convenios?estado=APROBADO');
     expect(await screen.findByText('Ningún convenio coincide con los filtros.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
     expect(await screen.findByText('Aún no hay convenios.')).toBeInTheDocument();
   });
 });
 
-describe('crear', () => {
-  it('valida antes de enviar', async () => {
-    const { convenios } = montar('/convenios/nuevo');
-    await userEvent.click(await screen.findByRole('button', { name: 'Crear convenio' }));
-    expect(await screen.findByText('Ingresa el nombre del cliente.')).toBeInTheDocument();
-    expect(screen.getByText(/RUT inválido/)).toBeInTheDocument();
-    expect(convenios.cuerpos).toEqual([]);
-  });
-
-  it('normaliza, muestra la contraseña una sola vez y abre la ficha con su link', async () => {
+describe('crear sin cuenta', () => {
+  it('crea aprobado y abre la ficha, sin contraseña', async () => {
     const { convenios, router } = montar('/convenios/nuevo');
-    await userEvent.type(await screen.findByRole('textbox', { name: 'Cliente' }), ' Minera Norte ');
-    await userEvent.type(screen.getByRole('textbox', { name: 'RUT' }), '76.543.210-3');
+    await userEvent.type(await screen.findByLabelText('Cliente'), 'Minera Nueva');
+    await userEvent.type(screen.getByLabelText('RUT'), '76543210-3');
     await userEvent.click(screen.getByRole('button', { name: 'Crear convenio' }));
-    const dialogo = await screen.findByRole('dialog', { name: 'Contraseña del convenio' });
-    expect(within(dialogo).getByLabelText('Contraseña del convenio').textContent).toBe('ClaveSintetica23');
-    expect(convenios.cuerpos[0].cuerpo).toEqual({ cliente_nombre: 'Minera Norte', cliente_rut: '76543210-3' });
-    expect(screen.getByLabelText('Link del convenio').textContent).toContain('/convenio/tokenSintetico');
-    // La contraseña no queda en la URL ni en el historial.
-    expect(router.state.location.search).toBe('');
-    await waitFor(() => expect(router.state.location.state).toBeNull());
-    await userEvent.click(within(dialogo).getByRole('button', { name: 'Listo' }));
-    expect(screen.queryByText('ClaveSintetica23')).not.toBeInTheDocument();
-  });
-
-  it('un error del servidor queda en su campo', async () => {
-    const { convenios } = montar('/convenios/nuevo');
-    convenios.siguiente('POST /api/convenios/', { estado: 400, cuerpo: { cliente_rut: ['El dígito verificador del RUT no es válido.'] } });
-    await userEvent.type(await screen.findByRole('textbox', { name: 'Cliente' }), 'Minera');
-    await userEvent.type(screen.getByRole('textbox', { name: 'RUT' }), '76543210-3');
-    await userEvent.click(screen.getByRole('button', { name: 'Crear convenio' }));
-    expect(await screen.findByText('El dígito verificador del RUT no es válido.')).toBeInTheDocument();
+    await screen.findByRole('heading', { name: /Minera Nueva/ });
+    expect(router.state.location.pathname).toMatch(/^\/convenios\/\d+$/);
+    expect(screen.getByText('Sin cuenta')).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(convenios.convenios).toHaveLength(1);
   });
 });
 
@@ -108,76 +89,73 @@ describe('ficha', () => {
     expect(await screen.findByRole('link', { name: 'Volver a los convenios' })).toBeInTheDocument();
   });
 
-  it('rotar pide confirmar y muestra la nueva', async () => {
+  it('muestra los datos del registro', async () => {
     await abrir();
-    await userEvent.click(screen.getByRole('button', { name: 'Rotar contraseña' }));
-    expect(screen.getByText(/la actual dejará de servir/)).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Rotar' }));
-    const dialogo = await screen.findByRole('dialog', { name: 'Contraseña del convenio' });
-    expect(within(dialogo).getByLabelText('Contraseña del convenio').textContent).toBe('ClaveSintetica23N');
+    expect(screen.getByText('Elena Encargada')).toBeInTheDocument();
+    expect(screen.getByText('elena@minera.example')).toBeInTheDocument();
+    expect(screen.getByText('Av. Apoquindo 3000, Las Condes')).toBeInTheDocument();
   });
 
-  it('cancelar la confirmación no hace nada', async () => {
-    const { convenios } = await abrir();
-    await userEvent.click(screen.getByRole('button', { name: 'Desactivar convenio' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
-    expect(convenios.convenios[0].activo).toBe(true);
-    expect(convenios.cuerpos).toEqual([]);
+  it('en revisión: aprobar pide confirmar', async () => {
+    const { convenios } = await abrir({ estado: 'EN_REVISION', activo: false });
+    await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Aprobar' }));
+    expect(await screen.findByText(/Convenio aprobado/)).toBeInTheDocument();
+    expect(convenios.convenios[0].estado).toBe('APROBADO');
   });
 
-  it('desactivar explica que no borra el historial y marca el link', async () => {
-    const { convenios } = await abrir();
+  it('en revisión: rechazar exige motivo', async () => {
+    const { convenios } = await abrir({ estado: 'EN_REVISION', activo: false });
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar…' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    expect(screen.getByText('Indica el motivo del rechazo.')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Motivo del rechazo'), 'RUT no corresponde');
+    await userEvent.click(screen.getByRole('button', { name: 'Rechazar' }));
+    expect(await screen.findByText(/Convenio rechazado/)).toBeInTheDocument();
+    expect(convenios.cuerpos.at(-1)).toEqual({ ruta: 'POST /api/convenios/5/rechazar/', cuerpo: { motivo: 'RUT no corresponde' } });
+  });
+
+  it('aprobado: desactivar explica el corte y se puede activar de nuevo', async () => {
+    await abrir();
     await userEvent.click(screen.getByRole('button', { name: 'Desactivar convenio' }));
-    expect(screen.getByText(/Las reservas ya hechas no se borran ni se cancelan/)).toBeInTheDocument();
+    expect(screen.getByText(/pierde el acceso al instante/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
-    expect(await screen.findByText('Convenio desactivado: su link dejó de funcionar.')).toBeInTheDocument();
-    expect(screen.getByText(/este link no funciona/)).toBeInTheDocument();
-    expect(convenios.cuerpos[0].cuerpo).toEqual({ activo: false });
-    expect(screen.getByText('3')).toBeInTheDocument();
-  });
-
-  it('se puede activar de nuevo', async () => {
-    await abrir({ activo: false });
+    expect(await screen.findByRole('button', { name: 'Activar convenio' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Activar convenio' }));
     await userEvent.click(screen.getByRole('button', { name: 'Activar' }));
-    expect(await screen.findByText('Convenio activado: su link vuelve a funcionar.')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Desactivar convenio' })).toBeInTheDocument();
+  });
+
+  it('restablecer muestra la temporal una vez', async () => {
+    const { convenios } = await abrir();
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer contraseña' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer' }));
+    const dialogo = await screen.findByRole('dialog');
+    expect(within(dialogo).getByText(convenios.password)).toBeInTheDocument();
+  });
+
+  it('sin cuenta no ofrece restablecer', async () => {
+    await abrir({ tiene_cuenta: false, encargado_email: null });
+    expect(screen.queryByRole('button', { name: 'Restablecer contraseña' })).not.toBeInTheDocument();
   });
 
   it('una falla se informa', async () => {
     const { convenios } = await abrir();
-    convenios.siguiente('POST /api/convenios/5/rotar-password/', { estado: 500, cuerpo: {} });
-    await userEvent.click(screen.getByRole('button', { name: 'Rotar contraseña' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Rotar' }));
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    convenios.siguiente('POST /api/convenios/5/desactivar/', { estado: 409, cuerpo: { detail: 'El convenio está inactivo.', code: 'estado_convenio' } });
+    await userEvent.click(screen.getByRole('button', { name: 'Desactivar convenio' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
+    expect(await screen.findByText('El convenio está inactivo.')).toBeInTheDocument();
   });
 
   it('editar guarda los datos', async () => {
     const { convenios } = await abrir();
     await userEvent.click(screen.getByRole('button', { name: 'Editar' }));
-    const nombre = screen.getByRole('textbox', { name: 'Cliente' });
+    const nombre = screen.getByLabelText('Cliente');
     await userEvent.clear(nombre);
-    await userEvent.type(nombre, 'Minera Nueva');
+    await userEvent.type(nombre, 'Minera Renombrada');
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument();
-    expect(convenios.convenios[0].cliente_nombre).toBe('Minera Nueva');
-  });
-
-  it('copia el link', async () => {
-    await abrir();
-    const escribir = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText: escribir }, configurable: true });
-    await userEvent.click(screen.getByRole('button', { name: 'Copiar link' }));
-    await waitFor(() => expect(escribir).toHaveBeenCalledWith(expect.stringContaining('/convenio/tokenSintetico')));
-    expect(await screen.findByText('Link copiado.')).toBeInTheDocument();
-  });
-
-  it('si no se puede copiar lo dice', async () => {
-    await abrir();
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText: vi.fn().mockRejectedValue(new Error('no')) }, configurable: true });
-    await userEvent.click(screen.getByRole('button', { name: 'Copiar link' }));
-    expect(await screen.findByText(/No se pudo copiar/)).toBeInTheDocument();
+    expect(convenios.convenios[0].cliente_nombre).toBe('Minera Renombrada');
   });
 });
 
@@ -207,11 +185,11 @@ describe('auditoría del convenio (HU-12, CP-24)', () => {
     expect(await screen.findByText('Aún no hay registros.')).toBeInTheDocument();
   });
 
-  it('rotar actualiza la auditoría sin recargar', async () => {
+  it('restablecer actualiza la auditoría sin recargar', async () => {
     abrirConvenio();
     await screen.findByText('Creación');
-    await userEvent.click(screen.getByRole('button', { name: 'Rotar contraseña' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Rotar' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer contraseña' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer' }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Listo' }));
     expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();
   });

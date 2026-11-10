@@ -27,6 +27,8 @@ export class ServidorPortalFalso {
   empresas: Record<string, EmpresaPublica> = { [EMPRESA_PORTAL.slug]: EMPRESA_PORTAL };
   llamadas: string[] = [];
   cuerpos: Solicitud[] = [];
+  /** HU-34: registros de empresas recibidos. */
+  registros: Record<string, string>[] = [];
   /** Llamadas prohibidas (p. ej. a /api/auth/): la prueba las revisa. */
   prohibidas: string[] = [];
   fallaEmpresa: number | 'red' | null = null;
@@ -63,6 +65,14 @@ export class ServidorPortalFalso {
       if (this.fallaEmpresa === 'red') throw new TypeError('Failed to fetch');
       if (this.fallaEmpresa) return json(this.fallaEmpresa, { detail: 'Error.' });
       return empresa ? json(200, empresa) : json(404, { detail: 'No encontrado.' });
+    }
+    if (recurso === 'registro-empresa') {
+      const registro = (await peticion.json()) as Record<string, string>;
+      this.registros.push(registro);
+      const programada = this.programadas.shift();
+      if (programada?.estado === 'red') throw new TypeError('Failed to fetch');
+      if (programada) return json(programada.estado, programada.cuerpo ?? {});
+      return json(201, { estado: 'EN_REVISION', mensaje: 'Recibimos el registro.' });
     }
     const cuerpo = (await peticion.json()) as Solicitud;
     this.cuerpos.push(cuerpo);

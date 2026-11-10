@@ -63,15 +63,23 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 
 ## CONVENIO
 
+Con los cambios de DC-35 (HU-34): el link con token y la contraseña compartida se retiraron.
+
 | Columna | Tipo | Nulo | Clave | Descripción | Dominio / restricción | Defecto | Clasificación |
 |---|---|---|---|---|---|---|---|
 | id | BIGINT | No | PK | Identificador del convenio | Autoincremental | — |  |
 | empresa_id | BIGINT | No | FK | Empresa de taxi que otorga el convenio | → EMPRESA.id | — |  |
-| cliente_nombre | VARCHAR(120) | No |  | Nombre de la empresa cliente | Texto no vacío | — |  |
+| cliente_nombre | VARCHAR(120) | No |  | Razón social de la empresa cliente | Texto no vacío | — |  |
 | cliente_rut | VARCHAR(12) | No |  | RUT de la empresa cliente | Dígito verificador válido | — |  |
-| token_link | CHAR(43) | No | UK | Token del link único | Aleatorio de 256 bits (base64url) | — | Credencial |
-| password_hash | VARCHAR(128) | No |  | Hash de la contraseña del convenio | PBKDF2-SHA256 | — | Credencial |
-| activo | BOOLEAN | No |  | Vigencia del convenio | false invalida el link (RN-08) | true |  |
+| direccion | VARCHAR(200) | Sí |  | Dirección de la empresa cliente | Obligatoria en el registro | NULL |  |
+| encargado_nombre | VARCHAR(80) | Sí |  | Encargado del convenio | — | NULL | Personal |
+| encargado_telefono | VARCHAR(16) | Sí |  | Teléfono del encargado | E.164 | NULL | Personal |
+| estado | VARCHAR(11) | No |  | Estado del convenio | EN_REVISION \| APROBADO \| RECHAZADO \| INACTIVO (RN-08) | APROBADO |  |
+| motivo_rechazo | VARCHAR(200) | Sí |  | Motivo del rechazo | Obligatorio si RECHAZADO | NULL |  |
+| revisado_por | BIGINT | Sí | FK | Administrador que aprobó o rechazó | → USUARIO.id | NULL |  |
+| revisado_en | TIMESTAMPTZ | Sí |  | Momento de la revisión | UTC | NULL |  |
+| usuario_id | BIGINT | Sí | FK, UK | Cuenta de la empresa cliente | → USUARIO.id (rol CONVENIO); NULL sin cuenta | NULL |  |
+| creado_en | TIMESTAMPTZ | No |  | Fecha de alta | UTC | now() |  |
 
 ## PASAJERO
 

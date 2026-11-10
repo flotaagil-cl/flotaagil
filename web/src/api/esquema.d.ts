@@ -629,83 +629,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/convenio/{token}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Estado del link del convenio
-         * @description Datos para el formulario y si hay sesión. Con sesión, cuenta como uso y la renueva.
-         */
-        get: operations["convenio_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/convenio/{token}/salir/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cerrar la sesión del convenio */
-        post: operations["convenio_salir_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/convenio/{token}/sesion/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Entrar con la contraseña del convenio
-         * @description Deja la sesión en una cookie httpOnly, que vence tras 2 h sin uso (configurable).
-         */
-        post: operations["convenio_sesion_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/convenio/{token}/solicitudes/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Solicitar un viaje a nombre del convenio
-         * @description Queda SOLICITADO y con el convenio, sin verificar el teléfono por WhatsApp (RN-07).
-         */
-        post: operations["convenio_solicitudes_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/convenios/": {
         parameters: {
             query?: never;
@@ -720,8 +643,8 @@ export interface paths {
         get: operations["convenios_list"];
         put?: never;
         /**
-         * Crear un convenio
-         * @description Genera el token del link (256 bits) y la contraseña, que se entrega una sola vez.
+         * Crear un convenio sin cuenta
+         * @description HU-34: queda APROBADO y sin cuenta, para las reservas que ingresa la central. Las empresas con cuenta se registran solas en el portal.
          */
         post: operations["convenios_create"];
         delete?: never;
@@ -738,7 +661,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Detalle de un convenio, con el token de su link
+         * Detalle de un convenio
          * @description HU-11: solo el administrador de la empresa.
          */
         get: operations["convenios_retrieve"];
@@ -748,10 +671,50 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Editar, activar o desactivar un convenio
-         * @description Desactivar invalida el link sin afectar el historial (RN-08). Se audita (RN-12).
+         * Editar los datos de un convenio
+         * @description Razón social, RUT, dirección y encargado. El estado cambia con sus acciones. Se audita.
          */
         patch: operations["convenios_partial_update"];
+        trace?: never;
+    };
+    "/api/convenios/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reactivar un convenio
+         * @description HU-11: solo el administrador de la empresa.
+         */
+        post: operations["convenios_activar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenios/{id}/aprobar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprobar un convenio en revisión
+         * @description Queda en auditoría y se avisa al encargado por correo.
+         */
+        post: operations["convenios_aprobar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/convenios/{id}/auditoria/": {
@@ -774,7 +737,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/convenios/{id}/rotar-password/": {
+    "/api/convenios/{id}/desactivar/": {
         parameters: {
             query?: never;
             header?: never;
@@ -784,10 +747,50 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotar la contraseña del convenio
-         * @description La anterior deja de servir. La nueva se entrega una sola vez. Se audita (RN-12).
+         * Desactivar un convenio
+         * @description RN-08: la cuenta pierde el acceso al instante; el historial no cambia. Se audita.
          */
-        post: operations["convenios_rotar_password_create"];
+        post: operations["convenios_desactivar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenios/{id}/rechazar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rechazar un convenio en revisión
+         * @description Exige motivo; queda en auditoría y se avisa al encargado por correo.
+         */
+        post: operations["convenios_rechazar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenios/{id}/restablecer-password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restablecer la contraseña de la cuenta del convenio
+         * @description DC-14: temporal que se muestra una vez y obliga a cambiarla. Se audita (RN-12).
+         */
+        post: operations["convenios_restablecer_password_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -865,6 +868,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mi-convenio/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mi convenio y su estado */
+        get: operations["mi_convenio_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mi-convenio/reservas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reservas del convenio, de la más reciente a la más antigua */
+        get: operations["mi_convenio_reservas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mi-convenio/solicitudes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir un viaje a nombre del convenio
+         * @description RN-07: queda SOLICITADO sin verificación por WhatsApp. La declaración de avisos queda ligada al usuario que reserva (DC-35).
+         */
+        post: operations["mi_convenio_solicitudes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/": {
         parameters: {
             query?: never;
@@ -876,6 +933,27 @@ export interface paths {
         get: operations["portal_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{slug}/registro-empresa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Registrar una empresa con convenio
+         * @description HU-34: la empresa cliente se registra y queda EN_REVISION. Mismos límites que el portal y campo
+         *     trampa.
+         */
+        post: operations["portal_registro_empresa_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1348,17 +1426,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description Sin sesión no revela de qué cliente es el convenio. */
-        AccesoConvenio: {
-            razon_social: string;
-            slug: string;
-            anticipacion_minima_min: number;
-            expiracion_verificacion_min: number;
-            /** @description Minutos que se suman a la llegada del vuelo cuando no se indica la recogida (RN-17). */
-            margen_nacional_min: number;
-            sesion_activa: boolean;
-            cliente_nombre: string | null;
-        };
         /** @enum {string} */
         AccesoEnum: "SIN_PASSWORD" | "TEMPORAL" | "TEMPORAL_VENCIDA" | "ACTIVA";
         Access: {
@@ -1523,43 +1590,52 @@ export interface components {
             id: number;
             nombre: string;
         };
-        ContrasenaRequest: {
-            password: string;
-        };
         Convenio: {
             readonly id: number;
             readonly cliente_nombre: string;
             readonly cliente_rut: string;
+            readonly estado: components["schemas"]["EstadoConvenioEnum"];
+            /** @description Compatibilidad con HU-11: un convenio vigente es uno aprobado. */
             readonly activo: boolean;
+            /** @description Si la empresa cliente tiene cuenta (HU-34) */
+            readonly tiene_cuenta: boolean;
             /** @description Reservas hechas con este convenio */
             readonly reservas: number;
         };
-        /** @description Incluye el token del link: es una credencial, por eso no va en el listado. */
-        ConvenioCreado: {
-            readonly id: number;
-            readonly cliente_nombre: string;
-            readonly cliente_rut: string;
-            readonly activo: boolean;
-            /** @description Reservas hechas con este convenio */
-            readonly reservas: number;
-            readonly token_link: string;
-            /** @description Se entrega una sola vez */
-            readonly password: string;
-        };
+        /**
+         * @description Convenio sin cuenta, para las reservas que ingresa la central (HU-34: el administrador no crea
+         *     cuentas).
+         */
         ConvenioCrearRequest: {
             cliente_nombre: string;
             /** @description 12345678-9, con o sin puntos */
             cliente_rut: string;
+            direccion?: string | null;
+            encargado_nombre?: string | null;
+            encargado_telefono?: (string) | null;
         };
-        /** @description Incluye el token del link: es una credencial, por eso no va en el listado. */
         ConvenioDetalle: {
             readonly id: number;
             readonly cliente_nombre: string;
             readonly cliente_rut: string;
+            readonly estado: components["schemas"]["EstadoConvenioEnum"];
+            /** @description Compatibilidad con HU-11: un convenio vigente es uno aprobado. */
             readonly activo: boolean;
+            /** @description Si la empresa cliente tiene cuenta (HU-34) */
+            readonly tiene_cuenta: boolean;
             /** @description Reservas hechas con este convenio */
             readonly reservas: number;
-            readonly token_link: string;
+            readonly direccion: string | null;
+            readonly encargado_nombre: string | null;
+            /** Format: email */
+            readonly encargado_email: string | null;
+            readonly encargado_telefono: string | null;
+            readonly motivo_rechazo: string | null;
+            readonly revisado_por: string | null;
+            /** Format: date-time */
+            readonly revisado_en: string | null;
+            /** Format: date-time */
+            readonly creado_en: string;
         };
         ConvenioResumen: {
             id: number;
@@ -1640,6 +1716,14 @@ export interface components {
          * @enum {string}
          */
         EstadoConductorEnum: "DISPONIBLE" | "NO_DISPONIBLE" | "EN_VIAJE";
+        /**
+         * @description * `EN_REVISION` - En revisión
+         *     * `APROBADO` - Aprobado
+         *     * `RECHAZADO` - Rechazado
+         *     * `INACTIVO` - Inactivo
+         * @enum {string}
+         */
+        EstadoConvenioEnum: "EN_REVISION" | "APROBADO" | "RECHAZADO" | "INACTIVO";
         /**
          * @description * `QUEUED` - En cola
          *     * `SENT` - Enviado
@@ -1800,6 +1884,18 @@ export interface components {
          * @enum {string}
          */
         MetodoEnum: "EFECTIVO" | "TARJETA" | "TRANSFERENCIA" | "CONVENIO";
+        MiConvenio: {
+            readonly id: number;
+            cliente_nombre: string;
+            cliente_rut: string;
+            direccion?: string | null;
+            encargado_nombre?: string | null;
+            encargado_telefono?: string | null;
+            estado?: components["schemas"]["EstadoConvenioEnum"];
+            motivo_rechazo?: string | null;
+            empresa: string;
+            empresa_slug: string;
+        };
         MiTurno: {
             en_turno: boolean;
             /**
@@ -1924,6 +2020,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["RegistroAuditoria"][];
         };
+        PaginatedReservaDelConvenioList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ReservaDelConvenio"][];
+        };
         PaginatedVehiculoList: {
             /** @example 123 */
             count: number;
@@ -1964,10 +2075,6 @@ export interface components {
             nombre: string;
             telefono: string;
         };
-        PasswordNueva: {
-            /** @description Se entrega una sola vez. La anterior deja de servir. */
-            password: string;
-        };
         PasswordTemporal: {
             /** @description Se muestra una sola vez. No se guarda en texto plano. */
             password_temporal: string;
@@ -1989,8 +2096,9 @@ export interface components {
             cliente_nombre?: string;
             /** @description 12345678-9, con o sin puntos */
             cliente_rut?: string;
-            /** @description False invalida el link sin borrar el historial (RN-08) */
-            activo?: boolean;
+            direccion?: string | null;
+            encargado_nombre?: string | null;
+            encargado_telefono?: (string) | null;
         };
         /** @description La patente no se edita: otra patente es otro vehículo. */
         PatchedVehiculoEditarRequest: {
@@ -2035,6 +2143,9 @@ export interface components {
             /** Format: double */
             lon: number;
         };
+        RechazoRequest: {
+            motivo: string;
+        };
         RefreshRequest: {
             refresh: string;
         };
@@ -2045,6 +2156,20 @@ export interface components {
             usuario?: string | null;
             /** Format: date-time */
             creado_en: string;
+        };
+        /** @description HU-34: formulario público de registro de la empresa cliente. */
+        RegistroConvenioRequest: {
+            /** @description Razón social */
+            cliente_nombre: string;
+            cliente_rut: string;
+            direccion: string;
+            encargado_nombre: string;
+            /** Format: email */
+            email: string;
+            encargado_telefono: string;
+            password: string;
+            /** @description Campo trampa: debe ir vacío */
+            sitio_web?: string;
         };
         Reporte: {
             columnas: components["schemas"]["Columna"][];
@@ -2087,6 +2212,16 @@ export interface components {
             monto?: number | null;
             /** @description Si se canceló */
             motivo?: string;
+        };
+        ReservaDelConvenio: {
+            readonly id: number;
+            estado?: components["schemas"]["EstadoViajeEnum"];
+            estado_texto: string;
+            pasajero: string;
+            origen_dir: string;
+            destino_dir: string;
+            /** Format: date-time */
+            recogida_en: string;
         };
         ReservaVinculada: {
             id: number;
@@ -2140,14 +2275,14 @@ export interface components {
             usuario: components["schemas"]["UsuarioSesion"];
             refresh: string;
         };
-        SesionConvenio: {
-            cliente_nombre: string;
-        };
         SesionPanel: {
             access: string;
             usuario: components["schemas"]["UsuarioSesion"];
         };
-        /** @description HU-25: el supervisor pide a nombre del pasajero y declara que este autorizó los avisos (DC-27). */
+        /**
+         * @description HU-34: la cuenta del convenio pide a nombre del pasajero y declara que este autorizó los avisos. La
+         *     declaración queda ligada al usuario que reserva (DC-35).
+         */
         SolicitudConvenioRequest: {
             nombre: string;
             /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
@@ -2172,16 +2307,8 @@ export interface components {
             acepta_privacidad: boolean;
             acepta_whatsapp: boolean;
             sitio_web?: string;
-            /** @description Quien hace la declaración: no tiene cuenta */
-            supervisor: string;
             /** @description Declaro que el pasajero autorizó recibir avisos por WhatsApp */
             declara_autorizacion: boolean;
-        };
-        SolicitudConvenioRespuesta: {
-            estado: string;
-            /** Format: date-time */
-            recogida_en: string;
-            mensaje: string;
         };
         /** @description HU-19: solicitud de viaje sin cuenta. */
         SolicitudRequest: {
@@ -3475,147 +3602,16 @@ export interface operations {
             };
         };
     };
-    convenio_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AccesoConvenio"];
-                };
-            };
-            /** @description Link inexistente o convenio inactivo (RN-08) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    convenio_salir_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    convenio_sesion_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ContrasenaRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ContrasenaRequest"];
-                "multipart/form-data": components["schemas"]["ContrasenaRequest"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SesionConvenio"];
-                };
-            };
-            /** @description `credenciales_invalidas` */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Link inexistente o convenio inactivo (RN-08) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description `convenio_bloqueado`: 5 intentos fallidos (DC-27) */
-            423: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    convenio_solicitudes_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SolicitudConvenioRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["SolicitudConvenioRequest"];
-                "multipart/form-data": components["schemas"]["SolicitudConvenioRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SolicitudConvenioRespuesta"];
-                };
-            };
-            /** @description `sesion_convenio_vencida` */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Link inexistente o convenio inactivo (RN-08) */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     convenios_list: {
         parameters: {
             query?: {
-                activo?: boolean;
+                /**
+                 * @description * `EN_REVISION` - En revisión
+                 *     * `APROBADO` - Aprobado
+                 *     * `RECHAZADO` - Rechazado
+                 *     * `INACTIVO` - Inactivo
+                 */
+                estado?: "APROBADO" | "EN_REVISION" | "INACTIVO" | "RECHAZADO";
                 /** @description Un número de página dentro del conjunto de resultados paginado. */
                 page?: number;
                 /** @description Cliente o RUT */
@@ -3657,7 +3653,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConvenioCreado"];
+                    "application/json": components["schemas"]["ConvenioDetalle"];
                 };
             };
         };
@@ -3712,6 +3708,64 @@ export interface operations {
             };
         };
     };
+    convenios_activar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenios_aprobar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     convenios_auditoria_list: {
         parameters: {
             query?: {
@@ -3737,7 +3791,7 @@ export interface operations {
             };
         };
     };
-    convenios_rotar_password_create: {
+    convenios_desactivar_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -3754,8 +3808,79 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PasswordNueva"];
+                    "application/json": components["schemas"]["ConvenioDetalle"];
                 };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenios_rechazar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RechazoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RechazoRequest"];
+                "multipart/form-data": components["schemas"]["RechazoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenios_restablecer_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordTemporal"];
+                };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -3857,6 +3982,79 @@ export interface operations {
             };
         };
     };
+    mi_convenio_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiConvenio"];
+                };
+            };
+        };
+    };
+    mi_convenio_reservas_list: {
+        parameters: {
+            query?: {
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedReservaDelConvenioList"];
+                };
+            };
+        };
+    };
+    mi_convenio_solicitudes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitudConvenioRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SolicitudConvenioRequest"];
+                "multipart/form-data": components["schemas"]["SolicitudConvenioRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudRespuesta"];
+                };
+            };
+            /** @description `convenio_no_aprobado`: en revisión o rechazado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     portal_retrieve: {
         parameters: {
             query?: never;
@@ -3882,6 +4080,55 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    portal_registro_empresa_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistroConvenioRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RegistroConvenioRequest"];
+                "multipart/form-data": components["schemas"]["RegistroConvenioRequest"];
+            };
+        };
+        responses: {
+            /** @description Registrada: queda en revisión hasta que el administrador la apruebe */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Datos inválidos o correo no disponible */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empresa inexistente o inactiva */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Demasiadas solicitudes. `code`: `limite_ip` (desde la misma IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono` (varias solicitudes con el mismo número). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };

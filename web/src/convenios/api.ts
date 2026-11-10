@@ -68,11 +68,46 @@ export function useEditarConvenio(id: number) {
   });
 }
 
-export function useRotarPassword(id: number) {
+type Accion = 'aprobar' | 'desactivar' | 'activar';
+
+const RUTAS_ACCION = {
+  aprobar: '/api/convenios/{id}/aprobar/',
+  desactivar: '/api/convenios/{id}/desactivar/',
+  activar: '/api/convenios/{id}/activar/',
+} as const;
+
+/** HU-34: aprobar, desactivar (RN-08) o reactivar. Quedan en auditoría (RN-12). */
+export function useAccionConvenio(id: number) {
   const api = useApi();
   const cliente = useQueryClient();
   return useMutation({
-    mutationFn: () => resultado(api.POST('/api/convenios/{id}/rotar-password/', { params: { path: { id } } })),
+    mutationFn: (accion: Accion) => resultado(api.POST(RUTAS_ACCION[accion], { params: { path: { id } } })),
+    onSuccess: (convenio) => {
+      cliente.setQueryData(claves.detalle(id), convenio);
+      void cliente.invalidateQueries({ queryKey: claves.todo });
+    },
+  });
+}
+
+export function useRechazarConvenio(id: number) {
+  const api = useApi();
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: (motivo: string) =>
+      resultado(api.POST('/api/convenios/{id}/rechazar/', { params: { path: { id } }, body: { motivo } })),
+    onSuccess: (convenio) => {
+      cliente.setQueryData(claves.detalle(id), convenio);
+      void cliente.invalidateQueries({ queryKey: claves.todo });
+    },
+  });
+}
+
+/** DC-14: temporal que se muestra una vez. */
+export function useRestablecerPassword(id: number) {
+  const api = useApi();
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: () => resultado(api.POST('/api/convenios/{id}/restablecer-password/', { params: { path: { id } } })),
     onSuccess: () => void cliente.invalidateQueries({ queryKey: ['convenios', 'auditoria', id] }),
   });
 }

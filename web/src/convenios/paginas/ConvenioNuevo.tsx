@@ -13,9 +13,9 @@ export function ConvenioNuevo() {
         textoEnviar="Crear convenio"
         volverA="/convenios"
         enviar={async (datos) => {
-          const { id, password } = await crear.mutateAsync(datos);
-          // La contraseña viaja en el estado de la navegación: no queda en la URL ni en el almacenamiento.
-          navegar(`/convenios/${id}`, { replace: true, state: { password } });
+          // HU-34: queda aprobado y sin cuenta; las empresas con cuenta se registran en el portal.
+          const { id } = await crear.mutateAsync(datos);
+          navegar(`/convenios/${id}`, { replace: true });
         }}
       />
     </section>

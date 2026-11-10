@@ -4,20 +4,21 @@ import campos from '../../formularios/formularios.module.css';
 import { Celda, Esqueleto, FallaDeCarga, Paginacion } from '../../flota/componentes/comunes';
 import { useFiltrosUrl } from '../../flota/filtrosUrl';
 import { useConvenios, type ConsultaConvenios } from '../api';
+import { ESTADOS_CONVENIO } from '../estados';
 
 const numero = new Intl.NumberFormat('es-CL');
 
 /** HU-11: convenios con su volumen de reservas. */
 export function Convenios() {
-  const filtros = useFiltrosUrl(['activo'] as const);
-  const { activo } = filtros.valores;
+  const filtros = useFiltrosUrl(['estado'] as const);
+  const { estado } = filtros.valores;
   const consulta: ConsultaConvenios = {
     ...(filtros.q && { q: filtros.q }),
-    ...(activo && { activo: activo === 'true' }),
+    ...(estado && { estado: estado as NonNullable<ConsultaConvenios['estado']> }),
     ...(filtros.pagina > 1 && { page: filtros.pagina }),
   };
   const lista = useConvenios(consulta);
-  const conFiltros = Boolean(filtros.q || activo);
+  const conFiltros = Boolean(filtros.q || estado);
 
   return (
     <section>
@@ -36,10 +37,13 @@ export function Convenios() {
           </label>
           <label className={campos.campo}>
             Estado
-            <select value={activo} onChange={(evento) => filtros.cambiar({ activo: evento.target.value })}>
+            <select value={estado} onChange={(evento) => filtros.cambiar({ estado: evento.target.value })}>
               <option value="">Todos</option>
-              <option value="true">Activos</option>
-              <option value="false">Inactivos</option>
+              {Object.entries(ESTADOS_CONVENIO).map(([valor, texto]) => (
+                <option key={valor} value={valor}>
+                  {texto}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -54,7 +58,7 @@ export function Convenios() {
           {conFiltros ? (
             <>
               <p>Ningún convenio coincide con los filtros.</p>
-              <button type="button" className={estilos.botonSecundario} onClick={() => filtros.cambiar({ q: '', activo: '' })}>
+              <button type="button" className={estilos.botonSecundario} onClick={() => filtros.cambiar({ q: '', estado: '' })}>
                 Quitar filtros
               </button>
             </>
@@ -92,7 +96,7 @@ export function Convenios() {
                   </Celda>
                   <Celda titulo="RUT">{convenio.cliente_rut}</Celda>
                   <Celda titulo="Reservas">{numero.format(convenio.reservas)}</Celda>
-                  <Celda titulo="Estado">{convenio.activo ? 'Activo' : 'Inactivo'}</Celda>
+                  <Celda titulo="Estado">{ESTADOS_CONVENIO[convenio.estado]}</Celda>
                 </tr>
               ))}
             </tbody>
