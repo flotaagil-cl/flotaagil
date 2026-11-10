@@ -150,7 +150,9 @@ def test_dos_intentos_fallidos_simultaneos_cuentan_como_dos(canal, rol, empresa)
 
     def intento_b():
         try:
-            resultado["b"] = cliente.post(ruta, {"email": usuario.email, "password": "otra-clave"}, format="json")
+            resultado["b"] = cliente.post(
+                ruta, {"email": usuario.email, "password": "otra-clave"}, format="json"
+            )
         finally:
             connections.close_all()
 
@@ -175,7 +177,8 @@ def test_dos_intentos_fallidos_simultaneos_cuentan_como_dos(canal, rol, empresa)
 
 @pytest.mark.django_db(transaction=True)
 def test_el_intento_que_espera_no_alarga_un_bloqueo_recien_puesto(empresa):
-    """Si mientras B esperaba otro intento completó el quinto fallo, B responde bloqueada sin mover la hora."""
+    """Si mientras B esperaba otro intento completó el quinto fallo, B responde bloqueada sin mover
+    la hora del bloqueo."""
     usuario = UsuarioFactory(empresa=empresa, intentos_fallidos=settings.LOGIN_MAX_INTENTOS - 1)
     a_tiene_la_fila = threading.Event()
     soltar_a = threading.Event()
