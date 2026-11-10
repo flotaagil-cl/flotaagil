@@ -20,6 +20,7 @@ import {
 } from '../api';
 import { FallaDeCarga, NoEncontrado } from '../componentes/comunes';
 import { CuentaConductor } from '../componentes/CuentaConductor';
+import { TerminarTurno } from '../componentes/TerminarTurno';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 import { useEstadoEnVivo } from '../estadoEnVivo';
 import { avisoLicencia, ESTADOS_CONDUCTOR, LICENCIAS } from '../etiquetas';
@@ -129,6 +130,8 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
       )}
 
       <CuentaConductor conductor={conductor} />
+
+      <TerminarTurno conductor={conductor} />
 
       <Vehiculos conductor={conductor} />
     </section>

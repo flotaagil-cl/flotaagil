@@ -100,7 +100,7 @@ export class ServidorFlotaFalso {
       if (peticion.method === 'PATCH') return this.editarVehiculo(encontrado, cuerpo as VehiculoEditar);
       return { estado: 200, cuerpo: encontrado };
     }
-    const conductor = /^\/api\/conductores\/(\d+)\/(?:vehiculos\/(?:(\d+)\/)?|(password|deshabilitar|habilitar)\/)?$/.exec(url.pathname);
+    const conductor = /^\/api\/conductores\/(\d+)\/(?:vehiculos\/(?:(\d+)\/)?|(password|deshabilitar|habilitar|terminar-turno)\/)?$/.exec(url.pathname);
     const encontrado = conductor && this.conductores.find((c) => c.id === Number(conductor[1]));
     if (!conductor || !encontrado) return NO_ENCONTRADO;
     if (conductor[3]) return this.cuenta(encontrado, conductor[3]);
@@ -128,6 +128,13 @@ export class ServidorFlotaFalso {
   }
 
   private cuenta(conductor: Conductor, accion: string): Respuesta {
+    if (accion === 'terminar-turno') {
+      // HU-31 (DC-32)
+      if (conductor.estado === 'EN_VIAJE') return { estado: 409, cuerpo: { detail: 'Está en un viaje.', code: 'en_viaje' } };
+      if (conductor.estado === 'NO_DISPONIBLE') return { estado: 409, cuerpo: { detail: 'No tiene un turno abierto.', code: 'sin_turno' } };
+      Object.assign(conductor, { estado: 'NO_DISPONIBLE', vehiculo_activo: null });
+      return { estado: 200, cuerpo: conductor };
+    }
     if (conductor.estado === 'EN_VIAJE' && accion !== 'habilitar') {
       return { estado: 409, cuerpo: { detail: 'El conductor está en viaje: no se puede hacer esto hasta que termine.', code: 'conductor_en_viaje' } };
     }

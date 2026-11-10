@@ -110,6 +110,26 @@ describe('contraseña temporal y habilitación', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('terminar turno pide motivo y confirmación (DC-32)', async () => {
+    const { flota } = montar('/conductores/41');
+    flota.conductores.push(conductorDePrueba({ id: 41, estado: 'DISPONIBLE', vehiculo_activo: { id: 1, patente: 'BCDF10' } }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Terminar turno…' }));
+    const dialogo = screen.getByRole('alertdialog');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Terminar turno' }));
+    expect(within(dialogo).getByText('Indica el motivo.')).toBeInTheDocument();
+    await userEvent.type(within(dialogo).getByLabelText('Motivo'), 'Olvidó terminar el turno');
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Terminar turno' }));
+    expect(await screen.findByText(/Turno terminado/)).toBeInTheDocument();
+    expect(flota.cuerpos.at(-1)).toMatchObject({ cuerpo: { motivo: 'Olvidó terminar el turno' } });
+  });
+
+  it('en viaje no ofrece terminar el turno', async () => {
+    const { flota } = montar('/conductores/42');
+    flota.conductores.push(conductorDePrueba({ id: 42, estado: 'EN_VIAJE', vehiculo_activo: { id: 1, patente: 'BCDF10' } }));
+    expect(await screen.findByText(/el turno termina cuando lo cierre/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Terminar turno…' })).not.toBeInTheDocument();
+  });
+
   it('deshabilitar con confirmación y volver a habilitar', async () => {
     const { flota } = montar('/conductores/40');
     flota.conductores.push(conductorDePrueba({ id: 40, estado: 'DISPONIBLE', vehiculo_activo: { id: 1, patente: 'BCDF10' } }));

@@ -182,6 +182,18 @@ export function useHabilitacion(id: number) {
   });
 }
 
+/** HU-31 (DC-32): el administrador termina el turno de un conductor que olvidó terminarlo. */
+export function useTerminarTurno(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: (motivo: string) =>
+      resultado(api.POST('/api/conductores/{id}/terminar-turno/', { params: { path: { id } }, body: { motivo } })),
+    onSuccess: alTerminar.conductor,
+    onError: (error) => alTerminar.conflicto(error, claves.conductor(id)),
+  });
+}
+
 export function useEditarConductor(id: number) {
   const api = useApi();
   const alTerminar = useAlTerminar();
