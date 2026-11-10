@@ -16,13 +16,16 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Rol, Usuario
 
 ROLES_PANEL = frozenset({Rol.ADMINISTRADOR, Rol.DESPACHADOR})
+# HU-33: el inicio de sesión web es uno solo para el panel, el convenio y el pasajero. Las vistas del panel
+# siguen exigiendo ROLES_PANEL; las del convenio y del pasajero, su rol.
+ROLES_WEB = ROLES_PANEL | {Rol.CONVENIO, Rol.PASAJERO}
 ROLES_APP = frozenset({Rol.CONDUCTOR})
 
 # Canal de la sesión: claim que solo emite el servidor en el login.
 # Cada refresh rechaza los tokens del otro canal.
 CANAL_PANEL = "panel"
 CANAL_APP = "app"
-ROLES_POR_CANAL = {CANAL_PANEL: ROLES_PANEL, CANAL_APP: ROLES_APP}
+ROLES_POR_CANAL = {CANAL_PANEL: ROLES_WEB, CANAL_APP: ROLES_APP}
 
 MENSAJE_CREDENCIALES = "Correo o contraseña incorrectos."
 

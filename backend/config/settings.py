@@ -271,3 +271,18 @@ LOGGING = {
     "handlers": {"consola": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["consola"], "level": env("DJANGO_LOG_LEVEL", default="INFO")},
 }
+
+
+# HU-33 (DC-34): correo. `consola` en desarrollo; `ses` usa la interfaz SMTP de Amazon SES (sin dependencias).
+CORREO_PROVEEDOR = env("CORREO_PROVEEDOR", default="consola")
+DEFAULT_FROM_EMAIL = env("CORREO_REMITENTE", default="FlotaÁgil <no-responder@flotaagil.example>")
+if CORREO_PROVEEDOR == "ses":
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = env("SES_SMTP_HOST", default="email-smtp.us-east-1.amazonaws.com")
+    EMAIL_PORT = env.int("SES_SMTP_PUERTO", default=587)
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = env("SES_SMTP_USUARIO")
+    EMAIL_HOST_PASSWORD = env("SES_SMTP_CLAVE")
+    EMAIL_TIMEOUT = 10
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

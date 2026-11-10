@@ -548,7 +548,7 @@ paths:
         sesión con su tope absoluto (JWT_SESION_MAX desde este login). Exige que el
         navegador envíe Origin (o, si falta, Referer) con un origen de PANEL_ORIGENES;
         el navegador lo pone solo.
-      summary: Iniciar sesión en el panel web
+      summary: Iniciar sesión en la web (panel, convenio o pasajero)
       tags:
       - auth
       requestBody:
@@ -4216,11 +4216,15 @@ components:
       - ADMINISTRADOR
       - DESPACHADOR
       - CONDUCTOR
+      - CONVENIO
+      - PASAJERO
       type: string
       description: |-
         * `ADMINISTRADOR` - Administrador
         * `DESPACHADOR` - Despachador
         * `CONDUCTOR` - Conductor
+        * `CONVENIO` - Convenio
+        * `PASAJERO` - Pasajero
     SentidoEnum:
       enum:
       - DESDE_AEROPUERTO

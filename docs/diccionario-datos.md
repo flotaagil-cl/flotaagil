@@ -22,7 +22,7 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | nombre | VARCHAR(80) | No |  | Nombre completo | Texto no vacío | — | Personal |
 | email | VARCHAR(120) | No | UK | Correo de acceso | Formato correo; único | — | Personal |
 | password_hash | VARCHAR(128) | No |  | Hash de la contraseña | PBKDF2-SHA256 con salt | — | Credencial |
-| rol | VARCHAR(14) | No |  | Rol de acceso | ADMINISTRADOR \| DESPACHADOR \| CONDUCTOR | — |  |
+| rol | VARCHAR(14) | No |  | Rol de acceso | ADMINISTRADOR \| DESPACHADOR \| CONDUCTOR \| CONVENIO \| PASAJERO (DC-34) | — |  |
 | activo | BOOLEAN | No |  | Cuenta habilitada | true/false | true |  |
 | intentos_fallidos | SMALLINT | No |  | Intentos fallidos consecutivos | 0–5; bloqueo al llegar a 5 | 0 |  |
 | bloqueado_hasta | TIMESTAMPTZ | Sí |  | Fin del bloqueo temporal | UTC | NULL |  |

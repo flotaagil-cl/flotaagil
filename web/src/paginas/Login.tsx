@@ -7,6 +7,7 @@ import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
 import { SinConexion } from '../componentes/SinConexion';
 import { useRutas } from '../rutas/contexto';
+import { inicioDeRol } from '../rutas/tabla';
 import { destinoSeguro } from '../rutas/volver';
 import { useIniciarSesion, useSesion } from '../sesion/SesionProvider';
 import estilos from './Login.module.css';
@@ -36,7 +37,11 @@ export function Login() {
     return <SinConexion motivo={estado.motivo} alReintentar={() => void sesion.reintentar()} />;
   }
   if (estado.fase === 'autenticada') {
-    return <Navigate to={destinoSeguro(parametros.get('volver'), rutas, window.location.origin)} replace />;
+    // HU-33: sin `volver`, cada rol llega a su vista.
+    const destino = parametros.get('volver')
+      ? destinoSeguro(parametros.get('volver'), rutas, window.location.origin)
+      : inicioDeRol(estado.usuario.rol);
+    return <Navigate to={destino} replace />;
   }
 
   async function enviar(datos: Datos) {

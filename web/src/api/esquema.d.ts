@@ -385,7 +385,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Iniciar sesión en el panel web
+         * Iniciar sesión en la web (panel, convenio o pasajero)
          * @description Deja el refresh en la cookie httpOnly «refresh_panel» y emite la sesión con su tope absoluto (JWT_SESION_MAX desde este login). Exige que el navegador envíe Origin (o, si falta, Referer) con un origen de PANEL_ORIGENES; el navegador lo pone solo.
          */
         post: operations["auth_token_create"];
@@ -2123,9 +2123,11 @@ export interface components {
          * @description * `ADMINISTRADOR` - Administrador
          *     * `DESPACHADOR` - Despachador
          *     * `CONDUCTOR` - Conductor
+         *     * `CONVENIO` - Convenio
+         *     * `PASAJERO` - Pasajero
          * @enum {string}
          */
-        RolEnum: "ADMINISTRADOR" | "DESPACHADOR" | "CONDUCTOR";
+        RolEnum: "ADMINISTRADOR" | "DESPACHADOR" | "CONDUCTOR" | "CONVENIO" | "PASAJERO";
         /**
          * @description * `DESDE_AEROPUERTO` - Desde el aeropuerto
          *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto

@@ -27,6 +27,8 @@ export const USUARIOS: UsuarioFalso[] = [
   { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
   { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
   { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true, debe_cambiar_password: false },
+  { id: 5, nombre: 'Clara Cliente', email: 'convenio@andes.example', rol: 'CONVENIO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
+  { id: 6, nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
 ];
 
 interface Pendiente {

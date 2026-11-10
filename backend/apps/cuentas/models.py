@@ -124,6 +124,9 @@ class Rol(models.TextChoices):
     ADMINISTRADOR = "ADMINISTRADOR", "Administrador"
     DESPACHADOR = "DESPACHADOR", "Despachador"
     CONDUCTOR = "CONDUCTOR", "Conductor"
+    # DC-34 (HU-33): cuentas web de la empresa cliente (HU-34) y del pasajero (HU-35).
+    CONVENIO = "CONVENIO", "Convenio"
+    PASAJERO = "PASAJERO", "Pasajero"
 
 
 class UsuarioManager(BaseUserManager):

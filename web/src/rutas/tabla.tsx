@@ -26,6 +26,16 @@ export interface Manejo {
 export const ROLES_PANEL: Rol[] = ['ADMINISTRADOR', 'DESPACHADOR'];
 /** Administración de flota (HU-10): solo el administrador. */
 export const ROLES_ADMIN: Rol[] = ['ADMINISTRADOR'];
+/** HU-33: cuentas web de la empresa cliente (HU-34) y del pasajero (HU-35), con el mismo inicio de sesión. */
+export const ROLES_CONVENIO: Rol[] = ['CONVENIO'];
+export const ROLES_PASAJERO: Rol[] = ['PASAJERO'];
+
+/** HU-33: adónde llega cada rol después de iniciar sesión. */
+export function inicioDeRol(rol: Rol): string {
+  if (rol === 'CONVENIO') return '/mi-convenio';
+  if (rol === 'PASAJERO') return '/mis-reservas';
+  return '/';
+}
 
 /** Pantallas del panel (con sesión). Las nuevas se agregan aquí. */
 export const pantallasDelPanel: RouteObject[] = [
@@ -121,6 +131,16 @@ export const pantallasDelPanel: RouteObject[] = [
     path: 'reportes',
     lazy: async () => ({ Component: (await import('../reportes/paginas/Reportes')).Reportes }),
     handle: { titulo: 'Reportes', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
+    path: 'mi-convenio',
+    lazy: async () => ({ Component: (await import('../cuentas-web/MiConvenio')).MiConvenio }),
+    handle: { titulo: 'Mi convenio', menu: true, roles: ROLES_CONVENIO } satisfies Manejo,
+  },
+  {
+    path: 'mis-reservas',
+    lazy: async () => ({ Component: (await import('../cuentas-web/MisReservas')).MisReservas }),
+    handle: { titulo: 'Mis reservas', menu: true, roles: ROLES_PASAJERO } satisfies Manejo,
   },
   {
     path: 'caja',

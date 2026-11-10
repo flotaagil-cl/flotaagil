@@ -4,6 +4,7 @@ import { Confirmacion } from '../Confirmacion';
 import { useContextoPortal } from '../contexto';
 import { FormularioSolicitud } from '../FormularioSolicitud';
 import { NoDisponible } from '../NoDisponible';
+import { OpcionesPortal } from '../OpcionesPortal';
 
 interface Enviada {
   cuerpo: Solicitud;
@@ -33,13 +34,16 @@ export function Solicitar() {
     );
   }
   return (
-    <FormularioSolicitud
-      key={vuelta}
-      empresa={empresa}
-      solicitar={solicitar.mutateAsync}
-      intro={`Te enviaremos un WhatsApp para confirmar tu solicitud. Tendrás ${empresa.expiracion_verificacion_min} minutos para responderlo.`}
-      alEnviar={setEnviada}
-      alNoDisponible={() => setNoDisponible(true)}
-    />
+    <>
+      <OpcionesPortal slug={slug} />
+      <FormularioSolicitud
+        key={vuelta}
+        empresa={empresa}
+        solicitar={solicitar.mutateAsync}
+        intro={`Te enviaremos un WhatsApp para confirmar tu solicitud. Tendrás ${empresa.expiracion_verificacion_min} minutos para responderlo.`}
+        alEnviar={setEnviada}
+        alNoDisponible={() => setNoDisponible(true)}
+      />
+    </>
   );
 }

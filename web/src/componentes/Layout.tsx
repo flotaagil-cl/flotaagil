@@ -1,14 +1,20 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useMatches, useNavigate } from 'react-router';
+import { Navigate, NavLink, Outlet, useLocation, useMatches, useNavigate } from 'react-router';
 import { AlertasVuelo } from '../alertas/AlertasVuelo';
 import type { Manejo } from '../rutas/tabla';
-import { entradasDeMenu } from '../rutas/tabla';
+import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
 import { useRutas } from '../rutas/contexto';
 import { SinPermiso } from '../paginas/SinPermiso';
 import { useSesion } from '../sesion/SesionProvider';
 import estilos from './Layout.module.css';
 
-const NOMBRE_ROL = { ADMINISTRADOR: 'Administrador', DESPACHADOR: 'Despachador', CONDUCTOR: 'Conductor' };
+const NOMBRE_ROL = {
+  ADMINISTRADOR: 'Administrador',
+  DESPACHADOR: 'Despachador',
+  CONDUCTOR: 'Conductor',
+  CONVENIO: 'Empresa con convenio',
+  PASAJERO: 'Pasajero',
+};
 
 /** Marco del panel: cabecera, menú por rol y guarda por rol (solo UX: el backend responde 403 igual). */
 export function Layout() {
@@ -16,9 +22,13 @@ export function Layout() {
   const rutas = useRutas();
   const coincidencias = useMatches();
   const navegar = useNavigate();
+  const { pathname } = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
   if (estado.fase !== 'autenticada') return null;
   const { usuario } = estado;
+  const delPanel = ROLES_PANEL.includes(usuario.rol);
+  // HU-33: el convenio y el pasajero no tienen Inicio del panel; «/» los lleva a su vista.
+  if (!delPanel && pathname === '/') return <Navigate to={inicioDeRol(usuario.rol)} replace />;
 
   const roles = coincidencias
     .map((c) => (c.handle as Manejo | undefined)?.roles)
@@ -68,7 +78,7 @@ export function Layout() {
         </ul>
       </nav>
       <main className={estilos.contenido}>
-        {usuario.rol !== 'CONDUCTOR' && <AlertasVuelo />}
+        {delPanel && <AlertasVuelo />}
         {permitido ? <Outlet /> : <SinPermiso />}
       </main>
     </div>

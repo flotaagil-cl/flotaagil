@@ -33,7 +33,7 @@ from .autenticacion import (
     CANAL_APP,
     CANAL_PANEL,
     ROLES_APP,
-    ROLES_PANEL,
+    ROLES_WEB,
     SesionRechazada,
     autenticar,
     emitir_tokens,
@@ -143,7 +143,7 @@ class _ThrottleLogin:
 class LoginPanelView(_ThrottleLogin, _VistaPanel):
     @extend_schema(
         tags=["auth"],
-        summary="Iniciar sesión en el panel web",
+        summary="Iniciar sesión en la web (panel, convenio o pasajero)",
         request=LoginSerializer,
         parameters=[COOKIE_PUESTA],
         responses={
@@ -160,7 +160,7 @@ class LoginPanelView(_ThrottleLogin, _VistaPanel):
     def post(self, request):
         datos = LoginSerializer(data=request.data)
         datos.is_valid(raise_exception=True)
-        usuario = autenticar(datos.validated_data["email"], datos.validated_data["password"], ROLES_PANEL)
+        usuario = autenticar(datos.validated_data["email"], datos.validated_data["password"], ROLES_WEB)
         refresh = emitir_tokens(usuario, CANAL_PANEL)
         respuesta = Response(
             {"access": str(refresh.access_token), "usuario": UsuarioSesionSerializer(usuario).data}
