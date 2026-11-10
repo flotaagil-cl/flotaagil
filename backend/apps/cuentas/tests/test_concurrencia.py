@@ -17,6 +17,7 @@ import pytest
 from django.conf import settings
 from django.db import connection, connections, transaction
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -119,3 +120,102 @@ def test_dos_renovaciones_con_el_mismo_refresh_no_ganan_las_dos(canal, rol, empr
     assert COOKIE not in respuesta.cookies
     # B no emitió ningún refresh nuevo.
     assert OutstandingToken.objects.filter(user=usuario).count() == tokens_antes
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize(("canal", "rol"), [("panel", "DESPACHADOR"), ("app", "CONDUCTOR")])
+def test_dos_intentos_fallidos_simultaneos_cuentan_como_dos(canal, rol, empresa):
+    """Un intento fallido «A» tiene la fila y ya sumó el suyo; el intento «B» llega con una contraseña
+    incorrecta, lee el conteo anterior al de A y debe esperar el bloqueo. Al soltar A, B suma sobre lo que A
+    dejó: el conteo final es 2, no 1."""
+    assert connection.vendor == "postgresql", "Esta prueba debe correr contra PostgreSQL, nunca SQLite."
+    usuario = UsuarioFactory(empresa=empresa, rol=rol)
+    ruta = reverse("auth-token" if canal == "panel" else "auth-app-token")
+    cliente = APIClient(HTTP_ORIGIN=ORIGEN) if canal == "panel" else APIClient()
+
+    a_tiene_la_fila = threading.Event()
+    soltar_a = threading.Event()
+    resultado = {}
+
+    def intento_a():
+        try:
+            with transaction.atomic():
+                fila = Usuario.objects.select_for_update(no_key=True).get(pk=usuario.pk)
+                fila.intentos_fallidos += 1
+                fila.save(update_fields=["intentos_fallidos"])
+                a_tiene_la_fila.set()
+                soltar_a.wait(TOPE_SEGUNDOS)
+        finally:
+            connections.close_all()
+
+    def intento_b():
+        try:
+            resultado["b"] = cliente.post(ruta, {"email": usuario.email, "password": "otra-clave"}, format="json")
+        finally:
+            connections.close_all()
+
+    hilo_a = threading.Thread(target=intento_a)
+    hilo_b = threading.Thread(target=intento_b)
+    hilo_a.start()
+    assert a_tiene_la_fila.wait(TOPE_SEGUNDOS)
+    hilo_b.start()
+    try:
+        b_espero = esperar(lambda: sesiones_esperando_un_bloqueo() >= 1)
+    finally:
+        soltar_a.set()
+        hilo_a.join(TOPE_SEGUNDOS)
+        hilo_b.join(TOPE_SEGUNDOS)
+
+    estado_b = resultado["b"].status_code if "b" in resultado else "sin respuesta"
+    assert b_espero, f"El intento B no esperó el bloqueo de la fila (respondió {estado_b})."
+    assert resultado["b"].status_code == 401
+    usuario.refresh_from_db()
+    assert usuario.intentos_fallidos == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_el_intento_que_espera_no_alarga_un_bloqueo_recien_puesto(empresa):
+    """Si mientras B esperaba otro intento completó el quinto fallo, B responde bloqueada sin mover la hora."""
+    usuario = UsuarioFactory(empresa=empresa, intentos_fallidos=settings.LOGIN_MAX_INTENTOS - 1)
+    a_tiene_la_fila = threading.Event()
+    soltar_a = threading.Event()
+    resultado = {}
+    bloqueo = {}
+
+    def intento_a():
+        try:
+            with transaction.atomic():
+                fila = Usuario.objects.select_for_update(no_key=True).get(pk=usuario.pk)
+                fila.intentos_fallidos = settings.LOGIN_MAX_INTENTOS
+                fila.bloqueado_hasta = bloqueo["hasta"] = timezone.now() + settings.LOGIN_BLOQUEO
+                fila.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+                a_tiene_la_fila.set()
+                soltar_a.wait(TOPE_SEGUNDOS)
+        finally:
+            connections.close_all()
+
+    def intento_b():
+        try:
+            resultado["b"] = APIClient(HTTP_ORIGIN=ORIGEN).post(
+                reverse("auth-token"), {"email": usuario.email, "password": "otra-clave"}, format="json"
+            )
+        finally:
+            connections.close_all()
+
+    hilo_a = threading.Thread(target=intento_a)
+    hilo_b = threading.Thread(target=intento_b)
+    hilo_a.start()
+    assert a_tiene_la_fila.wait(TOPE_SEGUNDOS)
+    hilo_b.start()
+    try:
+        assert esperar(lambda: sesiones_esperando_un_bloqueo() >= 1)
+    finally:
+        soltar_a.set()
+        hilo_a.join(TOPE_SEGUNDOS)
+        hilo_b.join(TOPE_SEGUNDOS)
+
+    assert resultado["b"].status_code == 401
+    assert resultado["b"].data["code"] == "cuenta_bloqueada"
+    usuario.refresh_from_db()
+    assert usuario.intentos_fallidos == settings.LOGIN_MAX_INTENTOS
+    assert usuario.bloqueado_hasta == bloqueo["hasta"]

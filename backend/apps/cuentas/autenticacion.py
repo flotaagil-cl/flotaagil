@@ -33,10 +33,28 @@ class CuentaBloqueada(AuthenticationFailed):
 
 
 def _registrar_fallo(usuario: Usuario) -> None:
-    usuario.intentos_fallidos = min(usuario.intentos_fallidos + 1, settings.LOGIN_MAX_INTENTOS)
-    if usuario.intentos_fallidos >= settings.LOGIN_MAX_INTENTOS:
-        usuario.bloqueado_hasta = timezone.now() + settings.LOGIN_BLOQUEO
-    usuario.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+    """Suma el intento fallido bajo el bloqueo de la fila del usuario, como el acceso del convenio (HU-25):
+    dos intentos simultáneos no pueden leer el mismo conteo y contar como uno.
+
+    Se lee el conteo de la base después del bloqueo, no el que traía `usuario`. Si otro intento ya bloqueó la
+    cuenta mientras esperábamos, el bloqueo no se extiende. La transacción termina aquí: el error que lanza
+    `autenticar` después no la deshace.
+    """
+    with transaction.atomic():
+        fila = (
+            Usuario.objects.select_for_update(of=("self",), no_key=True)
+            .only("intentos_fallidos", "bloqueado_hasta")
+            .get(pk=usuario.pk)
+        )
+        ahora = timezone.now()
+        if fila.bloqueado_hasta is not None and fila.bloqueado_hasta <= ahora:
+            fila.intentos_fallidos, fila.bloqueado_hasta = 0, None  # El bloqueo venció: se parte de cero.
+        if fila.bloqueado_hasta is None:
+            fila.intentos_fallidos = min(fila.intentos_fallidos + 1, settings.LOGIN_MAX_INTENTOS)
+            if fila.intentos_fallidos >= settings.LOGIN_MAX_INTENTOS:
+                fila.bloqueado_hasta = ahora + settings.LOGIN_BLOQUEO
+            fila.save(update_fields=["intentos_fallidos", "bloqueado_hasta"])
+    usuario.intentos_fallidos, usuario.bloqueado_hasta = fila.intentos_fallidos, fila.bloqueado_hasta
 
 
 def _bloqueo_vigente(usuario: Usuario) -> bool:
