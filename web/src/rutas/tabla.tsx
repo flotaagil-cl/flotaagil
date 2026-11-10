@@ -202,7 +202,22 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           path: 'registro-empresa',
           lazy: async () => ({ Component: (await import('../portal/paginas/RegistroEmpresa')).RegistroEmpresa }),
         },
+        {
+          path: 'cuenta',
+          lazy: async () => ({ Component: (await import('../portal/paginas/CrearCuenta')).CrearCuenta }),
+        },
       ],
+    },
+    {
+      // HU-35: recuperar la contraseña por correo. Pública, sin la sesión del panel.
+      path: '/recuperar',
+      lazy: async () => ({ Component: (await import('../cuentas-web/Recuperar')).Recuperar }),
+      ...comunes,
+    },
+    {
+      path: '/recuperar/:uid/:token',
+      lazy: async () => ({ Component: (await import('../cuentas-web/Recuperar')).ElegirPassword }),
+      ...comunes,
     },
     {
       path: '*',

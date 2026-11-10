@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Navigate, useSearchParams } from 'react-router';
+import { Link, Navigate, useSearchParams } from 'react-router';
 import { z } from 'zod';
 import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
@@ -83,6 +83,9 @@ export function Login() {
         <button type="submit" className={estilos.boton} disabled={isSubmitting}>
           {isSubmitting ? 'Ingresando…' : 'Ingresar'}
         </button>
+        <p>
+          <Link to="/recuperar">¿Olvidaste tu contraseña?</Link>
+        </p>
       </form>
     </main>
   );

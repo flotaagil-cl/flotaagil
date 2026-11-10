@@ -33,12 +33,14 @@ interface Props<R> {
   alEnviar: (enviada: { cuerpo: CuerpoSolicitud; respuesta: R }) => void;
   /** Cuenta del convenio (HU-34): pide la declaración de avisos, ligada al usuario que reserva. */
   conDeclaracion?: boolean;
+  /** HU-35: con cuenta, el pasajero es el de la cuenta; no se pide ni se cambia. */
+  pasajeroFijo?: { nombre: string; telefono: string };
   alNoDisponible: () => void;
   alVencerSesion?: () => void;
 }
 
 /** Datos del viaje, validación y errores. Quien lo usa decide a dónde se envía. */
-export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos = 'Tus datos', alEnviar, conDeclaracion = false, alNoDisponible, alVencerSesion }: Props<R>) {
+export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos = 'Tus datos', alEnviar, conDeclaracion = false, pasajeroFijo, alNoDisponible, alVencerSesion }: Props<R>) {
   const entorno = useEntorno();
   const [falla, setFalla] = useState<string | null>(null);
   const [generales, setGenerales] = useState<string[]>([]);
@@ -54,7 +56,7 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
     formState: { errors, isSubmitting, touchedFields },
   } = useForm<ValoresSolicitud>({
     resolver: zodResolver(esquemaSolicitud(empresa, entorno.ahora, conDeclaracion)),
-    defaultValues: VALORES_INICIALES,
+    defaultValues: pasajeroFijo ? { ...VALORES_INICIALES, ...pasajeroFijo } : VALORES_INICIALES,
   });
   const [sentido, telefono, vueloNumero, recogida] = useWatch({
     control,
@@ -109,6 +111,11 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
         </Aviso>
       ))}
 
+      {pasajeroFijo ? (
+        <p>
+          A nombre de <strong>{pasajeroFijo.nombre}</strong> · WhatsApp {mostrarTelefono(pasajeroFijo.telefono)}
+        </p>
+      ) : (
       <fieldset className={estilos.grupo}>
         <legend>{leyendaDatos}</legend>
         <Campo etiqueta="Nombre" error={errors.nombre?.message}>
@@ -133,6 +140,7 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
           </button>
         )}
       </fieldset>
+      )}
 
       <fieldset className={estilos.grupo}>
         <legend>Tu viaje</legend>

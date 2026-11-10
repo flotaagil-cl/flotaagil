@@ -53,3 +53,13 @@ export function useRegistrarEmpresa(api: ClientePortal, slug: string) {
       resultado(api.POST('/api/portal/{slug}/registro-empresa/', { params: { path: { slug } }, body: datos })),
   });
 }
+
+/** HU-35: cuenta opcional del pasajero; queda pendiente hasta confirmar por WhatsApp. */
+export type CrearCuentaDatos = components['schemas']['CrearCuentaRequest'];
+
+export function useCrearCuenta(api: ClientePortal, slug: string) {
+  return useMutation({
+    mutationFn: (datos: CrearCuentaDatos) =>
+      resultado(api.POST('/api/portal/{slug}/cuenta/', { params: { path: { slug } }, body: datos })),
+  });
+}

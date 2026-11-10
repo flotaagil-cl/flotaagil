@@ -355,6 +355,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/recuperar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir el enlace para recuperar la contraseña (pasajero o convenio)
+         * @description HU-35: responde 202 siempre, exista o no la cuenta. El enlace vence y sirve una vez.
+         */
+        post: operations["auth_recuperar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/recuperar/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Elegir la contraseña nueva con el enlace del correo
+         * @description Cierra todas las sesiones y levanta el bloqueo por intentos. Queda en auditoría.
+         */
+        post: operations["auth_recuperar_confirmar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/refresh/": {
         parameters: {
             query?: never;
@@ -922,6 +962,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mi-cuenta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mi cuenta */
+        get: operations["mi_cuenta_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Eliminar mi cuenta
+         * @description Borra la credencial y el correo; las reservas y el pasajero quedan como de invitado.
+         */
+        delete: operations["mi_cuenta_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mi-cuenta/reservas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mis reservas, incluidas las de invitado, con su historial */
+        get: operations["mi_cuenta_reservas_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mi-cuenta/reservas/{id}/cancelar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancelar una reserva sin conductor asignado (RN-09) */
+        post: operations["mi_cuenta_reservas_cancelar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mi-cuenta/solicitudes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pedir un viaje con mi cuenta
+         * @description Queda SOLICITADO sin verificación por WhatsApp; se mantiene el límite por teléfono.
+         */
+        post: operations["mi_cuenta_solicitudes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/": {
         parameters: {
             query?: never;
@@ -933,6 +1048,26 @@ export interface paths {
         get: operations["portal_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{slug}/cuenta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Crear una cuenta de pasajero
+         * @description HU-35: crea la cuenta pendiente y envía el WhatsApp para confirmarla. Mismos límites que el portal.
+         */
+        post: operations["portal_cuenta_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1679,6 +1814,17 @@ export interface components {
             /** @description Los últimos 200, en orden */
             mensajes: components["schemas"]["Mensaje"][];
         };
+        /** @description HU-35: cuenta opcional del pasajero en la empresa del portal. */
+        CrearCuentaRequest: {
+            nombre: string;
+            /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
+            telefono: string;
+            /** Format: email */
+            email: string;
+            password: string;
+            /** @description Campo trampa: debe ir vacío */
+            sitio_web?: string;
+        };
         DecidirRecogidaRequest: {
             /**
              * Format: date-time
@@ -1896,6 +2042,26 @@ export interface components {
             empresa: string;
             empresa_slug: string;
         };
+        MiCuenta: {
+            nombre: string;
+            /** Format: email */
+            email: string;
+            telefono: string;
+            empresa: string;
+            empresa_slug: string;
+        };
+        MiReserva: {
+            readonly id: number;
+            estado?: components["schemas"]["EstadoViajeEnum"];
+            estado_texto: string;
+            canal: components["schemas"]["CanalEnum"];
+            origen_dir: string;
+            destino_dir: string;
+            /** Format: date-time */
+            recogida_en: string;
+            readonly cancelable: boolean;
+            readonly historial: components["schemas"]["Historial"][];
+        };
         MiTurno: {
             en_turno: boolean;
             /**
@@ -2004,6 +2170,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Conversacion"][];
+        };
+        PaginatedMiReservaList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["MiReserva"][];
         };
         PaginatedRegistroAuditoriaList: {
             /** @example 123 */
@@ -2145,6 +2326,15 @@ export interface components {
         };
         RechazoRequest: {
             motivo: string;
+        };
+        RecuperarConfirmarRequest: {
+            uid: string;
+            token: string;
+            password: string;
+        };
+        RecuperarRequest: {
+            /** Format: email */
+            email: string;
         };
         RefreshRequest: {
             refresh: string;
@@ -2309,6 +2499,31 @@ export interface components {
             sitio_web?: string;
             /** @description Declaro que el pasajero autorizó recibir avisos por WhatsApp */
             declara_autorizacion: boolean;
+        };
+        /** @description Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. */
+        SolicitudCuentaRequest: {
+            nombre?: string;
+            telefono?: string;
+            origen_dir: string;
+            destino_dir: string;
+            /**
+             * Format: date-time
+             * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
+             */
+            recogida_en?: string | null;
+            /**
+             * @description Si no viene: DESDE_AEROPUERTO cuando hay vuelo, URBANO si no.
+             *
+             *     * `DESDE_AEROPUERTO` - Desde el aeropuerto
+             *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+             *     * `URBANO` - Urbano
+             */
+            sentido?: components["schemas"]["SentidoEnum"];
+            /** @description Solo para viajes desde el aeropuerto. */
+            vuelo?: components["schemas"]["VueloLlegadaRequest"];
+            acepta_privacidad: boolean;
+            acepta_whatsapp: boolean;
+            sitio_web?: string;
         };
         /** @description HU-19: solicitud de viaje sin cuenta. */
         SolicitudRequest: {
@@ -3124,6 +3339,79 @@ export interface operations {
             };
             /** @description Falta el access o no es válido. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    auth_recuperar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecuperarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RecuperarRequest"];
+                "multipart/form-data": components["schemas"]["RecuperarRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `throttled`: demasiados intentos desde esta IP (THROTTLE_LOGIN). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    auth_recuperar_confirmar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecuperarConfirmarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RecuperarConfirmarRequest"];
+                "multipart/form-data": components["schemas"]["RecuperarConfirmarRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Datos inválidos: errores por campo. */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4055,6 +4343,139 @@ export interface operations {
             };
         };
     };
+    mi_cuenta_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiCuenta"];
+                };
+            };
+            /** @description `cuenta_sin_confirmar` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mi_cuenta_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mi_cuenta_reservas_list: {
+        parameters: {
+            query?: {
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedMiReservaList"];
+                };
+            };
+        };
+    };
+    mi_cuenta_reservas_cancelar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiReserva"];
+                };
+            };
+            /** @description No response body */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `con_conductor` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mi_cuenta_solicitudes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitudCuentaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SolicitudCuentaRequest"];
+                "multipart/form-data": components["schemas"]["SolicitudCuentaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudRespuesta"];
+                };
+            };
+            /** @description `limite_telefono` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     portal_retrieve: {
         parameters: {
             query?: never;
@@ -4080,6 +4501,55 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    portal_cuenta_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrearCuentaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CrearCuentaRequest"];
+                "multipart/form-data": components["schemas"]["CrearCuentaRequest"];
+            };
+        };
+        responses: {
+            /** @description Pendiente: se activa al responder «CONFIRMAR CUENTA» por WhatsApp */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Datos inválidos o correo no disponible */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empresa inexistente o inactiva */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Demasiadas solicitudes. `code`: `limite_ip` (desde la misma IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono` (varias solicitudes con el mismo número). */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
             };
         };
     };

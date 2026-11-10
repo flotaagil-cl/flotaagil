@@ -287,6 +287,21 @@ Agregada por DC-32 (HU-31).
 | responsable_id | BIGINT | No | FK | Administrador que cerró | → USUARIO.id; genera AUDITORIA | — |  |
 | fecha_cierre | TIMESTAMPTZ | No |  | Momento del cierre | UTC | now() |  |
 
+## CUENTA_PASAJERO
+
+Agregada por DC-36 (HU-35).
+
+| Columna | Tipo | Nulo | Clave | Descripción | Dominio / restricción | Defecto | Clasificación |
+|---|---|---|---|---|---|---|---|
+| id | BIGINT | No | PK | Identificador | Autoincremental | — |  |
+| usuario_id | BIGINT | No | FK, UK | Cuenta de acceso | → USUARIO.id (rol PASAJERO) | — |  |
+| empresa_id | BIGINT | No | FK | Empresa de la cuenta | → EMPRESA.id | — |  |
+| nombre | VARCHAR(80) | No |  | Nombre declarado | Texto no vacío | — | Personal |
+| telefono | VARCHAR(16) | No |  | WhatsApp declarado | E.164; único por empresa entre las confirmadas | — | Personal |
+| pasajero_id | BIGINT | Sí | FK | Pasajero ligado al confirmar | → PASAJERO.id; obligatorio si confirmada | NULL |  |
+| confirmada_en | TIMESTAMPTZ | Sí |  | Confirmación por WhatsApp | UTC | NULL |  |
+| creada_en | TIMESTAMPTZ | No |  | Fecha de registro | UTC | now() |  |
+
 ## Relaciones
 
 | Origen | Destino | Cardinalidad |

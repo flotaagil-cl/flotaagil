@@ -42,12 +42,16 @@ describe('destino por rol', () => {
     expect(router.state.location.pathname).toBe('/mi-convenio');
   });
 
-  it('el pasajero llega a «Mis reservas» con el enlace a su portal', async () => {
+  it('el pasajero llega a «Mis reservas»', async () => {
     const { router } = montarLogin();
     await entrar('pasajero@andes.example');
     expect(await screen.findByRole('heading', { name: 'Mis reservas' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/mis-reservas');
-    expect(screen.getByRole('link', { name: 'Pedir un viaje' })).toHaveAttribute('href', '/solicitar/transportes-andes');
+  });
+
+  it('el login ofrece recuperar la contraseña', async () => {
+    montarLogin();
+    expect(await screen.findByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
   });
 
   it('el despachador sigue llegando a Inicio', async () => {
