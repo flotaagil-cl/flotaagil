@@ -5,8 +5,8 @@ cuenta de un conductor se deshabilita.
 """
 
 from django.db.models import Prefetch
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
-from rest_framework import mixins, status, viewsets
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view, inline_serializer
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
 
-from . import importacion, servicios
+from . import importacion, servicios, turnos
 from .filtros import ConductorFiltro, VehiculoFiltro
 from .models import Conductor, ConductorVehiculo, Vehiculo
 from .serializers import (
@@ -206,6 +206,24 @@ class ConductorViewSet(
     def deshabilitar(self, request, pk=None):
         conductor = self.get_object()
         servicios.cambiar_habilitacion(conductor, False, usuario=request.user)
+        return self._detalle(conductor)
+
+    @extend_schema(
+        summary="Terminar el turno de un conductor (cierre administrativo)",
+        tags=["turnos"],
+        request=inline_serializer("TerminarTurno", {"motivo": serializers.CharField(max_length=200)}),
+        responses={
+            200: ConductorSerializer,
+            400: OpenApiResponse(description="Falta el motivo"),
+            409: EN_VIAJE,
+        },
+        description="HU-31 (DC-32): para un conductor que olvidó terminar su turno. Queda No disponible y el "
+        "turno se cierra con CIERRE_ADMINISTRATIVO, en auditoría. 409 `en_viaje` o `sin_turno`.",
+    )
+    @action(detail=True, methods=["post"], url_path="terminar-turno")
+    def terminar_turno(self, request, pk=None):
+        conductor = self.get_object()
+        turnos.cerrar_administrativo(conductor, motivo=request.data.get("motivo", ""), usuario=request.user)
         return self._detalle(conductor)
 
     @extend_schema(

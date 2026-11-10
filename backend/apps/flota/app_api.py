@@ -9,7 +9,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import transaction
-from django.db.models import Exists, OuterRef, Subquery
+from django.db.models import Exists, F, OuterRef, Subquery
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
 from rest_framework import serializers, status
@@ -23,7 +23,8 @@ from apps.cuentas.models import Rol
 from apps.integraciones.geocodificador import coordenadas_reales
 from apps.reservas.models import EstadoViaje, HistorialEstado, MetodoPago, Viaje
 
-from .models import Conductor, EstadoConductor, PosicionGps
+from . import turnos
+from .models import Conductor, EstadoConductor, MotivoTerminoTurno, PosicionGps, Turno
 from .serializers import VehiculoAsociadoSerializer, VehiculoDeclaradoSerializer
 from .tiempo_real import avisar_indicadores, notificar_conductor
 
@@ -267,19 +268,21 @@ class TurnoView(_VistaApp):
             )
             if conductor.estado == EstadoConductor.EN_VIAJE:
                 raise _conflicto("en_viaje", "Estás en un viaje: el estado cambia al terminarlo (RN-03).")
-            previo = conductor.estado
+            previo, vehiculo_previo = conductor.estado, conductor.vehiculo_activo_id
             if entrada.validated_data["estado"] == EstadoConductor.NO_DISPONIBLE:
                 conductor.estado, conductor.vehiculo_activo = EstadoConductor.NO_DISPONIBLE, None
-                if previo != EstadoConductor.NO_DISPONIBLE:
-                    conductor.turno_fin = timezone.now()  # DC-26
+                turnos.cerrar(conductor.pk, MotivoTerminoTurno.CONDUCTOR)  # HU-31
             else:
                 conductor.vehiculo_activo = self._vehiculo_del_turno(
                     conductor, entrada.validated_data.get("vehiculo")
                 )
                 conductor.estado = EstadoConductor.DISPONIBLE
-                if previo == EstadoConductor.NO_DISPONIBLE:
-                    conductor.turno_inicio, conductor.turno_fin = timezone.now(), None  # DC-26
-            conductor.save(update_fields=["estado", "vehiculo_activo", "turno_inicio", "turno_fin"])
+                # HU-31: empezar abre un turno; cambiar de vehículo cierra el turno y abre otro.
+                if previo == EstadoConductor.NO_DISPONIBLE or conductor.vehiculo_activo_id != vehiculo_previo:
+                    ahora = timezone.now()
+                    turnos.cerrar(conductor.pk, MotivoTerminoTurno.CONDUCTOR, ahora)
+                    turnos.abrir(conductor, conductor.vehiculo_activo, ahora)
+            conductor.save(update_fields=["estado", "vehiculo_activo"])
             notificar_conductor(conductor)
             avisar_indicadores(request.user.empresa_id)  # HU-01
             if conductor.estado == EstadoConductor.NO_DISPONIBLE:
@@ -355,15 +358,21 @@ class MiTurnoSerializer(serializers.Serializer):
     total = serializers.IntegerField()
 
 
-def _viajes_del_turno(conductor: Conductor) -> list[Viaje]:
-    """Viajes finalizados entre el inicio y el fin del turno (DC-26), del más antiguo al más nuevo."""
-    if conductor.turno_inicio is None:
+def _turno_a_mostrar(conductor: Conductor) -> Turno | None:
+    """El turno abierto o, fuera de turno, el último (HU-31)."""
+    return conductor.turnos.order_by(F("hora_termino").desc(nulls_first=True), "-hora_inicio", "-id").first()
+
+
+def _viajes_del_turno(turno: Turno | None) -> list[Viaje]:
+    """Viajes finalizados del turno (HU-31: los que el conductor aceptó en él), del más antiguo al más
+    nuevo."""
+    if turno is None:
         return []
     finalizado_en = HistorialEstado.objects.filter(
         viaje=OuterRef("pk"), estado_nuevo=EstadoViaje.FINALIZADO
     ).values("creado_en")[:1]
     viajes = (
-        Viaje.objects.filter(conductor=conductor, estado=EstadoViaje.FINALIZADO, pago__isnull=False)
+        Viaje.objects.filter(turno=turno, estado=EstadoViaje.FINALIZADO, pago__isnull=False)
         .select_related("pago")
         .annotate(
             finalizado_en=Subquery(finalizado_en),
@@ -373,11 +382,8 @@ def _viajes_del_turno(conductor: Conductor) -> list[Viaje]:
                 )
             ),
         )
-        .filter(finalizado_en__gte=conductor.turno_inicio)
-        .order_by("finalizado_en")
+        .order_by("finalizado_en", "id")
     )
-    if conductor.turno_fin is not None:
-        viajes = viajes.filter(finalizado_en__lte=conductor.turno_fin)
     return list(viajes)
 
 
@@ -393,7 +399,8 @@ class MiTurnoView(_VistaApp):
     )
     def get(self, request):
         conductor = Conductor.objects.get(usuario=request.user)
-        viajes = _viajes_del_turno(conductor)
+        turno = _turno_a_mostrar(conductor)
+        viajes = _viajes_del_turno(turno)
         totales = {
             metodo: {
                 "metodo": metodo,
@@ -405,8 +412,8 @@ class MiTurnoView(_VistaApp):
         return Response(
             {
                 "en_turno": conductor.estado in EN_TURNO,
-                "inicio": conductor.turno_inicio,
-                "fin": conductor.turno_fin,
+                "inicio": turno.hora_inicio if turno else None,
+                "fin": turno.hora_termino if turno else None,
                 "viajes": [
                     {
                         "id": v.pk,

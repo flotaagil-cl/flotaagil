@@ -836,6 +836,47 @@ paths:
           description: ''
         '409':
           description: '`conductor_en_viaje`: el conductor está en viaje.'
+  /api/conductores/{id}/terminar-turno/:
+    post:
+      operationId: conductores_terminar_turno_create
+      description: 'HU-31 (DC-32): para un conductor que olvidó terminar su turno.
+        Queda No disponible y el turno se cierra con CIERRE_ADMINISTRATIVO, en auditoría.
+        409 `en_viaje` o `sin_turno`.'
+      summary: Terminar el turno de un conductor (cierre administrativo)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - turnos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TerminarTurnoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TerminarTurnoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TerminarTurnoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+        '400':
+          description: Falta el motivo
+        '409':
+          description: '`conductor_en_viaje`: el conductor está en viaje.'
   /api/conductores/{id}/vehiculos/:
     post:
       operationId: conductores_vehiculos_create
@@ -1540,6 +1581,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Opciones'
+          description: ''
+  /api/turnos/:
+    get:
+      operationId: turnos_list
+      summary: Historial de turnos de un conductor
+      parameters:
+      - in: query
+        name: conductor
+        schema:
+          type: integer
+        required: true
+      tags:
+      - turnos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Turno'
+          description: ''
+  /api/turnos/{id}/cierre-caja/:
+    post:
+      operationId: turnos_cierre_caja_create
+      description: Fija el efectivo registrado de los viajes del turno, calcula diferencia
+        = rendido - registrado y lo deja en AUDITORIA (`CIERRE_CAJA`). Uno por turno.
+      summary: Cerrar la caja de un turno terminado (CP-36)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - turnos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CerrarCajaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CerrarCajaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CerrarCajaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CierreCaja'
+          description: ''
+        '400':
+          description: Falta la observación
+        '409':
+          description: '`turno_abierto`, `cierre_repetido` o `viaje_en_ejecucion`
+            (cierre de caja); `en_viaje` o `sin_turno` (cierre administrativo).'
+  /api/turnos/por-cerrar/:
+    get:
+      operationId: turnos_por_cerrar_list
+      summary: Turnos terminados sin cierre de caja
+      tags:
+      - turnos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TurnoPorCerrar'
           description: ''
   /api/vehiculos/:
     get:
@@ -2531,6 +2652,55 @@ components:
       - posicion_fila
       - sugerido
       - ultimo_viaje_en
+    CerrarCajaRequest:
+      type: object
+      properties:
+        monto_rendido:
+          type: integer
+          maximum: 50000000
+          minimum: 0
+          description: Efectivo rendido (CLP)
+        observacion:
+          type: string
+          nullable: true
+          description: Obligatoria si lo rendido no coincide con lo registrado.
+          maxLength: 200
+      required:
+      - monto_rendido
+    CierreCaja:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        monto_registrado:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        monto_rendido:
+          type: integer
+          maximum: 50000000
+          minimum: 0
+        diferencia:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        observacion:
+          type: string
+          nullable: true
+          maxLength: 200
+        responsable:
+          type: string
+        fecha_cierre:
+          type: string
+          format: date-time
+      required:
+      - diferencia
+      - fecha_cierre
+      - id
+      - monto_registrado
+      - monto_rendido
+      - responsable
     CierreForzado:
       type: object
       properties:
@@ -3374,6 +3544,16 @@ components:
       - total
       - totales
       - viajes
+    MotivoTerminoEnum:
+      enum:
+      - CONDUCTOR
+      - CUENTA_DESHABILITADA
+      - CIERRE_ADMINISTRATIVO
+      type: string
+      description: |-
+        * `CONDUCTOR` - Conductor
+        * `CUENTA_DESHABILITADA` - Cuenta deshabilitada
+        * `CIERRE_ADMINISTRATIVO` - Cierre administrativo
     NavegarConEnum:
       enum:
       - COORDENADAS
@@ -4120,6 +4300,15 @@ components:
       - expira_en
       - mensaje
       - recogida_en
+    TerminarTurnoRequest:
+      type: object
+      properties:
+        motivo:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - motivo
     TipoAlertaVueloEnum:
       enum:
       - ETA_CAMBIADA
@@ -4155,6 +4344,41 @@ components:
       - metodo
       - monto
       - viajes
+    Turno:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        conductor_id:
+          type: integer
+        conductor:
+          type: string
+        patente:
+          type: string
+          nullable: true
+        hora_inicio:
+          type: string
+          format: date-time
+        hora_termino:
+          type: string
+          format: date-time
+          nullable: true
+        motivo_termino:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MotivoTerminoEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        cierre_caja:
+          allOf:
+          - $ref: '#/components/schemas/CierreCaja'
+          nullable: true
+      required:
+      - conductor
+      - conductor_id
+      - hora_inicio
+      - id
     TurnoEstadoEnum:
       enum:
       - DISPONIBLE
@@ -4163,6 +4387,48 @@ components:
       description: |-
         * `DISPONIBLE` - DISPONIBLE
         * `NO_DISPONIBLE` - NO_DISPONIBLE
+    TurnoPorCerrar:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        conductor_id:
+          type: integer
+        conductor:
+          type: string
+        patente:
+          type: string
+          nullable: true
+        hora_inicio:
+          type: string
+          format: date-time
+        hora_termino:
+          type: string
+          format: date-time
+          nullable: true
+        motivo_termino:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MotivoTerminoEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        efectivo_registrado:
+          type: integer
+          description: Efectivo de PAGO_VIAJE del turno
+        viajes_finalizados:
+          type: integer
+        con_viaje_en_ejecucion:
+          type: boolean
+          description: Si es true, aún no se puede cerrar la caja
+      required:
+      - con_viaje_en_ejecucion
+      - conductor
+      - conductor_id
+      - efectivo_registrado
+      - hora_inicio
+      - id
+      - viajes_finalizados
     TurnoRequest:
       type: object
       properties:

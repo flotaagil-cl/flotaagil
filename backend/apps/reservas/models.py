@@ -80,6 +80,11 @@ class Viaje(models.Model):
     vehiculo = models.ForeignKey(
         "flota.Vehiculo", on_delete=models.PROTECT, null=True, blank=True, related_name="viajes"
     )
+    # HU-31 (CC-12): turno en que el conductor aceptó el viaje. Lo fija la aceptación, no el cierre: un cierre
+    # forzado (HU-05) queda en el turno correcto aunque ocurra después de terminado.
+    turno = models.ForeignKey(
+        "flota.Turno", on_delete=models.PROTECT, null=True, blank=True, related_name="viajes"
+    )
     canal = models.CharField(max_length=12, choices=Canal.choices)
     sentido = models.CharField(
         max_length=16, choices=Sentido.choices, default=Sentido.URBANO, db_default=Sentido.URBANO

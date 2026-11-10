@@ -2,7 +2,6 @@
 conductores y editar los datos del conductor. Cada cambio queda en AUDITORIA."""
 
 from django.db import transaction
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
@@ -12,7 +11,8 @@ from apps.cuentas import credenciales
 from apps.cuentas.models import Rol, Usuario
 from apps.reservas.models import EstadoViaje, Viaje
 
-from .models import Conductor, ConductorVehiculo, EstadoConductor, Vehiculo
+from . import turnos
+from .models import Conductor, ConductorVehiculo, EstadoConductor, MotivoTerminoTurno, Vehiculo
 from .tiempo_real import avisar_indicadores, notificar_conductor
 
 # Estados del viaje en que el vehículo está comprometido con un servicio.
@@ -216,8 +216,8 @@ def cambiar_habilitacion(conductor: Conductor, habilitar: bool, *, usuario) -> N
         if conductor.estado != EstadoConductor.NO_DISPONIBLE:
             previos["estado"] = conductor.estado
             conductor.estado = EstadoConductor.NO_DISPONIBLE
-            conductor.turno_fin = timezone.now()  # DC-26
-            conductor.save(update_fields=["estado", "turno_fin"])
+            conductor.save(update_fields=["estado"])
+            turnos.cerrar(conductor.pk, MotivoTerminoTurno.CUENTA_DESHABILITADA)  # HU-31
     notificar_conductor(conductor)  # HU-02: al deshabilitarse sale del mapa
     avisar_indicadores(cuenta.empresa_id)  # HU-01
     auditoria.registrar(

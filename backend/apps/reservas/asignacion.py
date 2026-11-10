@@ -23,6 +23,7 @@ from apps.aeropuerto.fila import posiciones_en_fila, salir
 from apps.aeropuerto.models import MotivoSalidaFila
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
+from apps.flota.turnos import turno_abierto
 from apps.integraciones.notificaciones import AVISO_CONDUCTOR
 
 from . import avisos, estados
@@ -308,6 +309,7 @@ def responder(asignacion_id: int, *, usuario, aceptar: bool) -> Asignacion:
                 desde=EstadoViaje.ASIGNADO,
                 actor=Actor.CONDUCTOR,
                 usuario=usuario,
+                turno=turno_abierto(asignacion.conductor_id),  # HU-31
             )
             Conductor.objects.filter(pk=asignacion.conductor_id).update(estado=EstadoConductor.EN_VIAJE)
             avisos.programar(asignacion.viaje_id, AVISO_CONDUCTOR)  # HU-21

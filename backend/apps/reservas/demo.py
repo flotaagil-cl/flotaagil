@@ -10,7 +10,7 @@ from apps.convenios.models import Convenio
 from apps.cuentas.models import Rol
 
 from . import estados, servicios
-from .models import Actor, Canal, EstadoViaje, OrigenCancelacion, Sentido, Viaje
+from .models import Actor, Canal, EstadoViaje, MetodoPago, OrigenCancelacion, PagoViaje, Sentido, Viaje
 
 E = EstadoViaje
 
@@ -167,7 +167,20 @@ def cargar(empresa, numero_empresa: int, conductores, faker, password: str) -> i
                 if estado == E.ASIGNADO
                 else {}
             )
+            if estado == E.ACEPTADO:
+                # HU-31: el turno del conductor que contiene la recogida, si lo hay.
+                extra["turno"] = (
+                    conductor.turnos.filter(hora_inicio__lte=recogida).order_by("-hora_inicio").first()
+                )
             estados.transicionar(viaje, estado, actor=actor, usuario=usuario, **extra)
+            if estado == E.FINALIZADO:
+                # RN-10: ningún viaje finaliza sin método y monto.
+                PagoViaje.objects.create(
+                    viaje=viaje,
+                    metodo=MetodoPago.EFECTIVO if n % 3 else MetodoPago.TARJETA,
+                    monto=TARIFAS[n % len(TARIFAS)],
+                    registrado_en=recogida + timedelta(minutes=40),
+                )
             if estado == final:
                 break
     return len(VIAJES[numero_empresa])

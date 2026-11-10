@@ -14,6 +14,8 @@ class Entidad(models.TextChoices):
     # DC-13: administración de flota (HU-10).
     VEHICULO = "VEHICULO", "Vehículo"
     CONDUCTOR = "CONDUCTOR", "Conductor"
+    # DC-32: turnos y cierre de caja (HU-31).
+    TURNO = "TURNO", "Turno"
 
 
 class AuditoriaInmutable(Exception):

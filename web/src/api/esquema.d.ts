@@ -532,6 +532,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/conductores/{id}/terminar-turno/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Terminar el turno de un conductor (cierre administrativo)
+         * @description HU-31 (DC-32): para un conductor que olvidó terminar su turno. Queda No disponible y el turno se cierra con CIERRE_ADMINISTRATIVO, en auditoría. 409 `en_viaje` o `sin_turno`.
+         */
+        post: operations["conductores_terminar_turno_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conductores/{id}/vehiculos/": {
         parameters: {
             query?: never;
@@ -928,6 +948,60 @@ export interface paths {
         };
         /** Conductores y convenios para los filtros */
         get: operations["reportes_opciones_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/turnos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial de turnos de un conductor */
+        get: operations["turnos_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/turnos/{id}/cierre-caja/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cerrar la caja de un turno terminado (CP-36)
+         * @description Fija el efectivo registrado de los viajes del turno, calcula diferencia = rendido - registrado y lo deja en AUDITORIA (`CIERRE_CAJA`). Uno por turno.
+         */
+        post: operations["turnos_cierre_caja_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/turnos/por-cerrar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Turnos terminados sin cierre de caja */
+        get: operations["turnos_por_cerrar_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1350,6 +1424,22 @@ export interface components {
             /** @description El más apto (HU-04). No asigna: lo confirma el despachador */
             sugerido: boolean;
         };
+        CerrarCajaRequest: {
+            /** @description Efectivo rendido (CLP) */
+            monto_rendido: number;
+            /** @description Obligatoria si lo rendido no coincide con lo registrado. */
+            observacion?: string | null;
+        };
+        CierreCaja: {
+            readonly id: number;
+            monto_registrado: number;
+            monto_rendido: number;
+            diferencia: number;
+            observacion?: string | null;
+            responsable: string;
+            /** Format: date-time */
+            fecha_cierre: string;
+        };
         CierreForzado: {
             accion: string;
             motivo: string;
@@ -1705,6 +1795,13 @@ export interface components {
             totales: components["schemas"]["TotalPorMetodo"][];
             total: number;
         };
+        /**
+         * @description * `CONDUCTOR` - Conductor
+         *     * `CUENTA_DESHABILITADA` - Cuenta deshabilitada
+         *     * `CIERRE_ADMINISTRATIVO` - Cierre administrativo
+         * @enum {string}
+         */
+        MotivoTerminoEnum: "CONDUCTOR" | "CUENTA_DESHABILITADA" | "CIERRE_ADMINISTRATIVO";
         /**
          * @description * `COORDENADAS` - COORDENADAS
          *     * `DIRECCION` - DIRECCION
@@ -2065,6 +2162,9 @@ export interface components {
             expira_en: string | null;
             mensaje: string;
         };
+        TerminarTurnoRequest: {
+            motivo: string;
+        };
         /**
          * @description * `ETA_CAMBIADA` - Cambió la llegada
          *     * `VUELO_CANCELADO` - Vuelo cancelado
@@ -2082,12 +2182,40 @@ export interface components {
             viajes: number;
             monto: number;
         };
+        Turno: {
+            readonly id: number;
+            conductor_id: number;
+            conductor: string;
+            patente?: string | null;
+            /** Format: date-time */
+            hora_inicio: string;
+            /** Format: date-time */
+            hora_termino?: string | null;
+            motivo_termino?: (components["schemas"]["MotivoTerminoEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            cierre_caja?: components["schemas"]["CierreCaja"] | null;
+        };
         /**
          * @description * `DISPONIBLE` - DISPONIBLE
          *     * `NO_DISPONIBLE` - NO_DISPONIBLE
          * @enum {string}
          */
         TurnoEstadoEnum: "DISPONIBLE" | "NO_DISPONIBLE";
+        TurnoPorCerrar: {
+            readonly id: number;
+            conductor_id: number;
+            conductor: string;
+            patente?: string | null;
+            /** Format: date-time */
+            hora_inicio: string;
+            /** Format: date-time */
+            hora_termino?: string | null;
+            motivo_termino?: (components["schemas"]["MotivoTerminoEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** @description Efectivo de PAGO_VIAJE del turno */
+            efectivo_registrado: number;
+            viajes_finalizados: number;
+            /** @description Si es true, aún no se puede cerrar la caja */
+            con_viaje_en_ejecucion: boolean;
+        };
         TurnoRequest: {
             estado: components["schemas"]["TurnoEstadoEnum"];
             /** @description Obligatorio para quedar Disponible con más de un vehículo activo (RN-05). */
@@ -3145,6 +3273,48 @@ export interface operations {
             };
         };
     };
+    conductores_terminar_turno_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TerminarTurnoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TerminarTurnoRequest"];
+                "multipart/form-data": components["schemas"]["TerminarTurnoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+            /** @description Falta el motivo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `conductor_en_viaje`: el conductor está en viaje. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     conductores_vehiculos_create: {
         parameters: {
             query?: never;
@@ -3772,6 +3942,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Opciones"];
+                };
+            };
+        };
+    };
+    turnos_list: {
+        parameters: {
+            query: {
+                conductor: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Turno"][];
+                };
+            };
+        };
+    };
+    turnos_cierre_caja_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CerrarCajaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CerrarCajaRequest"];
+                "multipart/form-data": components["schemas"]["CerrarCajaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CierreCaja"];
+                };
+            };
+            /** @description Falta la observación */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `turno_abierto`, `cierre_repetido` o `viaje_en_ejecucion` (cierre de caja); `en_viaje` o `sin_turno` (cierre administrativo). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    turnos_por_cerrar_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnoPorCerrar"][];
                 };
             };
         };

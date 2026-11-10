@@ -1,13 +1,14 @@
-"""HU-18 · Mi turno: viajes completados del turno actual o del último (DC-26)."""
+"""HU-18 · Mi turno: viajes completados del turno actual o del último. Desde HU-31 lee TURNO."""
 
 from datetime import timedelta
 
 import pytest
+from django.db import IntegrityError, transaction
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.flota import servicios
-from apps.flota.models import Conductor, ConductorVehiculo, EstadoConductor
+from apps.flota.models import Conductor, ConductorVehiculo, EstadoConductor, MotivoTerminoTurno, Turno
 from apps.reservas.models import Actor, Canal, EstadoViaje, HistorialEstado, MetodoPago, PagoViaje, Viaje
 from apps.reservas.tests.fabricas import ConductorFactory, ConvenioFactory, VehiculoFactory, ViajeFactory
 
@@ -29,9 +30,12 @@ def app(cliente, chofer):
     return cliente
 
 
-def finalizado(conductor, hace_min, *, metodo=MetodoPago.EFECTIVO, monto=10000, **cambios):
+def finalizado(conductor, hace_min, *, metodo=MetodoPago.EFECTIVO, monto=10000, turno="actual", **cambios):
+    """Viaje finalizado hace `hace_min`. Por defecto queda en el turno más reciente del conductor (HU-31)."""
+    if turno == "actual":
+        turno = conductor.turnos.order_by("-hora_inicio").first()
     viaje = ViajeFactory(
-        empresa=conductor.usuario.empresa, conductor=conductor, estado=E.FINALIZADO, **cambios
+        empresa=conductor.usuario.empresa, conductor=conductor, estado=E.FINALIZADO, turno=turno, **cambios
     )
     PagoViaje.objects.create(viaje=viaje, metodo=metodo, monto=monto)
     cambio = HistorialEstado.objects.create(
@@ -46,59 +50,89 @@ def finalizado(conductor, hace_min, *, metodo=MetodoPago.EFECTIVO, monto=10000, 
 def en_turno_desde(conductor, hace_min):
     conductor.estado = EstadoConductor.DISPONIBLE
     conductor.vehiculo_activo = conductor.asociaciones.first().vehiculo
-    conductor.turno_inicio = timezone.now() - timedelta(minutes=hace_min)
-    conductor.turno_fin = None
     conductor.save()
+    return Turno.objects.create(
+        conductor=conductor,
+        vehiculo=conductor.vehiculo_activo,
+        hora_inicio=timezone.now() - timedelta(minutes=hace_min),
+    )
+
+
+def turno_de(conductor):
+    return conductor.turnos.order_by("-hora_inicio", "-id").first()
 
 
 @pytest.mark.django_db
 class TestRegistroDelTurno:
-    def test_empezar_guarda_el_inicio_y_limpia_el_fin(self, app, chofer):
-        chofer.turno_fin = timezone.now() - timedelta(days=1)
-        chofer.save()
+    def test_empezar_abre_un_turno_con_el_vehiculo(self, app, chofer):
         app.post(TURNO, {"estado": "DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        assert chofer.turno_inicio is not None
-        assert chofer.turno_fin is None
+        turno = turno_de(chofer)
+        assert turno.abierto
+        assert turno.vehiculo == chofer.asociaciones.first().vehiculo
+        assert turno.motivo_termino is None
 
-    def test_terminar_guarda_el_fin_y_conserva_el_inicio(self, app, chofer):
+    def test_terminar_cierra_el_turno_con_motivo_conductor(self, app, chofer):
         app.post(TURNO, {"estado": "DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        inicio = chofer.turno_inicio
+        inicio = turno_de(chofer).hora_inicio
         app.post(TURNO, {"estado": "NO_DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        assert (chofer.turno_inicio, chofer.turno_fin is not None) == (inicio, True)
+        turno = turno_de(chofer)
+        assert (turno.hora_inicio, turno.hora_termino is not None) == (inicio, True)
+        assert turno.motivo_termino == MotivoTerminoTurno.CONDUCTOR
 
     def test_repetir_disponible_no_reinicia_el_turno(self, app, chofer):
         app.post(TURNO, {"estado": "DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        inicio = chofer.turno_inicio
         app.post(TURNO, {"estado": "DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        assert chofer.turno_inicio == inicio
+        assert chofer.turnos.count() == 1
 
     def test_repetir_no_disponible_no_mueve_el_fin(self, app, chofer):
         app.post(TURNO, {"estado": "DISPONIBLE"}, format="json")
         app.post(TURNO, {"estado": "NO_DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        fin = chofer.turno_fin
+        fin = turno_de(chofer).hora_termino
         app.post(TURNO, {"estado": "NO_DISPONIBLE"}, format="json")
-        chofer.refresh_from_db()
-        assert chofer.turno_fin == fin
+        assert turno_de(chofer).hora_termino == fin
+        assert chofer.turnos.count() == 1
+
+    def test_cada_turno_es_un_registro(self, app, chofer):
+        for _ in range(3):
+            app.post(TURNO, {"estado": "DISPONIBLE"}, format="json")
+            app.post(TURNO, {"estado": "NO_DISPONIBLE"}, format="json")
+        assert chofer.turnos.count() == 3
+        assert not chofer.turnos.filter(hora_termino__isnull=True).exists()
+
+    def test_cambiar_de_vehiculo_cierra_el_turno_y_abre_otro(self, app, chofer, empresa):
+        otro = VehiculoFactory(empresa=empresa)
+        ConductorVehiculo.objects.create(conductor=chofer, vehiculo=otro)
+        primero = chofer.asociaciones.exclude(vehiculo=otro).first().vehiculo
+        app.post(TURNO, {"estado": "DISPONIBLE", "vehiculo": primero.pk}, format="json")
+        app.post(TURNO, {"estado": "DISPONIBLE", "vehiculo": otro.pk}, format="json")
+        anterior, actual = chofer.turnos.order_by("hora_inicio", "id")
+        assert (anterior.vehiculo, anterior.motivo_termino) == (primero, MotivoTerminoTurno.CONDUCTOR)
+        assert (actual.vehiculo, actual.abierto) == (otro, True)
+        assert anterior.hora_termino == actual.hora_inicio
+
+    def test_mismo_vehiculo_no_abre_otro(self, app, chofer):
+        vehiculo = chofer.asociaciones.first().vehiculo
+        app.post(TURNO, {"estado": "DISPONIBLE", "vehiculo": vehiculo.pk}, format="json")
+        app.post(TURNO, {"estado": "DISPONIBLE", "vehiculo": vehiculo.pk}, format="json")
+        assert chofer.turnos.count() == 1
 
     def test_un_rechazo_no_empieza_el_turno(self, app, chofer):
         chofer.consentimiento_gps_en = None
         chofer.save()
         assert app.post(TURNO, {"estado": "DISPONIBLE"}, format="json").status_code == 409
-        chofer.refresh_from_db()
-        assert chofer.turno_inicio is None
+        assert not chofer.turnos.exists()
 
     def test_deshabilitar_la_cuenta_cierra_el_turno(self, chofer, administrador):
         en_turno_desde(chofer, 30)
         servicios.cambiar_habilitacion(chofer, habilitar=False, usuario=administrador)
         chofer.refresh_from_db()
         assert chofer.estado == EstadoConductor.NO_DISPONIBLE
-        assert chofer.turno_fin is not None
+        assert turno_de(chofer).motivo_termino == MotivoTerminoTurno.CUENTA_DESHABILITADA
+
+    def test_a_lo_mas_un_turno_abierto(self, chofer):
+        en_turno_desde(chofer, 30)
+        with pytest.raises(IntegrityError), transaction.atomic():
+            Turno.objects.create(conductor=chofer, hora_inicio=timezone.now())
 
 
 @pytest.mark.django_db
@@ -115,8 +149,14 @@ class TestMiTurno:
         }
 
     def test_turno_actual_solo_sus_viajes_en_orden(self, app, chofer, empresa):
+        anterior = Turno.objects.create(
+            conductor=chofer,
+            hora_inicio=timezone.now() - timedelta(minutes=200),
+            hora_termino=timezone.now() - timedelta(minutes=100),
+            motivo_termino=MotivoTerminoTurno.CONDUCTOR,
+        )
+        finalizado(chofer, 120, turno=anterior)
         en_turno_desde(chofer, 60)
-        finalizado(chofer, 120)  # turno anterior
         segundo = finalizado(chofer, 10, origen_dir="Plaza de Armas", destino_dir="Providencia")
         primero = finalizado(chofer, 50)
         otro = ConductorFactory(usuario__empresa=empresa)
@@ -146,11 +186,21 @@ class TestMiTurno:
 
     def test_fuera_de_turno_muestra_el_ultimo(self, app, chofer):
         ahora = timezone.now()
-        chofer.turno_inicio, chofer.turno_fin = ahora - timedelta(minutes=100), ahora - timedelta(minutes=40)
-        chofer.save()
-        finalizado(chofer, 200)  # antes
-        dentro = finalizado(chofer, 70)
-        finalizado(chofer, 10)  # después: no debería ocurrir, pero no es de este turno
+        antes = Turno.objects.create(
+            conductor=chofer,
+            hora_inicio=ahora - timedelta(minutes=300),
+            hora_termino=ahora - timedelta(minutes=200),
+            motivo_termino=MotivoTerminoTurno.CONDUCTOR,
+        )
+        finalizado(chofer, 250, turno=antes)
+        ultimo = Turno.objects.create(
+            conductor=chofer,
+            hora_inicio=ahora - timedelta(minutes=100),
+            hora_termino=ahora - timedelta(minutes=40),
+            motivo_termino=MotivoTerminoTurno.CONDUCTOR,
+        )
+        dentro = finalizado(chofer, 70, turno=ultimo)
+        finalizado(chofer, 10, turno=None)  # sin turno: no aparece
         datos = app.get(MI_TURNO).json()
         assert datos["en_turno"] is False
         assert datos["fin"] is not None
@@ -189,10 +239,10 @@ class TestMiTurno:
 class TestCierreDeLaCentral:
     def test_aparece_marcado_y_suma_en_los_totales(self, app, chofer, cliente, despachador, empresa):
         """HU-05 de punta a punta: el cierre real del panel aparece en Mi turno."""
-        en_turno_desde(chofer, 60)
+        turno = en_turno_desde(chofer, 60)
         normal = finalizado(chofer, 30, monto=1000)
         Conductor.objects.filter(pk=chofer.pk).update(estado=EstadoConductor.EN_VIAJE)
-        a_bordo = ViajeFactory(empresa=empresa, conductor=chofer, estado=E.PASAJERO_A_BORDO)
+        a_bordo = ViajeFactory(empresa=empresa, conductor=chofer, estado=E.PASAJERO_A_BORDO, turno=turno)
         cliente.force_authenticate(despachador)
         respuesta = cliente.post(
             reverse("viaje-forzar-cierre", args=[a_bordo.pk]),

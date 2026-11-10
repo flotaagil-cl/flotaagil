@@ -78,9 +78,6 @@ class Conductor(models.Model):
         Vehiculo, on_delete=models.PROTECT, null=True, blank=True, related_name="conductores_activos"
     )
     consentimiento_gps_en = models.DateTimeField(null=True, blank=True)
-    # DC-26: último turno. Con turno_fin NULL y estado en turno, sigue en curso.
-    turno_inicio = models.DateTimeField(null=True, blank=True)
-    turno_fin = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "conductor"
@@ -165,3 +162,96 @@ class PosicionGps(models.Model):
     def confiable(self) -> bool:
         """El Anexo D marca como no confiable una precisión mayor a 100 m."""
         return self.precision_m is not None and self.precision_m <= 100
+
+
+class MotivoTerminoTurno(models.TextChoices):
+    CONDUCTOR = "CONDUCTOR", "Conductor"
+    CUENTA_DESHABILITADA = "CUENTA_DESHABILITADA", "Cuenta deshabilitada"
+    CIERRE_ADMINISTRATIVO = "CIERRE_ADMINISTRATIVO", "Cierre administrativo"
+
+
+class Turno(models.Model):
+    """HU-31 (CC-12): historial de turnos. Reemplaza `turno_inicio` y `turno_fin` de DC-26.
+
+    Un turno va de «Empezar turno» a «Terminar turno» con un mismo vehículo: cambiar de vehículo lo cierra y
+    abre otro. A lo más uno abierto por conductor (índice único parcial). `vehiculo` es NULL solo en turnos
+    migrados
+    desde DC-26 cuyo vehículo no se pudo saber.
+    """
+
+    conductor = models.ForeignKey(Conductor, on_delete=models.PROTECT, related_name="turnos")
+    vehiculo = models.ForeignKey(
+        Vehiculo, on_delete=models.PROTECT, null=True, blank=True, related_name="turnos"
+    )
+    hora_inicio = models.DateTimeField()
+    hora_termino = models.DateTimeField(null=True, blank=True)
+    motivo_termino = models.CharField(
+        max_length=21, choices=MotivoTerminoTurno.choices, null=True, blank=True
+    )
+
+    class Meta:
+        db_table = "turno"
+        ordering = ["-hora_inicio", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conductor"],
+                condition=Q(hora_termino__isnull=True),
+                name="turno_un_abierto_por_conductor",
+            ),
+            models.CheckConstraint(
+                condition=Q(motivo_termino__isnull=True) | Q(motivo_termino__in=MotivoTerminoTurno.values),
+                name="turno_motivo_valido",
+            ),
+            # Abierto sin término ni motivo; terminado con ambos, después del inicio.
+            models.CheckConstraint(
+                condition=Q(hora_termino__isnull=True, motivo_termino__isnull=True)
+                | Q(
+                    hora_termino__isnull=False,
+                    motivo_termino__isnull=False,
+                    hora_termino__gte=models.F("hora_inicio"),
+                ),
+                name="turno_termino_coherente",
+            ),
+        ]
+        indexes = [models.Index(fields=["conductor", "-hora_inicio"], name="turno_conductor_idx")]
+
+    def __str__(self):
+        return f"Turno {self.pk} de {self.conductor_id}"
+
+    @property
+    def abierto(self) -> bool:
+        return self.hora_termino is None
+
+
+class CierreCaja(models.Model):
+    """HU-31 (CC-12): cuadratura del efectivo de un turno terminado. Uno por turno.
+
+    `monto_registrado` es el efectivo de PAGO_VIAJE de los viajes del turno, fijado al cerrar; `diferencia` es
+    rendido - registrado (positiva: sobra; negativa: falta).
+    """
+
+    turno = models.OneToOneField(Turno, on_delete=models.PROTECT, related_name="cierre_caja")
+    monto_registrado = models.PositiveIntegerField()
+    monto_rendido = models.PositiveIntegerField(validators=[MaxValueValidator(50_000_000)])
+    diferencia = models.IntegerField()
+    observacion = models.CharField(max_length=200, null=True, blank=True)
+    responsable = models.ForeignKey("cuentas.Usuario", on_delete=models.PROTECT, related_name="+")
+    fecha_cierre = models.DateTimeField(db_default=Now())
+
+    class Meta:
+        db_table = "cierre_caja"
+        verbose_name = "cierre de caja"
+        verbose_name_plural = "cierres de caja"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(diferencia=models.F("monto_rendido") - models.F("monto_registrado")),
+                name="cierre_caja_diferencia_calculada",
+            ),
+            models.CheckConstraint(
+                condition=Q(diferencia=0) | (Q(observacion__isnull=False) & ~Q(observacion="")),
+                name="cierre_caja_observacion_si_hay_diferencia",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Cierre de caja del turno {self.turno_id}"

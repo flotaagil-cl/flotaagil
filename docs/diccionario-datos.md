@@ -248,6 +248,34 @@ Agregada por DC-23 (HU-28).
 | atendida_en | TIMESTAMPTZ | Sí |  | Cuándo se atendió | NULL mientras está pendiente | NULL |  |
 | atendida_por | BIGINT | Sí | FK | Quién la atendió | → USUARIO.id; NULL si la resolvió el sistema | NULL |  |
 
+## TURNO
+
+Agregada por DC-32 (HU-31).
+
+| Columna | Tipo | Nulo | Clave | Descripción | Dominio / restricción | Defecto | Clasificación |
+|---|---|---|---|---|---|---|---|
+| id | BIGINT | No | PK | Identificador | Autoincremental | — |  |
+| conductor_id | BIGINT | No | FK | Conductor | → CONDUCTOR.id; a lo más un turno abierto (índice único parcial) | — |  |
+| vehiculo_id | BIGINT | Sí | FK | Vehículo del turno | → VEHICULO.id; NULL solo en turnos migrados de DC-26 | — |  |
+| hora_inicio | TIMESTAMPTZ | No |  | Inicio | UTC | — |  |
+| hora_termino | TIMESTAMPTZ | Sí |  | Término | ≥ hora_inicio; NULL mientras está abierto | NULL |  |
+| motivo_termino | VARCHAR(21) | Sí |  | Quién lo terminó | CONDUCTOR \| CUENTA_DESHABILITADA \| CIERRE_ADMINISTRATIVO; obligatorio con hora_termino | NULL |  |
+
+## CIERRE_CAJA
+
+Agregada por DC-32 (HU-31).
+
+| Columna | Tipo | Nulo | Clave | Descripción | Dominio / restricción | Defecto | Clasificación |
+|---|---|---|---|---|---|---|---|
+| id | BIGINT | No | PK | Identificador | Autoincremental | — |  |
+| turno_id | BIGINT | No | FK, UK | Turno cuadrado | → TURNO.id (1:0..1); solo turnos terminados | — |  |
+| monto_registrado | INTEGER | No |  | Efectivo de PAGO_VIAJE de los viajes del turno (CLP) | Fijado al cerrar | — |  |
+| monto_rendido | INTEGER | No |  | Efectivo entregado por el conductor (CLP) | ≥ 0 | — |  |
+| diferencia | INTEGER | No |  | rendido − registrado | Calculada (CHECK) | — |  |
+| observacion | VARCHAR(200) | Sí |  | Explicación | Obligatoria si diferencia ≠ 0 | NULL |  |
+| responsable_id | BIGINT | No | FK | Administrador que cerró | → USUARIO.id; genera AUDITORIA | — |  |
+| fecha_cierre | TIMESTAMPTZ | No |  | Momento del cierre | UTC | now() |  |
+
 ## Relaciones
 
 | Origen | Destino | Cardinalidad |
@@ -272,6 +300,9 @@ Agregada por DC-23 (HU-28).
 | GEOCERCA | FILA_AEROPUERTO | 1:N |
 | CONDUCTOR | FILA_AEROPUERTO | 1:N |
 | CONDUCTOR | POSICION_GPS | 1:N |
+| CONDUCTOR | TURNO | 1:N |
+| TURNO | VIAJE | 0..1:N |
+| TURNO | CIERRE_CAJA | 1:0..1 |
 | PASAJERO | MENSAJE_WHATSAPP | 1:N |
 | VIAJE | MENSAJE_WHATSAPP | 0..1:N |
 | USUARIO | AUDITORIA | 1:N |

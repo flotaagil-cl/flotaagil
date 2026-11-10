@@ -6,7 +6,15 @@ from django.utils import timezone
 
 from apps.comun.validadores import digito_verificador
 
-from .models import Conductor, ConductorVehiculo, EstadoConductor, LicenciaClase, Vehiculo
+from .models import (
+    Conductor,
+    ConductorVehiculo,
+    EstadoConductor,
+    LicenciaClase,
+    MotivoTerminoTurno,
+    Turno,
+    Vehiculo,
+)
 
 MODELOS = [
     ("Toyota Yaris", 4),
@@ -62,5 +70,25 @@ def cargar(empresa, numero_empresa: int, usuarios_conductores) -> list[Conductor
             ConductorVehiculo.objects.create(conductor=conductor, vehiculo=vehiculos[i])
             if i == 0:
                 ConductorVehiculo.objects.create(conductor=conductor, vehiculo=vehiculos[4])
+            _turnos(conductor, vehiculos[i])
         conductores.append(conductor)
     return conductores
+
+
+def _turnos(conductor: Conductor, vehiculo: Vehiculo) -> None:
+    """HU-31: los conductores en turno tienen su turno abierto desde hace 4 h; el que está fuera de turno
+    tiene
+    uno terminado hace 8 h, para que el cierre de caja tenga algo que cuadrar."""
+    ahora = timezone.now()
+    if conductor.estado == EstadoConductor.NO_DISPONIBLE:
+        Turno.objects.create(
+            conductor=conductor,
+            vehiculo=vehiculo,
+            hora_inicio=ahora - timedelta(hours=13),
+            hora_termino=ahora - timedelta(hours=8),
+            motivo_termino=MotivoTerminoTurno.CONDUCTOR,
+        )
+    else:
+        Turno.objects.create(
+            conductor=conductor, vehiculo=conductor.vehiculo_activo, hora_inicio=ahora - timedelta(hours=4)
+        )
