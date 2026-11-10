@@ -308,3 +308,59 @@ Detalle en `docs/prs/HU-XX.md` y resultados en `docs/evidencias/HU-XX/`.
 
 Twilio con un doble y el notificador de desarrollo. Mi turno y la navegación con la dirección escrita, sin probar en un teléfono.
 ```
+
+---
+
+## PR 5: cambios CC-12, CC-15 y CC-16
+
+**Rama de origen:** `feat/HU-35-cuenta-pasajero` · **Rama base:** `main`
+
+Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero`.
+
+**Antes de abrirlo:** paso 5, con esta rama.
+
+**Título:** `feat: turnos y caja, contingencia y cuentas web (CC-12, CC-15, CC-16)`
+
+**Cuerpo:**
+
+```markdown
+Cambios aprobados por el PO en CC-12, CC-15 y CC-16.
+
+Closes #36
+Closes #37
+Closes #38
+Closes #39
+Closes #40
+Closes #33
+Closes #34
+Closes #35
+Refs #9
+Refs #18
+Refs #22
+Refs #23
+
+### Qué incluye
+
+- Preliminares: evidencias de HU-03 y HU-19; el login bloquea la fila del usuario al contar intentos fallidos.
+- DC-31: un teléfono verificado en los últimos 90 días no se vuelve a verificar.
+- HU-31: historial de turnos y cierre de caja.
+- HU-32: reservas de contingencia con folio.
+- CP-14: asignación con dos peticiones simultáneas; se corrigió el orden de bloqueo al recibir posiciones.
+- HU-33: inicio de sesión web único por rol y adaptador de correo.
+- HU-34: autoregistro de convenios con aprobación; se retira el link con token de HU-11 y HU-25.
+- HU-35: cuenta de pasajero opcional.
+
+### Cómo revisarlo
+
+Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-36 en `docs/diccionario-cambios.md`.
+
+### Para revisar
+
+- Migraciones: `cuentas.0007` a `0009`, `flota.0005` y `0006` (pasa el último turno de DC-26 a TURNO), `auditoria.0005`, `reservas.0010` a `0013` y `convenios.0003`, que **no tiene reversa** (retira los tokens y las contraseñas de los links).
+- Tras fusionar: migrar y reiniciar `worker` y `beat`. Nuevas variables en `.env.example`: `CORREO_*`, `SES_SMTP_*`, `WEB_URL_BASE` y `RECUPERAR_PASSWORD_HORAS`.
+- Los links de convenio anteriores dejan de funcionar: las empresas deben registrarse en el portal.
+
+### Sin probar contra el servicio real
+
+Twilio y Amazon SES con dobles y backends de desarrollo.
+```

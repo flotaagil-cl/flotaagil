@@ -52,7 +52,12 @@ export const DIFERIDOS = [
   'src/portal/LayoutPortal.tsx',
   'src/portal/paginas/Solicitar.tsx',
   'src/portal/paginas/Privacidad.tsx',
-  'src/portal/paginas/AccesoConvenio.tsx',
+  'src/portal/paginas/RegistroEmpresa.tsx',
+  'src/portal/paginas/CrearCuenta.tsx',
+  'src/cuentas-web/Recuperar.tsx',
+  'src/caja/Caja.tsx',
+  'src/cuentas-web/MiConvenio.tsx',
+  'src/cuentas-web/MisReservas.tsx',
 ];
 
 /** Desde dónde se mira y qué no puede cargar. `desde: null` = el paquete inicial. */
@@ -64,7 +69,10 @@ export const REGLAS = [
   { desde: 'src/portal/LayoutPortal.tsx', nombre: '/solicitar (marco)', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/Solicitar.tsx', nombre: '/solicitar (formulario)', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/Privacidad.tsx', nombre: '/solicitar/privacidad', prohibido: PANEL_Y_SESION },
-  { desde: 'src/portal/paginas/AccesoConvenio.tsx', nombre: '/convenio (link)', prohibido: PANEL_Y_SESION },
+  // HU-34 y HU-35: registro de la empresa, cuenta del pasajero y recuperar la contraseña, sin sesión.
+  { desde: 'src/portal/paginas/RegistroEmpresa.tsx', nombre: '/solicitar/registro-empresa', prohibido: PANEL_Y_SESION },
+  { desde: 'src/portal/paginas/CrearCuenta.tsx', nombre: '/solicitar/cuenta', prohibido: PANEL_Y_SESION },
+  { desde: 'src/cuentas-web/Recuperar.tsx', nombre: '/recuperar', prohibido: PANEL_Y_SESION },
 ];
 
 /** Deben aparecer en el build: si no, la regla que los prohíbe no estaría probando nada. */

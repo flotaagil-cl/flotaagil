@@ -44,7 +44,9 @@ describe('verificar-carga', () => {
       '/solicitar (marco) carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
       '/solicitar (formulario) carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
       '/solicitar/privacidad carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
-      '/convenio (link) carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
+      '/solicitar/registro-empresa carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
+      '/solicitar/cuenta carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
+      '/recuperar carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
     ]);
   });
 
@@ -65,7 +67,9 @@ describe('verificar-carga', () => {
     ['src/portal/LayoutPortal.tsx', '/solicitar (marco)'],
     ['src/portal/paginas/Solicitar.tsx', '/solicitar (formulario)'],
     ['src/portal/paginas/Privacidad.tsx', '/solicitar/privacidad'],
-    ['src/portal/paginas/AccesoConvenio.tsx', '/convenio (link)'],
+    ['src/portal/paginas/RegistroEmpresa.tsx', '/solicitar/registro-empresa'],
+    ['src/portal/paginas/CrearCuenta.tsx', '/solicitar/cuenta'],
+    ['src/cuentas-web/Recuperar.tsx', '/recuperar'],
   ])('falla si %s carga algo del panel o de la sesión, también a través de un componente compartido', (fachada, nombre) => {
     const informe = informeCorrecto();
     const compartido = { archivo: 'assets/formularios.js', entrada: false, dinamico: false, fachada: null, modulos: ['src/formularios/Campo.tsx', 'src/sesion/SesionProvider.tsx'], imports: [] };
