@@ -122,6 +122,19 @@ describe('formulario', () => {
     expect(screen.getByLabelText('Nombre')).toHaveValue('');
   });
 
+  it('teléfono verificado hace poco (DC-31): sin plazo ni instrucción de confirmar', async () => {
+    const servidor = new ServidorPortalFalso();
+    servidor.verificados.add('+56987654321');
+    await abrir(servidor);
+    await enviar(await llenar());
+    await screen.findByRole('heading', { name: 'Solicitud recibida' });
+    expect(screen.getByText(/ya está verificado: no necesitas confirmar/)).toHaveTextContent(
+      'Tu número +56 9 8765 4321 ya está verificado: no necesitas confirmar por WhatsApp.',
+    );
+    expect(screen.queryByText(/Confirma respondiendo el WhatsApp/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Tu solicitud quedó registrada/)).toBeInTheDocument();
+  });
+
   it('obligatorios y aceptaciones: no envía y explica cada campo', async () => {
     const { servidor } = await abrir();
     await enviar(userEvent.setup());

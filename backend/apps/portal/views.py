@@ -87,7 +87,9 @@ class SolicitudPortalView(_VistaPortal):
         },
         description=(
             "Crea la reserva en PENDIENTE_CONFIRMACION. Se confirma respondiendo el WhatsApp (HU-20) "
-            "antes de `expira_en`; si no, se cancela (RN-06)."
+            "antes de `expira_en`; si no, se cancela (RN-06). Si el teléfono se verificó dentro de "
+            "`vigencia_verificacion_dias` de la empresa (DC-31), queda SOLICITADO, `expira_en` es NULL y se "
+            "envía el aviso de confirmación."
         ),
     )
     def post(self, request, slug):

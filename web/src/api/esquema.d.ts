@@ -873,7 +873,7 @@ export interface paths {
         put?: never;
         /**
          * Solicitar un viaje sin cuenta
-         * @description Crea la reserva en PENDIENTE_CONFIRMACION. Se confirma respondiendo el WhatsApp (HU-20) antes de `expira_en`; si no, se cancela (RN-06).
+         * @description Crea la reserva en PENDIENTE_CONFIRMACION. Se confirma respondiendo el WhatsApp (HU-20) antes de `expira_en`; si no, se cancela (RN-06). Si el teléfono se verificó dentro de `vigencia_verificacion_dias` de la empresa (DC-31), queda SOLICITADO, `expira_en` es NULL y se envía el aviso de confirmación.
          */
         post: operations["portal_solicitudes_create"];
         delete?: never;
@@ -2060,9 +2060,9 @@ export interface components {
             recogida_en: string;
             /**
              * Format: date-time
-             * @description Plazo para confirmar por WhatsApp (RN-06).
+             * @description Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.
              */
-            expira_en: string;
+            expira_en: string | null;
             mensaje: string;
         };
         /**

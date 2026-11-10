@@ -123,5 +123,9 @@ class SolicitudConvenioSerializer(SolicitudSerializer):
 class SolicitudRespuestaSerializer(serializers.Serializer):
     estado = serializers.CharField()
     recogida_en = serializers.DateTimeField()
-    expira_en = serializers.DateTimeField(help_text="Plazo para confirmar por WhatsApp (RN-06).")
+    expira_en = serializers.DateTimeField(
+        allow_null=True,
+        help_text="Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono ya estaba verificado "
+        "(DC-31): la reserva queda SOLICITADO sin pedir confirmación.",
+    )
     mensaje = serializers.CharField()

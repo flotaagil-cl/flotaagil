@@ -33,6 +33,8 @@ export class ServidorPortalFalso {
   private programadas: Programada[] = [];
   private retenidas: (() => void)[] = [];
   retenerEnvios = false;
+  /** Teléfonos verificados hace poco (DC-31): su solicitud queda SOLICITADO sin plazo. */
+  verificados = new Set<string>();
 
   constructor(readonly ahora = AHORA_PORTAL) {}
 
@@ -72,12 +74,20 @@ export class ServidorPortalFalso {
       const recogida = cuerpo.recogida_en
         ? Date.parse(cuerpo.recogida_en)
         : Date.parse(cuerpo.vuelo!.hora_llegada) + empresa.margen_nacional_min * 60_000;
-      const respuesta: SolicitudRespuesta = {
-        estado: 'PENDIENTE_CONFIRMACION',
-        recogida_en: new Date(recogida).toISOString(),
-        expira_en: new Date(this.ahora + empresa.expiracion_verificacion_min * 60_000).toISOString(),
-        mensaje: 'Recibimos tu solicitud. Te enviaremos un WhatsApp para confirmarla.',
-      };
+      const verificado = this.verificados.has(cuerpo.telefono);
+      const respuesta: SolicitudRespuesta = verificado
+        ? {
+            estado: 'SOLICITADO',
+            recogida_en: new Date(recogida).toISOString(),
+            expira_en: null,
+            mensaje: 'Tu solicitud quedó registrada. Te avisaremos por WhatsApp cuando la central asigne un conductor.',
+          }
+        : {
+            estado: 'PENDIENTE_CONFIRMACION',
+            recogida_en: new Date(recogida).toISOString(),
+            expira_en: new Date(this.ahora + empresa.expiracion_verificacion_min * 60_000).toISOString(),
+            mensaje: 'Recibimos tu solicitud. Te enviaremos un WhatsApp para confirmarla.',
+          };
       return json(201, respuesta);
     };
     if (!this.retenerEnvios) return responder();

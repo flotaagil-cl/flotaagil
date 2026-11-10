@@ -87,6 +87,9 @@ class ConfiguracionEmpresa(models.Model):
     consulta_vuelo_final_cada_min = _minutos(10, minimo=1)
     consulta_vuelo_final_ventana_min = _minutos(60)
     cambio_eta_min = _minutos(15, minimo=1)
+    # DC-31: días en que un teléfono verificado por WhatsApp no se vuelve a verificar en el portal (P1.1).
+    # Con 0, toda solicitud del portal se verifica.
+    vigencia_verificacion_dias = _minutos(90)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)

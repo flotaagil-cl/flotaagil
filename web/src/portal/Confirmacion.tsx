@@ -7,8 +7,11 @@ import estilos from './portal.module.css';
 
 interface Props {
   cuerpo: Solicitud;
-  /** `expira_en` solo existe si hay que confirmar por WhatsApp; con convenio no (RN-07). */
-  respuesta: { recogida_en: string; mensaje: string; expira_en?: string };
+  /**
+   * `expira_en` solo existe si hay que confirmar por WhatsApp. Con convenio no (RN-07), y llega NULL si el
+   * teléfono ya estaba verificado (DC-31).
+   */
+  respuesta: { recogida_en: string; mensaje: string; expira_en?: string | null };
   /** Reemplaza la instrucción de confirmar por WhatsApp. */
   destacado?: ReactNode;
   alHacerOtra: () => void;
@@ -28,12 +31,18 @@ export function Confirmacion({ cuerpo, respuesta, destacado, alHacerOtra }: Prop
         Solicitud recibida
       </h1>
       <p className={estilos.destacado}>
-        {destacado ?? (
-          <>
-            Confirma respondiendo el WhatsApp que enviamos al <strong>{mostrarTelefono(cuerpo.telefono)}</strong> antes del{' '}
-            <strong>{formatearFechaHora(respuesta.expira_en!)}</strong> (hora de Chile).
-          </>
-        )}
+        {destacado ??
+          (respuesta.expira_en ? (
+            <>
+              Confirma respondiendo el WhatsApp que enviamos al <strong>{mostrarTelefono(cuerpo.telefono)}</strong> antes del{' '}
+              <strong>{formatearFechaHora(respuesta.expira_en)}</strong> (hora de Chile).
+            </>
+          ) : (
+            <>
+              Tu número <strong>{mostrarTelefono(cuerpo.telefono)}</strong> ya está verificado: no necesitas confirmar por
+              WhatsApp.
+            </>
+          ))}
       </p>
       <p>{respuesta.mensaje}</p>
       <h2>Lo que pediste</h2>
