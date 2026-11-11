@@ -660,6 +660,264 @@
         "HU-33"
       ],
       "estado_cambio": "Nueva (CC-17)"
+    },
+    {
+      "id": "HU-37",
+      "titulo": "Sistema visual del portal",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero un portal claro y consistente, para pedir y seguir mis viajes sin confundirme.",
+      "criterios": "Tokens de color «Tiffany degradé» como variables CSS, preparados para el color por empresa. Plus Jakarta Sans autoalojada con @fontsource. Barra superior y panel inferior móvil. Componentes: input, botón, insignia, tarjeta, línea de tiempo y mapa de respaldo cambiable por el real. Accesibilidad AA, zonas táctiles de 44 px, foco visible; probado a 390 y 1440 px.",
+      "prioridad": "Por definir",
+      "sp": 8,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-38",
+      "titulo": "Ingresar y crear cuenta",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero ingresar y crear mi cuenta en pantallas claras, para empezar a pedir viajes.",
+      "criterios": "Ingresar y crear cuenta con el diseño nuevo. Mismos endpoints de HU-33 y HU-35. Mensajes de error por campo.",
+      "prioridad": "Por definir",
+      "sp": 3,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-37"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-39",
+      "titulo": "Inicio y pedido en tres tipos de viaje",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero pedir un viaje desde el aeropuerto, al aeropuerto o en la ciudad con los datos de cada caso.",
+      "criterios": "Pestañas en el computador e inicio con tres opciones en el celular. Desde el aeropuerto: SCL fijo, vuelo, fecha, destino, pasajeros y maletas. Al aeropuerto: hora y tipo del vuelo guardados en el viaje y recogida sugerida (3 h o 2 h antes). En la ciudad: lo antes posible o programado. Pasajeros ≤ mayor capacidad de la flota activa.",
+      "prioridad": "Por definir",
+      "sp": 8,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-17"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-37",
+        "HU-40"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-40",
+      "titulo": "Cuenta obligatoria para pedir",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como empresa, quiero que solo pidan los pasajeros y convenios con cuenta, para tener el teléfono verificado y el historial de cada uno.",
+      "criterios": "Se retira el pedido como invitado (CC-18). Solo PASAJERO o CONVENIO con sesión piden. Pruebas, datos_demo y documentación actualizados.",
+      "prioridad": "Por definir",
+      "sp": 5,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-06"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-35"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal, CC-18)"
+    },
+    {
+      "id": "HU-41",
+      "titulo": "Recuperación, activación y primer ingreso",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como usuario, quiero recuperar mi contraseña, activar mi cuenta y cambiar la temporal desde la web.",
+      "criterios": "Enlace de 30 min y 3 envíos cada 15 min por correo, misma respuesta 202. Reenviar CONFIRMAR CUENTA y corregir el número, con límite. Pantallas: olvidaste, revisa tu correo, nueva contraseña, activa tu cuenta y primer ingreso.",
+      "prioridad": "Por definir",
+      "sp": 5,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-37"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-42",
+      "titulo": "Revisa tu pedido y pedido recibido",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero revisar mi pedido antes de enviarlo y ver que se recibió.",
+      "criterios": "Resumen antes de enviar. Confirmación con lo pedido.",
+      "prioridad": "Por definir",
+      "sp": 3,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-39"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-43",
+      "titulo": "Tu viaje",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero seguir mi viaje con su estado, conductor, patente y vuelo.",
+      "criterios": "Línea de tiempo del estado. Conductor, vehículo y patente al aceptar; vuelo si aplica. Mapa de respaldo. Fuera de los estados cancelables: «Para cancelar, contacta a la central».",
+      "prioridad": "Por definir",
+      "sp": 5,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-39"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-44",
+      "titulo": "Mis viajes y cancelar",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero ver mis viajes y cancelar los que aún no tienen conductor.",
+      "criterios": "Listado de viajes. Cancelar solo en los estados que lo permiten (RN-09), con confirmación.",
+      "prioridad": "Por definir",
+      "sp": 3,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-09"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-43"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-45",
+      "titulo": "Mi perfil y eliminación de cuenta",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero administrar mis datos y poder eliminar mi cuenta (Ley 21.719).",
+      "criterios": "Editar datos; un WhatsApp nuevo se vuelve a confirmar. Cambiar contraseña y cerrar sesión. Eliminar cuenta anonimiza también el PASAJERO y conserva viajes y auditoría.",
+      "prioridad": "Por definir",
+      "sp": 5,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-12"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-37"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-46",
+      "titulo": "Registro y estados del convenio",
+      "epica": "Convenios",
+      "label_epica": "epica:convenios",
+      "historia": "Como empresa cliente, quiero registrarme y ver el estado de mi convenio en el portal nuevo.",
+      "criterios": "Registro rediseñado. Una pantalla para en revisión, rechazado e inactivo, con su mensaje e insignia.",
+      "prioridad": "Por definir",
+      "sp": 3,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-08"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-37"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-47",
+      "titulo": "Pedir para el equipo",
+      "epica": "Convenios",
+      "label_epica": "epica:convenios",
+      "historia": "Como empresa cliente, quiero pedir varios viajes de una vez para mi equipo, con acompañantes.",
+      "criterios": "Una fila por persona, con acompañantes. Titular + acompañantes ≤ mayor capacidad de la flota activa. Envío atómico: se crean todos o ninguno.",
+      "prioridad": "Por definir",
+      "sp": 8,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-07"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-39"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-48",
+      "titulo": "Personas frecuentes",
+      "epica": "Convenios",
+      "label_epica": "epica:convenios",
+      "historia": "Como empresa cliente, quiero guardar a las personas que viajan seguido para pedir más rápido.",
+      "criterios": "Libreta de la empresa cliente: crear, editar y borrar. Usarla al pedir para el equipo.",
+      "prioridad": "Por definir",
+      "sp": 3,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-47"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-49",
+      "titulo": "Estados del sistema",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como usuario, quiero entender qué pasa cuando algo falla y cómo pedir igual.",
+      "criterios": "404 y sesión expirada. Error de servidor con el WhatsApp de la empresa o el teléfono de la central (contingencia).",
+      "prioridad": "Por definir",
+      "sp": 2,
+      "sprint": "Por definir",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-37"
+      ],
+      "estado_cambio": "Nueva (rediseño del portal)"
     }
   ],
   "tareas": [

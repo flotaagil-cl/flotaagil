@@ -8,7 +8,7 @@ Para Carlos. Son 5 PR encadenados hacia `main`, **en este orden**, y después 4 
 | 2 | Sprint 2 | `feat/HU-24-calificacion` | `main` | #8, #17, #18, #19, #24, #25 |
 | 3 | Sprint 3 | `fix/HU-27-origen-icao` | `main` | #10, #14, #28, #29, #30 |
 | 4 | Sprint 4 | `docs/plan-fusion-sprint4` | `main` | #7, #11, #12, #15, #21, #26, #31 |
-| 5 | Cambios CC-12, CC-15, CC-16 y CC-17 | `chore/planes-comerciales` (punta de la cadena nueva) | `main` | #33 a #42 |
+| 5 | Cambios CC-12, CC-15 a CC-18 y rediseño del portal (fase 1) | `feat/HU-39-pedido` (punta de la cadena nueva) | `main` | #33 a #47 |
 
 ## Antes de empezar
 
@@ -311,20 +311,20 @@ Twilio con un doble y el notificador de desarrollo. Mi turno y la navegación co
 
 ---
 
-## PR 5: cambios CC-12, CC-15 y CC-16
+## PR 5: cambios CC-12, CC-15 a CC-18 y rediseño del portal (fase 1)
 
-**Rama de origen:** `chore/planes-comerciales` · **Rama base:** `main`
+**Rama de origen:** `feat/HU-39-pedido` · **Rama base:** `main`
 
-Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero` → `fix/estabilizacion-pantallas` → `feat/HU-36-usuarios-panel` → `chore/crear-empresa` → `chore/planes-comerciales`.
+Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero` → `fix/estabilizacion-pantallas` → `feat/HU-36-usuarios-panel` → `chore/crear-empresa` → `chore/planes-comerciales` → `fix/primer-ingreso` → `feat/HU-37-sistema-visual` → `feat/HU-38-ingresar` → `feat/HU-40-cuenta-obligatoria` → `fix/ingreso-panel` → `feat/HU-39-pedido`.
 
 **Antes de abrirlo:** paso 5, con esta rama.
 
-**Título:** `feat: turnos y caja, contingencia, cuentas web y usuarios del panel (CC-12, CC-15, CC-16, CC-17)`
+**Título:** `feat: turnos y caja, contingencia, cuentas web, usuarios del panel y portal nuevo (CC-12, CC-15 a CC-18)`
 
 **Cuerpo:**
 
 ```markdown
-Cambios aprobados por el PO en CC-12, CC-15, CC-16 y CC-17.
+Cambios aprobados por el PO en CC-12, CC-15, CC-16, CC-17 y CC-18, y la fase 1 del rediseño del portal.
 
 Closes #36
 Closes #37
@@ -336,6 +336,11 @@ Closes #34
 Closes #35
 Closes #41
 Closes #42
+Closes #44
+Closes #45
+Closes #46
+Closes #47
+Refs #43
 Refs #9
 Refs #18
 Refs #22
@@ -355,10 +360,15 @@ Refs #23
 - HU-36: usuarios del panel para el administrador.
 - Alta de clientes con `python manage.py crear_empresa` (procedimiento en `docs/README.md`).
 - Planes del modelo comercial: INICIAL, ESTANDAR y AVANZADO.
+- Primer ingreso con contraseña temporal en la web (DC-40).
+- HU-37: sistema visual del portal (tokens, Plus Jakarta Sans autoalojada, componentes y mapa de respaldo).
+- HU-38: ingresar y crear cuenta con el diseño nuevo. `/login` es el ingreso del panel con la marca FlotaÁgil; el del portal, con la marca de la empresa, es `/solicitar/:slug/ingresar`.
+- HU-40 (CC-18): cuenta obligatoria para pedir; se retira el pedido como invitado (DC-41).
+- HU-39: inicio y pedido del pasajero en tres tipos (`/pedir`), con pasajeros, maletas y vuelo de salida (DC-42) y la capacidad al pedir y al asignar (DC-43).
 
 ### Cómo revisarlo
 
-Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-39 (DC-36 provisorio hasta la plantilla de Meta) y PR-15 en `docs/diccionario-cambios.md`.
+Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-43 (DC-36 provisorio hasta la plantilla de Meta) y PR-15 en `docs/diccionario-cambios.md`.
 
 ### Para revisar
 
@@ -366,6 +376,9 @@ Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC
 - Tras fusionar: migrar y reiniciar `worker` y `beat`. Nuevas variables en `.env.example`: `CORREO_*`, `SES_SMTP_*`, `WEB_URL_BASE` y `RECUPERAR_PASSWORD_HORAS`.
 - Los links de convenio anteriores dejan de funcionar: las empresas deben registrarse en el portal. Los convenios sin cuenta quedan como historial.
 - El administrador ya no crea convenios: `POST /api/convenios/` responde 405.
+- Migraciones del rediseño: `cuentas.0011` y `reservas.0014` (pasajeros, maletas, vuelo de salida y antelaciones), reversibles.
+- `POST /api/portal/{slug}/solicitudes/` ya no existe (CC-18): `/solicitar/:slug` lleva al ingreso de la empresa. Avisar a las empresas que compartieron ese enlace.
+- El pasajero llega a `/pedir` al ingresar. `datos_demo` ya no tiene `--pendientes`.
 
 ### Sin probar contra el servicio real
 
