@@ -1,9 +1,9 @@
 """HU-35: API de la cuenta del pasajero (`/api/mi-cuenta/`). Solo rol PASAJERO, con la cuenta confirmada; ve
 solo las reservas de su teléfono en su empresa (RN-13)."""
 
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
 from rest_framework import serializers, status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -12,7 +12,7 @@ from apps.cuentas.models import Rol
 from apps.portal.serializers import SolicitudRespuestaSerializer, SolicitudSerializer
 
 from . import cuentas_pasajero as cuentas
-from .models import Viaje
+from .models import EstadoViaje, Viaje
 from .serializers import HistorialSerializer
 
 SOLO_PASAJERO = [con_roles(Rol.PASAJERO)]
@@ -122,6 +122,133 @@ class MiCuentaView(APIView):
     def delete(self, request):
         cuentas.eliminar(request.user)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# HU-43: el pasajero ve a su conductor, el vehículo y la patente desde que el conductor acepta el viaje.
+CON_CONDUCTOR_VISIBLE = frozenset(
+    {
+        EstadoViaje.ACEPTADO,
+        EstadoViaje.EN_CAMINO,
+        EstadoViaje.EN_ZONA,
+        EstadoViaje.PASAJERO_A_BORDO,
+        EstadoViaje.FINALIZADO,
+    }
+)
+
+
+class PuntoSerializer(serializers.Serializer):
+    lat = serializers.FloatField()
+    lng = serializers.FloatField()
+
+
+class PasoSerializer(serializers.Serializer):
+    """Historial para el pasajero: solo el estado y la hora (sin quién lo cambió)."""
+
+    estado = serializers.CharField(source="estado_nuevo")
+    creado_en = serializers.DateTimeField()
+
+
+class ConductorDeMiViajeSerializer(serializers.Serializer):
+    nombre = serializers.CharField(source="usuario.nombre")
+
+
+class VehiculoDeMiViajeSerializer(serializers.Serializer):
+    marca_modelo = serializers.CharField()
+    patente = serializers.CharField()
+
+
+class VueloDeMiViajeSerializer(serializers.Serializer):
+    numero = serializers.CharField()
+    hora_programada = serializers.DateTimeField()
+    hora_estimada = serializers.DateTimeField(allow_null=True)
+    estado_vuelo = serializers.CharField()
+
+
+class TuViajeSerializer(serializers.ModelSerializer):
+    """HU-43: el viaje del pasajero con su cuenta (solo los suyos)."""
+
+    estado_texto = serializers.CharField(source="get_estado_display")
+    cancelable = serializers.SerializerMethodField()
+    origen = serializers.SerializerMethodField()
+    destino = serializers.SerializerMethodField()
+    conductor = serializers.SerializerMethodField()
+    vehiculo = serializers.SerializerMethodField()
+    vuelo = serializers.SerializerMethodField()
+    pasos = PasoSerializer(source="historial", many=True, read_only=True)
+
+    class Meta:
+        model = Viaje
+        fields = [
+            "id",
+            "estado",
+            "estado_texto",
+            "sentido",
+            "origen_dir",
+            "destino_dir",
+            "origen",
+            "destino",
+            "recogida_en",
+            "pasajeros",
+            "maletas",
+            "vuelo_salida_en",
+            "vuelo_salida_tipo",
+            "creado_en",
+            "cancelable",
+            "conductor",
+            "vehiculo",
+            "vuelo",
+            "pasos",
+        ]
+
+    def get_cancelable(self, viaje) -> bool:
+        return viaje.estado in cuentas.CANCELABLES
+
+    @extend_schema_field(PuntoSerializer)
+    def get_origen(self, viaje):
+        return {"lat": viaje.origen_geo.y, "lng": viaje.origen_geo.x}
+
+    @extend_schema_field(PuntoSerializer)
+    def get_destino(self, viaje):
+        return {"lat": viaje.destino_geo.y, "lng": viaje.destino_geo.x}
+
+    @extend_schema_field(ConductorDeMiViajeSerializer(allow_null=True))
+    def get_conductor(self, viaje):
+        if viaje.estado not in CON_CONDUCTOR_VISIBLE or viaje.conductor is None:
+            return None
+        return ConductorDeMiViajeSerializer(viaje.conductor).data
+
+    @extend_schema_field(VehiculoDeMiViajeSerializer(allow_null=True))
+    def get_vehiculo(self, viaje):
+        if viaje.estado not in CON_CONDUCTOR_VISIBLE or viaje.vehiculo is None:
+            return None
+        return VehiculoDeMiViajeSerializer(viaje.vehiculo).data
+
+    @extend_schema_field(VueloDeMiViajeSerializer(allow_null=True))
+    def get_vuelo(self, viaje):
+        vuelo = getattr(viaje, "vuelo", None)
+        return VueloDeMiViajeSerializer(vuelo).data if vuelo else None
+
+
+class TuViajeView(RetrieveAPIView):
+    permission_classes = SOLO_PASAJERO
+    serializer_class = TuViajeSerializer
+
+    @extend_schema(
+        tags=["mi-cuenta"],
+        summary="Tu viaje (HU-43)",
+        description="Solo un viaje del pasajero (404 si no es suyo); conductor y patente desde ACEPTADO.",
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Viaje.objects.none()
+        return (
+            cuentas.reservas_de(cuentas.cuenta_activa(self.request.user))
+            .select_related("conductor__usuario", "vehiculo", "vuelo")
+            .prefetch_related("historial")
+        )
 
 
 class MisReservasView(ListAPIView):
