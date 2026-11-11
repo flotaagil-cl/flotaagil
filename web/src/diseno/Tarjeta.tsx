@@ -30,7 +30,8 @@ export function Tarjeta({ como: Etiqueta = 'div', className, children, ...resto 
 }
 
 interface PropsDestacado {
-  titulo: string;
+  /** Sin título, la franja lleva solo el texto (avisos cortos). */
+  titulo?: string;
   icono?: NombreIcono;
   children?: ReactNode;
 }
@@ -43,7 +44,7 @@ export function Destacado({ titulo, icono = 'avion', children }: PropsDestacado)
         <Icono nombre={icono} />
       </span>
       <div>
-        <p className={e.destacadoTitulo}>{titulo}</p>
+        {titulo && <p className={e.destacadoTitulo}>{titulo}</p>}
         {children && <p className={e.destacadoTexto}>{children}</p>}
       </div>
     </div>

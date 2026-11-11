@@ -85,7 +85,7 @@ export function Login() {
 
   return (
     <MarcoPortal marca={marca} inicio={conEmpresa ? `/login?empresa=${slug}` : '/login'} barraMovil="flotante" accion={registroEmpresa}>
-      <PantallaAcceso titulo="Ingresar" subtitulo="Ingresa para pedir y seguir tus viajes." movil="mapa">
+      <PantallaAcceso titulo="Ingresar" tituloMovil="Tu traslado, sin esperas" subtitulo="Ingresa para pedir y seguir tus viajes." movil="mapa">
         <form className={e.formulario} onSubmit={handleSubmit(enviar)} noValidate aria-label="Ingresar">
           {estado.aviso && <Aviso>{estado.aviso}</Aviso>}
           {error && <Aviso tipo="error">{error}</Aviso>}
@@ -108,13 +108,15 @@ export function Login() {
         </form>
         {conEmpresa && (
           <>
-            <Separador>¿No tienes cuenta?</Separador>
+            <div className={e.soloEscritorio}>
+              <Separador>¿No tienes cuenta?</Separador>
+            </div>
             <Link to={`/solicitar/${slug}/cuenta`} className={claseBoton('secundario', true)}>
               Crear cuenta
             </Link>
           </>
         )}
-        <p className={e.nota}>Administradores, despachadores y empresas en convenio también ingresan por aquí.</p>
+        <p className={`${e.nota} ${e.soloEscritorio}`}>Administradores, despachadores y empresas en convenio también ingresan por aquí.</p>
         {registroEmpresa && (
           <Link to={registroEmpresa.a} className={`${e.enlace} ${e.soloMovil}`}>
             {registroEmpresa.texto}

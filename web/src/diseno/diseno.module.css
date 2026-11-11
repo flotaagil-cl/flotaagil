@@ -29,9 +29,11 @@
   background: var(--color-primario-900);
 }
 .secundario {
+  min-height: 52px;
   background: var(--superficie);
-  color: var(--color-primario-900);
-  border-color: var(--borde-campo);
+  color: var(--texto);
+  /* El texto identifica el botón: el borde es decorativo, como en el diseño. */
+  border-color: var(--borde);
 }
 .texto {
   padding: 0 8px;
@@ -493,7 +495,9 @@
   border-bottom: 0;
 }
 .contenido {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   outline: none;
 }
 
@@ -674,6 +678,7 @@
 
 /* ---------- Pantallas de acceso (HU-38) ---------- */
 .acceso {
+  flex: 1;
   display: grid;
   grid-template-areas: 'hero formulario';
   grid-template-columns: minmax(0, 620px) minmax(0, 1fr);
@@ -698,10 +703,10 @@
 }
 .accesoTitulo {
   margin: 0;
-  font-size: 32px;
+  font-size: 30px;
   font-weight: 800;
   letter-spacing: -0.6px;
-  line-height: 1.2;
+  line-height: 38px;
 }
 .accesoSubtitulo {
   margin: 0;
@@ -713,7 +718,7 @@
 .accesoHero {
   position: relative;
   grid-area: hero;
-  min-height: 620px;
+  min-height: max(620px, calc(100dvh - 72px - 64px));
   padding: 56px 48px;
   overflow: hidden;
   border-radius: var(--radio-hero);
@@ -729,7 +734,7 @@
 }
 .circuloGrande {
   top: -120px;
-  right: -60px;
+  right: -120px;
   width: 360px;
   height: 360px;
 }
@@ -742,6 +747,7 @@
 .heroAntetitulo {
   position: relative;
   margin: 0 0 12px;
+  color: var(--color-tiffany);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.4px;
@@ -750,9 +756,9 @@
 .heroTitulo {
   position: relative;
   margin: 0 0 16px;
-  font-size: 44px;
+  font-size: 46px;
   font-weight: 800;
-  letter-spacing: -0.8px;
+  letter-spacing: -1.4px;
   line-height: 1.1;
 }
 .heroTexto {
@@ -826,15 +832,31 @@
     order: -1;
     height: 280px;
   }
+  .acceso[data-movil='mapa'] .accesoFormulario,
+  .acceso[data-movil='hero'] .accesoFormulario {
+    flex: 1;
+  }
+  .acceso[data-movil='mapa'] .accesoFormulario::before {
+    content: '';
+    width: 40px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 2px;
+    background: var(--borde);
+  }
   .acceso[data-movil='mapa'] .accesoFormulario {
+    padding-top: 12px;
     position: relative;
     z-index: 1;
     margin-top: -24px;
     border-radius: var(--radio-panel) var(--radio-panel) 0 0;
     background: var(--superficie);
   }
-  .acceso[data-movil='mapa'] .accesoTitulo {
+  .acceso[data-movil='mapa'] .accesoTitulo,
+  .acceso[data-movil='hero'] .accesoTitulo {
     font-size: 26px;
+    letter-spacing: -0.4px;
+    line-height: 32px;
   }
   .acceso[data-movil='hero'] .accesoFormulario {
     padding-top: 0;
@@ -849,9 +871,6 @@
   }
   .acceso[data-movil='hero'] .accesoSubtitulo {
     color: var(--sobre-oscuro);
-  }
-  .acceso[data-movil='hero'] .accesoTitulo {
-    font-size: 26px;
   }
   .acceso[data-movil='hero'] .accesoVolver {
     display: grid;
@@ -884,12 +903,22 @@
   font-size: var(--texto-etiqueta);
   text-align: center;
 }
-.soloMovil {
+.soloMovil,
+.soloMovilTexto {
   display: none;
 }
 @media (max-width: 899px) {
   .soloMovil {
     display: inline-flex;
+  }
+  .soloMovilTexto {
+    display: inline;
+  }
+  .soloEscritorio {
+    display: none;
+  }
+  .barra[data-movil='flotante'] .logo {
+    border-radius: 50%;
   }
 }
 .formulario {
@@ -942,4 +971,47 @@
   background: var(--insignia-peligro-fondo);
   color: var(--insignia-peligro-texto);
   font-weight: 600;
+}
+
+/* Tarjeta ilustrativa del vuelo en el panel de ingreso. */
+.heroVuelo {
+  position: absolute;
+  right: 148px;
+  bottom: 48px;
+  left: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 22px;
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  box-shadow: 0 16px 40px var(--sombra);
+  color: var(--texto);
+}
+.heroVueloFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.heroVueloNumero,
+.heroVueloNota {
+  color: var(--texto-suave);
+  font-size: var(--texto-etiqueta);
+}
+.heroVueloRuta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-primario-700);
+}
+.heroVueloRuta > span:first-child,
+.heroVueloRuta > span:last-child {
+  color: var(--texto);
+  font-size: 24px;
+  font-weight: 800;
+}
+.heroVueloLinea {
+  flex: 1;
+  height: 1px;
+  background: var(--borde);
 }

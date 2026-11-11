@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 import { iniciales } from './clases';
+import './tokens.css';
 import e from './diseno.module.css';
 import { Dialogo } from './Dialogo';
 import { Icono } from './Icono';

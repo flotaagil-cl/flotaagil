@@ -146,8 +146,8 @@ export function CrearCuenta() {
         <Casilla checked={privacidad} onChange={(evento) => setPrivacidad(evento.target.checked)} error={errores.privacidad}>
           Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {empresa.razon_social}.
         </Casilla>
-        <Destacado titulo="Te llegará un WhatsApp para activar tu cuenta" icono="mensaje">
-          Responde CONFIRMAR CUENTA.
+        <Destacado icono="mensaje">
+          Te llegará un WhatsApp para activar tu cuenta. Responde <strong>CONFIRMAR CUENTA</strong>.
         </Destacado>
         <div className="solo-lector" aria-hidden="true">
           <label>
