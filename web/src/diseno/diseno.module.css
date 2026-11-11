@@ -1452,3 +1452,47 @@
   font-size: 24px;
   letter-spacing: 1px;
 }
+
+/* ---------- Tu viaje (HU-43) ---------- */
+.tituloConInsignia {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.conductor {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.conductor .avatar {
+  width: 52px;
+  height: 52px;
+  background: var(--color-primario-700);
+  color: var(--sobre-oscuro);
+}
+.conductorTexto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.conductorNombre {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+.conductorAuto {
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+.patente {
+  padding: 4px 10px;
+  border: 2px solid var(--texto);
+  border-radius: 6px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+}

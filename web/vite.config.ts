@@ -75,6 +75,8 @@ export default defineConfig({
         'src/flota/**': MINIMO,
         'src/mapa/**': MINIMO,
         'src/diseno/**': MINIMO,
+        'src/pedido/**': MINIMO,
+        'src/viajes/**': MINIMO,
         'src/entorno.ts': MINIMO,
       },
     },

@@ -62,6 +62,7 @@ export const DIFERIDOS = [
   'src/reservas/paginas/Contingencia.tsx',
   'src/usuarios/Usuarios.tsx',
   'src/pedido/Pedir.tsx',
+  'src/viajes/TuViaje.tsx',
   'src/paginas/AceptarPrivacidad.tsx',
 ];
 
