@@ -58,8 +58,8 @@ function Pin({ marcador, x, y }: { marcador: Marcador; x: number; y: number }) {
   return (
     <g data-tipo={marcador.tipo}>
       <title>{marcador.etiqueta}</title>
-      <circle className={e.pinPrincipal} cx={x} cy={y} r={20} />
-      <svg x={x - 10} y={y - 10} width={20} height={20} viewBox="0 0 24 24" className={e.pinIcono}>
+      <circle className={e.pinPrincipal} cx={x} cy={y} r={16} />
+      <svg x={x - 8} y={y - 8} width={16} height={16} viewBox="0 0 24 24" className={e.pinIcono}>
         <path d={marcador.tipo === 'aeropuerto' ? ICONOS.avion : ICONOS.usuario} />
       </svg>
     </g>
