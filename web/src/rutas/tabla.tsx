@@ -190,6 +190,11 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           lazy: async () => ({ Component: (await import('./RutaAutenticada')).RutaAutenticada }),
           children: [
             { path: '/primer-ingreso', lazy: async () => ({ Component: (await import('../paginas/PrimerIngreso')).PrimerIngreso }) },
+            // DC-44: aceptar el aviso de privacidad una vez (cuentas antiguas o versión nueva).
+            {
+              path: '/aceptar-privacidad',
+              lazy: async () => ({ Component: (await import('../paginas/AceptarPrivacidad')).AceptarPrivacidad }),
+            },
             // HU-39: inicio y pedido del pasajero con el marco del portal (fuera del marco del panel).
             { path: '/pedir/:tipo?', lazy: async () => ({ Component: (await import('../pedido/Pedir')).Pedir }) },
             {

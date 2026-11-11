@@ -1104,6 +1104,9 @@
   color: var(--texto);
   font-size: 14px;
 }
+.avisoSuave a {
+  color: var(--texto);
+}
 .avisoSuave > svg {
   flex: none;
   color: var(--color-primario-700);

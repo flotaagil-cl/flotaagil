@@ -23,13 +23,15 @@ interface UsuarioFalso extends Usuario {
 const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes' };
 
 export const USUARIOS: UsuarioFalso[] = [
-  { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
-  { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
-  { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
-  { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true, debe_cambiar_password: false },
-  { id: 5, nombre: 'Clara Cliente', email: 'convenio@andes.example', rol: 'CONVENIO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
-  { id: 7, nombre: 'Tomás Temporal', email: 'temporal@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'Temporal123', debe_cambiar_password: true },
-  { id: 6, nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
+  { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true, debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 5, nombre: 'Clara Cliente', email: 'convenio@andes.example', rol: 'CONVENIO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 7, nombre: 'Tomás Temporal', email: 'temporal@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'Temporal123', debe_cambiar_password: true, debe_aceptar_privacidad: false },
+  { id: 6, nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  // DC-44: cuenta antigua, sin el consentimiento registrado.
+  { id: 8, nombre: 'Olga Antigua', email: 'antigua@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: true },
 ];
 
 interface Pendiente {
@@ -176,6 +178,14 @@ export class ServidorAuthFalso {
         return this.login((await peticion.json()) as { email: string; password: string });
       case 'POST /api/auth/refresh/':
         return this.refresh(cookie);
+      case 'GET /api/configuracion-publica/':
+        return { estado: 200, cuerpo: { soporte_correo: this.soporteCorreo } };
+      case 'POST /api/mi-cuenta/privacidad/': {
+        const usuario = this.accessVigentes.get(peticion.headers.get('Authorization')?.replace('Bearer ', '') ?? '');
+        if (!usuario) return { estado: 401, cuerpo: { detail: 'Token inválido.', code: 'token_not_valid' } };
+        this.privacidad.add(usuario.id);
+        return { estado: 200, cuerpo: { aceptada_en: '2026-11-11T12:00:00Z', version: '2026-11' } };
+      }
       case 'POST /api/auth/password/': {
         // DC-40: cambio de la temporal (DC-14). Sin cambio de canal: la sesión siguiente se pide con login.
         const access = peticion.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
@@ -209,8 +219,15 @@ export class ServidorAuthFalso {
   /** Cambios de contraseña hechos en esta prueba (no tocan la lista compartida USUARIOS). */
   private cambios = new Map<number, { password: string; debe_cambiar_password: boolean }>();
 
+  /** SOPORTE_CORREO del servidor (null = sin configurar). */
+  soporteCorreo: string | null = null;
+
+  /** DC-44: usuarios que aceptaron el aviso en esta prueba. */
+  private privacidad = new Set<number>();
+
   private efectivo(usuario: UsuarioFalso): UsuarioFalso {
-    return { ...usuario, ...this.cambios.get(usuario.id) };
+    const aceptada = this.privacidad.has(usuario.id) ? { debe_aceptar_privacidad: false } : {};
+    return { ...usuario, ...this.cambios.get(usuario.id), ...aceptada };
   }
 
   private login({ email, password }: { email: string; password: string }): Respuesta {
@@ -245,6 +262,6 @@ export class ServidorAuthFalso {
 }
 
 function publico(usuario: UsuarioFalso): Usuario {
-  const { id, nombre, email, rol, empresa, debe_cambiar_password } = usuario;
-  return { id, nombre, email, rol, empresa, debe_cambiar_password };
+  const { id, nombre, email, rol, empresa, debe_cambiar_password, debe_aceptar_privacidad } = usuario;
+  return { id, nombre, email, rol, empresa, debe_cambiar_password, debe_aceptar_privacidad };
 }

@@ -38,7 +38,7 @@ export function FormularioPedido({ tipo, empresa, enviar, alEnviar }: Props) {
   const [pedirHoraLlegada, setPedirHoraLlegada] = useState(false);
   const cambiar = <K extends keyof ValoresPedido>(campo: K, valor: ValoresPedido[K]) => setV((actual) => ({ ...actual, [campo]: valor }));
   const texto = (campo: keyof ValoresPedido) => (evento: { target: { value: string } }) => cambiar(campo, evento.target.value as never);
-  const maximo = empresa.capacidad_maxima ?? 7;
+  const maximo = empresa.capacidad_maxima;
   const minimoFecha = hoy();
 
   async function pedir(evento: FormEvent) {
@@ -178,7 +178,8 @@ export function FormularioPedido({ tipo, empresa, enviar, alEnviar }: Props) {
         {enviando ? 'Enviando…' : 'Pedir mi traslado'}
       </Boton>
       <p className={e.nota}>
-        Al pedir aceptas el <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link> y recibir los avisos de tu viaje por WhatsApp.
+        Te avisaremos de tu viaje por WhatsApp. Tus datos se tratan según el{' '}
+        <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link> que aceptaste al crear tu cuenta.
       </p>
     </form>
   );

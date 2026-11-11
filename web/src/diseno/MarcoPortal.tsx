@@ -10,6 +10,8 @@ import { Avatar } from './Tarjeta';
 export interface EnlacePortal {
   a: string;
   texto: string;
+  /** Enlace fuera de la aplicación (por ejemplo, mailto:). */
+  externo?: boolean;
 }
 
 interface Props {
@@ -60,11 +62,17 @@ export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], usuario, 
             ))}
           </nav>
         )}
-        {accion && !usuario && (
-          <Link to={accion.a} className={e.accion}>
-            {accion.texto}
-          </Link>
-        )}
+        {accion &&
+          !usuario &&
+          (accion.externo ? (
+            <a href={accion.a} className={e.accion}>
+              {accion.texto}
+            </a>
+          ) : (
+            <Link to={accion.a} className={e.accion}>
+              {accion.texto}
+            </Link>
+          ))}
         {usuario && (
           <button type="button" className={e.botonCuenta} aria-haspopup="dialog" aria-expanded={menu} onClick={() => setMenu(true)}>
             <Avatar texto={iniciales(usuario.nombre)} />

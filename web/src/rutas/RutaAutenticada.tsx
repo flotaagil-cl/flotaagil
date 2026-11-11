@@ -24,5 +24,9 @@ export function RutaAutenticada() {
   if (estado.usuario.debe_cambiar_password && ubicacion.pathname !== '/primer-ingreso') {
     return <Navigate to="/primer-ingreso" replace />;
   }
+  // DC-44: un pasajero con cuenta antigua (o con una versión nueva del aviso) lo acepta una vez.
+  if (!estado.usuario.debe_cambiar_password && estado.usuario.debe_aceptar_privacidad && ubicacion.pathname !== '/aceptar-privacidad') {
+    return <Navigate to="/aceptar-privacidad" replace />;
+  }
   return <Outlet />;
 }

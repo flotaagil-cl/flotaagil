@@ -96,14 +96,9 @@ export function textoAntelacion(minutos: number): string {
 export function armarPedido(tipo: TipoPedido, v: ValoresPedido, empresa: EmpresaPublica): { cuerpo: CuerpoPedido } | { errores: Errores } {
   const errores: Errores = {};
   const maximo = empresa.capacidad_maxima;
-  if (maximo !== null && v.pasajeros > maximo) errores.pasajeros = `Podemos llevar hasta ${maximo} pasajeros en un vehículo.`;
-  const base = {
-    pasajeros: v.pasajeros,
-    maletas: v.maletas,
-    // Al pedir con la cuenta se aceptan el aviso de privacidad y los avisos del viaje (se informa junto al botón).
-    acepta_privacidad: true,
-    acepta_whatsapp: true,
-  };
+  if (v.pasajeros > maximo) errores.pasajeros = `Podemos llevar hasta ${maximo} pasajeros en un vehículo.`;
+  // DC-44: el pedido no acepta nada; la cuenta aceptó el aviso una vez al crearse.
+  const base = { pasajeros: v.pasajeros, maletas: v.maletas };
 
   if (tipo === 'desde-aeropuerto') {
     const numero = v.vueloNumero.trim().toUpperCase();

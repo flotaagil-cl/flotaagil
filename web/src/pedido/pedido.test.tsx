@@ -43,8 +43,6 @@ describe('HU-39 · armar el pedido', () => {
       cuerpo: {
         pasajeros: 2,
         maletas: 3,
-        acepta_privacidad: true,
-        acepta_whatsapp: true,
         sentido: 'DESDE_AEROPUERTO',
         origen_dir: 'Aeropuerto de Santiago (SCL)',
         destino_dir: 'Av. Apoquindo 3000',
@@ -99,7 +97,7 @@ describe('HU-39 · armar el pedido', () => {
     expect('cuerpo' in programado && programado.cuerpo.recogida_en).toBe('2026-11-20T13:00:00.000Z');
     expect(armarPedido('en-la-ciudad', { ...valores, ahora: false }, EMPRESA)).toEqual({ errores: { recogidaHora: 'Indica la fecha y hora de recogida.' } });
     expect(armarPedido('en-la-ciudad', { ...valores, pasajeros: 5 }, EMPRESA)).toEqual({ errores: { pasajeros: 'Podemos llevar hasta 4 pasajeros en un vehículo.' } });
-    expect(armarPedido('en-la-ciudad', { ...valores, pasajeros: 5 }, { ...EMPRESA, capacidad_maxima: null })).toHaveProperty('cuerpo');
+    expect(armarPedido('en-la-ciudad', { ...valores, pasajeros: 5 }, { ...EMPRESA, capacidad_maxima: 5 })).toHaveProperty('cuerpo');
   });
 
   it('textos y errores del servidor', () => {

@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Aviso } from '../componentes/Aviso';
 import { Boton } from '../diseno/Boton';
@@ -8,6 +9,8 @@ import type { NombreIcono } from '../diseno/iconos';
 import { MarcoPortal } from '../diseno/MarcoPortal';
 import { PantallaAcceso } from '../diseno/PantallaAcceso';
 import { Insignia } from '../diseno/Tarjeta';
+import { useApi } from '../sesion/SesionProvider';
+import { resultado } from '../api/resultado';
 import { useIngreso } from './ingreso';
 
 const PUNTOS: [NombreIcono, string][] = [
@@ -62,6 +65,15 @@ function HeroPanel() {
  */
 export function Login() {
   const { bloqueo, aviso, error, formulario, enviar } = useIngreso();
+  const api = useApi();
+  // SOPORTE_CORREO del servidor: sin correo configurado no se muestra el enlace.
+  const configuracion = useQuery({
+    queryKey: ['configuracion-publica'],
+    queryFn: () => resultado(api.GET('/api/configuracion-publica/')),
+    retry: false,
+    staleTime: 60 * 60_000,
+  });
+  const soporte = configuracion.data?.soporte_correo ?? null;
   const {
     register,
     formState: { errors, isSubmitting },
@@ -74,7 +86,12 @@ export function Login() {
   if (bloqueo) return bloqueo;
 
   return (
-    <MarcoPortal marca="FlotaÁgil" inicio="/login" logo={<Icono nombre="auto" />}>
+    <MarcoPortal
+      marca="FlotaÁgil"
+      inicio="/login"
+      logo={<Icono nombre="auto" />}
+      accion={soporte ? { a: `mailto:${soporte}`, texto: 'Soporte', externo: true } : undefined}
+    >
       <PantallaAcceso
         titulo="Ingresar al panel"
         subtitulo="Para administradores y despachadores de empresas de transporte."
@@ -101,8 +118,8 @@ export function Login() {
         <p className={e.avisoSuave}>
           <Icono nombre="llave" tamano={18} />
           <span>
-            ¿Olvidaste tu contraseña? Pídele una temporal al administrador de tu empresa. Si eres el administrador, escríbenos a
-            soporte.
+            ¿Olvidaste tu contraseña? Pídele una temporal al administrador de tu empresa. Si eres el administrador, escríbenos a{' '}
+            {soporte ? <a href={`mailto:${soporte}`}>soporte</a> : 'soporte'}.
           </span>
         </p>
         <hr className={e.divisor} />

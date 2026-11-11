@@ -61,6 +61,7 @@ export const DIFERIDOS = [
   'src/reservas/paginas/Contingencia.tsx',
   'src/usuarios/Usuarios.tsx',
   'src/pedido/Pedir.tsx',
+  'src/paginas/AceptarPrivacidad.tsx',
 ];
 
 /** Desde dónde se mira y qué no puede cargar. `desde: null` = el paquete inicial. */

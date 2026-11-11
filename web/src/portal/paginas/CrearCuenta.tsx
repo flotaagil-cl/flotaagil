@@ -63,6 +63,7 @@ export function CrearCuenta() {
         email: datos.email.trim(),
         telefono,
         password: datos.password,
+        acepta_privacidad: privacidad,
         sitio_web: trampa,
       });
       setEnviado(telefono);
@@ -73,6 +74,7 @@ export function CrearCuenta() {
         for (const campo of ['nombre', 'email', 'telefono', 'password'] as const) {
           if (cuerpo[campo]?.[0]) delServidor[campo] = cuerpo[campo]![0];
         }
+        if (cuerpo.acepta_privacidad?.[0]) delServidor.privacidad = cuerpo.acepta_privacidad[0];
         setErrores(Object.keys(delServidor).length ? delServidor : { general: 'Revisa los datos.' });
       } else if (error instanceof ErrorApi && error.estado === 429) {
         setErrores({ general: 'Demasiados intentos. Espera unos minutos e intenta de nuevo.' });
@@ -144,7 +146,8 @@ export function CrearCuenta() {
           error={errores.password}
         />
         <Casilla checked={privacidad} onChange={(evento) => setPrivacidad(evento.target.checked)} error={errores.privacidad}>
-          Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {empresa.razon_social}.
+          Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {empresa.razon_social} y recibir por
+          WhatsApp los avisos de mis viajes.
         </Casilla>
         <Destacado icono="mensaje">
           Te llegará un WhatsApp para activar tu cuenta. Responde <strong>CONFIRMAR CUENTA</strong>.

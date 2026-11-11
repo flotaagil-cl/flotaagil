@@ -42,6 +42,8 @@ export interface Sesion {
   logout(): Promise<{ confirmado: boolean }>;
   renovarTrasRechazo(): Promise<string | null>;
   descartarAviso(): void;
+  /** Cambia datos del usuario autenticado sin volver a ingresar (DC-44: tras aceptar el aviso). */
+  actualizarUsuario(cambios: Partial<Usuario>): void;
   /**
    * Abre el canal entre pestañas y escucha el evento `online`; devuelve cómo desconectarse. Se puede volver
    * a conectar (React StrictMode monta, desmonta y vuelve a montar los efectos en desarrollo).
@@ -185,6 +187,10 @@ export function crearSesion(e: Entorno): Sesion {
     },
 
     reintentar,
+
+    actualizarUsuario(cambios) {
+      if (estado.fase === 'autenticada') fijar({ ...estado, usuario: { ...estado.usuario, ...cambios } });
+    },
 
     async login(email, password) {
       // Si quedó un logout sin confirmar, se intenta antes: el login reemplazará la cookie.

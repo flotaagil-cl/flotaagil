@@ -13,8 +13,9 @@ import { normalizarWhatsapp } from '../portal/telefono';
 
 const json = (estado: number, cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: estado, headers: { 'Content-Type': 'application/json' } });
 
-function montarLogin(ruta: string) {
+function montarLogin(ruta: string, preparar?: (servidor: ServidorAuthFalso) => void) {
   const servidor = new ServidorAuthFalso();
+  preparar?.(servidor);
   const pedidas: string[] = [];
   const original = servidor.fetch;
   servidor.fetch = async (entrada, init) => {
@@ -123,6 +124,7 @@ describe('HU-38 · crear cuenta', () => {
       email: 'paula@correo.example',
       telefono: '+56987654321',
       password: 'Clave-Sintetica-2026',
+      acepta_privacidad: true, // DC-44: la casilla del alta es el consentimiento único
       sitio_web: '',
     });
     expect(screen.getByRole('link', { name: 'Ir a ingresar' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
@@ -172,5 +174,54 @@ describe('HU-38 · crear cuenta', () => {
     expect(normalizarWhatsapp('9 8765 4321')).toBe('+56987654321');
     expect(normalizarWhatsapp('09-8765-4321')).toBe('+56987654321');
     expect(normalizarWhatsapp('+54 9 11 2345 6789')).toBe('+5491123456789');
+  });
+});
+
+describe('soporte en el ingreso del panel (SOPORTE_CORREO)', () => {
+  it('sin correo configurado no hay enlace de soporte', async () => {
+    montarLogin('/login');
+    await screen.findByText(/Pídele una temporal/);
+    expect(screen.queryByRole('link', { name: 'Soporte' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'soporte' })).not.toBeInTheDocument();
+  });
+
+  it('con correo configurado: «Soporte» en la barra y en el aviso', async () => {
+    montarLogin('/login', (servidor) => (servidor.soporteCorreo = 'soporte@flotaagil.example'));
+    expect(await screen.findByRole('link', { name: 'Soporte' })).toHaveAttribute('href', 'mailto:soporte@flotaagil.example');
+    expect(screen.getByRole('link', { name: 'soporte' })).toHaveAttribute('href', 'mailto:soporte@flotaagil.example');
+  });
+});
+
+describe('DC-44 · cuenta antigua: acepta el aviso al ingresar', () => {
+  async function entrarComo(email: string) {
+    const contexto = montarLogin('/solicitar/transportes-andes/ingresar');
+    await userEvent.type(await screen.findByLabelText('Correo'), email);
+    await userEvent.type(screen.getByLabelText('Contraseña'), 'clave');
+    await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+    return contexto;
+  }
+
+  it('la guarda la lleva a aceptar; sin marcar no sigue; al aceptar llega a pedir', async () => {
+    const { router } = await entrarComo('antigua@andes.example');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/aceptar-privacidad'));
+    expect(await screen.findByRole('heading', { name: 'Antes de seguir' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+    expect(screen.getByRole('checkbox')).toHaveAccessibleDescription('Para seguir debes aceptar el aviso de privacidad.');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Acepto el aviso de privacidad/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Aceptar y continuar' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
+  });
+
+  it('quien ya aceptó no ve la pantalla', async () => {
+    const { router } = await entrarComo('pasajero@andes.example');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
+    router.navigate('/aceptar-privacidad');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
+  });
+
+  it('puede cerrar sesión sin aceptar', async () => {
+    const { router } = await entrarComo('antigua@andes.example');
+    await userEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/solicitar/transportes-andes/ingresar'));
   });
 });
