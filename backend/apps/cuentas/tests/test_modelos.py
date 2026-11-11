@@ -59,7 +59,7 @@ class TestEmpresa:
     def test_valores_por_defecto_de_la_base(self):
         empresa = Empresa.objects.create(rut="12345678-5", razon_social="Prueba", slug="prueba")
         empresa.refresh_from_db()
-        assert empresa.plan == "BASICO"
+        assert empresa.plan == "ESTANDAR"
         assert empresa.activa is True
         assert empresa.creado_en is not None
 

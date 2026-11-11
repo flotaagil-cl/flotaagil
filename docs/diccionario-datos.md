@@ -9,7 +9,7 @@ Modelo lógico del Anexo D del Informe 2. Nombres de tablas y columnas tal como 
 | id | BIGINT | No | PK | Identificador de la empresa | Autoincremental | — |  |
 | rut | VARCHAR(12) | No | UK | RUT de la empresa | Formato 12345678-9; dígito verificador válido | — |  |
 | razon_social | VARCHAR(120) | No |  | Razón social | Texto no vacío | — |  |
-| plan | VARCHAR(12) | No |  | Plan contratado | BASICO \| FLOTA_PLUS | BASICO |  |
+| plan | VARCHAR(12) | No |  | Plan contratado (DC-39) | INICIAL \| ESTANDAR \| AVANZADO | ESTANDAR |  |
 | activa | BOOLEAN | No |  | Indica si la empresa opera | true/false | true |  |
 | creado_en | TIMESTAMPTZ | No |  | Fecha de alta | UTC | now() |  |
 

@@ -13,8 +13,10 @@ from apps.comun.validadores import validar_kebab, validar_no_vacio, validar_rut
 
 
 class Plan(models.TextChoices):
-    BASICO = "BASICO", "Básico"
-    FLOTA_PLUS = "FLOTA_PLUS", "Flota Plus"
+    # DC-39: planes del modelo comercial del informe (CC-13). Antes BASICO y FLOTA_PLUS.
+    INICIAL = "INICIAL", "Inicial"
+    ESTANDAR = "ESTANDAR", "Estándar"
+    AVANZADO = "AVANZADO", "Avanzado"
 
 
 class Empresa(models.Model):
@@ -22,7 +24,9 @@ class Empresa(models.Model):
     razon_social = models.CharField(max_length=120, validators=[validar_no_vacio])
     # DC-01: identificador de la empresa en la URL del portal (/solicitar/<slug>).
     slug = models.CharField(max_length=50, unique=True, validators=[validar_kebab])
-    plan = models.CharField(max_length=12, choices=Plan.choices, default=Plan.BASICO, db_default=Plan.BASICO)
+    plan = models.CharField(
+        max_length=12, choices=Plan.choices, default=Plan.ESTANDAR, db_default=Plan.ESTANDAR
+    )
     activa = models.BooleanField(default=True, db_default=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 

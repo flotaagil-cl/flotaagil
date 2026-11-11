@@ -33,13 +33,13 @@ EMPRESAS = [
         "cuerpo_rut": "76000001",
         "razon_social": "Transportes Andes Demo SpA",
         "slug": "transportes-andes",
-        "plan": Plan.FLOTA_PLUS,
+        "plan": Plan.AVANZADO,
     },
     {
         "cuerpo_rut": "76000002",
         "razon_social": "Taxi Turismo Pacífico Demo Ltda.",
         "slug": "taxi-pacifico",
-        "plan": Plan.BASICO,
+        "plan": Plan.ESTANDAR,
     },
 ]
 
