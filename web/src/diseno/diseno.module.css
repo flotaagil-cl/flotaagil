@@ -1535,3 +1535,15 @@
   text-underline-offset: 3px;
   cursor: pointer;
 }
+@media (max-width: 899px) {
+  /* Mis viajes: en el celular la insignia pasa a la segunda línea, bajo el texto. */
+  .listaViajes .opcionViaje {
+    flex-wrap: wrap;
+  }
+  .listaViajes .viajeTexto {
+    flex: 1 1 calc(100% - 60px);
+  }
+  .listaViajes .opcionViaje > :last-child {
+    margin-left: 60px;
+  }
+}

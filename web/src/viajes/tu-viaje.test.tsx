@@ -67,7 +67,7 @@ describe('HU-43 · avance del viaje', () => {
 
   it('en camino: el conductor aparece en su paso; en la ciudad los textos cambian', () => {
     const pasos = pasosDelViaje(conConductor());
-    expect(pasos.map((p) => p.estado)).toEqual(['hecho', 'hecho', 'hecho', 'actual', 'pendiente', 'pendiente']);
+    expect(pasos.map((p) => p.estado)).toEqual(['hecho', 'hecho', 'actual', 'pendiente', 'pendiente', 'pendiente']);
     expect(pasos[1].detalle).toBe('Juan Rojas');
     expect(pasos[2]).toMatchObject({ titulo: 'En camino al aeropuerto', detalle: 'vie 13-11-2026 17:30' });
     const ciudad = pasosDelViaje({ ...VIAJE, sentido: 'URBANO', estado: 'FINALIZADO' });
@@ -78,6 +78,7 @@ describe('HU-43 · avance del viaje', () => {
 
   it('asignado sin aceptar sigue buscando; pendiente de confirmar pide responder el WhatsApp', () => {
     expect(pasosDelViaje({ ...VIAJE, estado: 'ASIGNADO' })[1].estado).toBe('actual');
+    expect(pasosDelViaje({ ...VIAJE, estado: 'ACEPTADO', conductor: { nombre: 'Juan Rojas' } })[1]).toMatchObject({ estado: 'actual', detalle: 'Juan Rojas' });
     const pendiente = pasosDelViaje({ ...VIAJE, estado: 'PENDIENTE_CONFIRMACION' });
     expect(pendiente[0]).toMatchObject({ estado: 'actual', detalle: 'Confírmalo respondiendo el WhatsApp' });
   });
@@ -110,7 +111,7 @@ describe('HU-43 · pantalla «Tu viaje»', () => {
     expect(within(vuelo).getByText('Atrasado')).toBeInTheDocument();
     expect(within(vuelo).getByText(/Llega vie 13-11-2026 18:45/)).toBeInTheDocument();
     const avance = screen.getByRole('list', { name: 'Avance de tu viaje' });
-    expect(within(avance).getAllByRole('listitem')[3]).toHaveAttribute('aria-current', 'step');
+    expect(within(avance).getAllByRole('listitem')[2]).toHaveAttribute('aria-current', 'step');
     expect(screen.getByText('Para cancelar, contacta a la central.')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Mapa de tu viaje' })).toBeInTheDocument();
   });

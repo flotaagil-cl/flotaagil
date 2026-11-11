@@ -50,9 +50,11 @@ export const INSIGNIA_VUELO: Record<string, { texto: string; tono: TonoInsignia 
 /** Orden del avance que ve el pasajero (ASIGNADO cuenta como «buscando»: el conductor aún no acepta). */
 const ORDEN: EstadoViaje[] = ['SOLICITADO', 'ACEPTADO', 'EN_CAMINO', 'EN_ZONA', 'PASAJERO_A_BORDO', 'FINALIZADO'];
 
-function alcanzado(estado: EstadoViaje): number {
-  if (estado === 'PENDIENTE_CONFIRMACION') return -1;
-  if (estado === 'ASIGNADO') return 0;
+/** Paso en curso: el del estado vigente; sin conductor aún, «Conductor asignado»; finalizado, ninguno. */
+function enCurso(estado: EstadoViaje): number {
+  if (estado === 'PENDIENTE_CONFIRMACION') return 0;
+  if (estado === 'SOLICITADO' || estado === 'ASIGNADO') return 1;
+  if (estado === 'FINALIZADO') return ORDEN.length;
   return ORDEN.indexOf(estado);
 }
 
@@ -71,16 +73,16 @@ export function pasosDelViaje(viaje: TuViaje): PasoLinea[] {
     const paso = [...viaje.pasos].reverse().find((p) => p.estado === estado);
     return paso ? formatearFechaHora(paso.creado_en) : undefined;
   };
-  const llegado = alcanzado(viaje.estado ?? 'SOLICITADO');
+  const actual = enCurso(viaje.estado ?? 'SOLICITADO');
   return ORDEN.map((estado, i) => {
     let detalle = hora(estado);
-    if (estado === 'SOLICITADO' && llegado === -1) detalle = 'Confírmalo respondiendo el WhatsApp';
-    if (estado === 'ACEPTADO' && llegado >= 1 && viaje.conductor) detalle = viaje.conductor.nombre;
-    if (estado === 'ACEPTADO' && llegado === 0) detalle = 'Buscando tu conductor';
+    if (estado === 'SOLICITADO' && actual === 0) detalle = 'Confírmalo respondiendo el WhatsApp';
+    if (estado === 'ACEPTADO' && viaje.conductor) detalle = viaje.conductor.nombre;
+    if (estado === 'ACEPTADO' && actual === 1 && !viaje.conductor) detalle = 'Buscando tu conductor';
     return {
       titulo: titulos[estado],
       detalle,
-      estado: i <= llegado ? 'hecho' : i === llegado + 1 ? 'actual' : 'pendiente',
+      estado: i < actual ? 'hecho' : i === actual ? 'actual' : 'pendiente',
     };
   });
 }

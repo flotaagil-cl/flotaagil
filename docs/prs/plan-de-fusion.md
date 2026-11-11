@@ -8,7 +8,7 @@ Para Carlos. Son 5 PR encadenados hacia `main`, **en este orden**, y después 4 
 | 2 | Sprint 2 | `feat/HU-24-calificacion` | `main` | #8, #17, #18, #19, #24, #25 |
 | 3 | Sprint 3 | `fix/HU-27-origen-icao` | `main` | #10, #14, #28, #29, #30 |
 | 4 | Sprint 4 | `docs/plan-fusion-sprint4` | `main` | #7, #11, #12, #15, #21, #26, #31 |
-| 5 | Cambios CC-12, CC-15 a CC-18 y rediseño del portal (fase 1) | `feat/HU-39-pedido` (punta de la cadena nueva) | `main` | #33 a #47 |
+| 5 | Cambios CC-12, CC-15 a CC-18 y rediseño del portal (fases 1 a 3) | `feat/HU-44-mis-viajes` (punta de la cadena nueva) | `main` | #33 a #51 |
 
 ## Antes de empezar
 
@@ -311,11 +311,11 @@ Twilio con un doble y el notificador de desarrollo. Mi turno y la navegación co
 
 ---
 
-## PR 5: cambios CC-12, CC-15 a CC-18 y rediseño del portal (fase 1)
+## PR 5: cambios CC-12, CC-15 a CC-18 y rediseño del portal (fases 1 a 3)
 
-**Rama de origen:** `feat/HU-39-pedido` · **Rama base:** `main`
+**Rama de origen:** `feat/HU-44-mis-viajes` · **Rama base:** `main`
 
-Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero` → `fix/estabilizacion-pantallas` → `feat/HU-36-usuarios-panel` → `chore/crear-empresa` → `chore/planes-comerciales` → `fix/primer-ingreso` → `feat/HU-37-sistema-visual` → `feat/HU-38-ingresar` → `feat/HU-40-cuenta-obligatoria` → `fix/ingreso-panel` → `feat/HU-39-pedido`.
+Es la punta de la cadena nueva: `chore/estabilizacion-docs` → `feat/HU-20-verificacion-repetida` → `feat/HU-31-turnos-caja` → `feat/HU-32-contingencia` → `test/CP-14-concurrencia-asignacion` → `feat/HU-33-login-unico` → `feat/HU-34-autoregistro-convenios` → `feat/HU-35-cuenta-pasajero` → `fix/estabilizacion-pantallas` → `feat/HU-36-usuarios-panel` → `chore/crear-empresa` → `chore/planes-comerciales` → `fix/primer-ingreso` → `feat/HU-37-sistema-visual` → `feat/HU-38-ingresar` → `feat/HU-40-cuenta-obligatoria` → `fix/ingreso-panel` → `feat/HU-39-pedido` → `fix/decisiones-fase1` → `feat/HU-41-recuperacion` → `feat/HU-42-revisa-pedido` → `feat/HU-43-tu-viaje` → `feat/HU-44-mis-viajes`.
 
 **Antes de abrirlo:** paso 5, con esta rama.
 
@@ -340,6 +340,10 @@ Closes #44
 Closes #45
 Closes #46
 Closes #47
+Closes #48
+Closes #49
+Closes #50
+Closes #51
 Refs #43
 Refs #9
 Refs #18
@@ -365,10 +369,13 @@ Refs #23
 - HU-38: ingresar y crear cuenta con el diseño nuevo. `/login` es el ingreso del panel con la marca FlotaÁgil; el del portal, con la marca de la empresa, es `/solicitar/:slug/ingresar`.
 - HU-40 (CC-18): cuenta obligatoria para pedir; se retira el pedido como invitado (DC-41).
 - HU-39: inicio y pedido del pasajero en tres tipos (`/pedir`), con pasajeros, maletas y vuelo de salida (DC-42) y la capacidad al pedir y al asignar (DC-43).
+- Ajustes del PO: consentimiento único al crear la cuenta con fecha y versión (DC-44), capacidad con toda la flota y 4 sin vehículos (DC-43), soporte del panel por `SOPORTE_CORREO` y `CLAUDE.md` al día.
+- HU-41: recuperación con enlace de 30 min y límite por correo; activa tu cuenta con reenvío y corrección del número; primer ingreso con el diseño nuevo (DC-45).
+- HU-42 a HU-44: revisa tu pedido, pedido recibido, tu viaje y mis viajes; cancelar según RN-09 con motivo (DC-46).
 
 ### Cómo revisarlo
 
-Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-43 (DC-36 provisorio hasta la plantilla de Meta) y PR-15 en `docs/diccionario-cambios.md`.
+Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC-46 (DC-36 provisorio hasta la plantilla de Meta) y PR-15 en `docs/diccionario-cambios.md`.
 
 ### Para revisar
 
@@ -379,6 +386,9 @@ Detalle en `docs/prs/` y resultados en `docs/evidencias/`. Decisiones DC-31 a DC
 - Migraciones del rediseño: `cuentas.0011` y `reservas.0014` (pasajeros, maletas, vuelo de salida y antelaciones), reversibles.
 - `POST /api/portal/{slug}/solicitudes/` ya no existe (CC-18): `/solicitar/:slug` lleva al ingreso de la empresa. Avisar a las empresas que compartieron ese enlace.
 - El pasajero llega a `/pedir` al ingresar. `datos_demo` ya no tiene `--pendientes`.
+- Migraciones `reservas.0015` (consentimiento, DC-44) y `reservas.0016` (reenvío de la activación, DC-45), reversibles.
+- Variables nuevas en `.env.example`: `AVISO_PRIVACIDAD_VERSION`, `SOPORTE_CORREO`, `RECUPERAR_PASSWORD_MINUTOS` (reemplaza a `RECUPERAR_PASSWORD_HORAS`), `RECUPERAR_MAX_ENVIOS`, `RECUPERAR_VENTANA_MIN` y `ACTIVACION_MAX_REENVIOS`.
+- Las cuentas de pasajero anteriores a DC-44 aceptan el aviso de privacidad la primera vez que ingresen.
 
 ### Sin probar contra el servicio real
 
