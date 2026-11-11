@@ -1,5 +1,5 @@
 /*
- * HU-37: sistema visual del portal «Tiffany degradé» (docs/diseño/portal/diseno-portal/README.md).
+ * HU-37: sistema visual del portal «Tiffany degradé» (docs/diseno/portal/README.md).
  *
  * Los colores viven solo aquí: los componentes usan las variables. Se aplican bajo .tema-portal, así el panel
  * conserva su estilo. El color por empresa queda preparado: basta con redefinir los tres tokens de marca

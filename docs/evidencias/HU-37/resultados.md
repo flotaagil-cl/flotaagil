@@ -4,7 +4,7 @@ Rama `feat/HU-37-sistema-visual`, 2026-11-10. Web: `src/diseno/diseno.test.tsx` 
 
 | Caso | Esperado | Obtenido |
 |---|---|---|
-| Tokens | Valores del diseño (`docs/diseño/portal/diseno-portal/README.md`) bajo `.tema-portal`; el panel no cambia | OK |
+| Tokens | Valores del diseño (`docs/diseno/portal/README.md`) bajo `.tema-portal`; el panel no cambia | OK |
 | Contraste AA | Texto ≥ 4,5:1 (texto, secundario, insignias, botones); bordes de campos y foco ≥ 3:1 | OK (21 pares) |
 | Colores solo como tokens | Ningún hex, `rgb()` ni `hsl()` fuera de `tokens.css` | OK |
 | Fuente | Plus Jakarta Sans 400–800 desde `@fontsource/plus-jakarta-sans` 5.3.0 (subconjunto latino), sin CDN | OK |
