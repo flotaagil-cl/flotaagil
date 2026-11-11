@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
+from apps.comun.vistas import ConfiguracionPublicaView
 from apps.reservas.whatsapp_views import WebhookEntranteView, WebhookEstadoView
 
 
@@ -15,6 +16,7 @@ def salud(_request):
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("api/salud/", salud, name="salud"),
+    path("api/configuracion-publica/", ConfiguracionPublicaView.as_view(), name="configuracion-publica"),
     path("api/auth/", include("apps.cuentas.urls")),
     path("api/", include("apps.reservas.urls")),
     path("api/", include("apps.flota.urls")),

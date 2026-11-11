@@ -21,11 +21,27 @@ class EmpresaResumenSerializer(serializers.ModelSerializer):
 
 class UsuarioSesionSerializer(serializers.ModelSerializer):
     empresa = EmpresaResumenSerializer(read_only=True)
+    debe_aceptar_privacidad = serializers.SerializerMethodField(
+        help_text="DC-44: pasajero con cuenta que debe aceptar el aviso de privacidad vigente."
+    )
 
     class Meta:
         model = Usuario
-        fields = ["id", "nombre", "email", "rol", "empresa", "debe_cambiar_password"]
+        fields = [
+            "id",
+            "nombre",
+            "email",
+            "rol",
+            "empresa",
+            "debe_cambiar_password",
+            "debe_aceptar_privacidad",
+        ]
         read_only_fields = ["debe_cambiar_password"]
+
+    def get_debe_aceptar_privacidad(self, usuario) -> bool:
+        from apps.reservas.cuentas_pasajero import debe_aceptar_privacidad
+
+        return debe_aceptar_privacidad(usuario)
 
 
 class AccessSerializer(serializers.Serializer):

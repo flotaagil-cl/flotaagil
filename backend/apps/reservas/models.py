@@ -409,6 +409,10 @@ class CuentaPasajero(models.Model):
         Pasajero, on_delete=models.PROTECT, null=True, blank=True, related_name="cuentas"
     )
     confirmada_en = models.DateTimeField(null=True, blank=True)
+    # DC-44 (Ley 21.719): aceptación única del aviso de privacidad y de los avisos por WhatsApp,
+    # con la versión del aviso.
+    privacidad_aceptada_en = models.DateTimeField(null=True, blank=True)
+    privacidad_version = models.CharField(max_length=20, null=True, blank=True)
     creada_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

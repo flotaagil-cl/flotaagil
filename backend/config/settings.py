@@ -294,3 +294,7 @@ else:
 # HU-35: dirección pública de la web, para los enlaces de los correos (recuperar la contraseña).
 WEB_URL_BASE = env("WEB_URL_BASE", default="http://localhost:5173").rstrip("/")
 PASSWORD_RESET_TIMEOUT = env.int("RECUPERAR_PASSWORD_HORAS", default=2) * 3600
+# DC-44: versión vigente del aviso de privacidad. Al cambiarla, cada pasajero con cuenta la acepta otra vez.
+AVISO_PRIVACIDAD_VERSION = env("AVISO_PRIVACIDAD_VERSION", default="2026-11")
+# Correo de soporte de FlotaÁgil para los administradores (ingreso del panel). Vacío: no se muestra.
+SOPORTE_CORREO = env("SOPORTE_CORREO", default="")

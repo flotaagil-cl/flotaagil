@@ -21,7 +21,7 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
         help_text="Al aeropuerto: minutos antes de un vuelo internacional para la recogida sugerida (DC-42).",
     )
     capacidad_maxima = serializers.SerializerMethodField(
-        help_text="Pasajeros por viaje: capacidad del vehículo activo más grande; null sin vehículos (DC-43)."
+        help_text="Pasajeros por viaje: el vehículo más grande de la empresa; 4 sin vehículos (DC-43)."
     )
 
     class Meta:
@@ -37,7 +37,7 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
             "capacidad_maxima",
         ]
 
-    def get_capacidad_maxima(self, empresa) -> int | None:
+    def get_capacidad_maxima(self, empresa) -> int:
         from .servicios import capacidad_maxima
 
         return capacidad_maxima(empresa)
@@ -189,9 +189,17 @@ class CrearCuentaSerializer(serializers.Serializer):
     )
     email = serializers.EmailField(max_length=120)
     password = serializers.CharField(max_length=128, write_only=True)
+    acepta_privacidad = serializers.BooleanField(
+        help_text="DC-44: acepta el aviso de privacidad y los avisos de sus viajes por WhatsApp (una vez)."
+    )
     sitio_web = serializers.CharField(
         required=False, allow_blank=True, help_text="Campo trampa: debe ir vacío"
     )
+
+    def validate_acepta_privacidad(self, valor):
+        if not valor:
+            raise serializers.ValidationError("Para crear la cuenta debes aceptar el aviso de privacidad.")
+        return valor
 
     def validate_nombre(self, valor):
         valor = valor.strip()

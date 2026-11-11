@@ -50,10 +50,50 @@ class MiReservaSerializer(serializers.ModelSerializer):
 
 
 class SolicitudCuentaSerializer(SolicitudSerializer):
-    """Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen."""
+    """Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
+    acepta nada (la cuenta ya aceptó una vez); las aceptaciones se ignoran si vienen."""
 
     nombre = serializers.CharField(max_length=80, required=False)
     telefono = serializers.CharField(max_length=24, required=False)
+    acepta_privacidad = serializers.BooleanField(required=False)
+    acepta_whatsapp = serializers.BooleanField(required=False)
+
+    def validate_acepta_privacidad(self, valor):
+        return valor
+
+    def validate_acepta_whatsapp(self, valor):
+        return valor
+
+
+class AceptarPrivacidadSerializer(serializers.Serializer):
+    acepta = serializers.BooleanField()
+
+    def validate_acepta(self, valor):
+        if not valor:
+            raise serializers.ValidationError("Para seguir debes aceptar el aviso de privacidad.")
+        return valor
+
+
+class PrivacidadAceptadaSerializer(serializers.Serializer):
+    aceptada_en = serializers.DateTimeField()
+    version = serializers.CharField()
+
+
+class MiPrivacidadView(APIView):
+    permission_classes = SOLO_PASAJERO
+
+    @extend_schema(
+        tags=["mi-cuenta"],
+        summary="Aceptar el aviso de privacidad vigente",
+        request=AceptarPrivacidadSerializer,
+        responses={200: PrivacidadAceptadaSerializer},
+        description="DC-44: para las cuentas que no lo aceptaron o cuando cambia la versión del aviso.",
+    )
+    def post(self, request):
+        AceptarPrivacidadSerializer(data=request.data).is_valid(raise_exception=True)
+        cuenta = cuentas.aceptar_privacidad(request.user)
+        datos = {"aceptada_en": cuenta.privacidad_aceptada_en, "version": cuenta.privacidad_version}
+        return Response(PrivacidadAceptadaSerializer(datos).data)
 
 
 class MiCuentaView(APIView):
@@ -118,7 +158,11 @@ class SolicitudMiCuentaView(APIView):
         tags=["mi-cuenta"],
         summary="Pedir un viaje con mi cuenta",
         request=SolicitudCuentaSerializer,
-        responses={201: SolicitudRespuestaSerializer, 429: OpenApiResponse(description="`limite_telefono`")},
+        responses={
+            201: SolicitudRespuestaSerializer,
+            403: OpenApiResponse(description="`aceptar_privacidad`: falta aceptar el aviso vigente (DC-44)"),
+            429: OpenApiResponse(description="`limite_telefono`"),
+        },
         description="Queda SOLICITADO sin verificación por WhatsApp; se mantiene el límite por teléfono.",
     )
     def post(self, request):

@@ -10,12 +10,13 @@
 
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as ErrorDeDjango
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
@@ -51,6 +52,13 @@ class NoCancelable(APIException):
     default_detail = (
         "Tu viaje ya tiene conductor asignado: no se puede cancelar aquí. Comunícate con la central."
     )
+
+
+class PrivacidadPendiente(PermissionDenied):
+    """DC-44: la cuenta debe aceptar el aviso de privacidad vigente antes de pedir."""
+
+    default_code = "aceptar_privacidad"
+    default_detail = "Antes de pedir, acepta el aviso de privacidad."
 
 
 def texto_confirmacion(cuenta: CuentaPasajero) -> str:
@@ -98,7 +106,13 @@ def registrar(empresa, datos: dict) -> CuentaPasajero:
         raise ValidationError({"email": ["No se pudo crear la cuenta con ese correo."]}) from error
     CuentaPasajero.objects.filter(usuario=usuario).delete()
     cuenta = CuentaPasajero.objects.create(
-        usuario=usuario, empresa=empresa, nombre=datos["nombre"], telefono=datos["telefono"]
+        usuario=usuario,
+        empresa=empresa,
+        nombre=datos["nombre"],
+        telefono=datos["telefono"],
+        # DC-44: la casilla del alta es la aceptación única (fecha y versión del aviso).
+        privacidad_aceptada_en=timezone.now(),
+        privacidad_version=settings.AVISO_PRIVACIDAD_VERSION,
     )
     # El mensaje necesita un PASAJERO (MENSAJE_WHATSAPP.pasajero_id). Se crea como invitado si no existía; la
     # cuenta no lo ve hasta confirmar.
@@ -142,6 +156,40 @@ def confirmar_por_whatsapp(telefono: str, texto: str) -> str | None:
     return "cuenta_confirmada"
 
 
+def privacidad_vigente(cuenta: CuentaPasajero) -> bool:
+    """DC-44: la cuenta aceptó la versión vigente del aviso de privacidad."""
+    return cuenta.privacidad_version == settings.AVISO_PRIVACIDAD_VERSION and bool(
+        cuenta.privacidad_aceptada_en
+    )
+
+
+def debe_aceptar_privacidad(usuario) -> bool:
+    """DC-44: pasajero con cuenta que no aceptó el aviso vigente (cuentas antiguas o versión nueva)."""
+    if usuario.rol != Rol.PASAJERO:
+        return False
+    cuenta = CuentaPasajero.objects.filter(usuario=usuario).first()
+    return cuenta is not None and not privacidad_vigente(cuenta)
+
+
+@transaction.atomic
+def aceptar_privacidad(usuario) -> CuentaPasajero:
+    """DC-44: registra la aceptación de la versión vigente y la deja en el PASAJERO de la cuenta."""
+    cuenta = CuentaPasajero.objects.select_for_update().get(usuario=usuario)
+    ahora = timezone.now()
+    cuenta.privacidad_aceptada_en, cuenta.privacidad_version = ahora, settings.AVISO_PRIVACIDAD_VERSION
+    cuenta.save(update_fields=["privacidad_aceptada_en", "privacidad_version"])
+    if cuenta.pasajero_id:
+        Pasajero.objects.filter(pk=cuenta.pasajero_id).update(opt_in_en=ahora, privacidad_aceptada_en=ahora)
+    auditoria.registrar(
+        usuario=usuario,
+        entidad=Entidad.USUARIO,
+        entidad_id=usuario.pk,
+        accion="ACEPTAR_PRIVACIDAD",
+        datos_previos={"version": cuenta.privacidad_version},
+    )
+    return cuenta
+
+
 def cuenta_activa(usuario) -> CuentaPasajero:
     cuenta = (
         CuentaPasajero.objects.select_related("pasajero", "empresa__configuracion")
@@ -161,6 +209,8 @@ def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, d
     """Sin verificación (el teléfono se confirmó al crear la cuenta). Mantiene el límite por teléfono."""
     from apps.portal.servicios import _verificar_limite_telefono, validar_capacidad, vuelo_y_recogida
 
+    if not privacidad_vigente(cuenta):
+        raise PrivacidadPendiente()
     empresa = cuenta.empresa
     validar_capacidad(empresa, datos.get("pasajeros", 1))  # DC-43
     _verificar_limite_telefono(empresa, cuenta.pasajero.telefono)
@@ -185,8 +235,11 @@ def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, d
             actor=Actor.PASAJERO,
             usuario=usuario,
         )
-        ahora = timezone.now()
-        Pasajero.objects.filter(pk=cuenta.pasajero_id).update(opt_in_en=ahora, privacidad_aceptada_en=ahora)
+        # DC-44: el pedido no vuelve a aceptar; el PASAJERO lleva la aceptación de la cuenta.
+        aceptada = cuenta.privacidad_aceptada_en
+        Pasajero.objects.filter(pk=cuenta.pasajero_id).update(
+            opt_in_en=aceptada, privacidad_aceptada_en=aceptada
+        )
         avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21
     return viaje, {
         "estado": viaje.estado,

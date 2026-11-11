@@ -40,18 +40,23 @@ def _verificar_limite_telefono(empresa, telefono: str) -> None:
         raise LimiteTelefono(wait=settings.PORTAL_VENTANA_TELEFONO.total_seconds())
 
 
-def capacidad_maxima(empresa) -> int | None:
-    """DC-43: capacidad del vehículo activo más grande de la empresa (None si no tiene vehículos activos)."""
+# DC-43 (ajuste del PO del 2026-11-11): límite de una empresa que todavía no registra vehículos.
+CAPACIDAD_SIN_FLOTA = 4
+
+
+def capacidad_maxima(empresa) -> int:
+    """DC-43: capacidad del vehículo más grande de la empresa, activo o no; 4 si no tiene vehículos."""
     from apps.flota.models import Vehiculo
 
-    return Vehiculo.objects.filter(empresa=empresa, activo=True).aggregate(maximo=Max("capacidad"))["maximo"]
+    maximo = Vehiculo.objects.filter(empresa=empresa).aggregate(maximo=Max("capacidad"))["maximo"]
+    return maximo or CAPACIDAD_SIN_FLOTA
 
 
 def validar_capacidad(empresa, pasajeros: int) -> None:
-    """DC-43: titular más acompañantes no superan la mayor capacidad de la flota activa. Sin vehículos
-    activos no se limita: la central decide al asignar (y al asignar se exige la capacidad del vehículo)."""
+    """DC-43: titular más acompañantes no superan la mayor capacidad entre los vehículos de la empresa (al
+    asignar se exige además la capacidad del vehículo)."""
     maximo = capacidad_maxima(empresa)
-    if maximo is not None and pasajeros > maximo:
+    if pasajeros > maximo:
         raise ValidationError(
             {
                 "pasajeros": [
