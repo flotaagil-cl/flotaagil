@@ -12,7 +12,7 @@ La fuente de verdad es el Informe 2 (ES2). Si algo de este archivo choca con el 
 | Carlos Ortiz (`ceal2013`) | Scrum Master, líder, Developer | `backend/`, integraciones, `infra/` |
 | Juan Pérez | Product Owner (integrante simulado) | Prioriza y acepta incrementos |
 
-HU-02 y HU-29 se trabajan en pareja. Cada PR lo revisa el otro integrante.
+HU-02 y HU-29 se trabajan en pareja. Mientras Carlos no esté, Renato integra cada PR con el check `ci` en verde y la lista de chequeo de `docs/prs/lista-de-chequeo.md` (DC-47); cuando Carlos vuelva, se evalúa volver a exigir 1 aprobación.
 
 ## Stack (versiones del informe)
 
@@ -75,7 +75,7 @@ Los valores marcados como supuestos (márgenes, 10 min fuera de geocerca, 15 min
 ## Forma de trabajo
 
 - **Scrum**, sprints de 2 semanas, tablero en GitHub Projects «FlotaÁgil — Backlog». Backlog completo en `docs/backlog/backlog.json` (44 HU, 274 SP).
-- **Nunca push directo a `main`.** Todo entra por PR con CI en verde y revisión del otro integrante. Fusión *squash*.
+- **Nunca push directo a `main`.** Todo entra por PR con el check `ci` en verde y fusión *squash* (historial lineal); el ruleset «Proteger main» no se modifica. Hoy no exige aprobaciones (DC-47): Renato integra con la lista de chequeo de `docs/prs/lista-de-chequeo.md`. Las ramas fusionadas no se borran (el informe cita sus hashes).
 - **Ramas:** `feat/HU-03-reservas`, `fix/HU-16-monto-pago`, `chore/…`, `docs/…`, `test/…`. Una rama por HU o tarea.
 - **Commits y título del PR:** Conventional Commits en español con scope del área: `feat(backend): crear modelo VIAJE`, `fix(app): …`. El PR referencia el issue (`Closes #12`).
 - **Versiones:** SemVer. Línea base `v0.1`–`v0.4` al cierre de cada sprint y `v1.0.0` en producción.
