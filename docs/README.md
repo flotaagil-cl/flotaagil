@@ -12,6 +12,28 @@
 
 Se agregarán: informes, registro de decisiones, informe de la PoC de GPS (H-3), runbook y resultados de pruebas de carga y seguridad.
 
+## Alta de un cliente nuevo
+
+Procedimiento para dar de alta a una empresa de taxis (DC-38). Se ejecuta en el servidor, dentro del contenedor del backend; funciona en producción porque no exige `DEBUG`:
+
+```sh
+docker compose exec backend python manage.py crear_empresa \
+  --rut 76543210-3 \
+  --razon-social "Taxis Ejemplo SpA" \
+  --slug taxis-ejemplo \
+  --plan ESTANDAR \
+  --admin-email admin@taxis-ejemplo.cl \
+  --admin-nombre "Nombre Apellido" \
+  --geocerca-scl
+```
+
+- Crea la EMPRESA, su CONFIGURACION_EMPRESA con los valores por defecto y su primer ADMINISTRADOR.
+- `--plan`: uno de los planes del modelo comercial (`INICIAL`, `ESTANDAR` o `AVANZADO`).
+- `--geocerca-scl` (opcional) agrega la geocerca aproximada del aeropuerto SCL (DC-21); la empresa debe ajustarla en el admin.
+- Valida el RUT con su dígito verificador, el slug en kebab-case y el correo. Si el RUT, el slug o el correo ya existen, no crea nada.
+- Imprime **una sola vez** la contraseña temporal del administrador (vence a las 72 h y obliga a cambiarla). Entrégasela por un canal seguro; si se pierde, otro administrador la restablece en «Usuarios» o se vuelve a generar desde el admin interno.
+- El portal queda en `/solicitar/<slug>`. Desde ahí el administrador crea los demás usuarios del panel (HU-36) y los conductores (HU-10).
+
 ## Pendientes de configuración
 
 - [ ] **Quitar el bypass temporal del ruleset «Proteger main»** (rol de administrador de la organización, modo «solo pull request») cuando Carlos Ortiz se sume al repositorio. Desde ese momento todo PR requiere la aprobación del otro integrante.
