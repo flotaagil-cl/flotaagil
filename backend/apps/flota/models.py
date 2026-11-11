@@ -153,7 +153,11 @@ class PosicionGps(models.Model):
                 name="posicion_precision_0_500",
             ),
         ]
-        indexes = [models.Index(fields=["conductor", "-registrada_en"], name="posicion_conductor_reciente")]
+        indexes = [
+            models.Index(fields=["conductor", "-registrada_en"], name="posicion_conductor_reciente"),
+            # DC-48: la purga diaria (RN-15) busca por fecha sin conductor.
+            models.Index(fields=["registrada_en"], name="posicion_registrada_idx"),
+        ]
 
     def __str__(self):
         return f"{self.conductor_id} @ {self.registrada_en:%Y-%m-%d %H:%M:%S}"
