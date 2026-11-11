@@ -38,6 +38,8 @@
   --peligro: #b42318;
   --exito: #1a7f45;
   --sombra: rgb(15 42 46 / 12%);
+  /* Velo claro sobre el degradé (íconos y marco de la mini vista del panel). */
+  --velo: rgb(255 255 255 / 16%);
 
   /* Insignias de estado (fondo / texto). */
   --insignia-info-fondo: var(--color-tiffany);

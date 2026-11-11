@@ -157,7 +157,7 @@ describe('carga del portal', () => {
     montarPortal(`${PORTAL}/privacidad`);
     expect(await screen.findByRole('heading', { name: 'Aviso de privacidad' })).toBeInTheDocument();
     expect(screen.getByText('Texto provisional, pendiente de aprobación.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver al ingreso' })).toHaveAttribute('href', '/login?empresa=transportes-andes');
+    expect(screen.getByRole('link', { name: 'Volver al ingreso' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
   });
 });
 
@@ -465,8 +465,7 @@ describe('errores del envío', () => {
 describe('HU-40 · cuenta obligatoria', () => {
   it('la dirección del portal ya no muestra un formulario: lleva al ingreso de la empresa', async () => {
     const { router } = montarPortal('/solicitar/transportes-andes');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
-    expect(router.state.location.search).toBe('?empresa=transportes-andes');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/solicitar/transportes-andes/ingresar'));
   });
 });
 

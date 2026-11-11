@@ -1,127 +1,112 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { Link, Navigate, useSearchParams } from 'react-router';
-import { z } from 'zod';
-import { resultado } from '../api/resultado';
+import { useEffect } from 'react';
 import { Aviso } from '../componentes/Aviso';
-import { Cargando } from '../componentes/Cargando';
-import { SinConexion } from '../componentes/SinConexion';
 import { Boton } from '../diseno/Boton';
 import { Campo } from '../diseno/Campo';
-import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
+import { Icono } from '../diseno/Icono';
+import type { NombreIcono } from '../diseno/iconos';
 import { MarcoPortal } from '../diseno/MarcoPortal';
-import { PantallaAcceso, Separador } from '../diseno/PantallaAcceso';
-import { useRutas } from '../rutas/contexto';
-import { inicioDeRol } from '../rutas/tabla';
-import { destinoSeguro } from '../rutas/volver';
-import { useApi, useIniciarSesion, useSesion } from '../sesion/SesionProvider';
+import { PantallaAcceso } from '../diseno/PantallaAcceso';
+import { Insignia } from '../diseno/Tarjeta';
+import { useIngreso } from './ingreso';
 
-const esquema = z.object({
-  email: z.email({ error: 'Ingresa un correo válido.' }),
-  password: z.string().min(1, { error: 'Ingresa tu contraseña.' }),
-});
+const PUNTOS: [NombreIcono, string][] = [
+  ['lista', 'Reservas y asignación en tiempo real'],
+  ['auto', 'Fila del aeropuerto por orden de llegada'],
+  ['avion', 'Seguimiento de vuelos automático'],
+];
 
-type Datos = z.infer<typeof esquema>;
-
-const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** Panel con el degradé del ingreso del panel. La mini vista es una ilustración con datos de ejemplo. */
+function HeroPanel() {
+  return (
+    <>
+      <p className={e.heroAntetitulo}>Panel de operación</p>
+      <p className={e.heroTitulo}>La operación de tu flota, en un solo lugar.</p>
+      <ul className={e.heroPuntos}>
+        {PUNTOS.map(([icono, texto]) => (
+          <li key={texto}>
+            <span className={e.heroPuntoIcono}>
+              <Icono nombre={icono} tamano={16} />
+            </span>
+            {texto}
+          </li>
+        ))}
+      </ul>
+      <div className={e.miniVista} aria-hidden="true">
+        <div className={e.miniTarjetas}>
+          {[
+            ['Reservas de hoy', '38'],
+            ['Sin asignar', '3'],
+            ['En fila', '4'],
+          ].map(([etiqueta, valor]) => (
+            <div key={etiqueta} className={e.miniTarjeta}>
+              <span className={e.miniEtiqueta}>{etiqueta}</span>
+              <span className={e.miniValor}>{valor}</span>
+            </div>
+          ))}
+        </div>
+        <div className={e.miniVuelo}>
+          <Icono nombre="avion" tamano={16} />
+          <span>LA 845 · LIM → SCL</span>
+          <Insignia tono="revision">Atrasado 25 min</Insignia>
+        </div>
+      </div>
+    </>
+  );
+}
 
 /**
- * Inicio de sesión único de la web (HU-33), con el diseño del portal (HU-38). Con `?empresa=<slug>` (los
- * enlaces del portal lo agregan) muestra la marca de la empresa, «Crear cuenta» y «Registra tu convenio»; sin
- * él, la de FlotaÁgil, para el panel.
+ * Ingreso del panel (/login) con la marca de FlotaÁgil (docs/diseno/panel/00-login.png). Sigue siendo el inicio
+ * de sesión único de HU-33: acepta todos los roles y cada uno llega a su vista. Los pasajeros y convenios
+ * tienen su ingreso con la marca de la empresa en /solicitar/:slug/ingresar.
  */
 export function Login() {
-  const estado = useIniciarSesion();
-  const { sesion } = useSesion();
-  const api = useApi();
-  const rutas = useRutas();
-  const [parametros] = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const slug = SLUG.test(parametros.get('empresa') ?? '') ? parametros.get('empresa')! : null;
-  const empresa = useQuery({
-    queryKey: ['portal', 'empresa', slug],
-    queryFn: () => resultado(api.GET('/api/portal/{slug}/', { params: { path: { slug: slug! } } })),
-    enabled: slug !== null,
-    retry: false,
-    staleTime: 5 * 60_000,
-  });
-  // Solo con una empresa que existe: un slug cualquiera en el enlace no cambia la marca.
-  const conEmpresa = slug !== null && empresa.isSuccess;
-  const marca = conEmpresa ? empresa.data.razon_social : 'FlotaÁgil';
+  const { bloqueo, aviso, error, formulario, enviar } = useIngreso();
   const {
     register,
-    handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<Datos>({ resolver: zodResolver(esquema) });
+  } = formulario;
 
   useEffect(() => {
-    document.title = `Ingresar · ${marca}`;
-  }, [marca]);
+    document.title = 'Ingresar al panel · FlotaÁgil';
+  }, []);
 
-  // No se muestra el formulario hasta saber si ya hay sesión (refresh silencioso).
-  if (estado.fase === 'inicial' || estado.fase === 'cargando') return <Cargando />;
-  if (estado.fase === 'sin_conexion') {
-    return <SinConexion motivo={estado.motivo} alReintentar={() => void sesion.reintentar()} />;
-  }
-  if (estado.fase === 'autenticada') {
-    // HU-33: sin `volver`, cada rol llega a su vista.
-    const destino = parametros.get('volver')
-      ? destinoSeguro(parametros.get('volver'), rutas, window.location.origin)
-      : inicioDeRol(estado.usuario.rol);
-    return <Navigate to={destino} replace />;
-  }
-
-  async function enviar(datos: Datos) {
-    setError(null);
-    sesion.descartarAviso();
-    const respuesta = await sesion.login(datos.email, datos.password);
-    if (!respuesta.ok) setError(respuesta.mensaje);
-  }
-
-  const registroEmpresa = conEmpresa ? { a: `/solicitar/${slug}/registro-empresa`, texto: '¿Eres empresa? Registra tu convenio' } : undefined;
+  if (bloqueo) return bloqueo;
 
   return (
-    <MarcoPortal marca={marca} inicio={conEmpresa ? `/login?empresa=${slug}` : '/login'} barraMovil="flotante" accion={registroEmpresa}>
-      <PantallaAcceso titulo="Ingresar" tituloMovil="Tu traslado, sin esperas" subtitulo="Ingresa para pedir y seguir tus viajes." movil="mapa">
-        <form className={e.formulario} onSubmit={handleSubmit(enviar)} noValidate aria-label="Ingresar">
-          {estado.aviso && <Aviso>{estado.aviso}</Aviso>}
+    <MarcoPortal marca="FlotaÁgil" inicio="/login" logo={<Icono nombre="auto" />}>
+      <PantallaAcceso
+        titulo="Ingresar al panel"
+        subtitulo="Para administradores y despachadores de empresas de transporte."
+        movil="centrado"
+        hero={<HeroPanel />}
+      >
+        <form className={e.formulario} onSubmit={(evento) => void enviar(evento)} noValidate aria-label="Ingresar al panel">
+          {aviso && <Aviso>{aviso}</Aviso>}
           {error && <Aviso tipo="error">{error}</Aviso>}
           <Campo
             etiqueta="Correo"
             type="email"
             autoComplete="username"
             inputMode="email"
-            placeholder="nombre@correo.cl"
+            placeholder="nombre@empresa.cl"
             error={errors.email?.message}
             {...register('email')}
           />
           <Campo etiqueta="Contraseña" type="password" autoComplete="current-password" error={errors.password?.message} {...register('password')} />
-          <Link to="/recuperar" className={`${e.enlace} ${e.derecha}`}>
-            ¿Olvidaste tu contraseña?
-          </Link>
           <Boton type="submit" ancho cargando={isSubmitting}>
             {isSubmitting ? 'Ingresando…' : 'Ingresar'}
           </Boton>
         </form>
-        {conEmpresa && (
-          <>
-            <div className={e.soloEscritorio}>
-              <Separador>¿No tienes cuenta?</Separador>
-            </div>
-            <Link to={`/solicitar/${slug}/cuenta`} className={claseBoton('secundario', true)}>
-              Crear cuenta
-            </Link>
-          </>
-        )}
-        <p className={`${e.nota} ${e.soloEscritorio}`}>Administradores, despachadores y empresas en convenio también ingresan por aquí.</p>
-        {registroEmpresa && (
-          <Link to={registroEmpresa.a} className={`${e.enlace} ${e.soloMovil}`}>
-            {registroEmpresa.texto}
-          </Link>
-        )}
+        <p className={e.avisoSuave}>
+          <Icono nombre="llave" tamano={18} />
+          <span>
+            ¿Olvidaste tu contraseña? Pídele una temporal al administrador de tu empresa. Si eres el administrador, escríbenos a
+            soporte.
+          </span>
+        </p>
+        <hr className={e.divisor} />
+        <p className={e.notaIzquierda}>¿Eres pasajero o empresa en convenio? Entra desde el enlace de tu empresa de transporte.</p>
       </PantallaAcceso>
     </MarcoPortal>
   );

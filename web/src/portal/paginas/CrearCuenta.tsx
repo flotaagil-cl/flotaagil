@@ -47,7 +47,7 @@ export function CrearCuenta() {
   const [trampa, setTrampa] = useState('');
   const [errores, setErrores] = useState<Errores>({});
   const [enviado, setEnviado] = useState<string | null>(null);
-  const ingresar = `/login?empresa=${slug}`;
+  const ingresar = `/solicitar/${slug}/ingresar`;
 
   const cambiar = (campo: keyof Campos) => (evento: { target: { value: string } }) => setDatos({ ...datos, [campo]: evento.target.value });
 

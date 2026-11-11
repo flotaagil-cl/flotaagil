@@ -13,8 +13,10 @@ export interface EnlacePortal {
 }
 
 interface Props {
-  /** Nombre de la empresa de taxis (razón social). */
+  /** Nombre de la empresa de taxis (razón social), o FlotaÁgil en el panel. */
   marca: string;
+  /** Logo en vez de las iniciales (el ícono de FlotaÁgil en el panel). */
+  logo?: ReactNode;
   /** Adónde lleva la marca. */
   inicio?: string;
   enlaces?: EnlacePortal[];
@@ -35,7 +37,7 @@ interface Props {
  * Marco del portal (HU-37): barra superior con la marca, la navegación y la cuenta. En el celular la
  * navegación pasa al menú de la cuenta (diálogo), que también tiene «Cerrar sesión».
  */
-export function MarcoPortal({ marca, inicio = '/', enlaces = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, accion, pie, children }: Props) {
+export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, accion, pie, children }: Props) {
   const [menu, setMenu] = useState(false);
   return (
     <div className={`tema-portal ${e.marco}`} style={colores as CSSProperties | undefined}>
@@ -45,7 +47,7 @@ export function MarcoPortal({ marca, inicio = '/', enlaces = [], usuario, onCerr
       <header className={e.barra} data-movil={barraMovil}>
         <Link to={inicio} className={e.marca}>
           <span className={e.logo} aria-hidden="true">
-            {iniciales(marca)}
+            {logo ?? iniciales(marca)}
           </span>
           <span className={e.marcaNombre}>{marca}</span>
         </Link>

@@ -180,6 +180,11 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
       ...comunes,
       children: [
         { path: '/login', lazy: async () => ({ Component: (await import('../paginas/Login')).Login }) },
+        // Ingreso del portal con la marca de la empresa (HU-38); necesita la sesión, por eso vive aquí.
+        {
+          path: '/solicitar/:slug/ingresar',
+          lazy: async () => ({ Component: (await import('../paginas/IngresarPortal')).IngresarPortal }),
+        },
         {
           lazy: async () => ({ Component: (await import('./RutaAutenticada')).RutaAutenticada }),
           children: [

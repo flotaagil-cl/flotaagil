@@ -33,38 +33,16 @@ function montarLogin(ruta: string) {
   return { pedidas, router };
 }
 
-describe('HU-38 · ingresar', () => {
-  it('con ?empresa muestra su marca, crear cuenta y registrar convenio', async () => {
-    montarLogin('/login?empresa=transportes-andes');
-    expect(await screen.findByRole('link', { name: 'Transportes Andes Demo SpA' })).toHaveAttribute('href', '/login?empresa=transportes-andes');
-    expect(screen.getByRole('heading', { level: 1, name: 'Ingresar' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Crear cuenta' })).toHaveAttribute('href', '/solicitar/transportes-andes/cuenta');
-    expect(screen.getByRole('banner')).toContainElement(screen.getAllByRole('link', { name: '¿Eres empresa? Registra tu convenio' })[0]);
-    expect(screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
-    expect(document.title).toBe('Ingresar · Transportes Andes Demo SpA');
-  });
-
-  it('sin ?empresa (panel): marca FlotaÁgil, sin crear cuenta ni registro, y no consulta empresas', async () => {
+describe('ingreso del panel (/login)', () => {
+  it('marca FlotaÁgil, temporal con el administrador y aviso para pasajeros y convenios', async () => {
     const { pedidas } = montarLogin('/login');
-    expect(await screen.findByLabelText('Correo')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'FlotaÁgil' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ingresar al panel' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'FlotaÁgil' })).toHaveAttribute('href', '/login');
+    expect(screen.getByText(/Pídele una temporal al administrador de tu empresa/)).toBeInTheDocument();
+    expect(screen.getByText(/¿Eres pasajero o empresa en convenio\? Entra desde el enlace de tu empresa/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Olvidaste/ })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Crear cuenta' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Registra tu convenio/ })).not.toBeInTheDocument();
-    expect(pedidas).toEqual([]);
-  });
-
-  it('una empresa que no existe o un slug mal formado no cambian la marca', async () => {
-    const { pedidas } = montarLogin('/login?empresa=no-existe');
-    await screen.findByLabelText('Correo');
-    await waitFor(() => expect(pedidas).toContain('/api/portal/no-existe/'));
-    expect(new Set(pedidas)).toEqual(new Set(['/api/portal/no-existe/']));
-    expect(screen.getByRole('link', { name: 'FlotaÁgil' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Crear cuenta' })).not.toBeInTheDocument();
-  });
-
-  it('slug con caracteres raros: no se consulta', async () => {
-    const { pedidas } = montarLogin('/login?empresa=..%2Fapi');
-    await screen.findByLabelText('Correo');
+    expect(document.title).toBe('Ingresar al panel · FlotaÁgil');
     expect(pedidas).toEqual([]);
   });
 
@@ -73,6 +51,34 @@ describe('HU-38 · ingresar', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Ingresar' }));
     expect(await screen.findByLabelText('Correo')).toHaveAccessibleDescription('Ingresa un correo válido.');
     expect(screen.getByLabelText('Contraseña')).toHaveAccessibleDescription('Ingresa tu contraseña.');
+  });
+});
+
+describe('HU-38 · ingreso del portal (/solicitar/:slug/ingresar)', () => {
+  it('marca de la empresa, crear cuenta, recuperar y registrar convenio', async () => {
+    montarLogin('/solicitar/transportes-andes/ingresar');
+    expect(await screen.findByRole('link', { name: 'Transportes Andes Demo SpA' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
+    expect(screen.getByRole('heading', { level: 1, name: 'Ingresar' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Crear cuenta' })).toHaveAttribute('href', '/solicitar/transportes-andes/cuenta');
+    expect(screen.getByRole('banner')).toContainElement(screen.getAllByRole('link', { name: '¿Eres empresa? Registra tu convenio' })[0]);
+    expect(screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
+    expect(document.title).toBe('Ingresar · Transportes Andes Demo SpA');
+  });
+
+  it('una empresa que no existe: lo explica y no ofrece crear cuenta', async () => {
+    const { pedidas } = montarLogin('/solicitar/no-existe/ingresar');
+    expect(await screen.findByText(/Esta empresa no tiene un portal disponible/)).toBeInTheDocument();
+    expect(new Set(pedidas)).toEqual(new Set(['/api/portal/no-existe/']));
+    expect(screen.getByRole('link', { name: 'FlotaÁgil' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Crear cuenta' })).not.toBeInTheDocument();
+  });
+
+  it('misma lógica de HU-33: el pasajero entra y llega a su vista', async () => {
+    const { router } = montarLogin('/solicitar/transportes-andes/ingresar');
+    await userEvent.type(await screen.findByLabelText('Correo'), 'pasajero@andes.example');
+    await userEvent.type(screen.getByLabelText('Contraseña'), 'clave');
+    await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mis-reservas'));
   });
 });
 
@@ -119,7 +125,7 @@ describe('HU-38 · crear cuenta', () => {
       password: 'Clave-Sintetica-2026',
       sitio_web: '',
     });
-    expect(screen.getByRole('link', { name: 'Ir a ingresar' })).toHaveAttribute('href', '/login?empresa=transportes-andes');
+    expect(screen.getByRole('link', { name: 'Ir a ingresar' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
   });
 
   it('valida antes de enviar: obligatorios, mínimo de la contraseña y aviso de privacidad', async () => {
@@ -158,7 +164,7 @@ describe('HU-38 · crear cuenta', () => {
     montarCrear();
     await screen.findByLabelText('Nombre');
     expect(screen.getByRole('banner', { hidden: true })).toHaveAttribute('data-movil', 'oculta');
-    expect(document.querySelector('a[aria-label="Volver a ingresar"]')).toHaveAttribute('href', '/login?empresa=transportes-andes');
+    expect(document.querySelector('a[aria-label="Volver a ingresar"]')).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
     expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Aviso de privacidad' })).toBeInTheDocument();
   });
 

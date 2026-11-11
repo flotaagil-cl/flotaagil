@@ -7,5 +7,5 @@ import { useContextoPortal } from '../contexto';
  */
 export function IrAlIngreso() {
   const { slug } = useContextoPortal();
-  return <Navigate to={`/login?empresa=${slug}`} replace />;
+  return <Navigate to={`/solicitar/${slug}/ingresar`} replace />;
 }

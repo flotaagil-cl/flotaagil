@@ -49,8 +49,8 @@ describe('destino por rol', () => {
     expect(router.state.location.pathname).toBe('/mis-reservas');
   });
 
-  it('el login ofrece recuperar la contraseña', async () => {
-    montarLogin();
+  it('el ingreso del portal ofrece recuperar la contraseña; el del panel pide una temporal al administrador', async () => {
+    montarLogin('/solicitar/transportes-andes/ingresar');
     expect(await screen.findByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
   });
 

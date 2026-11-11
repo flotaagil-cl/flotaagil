@@ -70,7 +70,7 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
   return (
     <MarcoPortal
       marca={razonSocial ?? 'FlotaÁgil'}
-      inicio={`/login?empresa=${slug}`}
+      inicio={`/solicitar/${slug}/ingresar`}
       barraMovil={barraMovil}
       accion={empresa.data && !ubicacionEs(matches, registro) ? { a: registro, texto: '¿Eres empresa? Registra tu convenio' } : undefined}
       pie={

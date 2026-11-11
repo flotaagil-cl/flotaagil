@@ -28,6 +28,7 @@ export const DIFERIDOS = [
   'src/rutas/RutaAutenticada.tsx',
   'src/componentes/Layout.tsx',
   'src/paginas/Login.tsx',
+  'src/paginas/IngresarPortal.tsx',
   'src/paginas/NoEncontrada.tsx',
   'src/paginas/Inicio.tsx',
   'src/reservas/paginas/Listado.tsx',
@@ -66,6 +67,7 @@ export const REGLAS = [
   { desde: null, nombre: 'paquete inicial', prohibido: PANEL_Y_SESION },
   { desde: 'src/paginas/NoEncontrada.tsx', nombre: 'página no encontrada', prohibido: PANEL_Y_SESION },
   { desde: 'src/paginas/Login.tsx', nombre: 'login', prohibido: RESERVAS_Y_PORTAL },
+  { desde: 'src/paginas/IngresarPortal.tsx', nombre: '/solicitar/:slug/ingresar', prohibido: RESERVAS_Y_PORTAL },
   // Portal público (/solicitar): nada del panel ni de la sesión.
   { desde: 'src/portal/LayoutPortal.tsx', nombre: '/solicitar (marco)', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/IrAlIngreso.tsx', nombre: '/solicitar (va al ingreso)', prohibido: PANEL_Y_SESION },

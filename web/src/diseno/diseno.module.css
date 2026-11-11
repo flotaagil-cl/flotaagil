@@ -1015,3 +1015,123 @@
   height: 1px;
   background: var(--borde);
 }
+
+/* ---------- Ingreso del panel ---------- */
+.heroPuntos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.heroPuntos li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+}
+.heroPuntoIcono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--velo);
+}
+.miniVista {
+  position: absolute;
+  bottom: 48px;
+  left: 48px;
+  display: grid;
+  gap: 10px;
+  width: min(490px, calc(100% - 96px));
+  padding: 14px;
+  border: 1px solid var(--velo);
+  border-radius: var(--radio-tarjeta);
+  background: var(--velo);
+}
+.miniTarjetas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.miniTarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto);
+}
+.miniEtiqueta {
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+.miniValor {
+  font-size: 22px;
+  font-weight: 800;
+}
+.miniVuelo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
+}
+.miniVuelo > :last-child {
+  margin-left: auto;
+}
+.miniVuelo > svg {
+  color: var(--color-primario-700);
+}
+.avisoSuave {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--radio-campo);
+  background: var(--color-tiffany-50);
+  color: var(--texto);
+  font-size: 14px;
+}
+.avisoSuave > svg {
+  flex: none;
+  color: var(--color-primario-700);
+}
+.divisor {
+  width: 100%;
+  height: 1px;
+  margin: 4px 0;
+  border: 0;
+  background: var(--borde);
+}
+.notaIzquierda {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+/* El panel se usa en computadores: bajo 1024 px se oculta el degradé y el formulario queda centrado. */
+@media (max-width: 1023px) {
+  .acceso[data-movil='centrado'] {
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .acceso[data-movil='centrado'] .accesoHero {
+    display: none;
+  }
+  .acceso[data-movil='centrado'] .accesoFormulario {
+    max-width: 440px;
+    padding: 0;
+    background: none;
+  }
+}
