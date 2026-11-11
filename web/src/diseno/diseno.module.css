@@ -1350,3 +1350,24 @@
 .esperando[data-activa='true']::before {
   background: var(--exito);
 }
+
+/* Botón que se ve como enlace, centrado (corregir número, cerrar sesión). */
+.botonEnlace {
+  align-self: center;
+  min-height: var(--toque);
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (max-width: 899px) {
+  /* Con la banda de título el contenido parte arriba, sin centrarse en la pantalla. */
+  .acceso[data-movil='hero'] .accesoFormulario {
+    justify-content: flex-start;
+  }
+}

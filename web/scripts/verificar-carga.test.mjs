@@ -46,6 +46,7 @@ describe('verificar-carga', () => {
       '/solicitar/privacidad carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
       '/solicitar/registro-empresa carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
       '/solicitar/cuenta carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
+      '/solicitar/activar carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
       '/recuperar carga módulos prohibidos: src/sesion/SesionProvider.tsx.',
     ]);
   });

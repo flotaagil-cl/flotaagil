@@ -114,7 +114,7 @@ export function PrimerIngreso() {
           </Boton>
           <button
             type="button"
-            className={`${e.destacadoAccion} ${e.centrado}`}
+            className={e.botonEnlace}
             onClick={() => void sesion.logout().then(() => navegar(salida, { replace: true }))}
           >
             Cerrar sesión

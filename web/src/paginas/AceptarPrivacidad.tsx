@@ -70,8 +70,7 @@ export function AceptarPrivacidad() {
           </Boton>
           <button
             type="button"
-            className={`${e.enlace} ${e.centrado}`}
-            style={{ border: 0, background: 'none', cursor: 'pointer' }}
+            className={e.botonEnlace}
             onClick={() => void sesion.logout().then(() => navegar(`/solicitar/${slug}/ingresar`, { replace: true }))}
           >
             Cerrar sesión

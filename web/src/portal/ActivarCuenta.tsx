@@ -134,7 +134,7 @@ export function ActivarCuenta({ api, slug, email, password, telefono: inicial }:
               </Boton>
             </form>
           ) : (
-            <button type="button" className={`${e.destacadoAccion} ${e.centrado}`} onClick={() => setCorrigiendo(true)}>
+            <button type="button" className={e.botonEnlace} onClick={() => setCorrigiendo(true)}>
               Corregir mi número
             </button>
           )}
