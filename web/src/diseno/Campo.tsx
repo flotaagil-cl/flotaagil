@@ -9,10 +9,12 @@ interface PropsCampo extends ComponentProps<'input'> {
   error?: string;
   ayuda?: ReactNode;
   icono?: NombreIcono;
+  /** Prefijo fijo a la izquierda (por ejemplo, «+56»); la ayuda debe explicarlo. */
+  prefijo?: string;
 }
 
 /** Campo de texto con su etiqueta. Acepta `ref` (React 19), así sirve con react-hook-form. */
-export function Campo({ etiqueta, error, ayuda, icono, id, className, ...resto }: PropsCampo) {
+export function Campo({ etiqueta, error, ayuda, icono, prefijo, id, className, ...resto }: PropsCampo) {
   const generado = useId();
   const idCampo = id ?? generado;
   const describe = [ayuda ? `${idCampo}-ayuda` : null, error ? `${idCampo}-error` : null].filter(Boolean).join(' ');
@@ -23,6 +25,11 @@ export function Campo({ etiqueta, error, ayuda, icono, id, className, ...resto }
       </label>
       <div className={icono ? `${e.control} ${e.conIcono}` : e.control}>
         {icono && <Icono nombre={icono} />}
+        {prefijo && (
+          <span className={e.prefijo} aria-hidden="true">
+            {prefijo}
+          </span>
+        )}
         <input
           id={idCampo}
           className={e.entrada}
@@ -49,6 +56,36 @@ interface PropsDatoFijo {
   etiqueta: string;
   valor: string;
   icono?: NombreIcono;
+}
+
+interface PropsCasilla extends Omit<ComponentProps<'input'>, 'type'> {
+  children: ReactNode;
+  error?: string;
+}
+
+/** Casilla de verificación con su texto como etiqueta y una zona táctil de 44 px. */
+export function Casilla({ children, error, id, ...resto }: PropsCasilla) {
+  const generado = useId();
+  const idCasilla = id ?? generado;
+  return (
+    <div className={e.campo}>
+      <label htmlFor={idCasilla} className={e.casilla}>
+        <input
+          id={idCasilla}
+          type="checkbox"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${idCasilla}-error` : undefined}
+          {...resto}
+        />
+        <span>{children}</span>
+      </label>
+      {error && (
+        <p id={`${idCasilla}-error`} className={e.errorCampo}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /** Dato que no se puede cambiar (por ejemplo, el aeropuerto de origen): se ve como un campo bloqueado. */

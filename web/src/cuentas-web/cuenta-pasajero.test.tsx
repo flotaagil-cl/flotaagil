@@ -83,45 +83,7 @@ describe('mis reservas', () => {
   });
 });
 
-describe('crear cuenta en el portal', () => {
-  function montarCrear() {
-    const servidor = new ServidorPortalFalso();
-    const recibidos: unknown[] = [];
-    const original = servidor.fetch;
-    servidor.fetch = async (entrada, init) => {
-      const peticion = entrada instanceof Request ? entrada : new Request(entrada, init);
-      if (new URL(peticion.url).pathname === '/api/portal/transportes-andes/cuenta/') {
-        recibidos.push(await peticion.json());
-        return new Response(JSON.stringify({ estado: 'PENDIENTE', mensaje: 'ok' }), { status: 201, headers: { 'Content-Type': 'application/json' } });
-      }
-      return original(peticion);
-    };
-    const { entorno } = crearEntorno({ servidor, locks: crearLocks(), ahora: servidor.ahora });
-    const rutas = crearRutas();
-    const router = createMemoryRouter(rutas, { initialEntries: ['/solicitar/transportes-andes/cuenta'] });
-    render(<App entorno={entorno} rutas={rutas} router={router} />);
-    return recibidos;
-  }
-
-  it('envía y pide confirmar por WhatsApp', async () => {
-    const recibidos = montarCrear();
-    await userEvent.type(await screen.findByLabelText('Nombre'), 'Paula Pasajera');
-    await userEvent.type(screen.getByLabelText('WhatsApp'), '+56 9 8765 4321');
-    await userEvent.type(screen.getByLabelText('Correo'), 'paula@correo.example');
-    await userEvent.type(screen.getByLabelText('Contraseña'), 'Clave-Sintetica-2026');
-    await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
-    expect(await screen.findByRole('heading', { name: 'Confirma tu cuenta' })).toBeInTheDocument();
-    expect(screen.getByText(/CONFIRMAR CUENTA/)).toBeInTheDocument();
-    expect(recibidos[0]).toMatchObject({ telefono: '+56987654321', email: 'paula@correo.example', sitio_web: '' });
-  });
-
-  it('valida antes de enviar', async () => {
-    const recibidos = montarCrear();
-    await userEvent.click(await screen.findByRole('button', { name: 'Crear cuenta' }));
-    expect(screen.getAllByText('Completa este campo.')).toHaveLength(4);
-    expect(recibidos).toEqual([]);
-  });
-});
+// Crear cuenta (HU-35 con el diseño de HU-38): src/paginas/acceso.test.tsx.
 
 describe('recuperar la contraseña', () => {
   function montarPublica(ruta: string, respuestas: Record<string, number>) {

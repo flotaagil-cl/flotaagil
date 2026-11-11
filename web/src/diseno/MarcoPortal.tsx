@@ -23,6 +23,10 @@ interface Props {
   barraMovil?: 'normal' | 'flotante' | 'oculta';
   /** Color por empresa (más adelante): tokens de marca que reemplazan a los del portal. */
   colores?: Partial<Record<'--color-primario-900' | '--color-primario-700' | '--color-tiffany', string>>;
+  /** Enlace a la derecha de la barra cuando no hay sesión («¿Eres empresa? Registra tu convenio»). */
+  accion?: EnlacePortal;
+  /** Pie de página (aviso de privacidad). */
+  pie?: ReactNode;
   children: ReactNode;
 }
 
@@ -30,7 +34,7 @@ interface Props {
  * Marco del portal (HU-37): barra superior con la marca, la navegación y la cuenta. En el celular la
  * navegación pasa al menú de la cuenta (diálogo), que también tiene «Cerrar sesión».
  */
-export function MarcoPortal({ marca, inicio = '/', enlaces = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, children }: Props) {
+export function MarcoPortal({ marca, inicio = '/', enlaces = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, accion, pie, children }: Props) {
   const [menu, setMenu] = useState(false);
   return (
     <div className={`tema-portal ${e.marco}`} style={colores as CSSProperties | undefined}>
@@ -52,6 +56,11 @@ export function MarcoPortal({ marca, inicio = '/', enlaces = [], usuario, onCerr
               </NavLink>
             ))}
           </nav>
+        )}
+        {accion && !usuario && (
+          <Link to={accion.a} className={e.accion}>
+            {accion.texto}
+          </Link>
         )}
         {usuario && (
           <button type="button" className={e.botonCuenta} aria-haspopup="dialog" aria-expanded={menu} onClick={() => setMenu(true)}>
@@ -87,6 +96,7 @@ export function MarcoPortal({ marca, inicio = '/', enlaces = [], usuario, onCerr
       <main id="contenido" tabIndex={-1} className={e.contenido}>
         {children}
       </main>
+      {pie && <footer className={e.pie}>{pie}</footer>}
     </div>
   );
 }

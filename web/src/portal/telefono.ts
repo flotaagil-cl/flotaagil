@@ -34,3 +34,9 @@ export function errorTelefono(valor: string): string | null {
   }
   return E164.test(numero) ? null : 'Número en formato internacional, p. ej. +56 9 1234 5678.';
 }
+
+/** HU-38: el campo muestra +56 fijo; sin «+» es un número de Chile y se antepone +56. */
+export function normalizarWhatsapp(valor: string): string {
+  const limpio = valor.replace(/[\s()-]/g, '');
+  return limpio.startsWith('+') ? limpio : `+56${limpio.replace(/^0+/, '')}`;
+}

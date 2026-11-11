@@ -211,6 +211,8 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
         {
           path: 'cuenta',
           lazy: async () => ({ Component: (await import('../portal/paginas/CrearCuenta')).CrearCuenta }),
+          // HU-38: en el celular el título va en la banda con el degradé, sin la barra.
+          handle: { barraMovil: 'oculta', completa: true },
         },
       ],
     },

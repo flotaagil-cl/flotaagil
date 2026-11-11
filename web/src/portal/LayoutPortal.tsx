@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Link, Outlet, useParams } from 'react-router';
+import { Link, Outlet, useMatches, useParams } from 'react-router';
 import { ErrorApi } from '../api/resultado';
 import { MENSAJES } from '../api/errores';
+import { MarcoPortal } from '../diseno/MarcoPortal';
 import { useEntorno } from '../entornoContexto';
 import { crearClientePortal, useEmpresa, type ClientePortal } from './api';
 import type { ContextoPortal } from './contexto';
@@ -11,7 +12,8 @@ import estilos from './portal.module.css';
 
 /**
  * Marco público del portal (/solicitar/:slug): sin sesión ni refresh silencioso. Carga la empresa por su slug
- * y muestra su nombre; si no existe o está inactiva, una página clara en vez del formulario.
+ * y muestra su nombre; si no existe o está inactiva, una página clara en vez del formulario. Desde HU-38 usa el
+ * marco del sistema visual; una ruta puede ocultar la barra en el celular con `handle.barraMovil`.
  */
 export function LayoutPortal() {
   const entorno = useEntorno();
@@ -21,15 +23,18 @@ export function LayoutPortal() {
   }));
   return (
     <QueryClientProvider client={cliente}>
-      <MarcoPortal api={api} />
+      <ContenidoPortal api={api} />
     </QueryClientProvider>
   );
 }
 
-function MarcoPortal({ api }: { api: ClientePortal }) {
+function ContenidoPortal({ api }: { api: ClientePortal }) {
   const { slug = '' } = useParams();
   const empresa = useEmpresa(api, slug);
   const razonSocial = empresa.data?.razon_social;
+  const matches = useMatches();
+  const manejo = matches.at(-1)?.handle as { barraMovil?: 'normal' | 'oculta'; completa?: boolean } | undefined;
+  const barraMovil = manejo?.barraMovil ?? 'normal';
 
   useEffect(() => {
     document.title = razonSocial ? `Solicitar un viaje · ${razonSocial}` : 'Solicitar un viaje';
@@ -61,17 +66,26 @@ function MarcoPortal({ api }: { api: ClientePortal }) {
       );
   } else contenido = <Outlet context={{ api, empresa: empresa.data, slug } satisfies ContextoPortal} />;
 
+  const registro = `/solicitar/${slug}/registro-empresa`;
   return (
-    <div className={estilos.pagina}>
-      <header className={estilos.cabecera}>
-        <span className={estilos.marca}>{razonSocial ?? 'Solicitar un viaje'}</span>
-        {razonSocial && <span className={estilos.subtitulo}>Solicitar un viaje</span>}
-      </header>
-      <main className={estilos.contenido}>{contenido}</main>
-      <footer className={estilos.piePagina}>
-        {empresa.data && <Link to={`/solicitar/${slug}/privacidad`}>Aviso de privacidad</Link>}
-        <span>Operado con FlotaÁgil</span>
-      </footer>
-    </div>
+    <MarcoPortal
+      marca={razonSocial ?? 'FlotaÁgil'}
+      inicio={`/login?empresa=${slug}`}
+      barraMovil={barraMovil}
+      accion={empresa.data && !ubicacionEs(matches, registro) ? { a: registro, texto: '¿Eres empresa? Registra tu convenio' } : undefined}
+      pie={
+        <>
+          {empresa.data && <Link to={`/solicitar/${slug}/privacidad`}>Aviso de privacidad</Link>}
+          <span>Operado con FlotaÁgil</span>
+        </>
+      }
+    >
+      {/* Las pantallas con el diseño nuevo ocupan el ancho completo; las anteriores, la columna angosta. */}
+      {manejo?.completa && empresa.data ? contenido : <div className={estilos.contenido}>{contenido}</div>}
+    </MarcoPortal>
   );
+}
+
+function ubicacionEs(matches: ReturnType<typeof useMatches>, ruta: string): boolean {
+  return matches.at(-1)?.pathname.replace(/\/$/, '') === ruta;
 }

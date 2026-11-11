@@ -671,3 +671,275 @@
     top: 20px;
   }
 }
+
+/* ---------- Pantallas de acceso (HU-38) ---------- */
+.acceso {
+  display: grid;
+  grid-template-areas: 'hero formulario';
+  grid-template-columns: minmax(0, 620px) minmax(0, 1fr);
+  gap: 48px;
+  padding: 32px 48px;
+}
+.accesoFormulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  grid-area: formulario;
+  justify-content: center;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 32px 0;
+}
+.accesoCabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.accesoTitulo {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
+  line-height: 1.2;
+}
+.accesoSubtitulo {
+  margin: 0;
+  color: var(--texto-suave);
+}
+.accesoVolver {
+  display: none;
+}
+.accesoHero {
+  position: relative;
+  grid-area: hero;
+  min-height: 620px;
+  padding: 56px 48px;
+  overflow: hidden;
+  border-radius: var(--radio-hero);
+  background: var(--grad-hero);
+  color: var(--sobre-oscuro);
+}
+.circuloGrande,
+.circuloChico {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--sobre-oscuro);
+  opacity: 0.12;
+}
+.circuloGrande {
+  top: -120px;
+  right: -60px;
+  width: 360px;
+  height: 360px;
+}
+.circuloChico {
+  right: 60px;
+  bottom: 200px;
+  width: 160px;
+  height: 160px;
+}
+.heroAntetitulo {
+  position: relative;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.heroTitulo {
+  position: relative;
+  margin: 0 0 16px;
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+}
+.heroTexto {
+  position: relative;
+  max-width: 380px;
+  margin: 0;
+  font-size: 16px;
+}
+.accesoMapa {
+  display: none;
+}
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: var(--texto-etiqueta);
+}
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--borde);
+}
+.accion {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  margin-left: auto;
+  color: var(--texto);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+  padding: 16px;
+  color: var(--texto-suave);
+  font-size: var(--texto-etiqueta);
+}
+.pie a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  color: var(--texto);
+}
+
+@media (max-width: 899px) {
+  .acceso {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
+  .accesoHero {
+    display: none;
+  }
+  .accesoFormulario {
+    max-width: none;
+    padding: 20px 20px 32px;
+  }
+  .accion {
+    display: none;
+  }
+  .acceso[data-movil='mapa'] .accesoMapa {
+    display: block;
+    order: -1;
+    height: 280px;
+  }
+  .acceso[data-movil='mapa'] .accesoFormulario {
+    position: relative;
+    z-index: 1;
+    margin-top: -24px;
+    border-radius: var(--radio-panel) var(--radio-panel) 0 0;
+    background: var(--superficie);
+  }
+  .acceso[data-movil='mapa'] .accesoTitulo {
+    font-size: 26px;
+  }
+  .acceso[data-movil='hero'] .accesoFormulario {
+    padding-top: 0;
+    background: var(--superficie);
+  }
+  /* El título va en una banda con el degradé, de borde a borde. */
+  .acceso[data-movil='hero'] .accesoCabecera {
+    margin: 0 -20px 4px;
+    padding: 16px 20px 24px;
+    background: var(--grad-hero);
+    color: var(--sobre-oscuro);
+  }
+  .acceso[data-movil='hero'] .accesoSubtitulo {
+    color: var(--sobre-oscuro);
+  }
+  .acceso[data-movil='hero'] .accesoTitulo {
+    font-size: 26px;
+  }
+  .acceso[data-movil='hero'] .accesoVolver {
+    display: grid;
+    place-items: center;
+    width: var(--toque);
+    height: var(--toque);
+    margin: 0 0 8px -10px;
+    color: var(--sobre-oscuro);
+  }
+}
+
+.enlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  color: var(--texto);
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+.derecha {
+  align-self: flex-end;
+}
+.centrado {
+  align-self: center;
+  text-align: center;
+}
+.nota {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: var(--texto-etiqueta);
+  text-align: center;
+}
+.soloMovil {
+  display: none;
+}
+@media (max-width: 899px) {
+  .soloMovil {
+    display: inline-flex;
+  }
+}
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.fila {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.prefijo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  min-width: 56px;
+  min-height: var(--alto-campo);
+  margin-right: 8px;
+  border-radius: var(--radio-campo);
+  background: var(--suave);
+  color: var(--texto);
+  font-weight: 600;
+}
+.casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: var(--toque);
+  padding-top: 10px;
+  color: var(--texto-suave);
+  font-size: 14px;
+  cursor: pointer;
+}
+.casilla input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  accent-color: var(--color-primario-700);
+}
+.casilla a {
+  color: var(--texto);
+}
+.alerta {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--peligro);
+  border-radius: var(--radio-campo);
+  background: var(--insignia-peligro-fondo);
+  color: var(--insignia-peligro-texto);
+  font-weight: 600;
+}
