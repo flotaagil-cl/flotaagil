@@ -69,7 +69,63 @@ def texto_confirmacion(cuenta: CuentaPasajero) -> str:
 
 
 def vence_en(cuenta: CuentaPasajero):
-    return cuenta.creada_en + timedelta(minutes=cuenta.empresa.configuracion.expiracion_verificacion_min)
+    """El mensaje de activación vale `expiracion_verificacion_min` desde el último envío (HU-41)."""
+    desde = cuenta.reenviada_en or cuenta.creada_en
+    return desde + timedelta(minutes=cuenta.empresa.configuracion.expiracion_verificacion_min)
+
+
+class CredencialesPendientes(APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    default_code = "cuenta_no_encontrada"
+    default_detail = "No encontramos una cuenta por activar con ese correo y contraseña."
+
+
+class CuentaYaActiva(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "cuenta_activa"
+    default_detail = "Tu cuenta ya está activa: ingresa con tu correo y contraseña."
+
+
+class LimiteReenvios(APIException):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    default_code = "limite_reenvio"
+    default_detail = "Ya te reenviamos el mensaje varias veces. Espera unos minutos e intenta de nuevo."
+
+
+def cuenta_por_credenciales(empresa, email: str, password: str) -> CuentaPasajero:
+    """HU-41: la cuenta de esta empresa con ese correo y contraseña (la del alta). Sin decir cuál falló."""
+    usuario = Usuario.objects.filter(email__iexact=email.strip(), rol=Rol.PASAJERO).first()
+    cuenta = getattr(usuario, "cuenta_pasajero", None) if usuario else None
+    if cuenta is None or cuenta.empresa_id != empresa.pk or not usuario.check_password(password):
+        raise CredencialesPendientes()
+    return cuenta
+
+
+def estado_activacion(empresa, email: str, password: str) -> dict:
+    cuenta = cuenta_por_credenciales(empresa, email, password)
+    return {"activa": cuenta.confirmada_en is not None, "telefono": cuenta.telefono}
+
+
+@transaction.atomic
+def reenviar_activacion(empresa, email: str, password: str, telefono: str | None = None) -> CuentaPasajero:
+    """HU-41: reenvía «CONFIRMAR CUENTA», opcionalmente a un número corregido, con límite por cuenta."""
+    from apps.cuentas.credenciales import dentro_del_limite
+
+    cuenta = cuenta_por_credenciales(empresa, email, password)
+    cuenta = CuentaPasajero.objects.select_for_update().select_related("empresa").get(pk=cuenta.pk)
+    if cuenta.confirmada_en is not None:
+        raise CuentaYaActiva()
+    if not dentro_del_limite(f"activacion:{cuenta.pk}", settings.ACTIVACION_MAX_REENVIOS):
+        raise LimiteReenvios()
+    campos = ["reenviada_en"]
+    if telefono and telefono != cuenta.telefono:
+        cuenta.telefono = telefono
+        campos.append("telefono")
+    cuenta.reenviada_en = timezone.now()
+    cuenta.save(update_fields=campos)
+    pasajero = reservas.obtener_pasajero(empresa, nombre=cuenta.nombre, telefono=cuenta.telefono)
+    tareas.al_confirmar(tareas.enviar_respuesta, pasajero.pk, None, texto_confirmacion(cuenta))
+    return cuenta
 
 
 @transaction.atomic

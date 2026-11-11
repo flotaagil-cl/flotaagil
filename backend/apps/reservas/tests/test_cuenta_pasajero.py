@@ -233,7 +233,9 @@ class TestReservas:
 
 @pytest.mark.django_db
 class TestRecuperacion:
-    def test_envia_el_enlace_y_permite_cambiarla(self, activa, cliente, django_capture_on_commit_callbacks):
+    def test_envia_el_enlace_y_permite_cambiarla(
+        self, activa, cliente, empresa, django_capture_on_commit_callbacks
+    ):
         with django_capture_on_commit_callbacks(execute=True):
             assert (
                 cliente.post(
@@ -241,9 +243,11 @@ class TestRecuperacion:
                 ).status_code
                 == 202
             )
-        enlace = re.search(r"/recuperar/([^/]+)/(\S+)", mail.outbox[0].body)
+        enlace = re.search(r"/recuperar/([^/]+)/([^/?\s]+)\?empresa=([a-z0-9-]+)", mail.outbox[0].body)
         assert enlace and mail.outbox[0].body.startswith("Hola")
-        uid, token = enlace.groups()
+        uid, token, slug = enlace.groups()
+        # HU-41: vence en 30 minutos y el enlace lleva la empresa (su marca en la pantalla).
+        assert "vence en 30 minutos" in mail.outbox[0].body and slug == empresa.slug
         nueva = "Otra-Clave-Sintetica-1"
         respuesta = cliente.post(
             reverse("auth-recuperar-confirmar"),

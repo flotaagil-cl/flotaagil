@@ -1730,6 +1730,83 @@ paths:
           description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
             IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
             (varias solicitudes con el mismo número).'
+  /api/portal/{slug}/cuenta/estado/:
+    post:
+      operationId: portal_cuenta_estado_create
+      description: 'HU-41: con el correo y la contraseña del alta; la consulta «Activa
+        tu cuenta».'
+      summary: ¿Ya se activó mi cuenta?
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivacionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivacionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivacionRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoActivacion'
+          description: ''
+        '400':
+          description: '`cuenta_no_encontrada`'
+  /api/portal/{slug}/cuenta/reenviar/:
+    post:
+      operationId: portal_cuenta_reenviar_create
+      description: 'HU-41 (DC-45): la vigencia del mensaje corre desde este envío.'
+      summary: Reenviar el WhatsApp de activación (o corregir el número)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReenviarActivacionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReenviarActivacionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReenviarActivacionRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoActivacion'
+          description: ''
+        '400':
+          description: '`cuenta_no_encontrada` o número inválido'
+        '409':
+          description: '`cuenta_activa`'
+        '429':
+          description: '`limite_reenvio` (3 cada 15 min por cuenta) o límite por IP'
   /api/portal/{slug}/registro-empresa/:
     post:
       operationId: portal_registro_empresa_create
@@ -3026,6 +3103,21 @@ components:
           type: boolean
       required:
       - acepta
+    ActivacionRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+      required:
+      - email
+      - password
     ActorEnum:
       enum:
       - CONDUCTOR
@@ -3770,6 +3862,17 @@ components:
       required:
       - code
       - detail
+    EstadoActivacion:
+      type: object
+      properties:
+        activa:
+          type: boolean
+        telefono:
+          type: string
+          description: Número al que se envió el mensaje, enmascarado.
+      required:
+      - activa
+      - telefono
     EstadoConductorEnum:
       enum:
       - DISPONIBLE
@@ -4830,6 +4933,26 @@ components:
           minLength: 1
       required:
       - email
+    ReenviarActivacionRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        telefono:
+          type: string
+          minLength: 1
+          description: 'Para corregir el número: el nuevo WhatsApp en formato E.164.'
+          maxLength: 24
+      required:
+      - email
+      - password
     RefreshRequest:
       type: object
       properties:

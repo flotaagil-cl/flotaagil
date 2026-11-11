@@ -1110,6 +1110,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/{slug}/cuenta/estado/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ¿Ya se activó mi cuenta?
+         * @description HU-41: con el correo y la contraseña del alta; la consulta «Activa tu cuenta».
+         */
+        post: operations["portal_cuenta_estado_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{slug}/cuenta/reenviar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reenviar el WhatsApp de activación (o corregir el número)
+         * @description HU-41 (DC-45): la vigencia del mensaje corre desde este envío.
+         */
+        post: operations["portal_cuenta_reenviar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/registro-empresa/": {
         parameters: {
             query?: never;
@@ -1719,6 +1759,11 @@ export interface components {
         AceptarPrivacidadRequest: {
             acepta: boolean;
         };
+        ActivacionRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
         /**
          * @description * `CONDUCTOR` - Conductor
          *     * `DESPACHADOR` - Despachador
@@ -2008,6 +2053,11 @@ export interface components {
         Error: {
             detail: string;
             code: string;
+        };
+        EstadoActivacion: {
+            activa: boolean;
+            /** @description Número al que se envió el mensaje, enmascarado. */
+            telefono: string;
         };
         /**
          * @description * `DISPONIBLE` - Disponible
@@ -2513,6 +2563,13 @@ export interface components {
         RecuperarRequest: {
             /** Format: email */
             email: string;
+        };
+        ReenviarActivacionRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+            /** @description Para corregir el número: el nuevo WhatsApp en formato E.164. */
+            telefono?: string;
         };
         RefreshRequest: {
             refresh: string;
@@ -4829,6 +4886,88 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
+            };
+        };
+    };
+    portal_cuenta_estado_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivacionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ActivacionRequest"];
+                "multipart/form-data": components["schemas"]["ActivacionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoActivacion"];
+                };
+            };
+            /** @description `cuenta_no_encontrada` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_cuenta_reenviar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReenviarActivacionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReenviarActivacionRequest"];
+                "multipart/form-data": components["schemas"]["ReenviarActivacionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoActivacion"];
+                };
+            };
+            /** @description `cuenta_no_encontrada` o número inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `cuenta_activa` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `limite_reenvio` (3 cada 15 min por cuenta) o límite por IP */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

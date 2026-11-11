@@ -412,6 +412,8 @@ class CuentaPasajero(models.Model):
     # DC-44 (Ley 21.719): aceptación única del aviso de privacidad y de los avisos por WhatsApp,
     # con la versión del aviso.
     privacidad_aceptada_en = models.DateTimeField(null=True, blank=True)
+    # HU-41 (DC-45): último reenvío del WhatsApp de activación; la vigencia corre desde ahí.
+    reenviada_en = models.DateTimeField(null=True, blank=True)
     privacidad_version = models.CharField(max_length=20, null=True, blank=True)
     creada_en = models.DateTimeField(db_default=Now(), editable=False)
 

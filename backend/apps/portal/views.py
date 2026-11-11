@@ -3,17 +3,19 @@ límite por teléfono y un campo trampa."""
 
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from apps.comun.excepciones import error_con_codigo
+from apps.comun.validadores import normalizar_telefono, validar_telefono_e164
 from apps.convenios import servicios as convenios
 from apps.convenios.serializers import RegistroConvenioSerializer
 from apps.cuentas.models import Empresa
 from apps.cuentas.serializers import ErrorSerializer
+from apps.integraciones.notificaciones import enmascarar_telefono as enmascarar
 from apps.reservas import cuentas_pasajero
 
 from . import servicios
@@ -148,3 +150,71 @@ class CrearCuentaView(_VistaPortal):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class ActivacionSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(max_length=128, write_only=True)
+
+
+class ReenviarActivacionSerializer(ActivacionSerializer):
+    telefono = serializers.CharField(
+        max_length=24,
+        required=False,
+        help_text="Para corregir el número: el nuevo WhatsApp en formato E.164.",
+    )
+
+    def validate_telefono(self, valor):
+        telefono = normalizar_telefono(valor)
+        validar_telefono_e164(telefono)
+        return telefono
+
+
+class EstadoActivacionSerializer(serializers.Serializer):
+    activa = serializers.BooleanField()
+    telefono = serializers.CharField(help_text="Número al que se envió el mensaje, enmascarado.")
+
+
+class _VistaActivacion(_VistaPortal):
+    throttle_classes = [PortalPorMinuto, PortalPorHora]
+
+    def throttled(self, request, wait):
+        raise servicios.LimiteIP(wait)
+
+
+class EstadoActivacionView(_VistaActivacion):
+    @extend_schema(
+        tags=["portal"],
+        summary="¿Ya se activó mi cuenta?",
+        request=ActivacionSerializer,
+        responses={
+            200: EstadoActivacionSerializer,
+            400: OpenApiResponse(description="`cuenta_no_encontrada`"),
+        },
+        description="HU-41: con el correo y la contraseña del alta; la consulta «Activa tu cuenta».",
+    )
+    def post(self, request, slug):
+        entrada = ActivacionSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        estado = cuentas_pasajero.estado_activacion(_empresa(slug), **entrada.validated_data)
+        return Response({**estado, "telefono": enmascarar(estado["telefono"])})
+
+
+class ReenviarActivacionView(_VistaActivacion):
+    @extend_schema(
+        tags=["portal"],
+        summary="Reenviar el WhatsApp de activación (o corregir el número)",
+        request=ReenviarActivacionSerializer,
+        responses={
+            200: EstadoActivacionSerializer,
+            400: OpenApiResponse(description="`cuenta_no_encontrada` o número inválido"),
+            409: OpenApiResponse(description="`cuenta_activa`"),
+            429: OpenApiResponse(description="`limite_reenvio` (3 cada 15 min por cuenta) o límite por IP"),
+        },
+        description="HU-41 (DC-45): la vigencia del mensaje corre desde este envío.",
+    )
+    def post(self, request, slug):
+        entrada = ReenviarActivacionSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        cuenta = cuentas_pasajero.reenviar_activacion(_empresa(slug), **entrada.validated_data)
+        return Response({"activa": False, "telefono": enmascarar(cuenta.telefono)})

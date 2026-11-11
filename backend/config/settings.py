@@ -293,7 +293,12 @@ else:
 
 # HU-35: dirección pública de la web, para los enlaces de los correos (recuperar la contraseña).
 WEB_URL_BASE = env("WEB_URL_BASE", default="http://localhost:5173").rstrip("/")
-PASSWORD_RESET_TIMEOUT = env.int("RECUPERAR_PASSWORD_HORAS", default=2) * 3600
+# HU-41 (DC-45): el enlace para recuperar vence a los 30 min; hasta 3 envíos por correo cada 15 min.
+PASSWORD_RESET_TIMEOUT = env.int("RECUPERAR_PASSWORD_MINUTOS", default=30) * 60
+RECUPERAR_MAX_ENVIOS = env.int("RECUPERAR_MAX_ENVIOS", default=3)
+RECUPERAR_VENTANA_MIN = env.int("RECUPERAR_VENTANA_MIN", default=15)
+# HU-41 (DC-45): reenvíos del WhatsApp de activación por cuenta en la misma ventana.
+ACTIVACION_MAX_REENVIOS = env.int("ACTIVACION_MAX_REENVIOS", default=3)
 # DC-44: versión vigente del aviso de privacidad. Al cambiarla, cada pasajero con cuenta la acepta otra vez.
 AVISO_PRIVACIDAD_VERSION = env("AVISO_PRIVACIDAD_VERSION", default="2026-11")
 # Correo de soporte de FlotaÁgil para los administradores (ingreso del panel). Vacío: no se muestra.

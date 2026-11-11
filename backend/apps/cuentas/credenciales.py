@@ -113,6 +113,20 @@ def estado_de_acceso(usuario: Usuario) -> str:
 ROLES_RECUPERABLES = (Rol.PASAJERO, Rol.CONVENIO)
 
 
+def dentro_del_limite(clave: str, maximo: int) -> bool:
+    """HU-41: cuenta un envío en la ventana (`RECUPERAR_VENTANA_MIN`); False si ya se llegó al máximo."""
+    from django.core.cache import cache
+
+    ventana = settings.RECUPERAR_VENTANA_MIN * 60
+    cache.add(f"limite:{clave}", 0, timeout=ventana)
+    try:
+        envios = cache.incr(f"limite:{clave}")
+    except ValueError:  # la clave venció entre add e incr
+        cache.set(f"limite:{clave}", 1, timeout=ventana)
+        envios = 1
+    return envios <= maximo
+
+
 def pedir_recuperacion(email: str) -> None:
     """Envía el enlace si el correo es de una cuenta activa de pasajero o convenio. No dice si existe."""
     from django.contrib.auth.tokens import default_token_generator
@@ -121,18 +135,24 @@ def pedir_recuperacion(email: str) -> None:
 
     from .tareas import al_confirmar_correo
 
-    usuario = Usuario.objects.filter(
-        email__iexact=email.strip(), activo=True, rol__in=ROLES_RECUPERABLES
-    ).first()
+    if not dentro_del_limite(f"recuperar:{email.strip().lower()}", settings.RECUPERAR_MAX_ENVIOS):
+        return  # HU-41: misma respuesta 202; no se envía más
+    usuario = (
+        Usuario.objects.filter(email__iexact=email.strip(), activo=True, rol__in=ROLES_RECUPERABLES)
+        .select_related("empresa")
+        .first()
+    )
     if usuario is None or not usuario.has_usable_password():
         return
     uid = urlsafe_base64_encode(force_bytes(usuario.pk))
-    enlace = f"{settings.WEB_URL_BASE}/recuperar/{uid}/{default_token_generator.make_token(usuario)}"
+    token = default_token_generator.make_token(usuario)
+    # El enlace lleva la empresa para mostrar su marca en la pantalla de la contraseña nueva.
+    enlace = f"{settings.WEB_URL_BASE}/recuperar/{uid}/{token}?empresa={usuario.empresa.slug}"
     al_confirmar_correo(
         usuario.email,
         "Recupera tu contraseña de FlotaÁgil",
         f"Hola {usuario.nombre}:\n\nPara elegir una contraseña nueva abre este enlace (vence en "
-        f"{settings.PASSWORD_RESET_TIMEOUT // 3600} horas y sirve una sola vez):\n\n{enlace}\n\n"
+        f"{settings.PASSWORD_RESET_TIMEOUT // 60} minutos y sirve una sola vez):\n\n{enlace}\n\n"
         "Si no lo pediste, ignora este correo.\n",
     )
 
