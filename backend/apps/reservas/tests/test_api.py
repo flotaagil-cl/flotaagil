@@ -137,7 +137,11 @@ class TestListado:
         empresa = despachador.empresa
         pasajero = PasajeroFactory(empresa=empresa, nombre="Rosa Contreras", telefono="+56900004321")
         viaje = ViajeFactory(empresa=empresa, pasajero=pasajero, destino_dir="Av. Kennedy 9001, Vitacura")
-        ViajeFactory(empresa=empresa)
+        # Datos fijos: con Faker el otro pasajero podía llamarse «Contreras» y coincidir con la búsqueda.
+        otro = PasajeroFactory(empresa=empresa, nombre="Luis Tapia", telefono="+56900001111")
+        ViajeFactory(
+            empresa=empresa, pasajero=otro, origen_dir="Los Leones 100", destino_dir="Plaza de Armas"
+        )
         for q in ["contreras", "4321", "kennedy"]:
             assert [v["id"] for v in api.get(LISTA, {"q": q}).data["results"]] == [viaje.id], q
 
