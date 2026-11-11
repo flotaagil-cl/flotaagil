@@ -79,36 +79,38 @@ def conductor(empresa):
 CLAVE_PASAJERO = "Clave-Sintetica-2026"
 
 
-@pytest.fixture
-def con_cuenta(empresa):
-    """HU-40 (CC-18): pasajero con cuenta confirmada y sesión web; solo así se pide en el portal.
+def cliente_con_cuenta(empresa, *, consentimiento=True, email="ana@correo.example"):
+    """Cliente web con sesión de un PASAJERO con cuenta confirmada (teléfono +56900009101).
 
-    El PASAJERO usa el teléfono +56900009101 en la empresa.
+    Con `consentimiento=False` la cuenta es antigua: no aceptó el aviso de privacidad (DC-44).
     """
     from django.urls import reverse
-    from django.utils import timezone
 
-    from apps.reservas.models import CuentaPasajero
-    from apps.reservas.tests.fabricas import PasajeroFactory
+    from apps.reservas.tests.fabricas import CuentaPasajeroFactory
 
-    pasajero = PasajeroFactory(
-        empresa=empresa, nombre="Ana Pérez", telefono="+56900009101", verificado_en=timezone.now()
-    )
-    usuario = UsuarioFactory(empresa=empresa, rol="PASAJERO", email="ana@correo.example", nombre="Ana Pérez")
-    usuario.set_password(CLAVE_PASAJERO)
-    usuario.save()
-    CuentaPasajero.objects.create(
-        usuario=usuario,
+    cuenta = CuentaPasajeroFactory(
         empresa=empresa,
-        nombre=pasajero.nombre,
-        telefono=pasajero.telefono,
-        pasajero=pasajero,
-        confirmada_en=timezone.now(),
+        pasajero__nombre="Ana Pérez",
+        pasajero__telefono="+56900009101",
+        usuario__email=email,
+        sin_consentimiento=not consentimiento,
     )
+    cuenta.usuario.set_password(CLAVE_PASAJERO)
+    cuenta.usuario.save()
     web = APIClient(HTTP_ORIGIN=ORIGEN_PANEL)
-    respuesta = web.post(
-        reverse("auth-token"), {"email": usuario.email, "password": CLAVE_PASAJERO}, format="json"
-    )
+    respuesta = web.post(reverse("auth-token"), {"email": email, "password": CLAVE_PASAJERO}, format="json")
     assert respuesta.status_code == 200, respuesta.data
     web.credentials(HTTP_AUTHORIZATION=f"Bearer {respuesta.data['access']}")
     return web
+
+
+@pytest.fixture
+def con_cuenta(empresa):
+    """HU-40 (CC-18): pasajero con cuenta confirmada y consentimiento (DC-44): solo así se pide."""
+    return cliente_con_cuenta(empresa)
+
+
+@pytest.fixture
+def cuenta_antigua(empresa):
+    """DC-44: pasajero con cuenta confirmada antes del consentimiento único; debe aceptarlo al ingresar."""
+    return cliente_con_cuenta(empresa, consentimiento=False)

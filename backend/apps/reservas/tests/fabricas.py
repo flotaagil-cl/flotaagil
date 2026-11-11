@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 import factory
+from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
@@ -11,7 +12,7 @@ from apps.convenios.models import Convenio
 from apps.cuentas.models import Rol
 from apps.cuentas.tests.fabricas import EmpresaFactory, UsuarioFactory
 from apps.flota.models import Conductor, LicenciaClase, Vehiculo
-from apps.reservas.models import Canal, EstadoViaje, Pasajero, Viaje
+from apps.reservas.models import Canal, CuentaPasajero, EstadoViaje, Pasajero, Viaje
 
 SANTIAGO = Point(-70.6693, -33.4489, srid=4326)
 
@@ -84,3 +85,34 @@ class ViajeFactory(factory.django.DjangoModelFactory):
     destino_geo = SANTIAGO
     recogida_en = factory.LazyFunction(lambda: timezone.now() + timedelta(hours=2))
     estado = EstadoViaje.SOLICITADO
+
+
+class CuentaPasajeroFactory(factory.django.DjangoModelFactory):
+    """Cuenta confirmada de un PASAJERO (HU-35) con el consentimiento de DC-44 registrado por defecto.
+
+    `CuentaPasajeroFactory(sin_consentimiento=True)` crea una cuenta antigua, sin aceptación registrada.
+    """
+
+    class Meta:
+        model = CuentaPasajero
+
+    class Params:
+        sin_consentimiento = factory.Trait(privacidad_aceptada_en=None, privacidad_version=None)
+
+    empresa = factory.SubFactory(EmpresaFactory)
+    pasajero = factory.SubFactory(
+        PasajeroFactory,
+        empresa=factory.SelfAttribute("..empresa"),
+        verificado_en=factory.LazyFunction(timezone.now),
+    )
+    usuario = factory.SubFactory(
+        UsuarioFactory,
+        empresa=factory.SelfAttribute("..empresa"),
+        rol=Rol.PASAJERO,
+        nombre=factory.SelfAttribute("..nombre"),
+    )
+    nombre = factory.SelfAttribute("pasajero.nombre")
+    telefono = factory.SelfAttribute("pasajero.telefono")
+    confirmada_en = factory.LazyFunction(timezone.now)
+    privacidad_aceptada_en = factory.LazyFunction(timezone.now)
+    privacidad_version = factory.LazyFunction(lambda: settings.AVISO_PRIVACIDAD_VERSION)

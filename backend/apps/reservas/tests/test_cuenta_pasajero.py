@@ -45,6 +45,7 @@ def crear_cuenta(cliente, empresa, **cambios):
         "telefono": TELEFONO,
         "email": "paula@correo.example",
         "password": CLAVE,
+        "acepta_privacidad": True,  # DC-44
     }
     datos.update(cambios)
     return cliente.post(reverse("portal-crear-cuenta", args=[empresa.slug]), datos, format="json")

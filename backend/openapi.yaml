@@ -1063,6 +1063,23 @@ paths:
                 $ref: '#/components/schemas/InformeImportacion'
           description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
             el archivo no sirve, el error viene en `archivo`.'
+  /api/configuracion-publica/:
+    get:
+      operationId: configuracion_publica_retrieve
+      description: Lo que las pantallas sin sesión necesitan saber de la instalación
+        (ingreso del panel).
+      summary: Configuración pública
+      tags:
+      - publico
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionPublica'
+          description: ''
   /api/convenios/:
     get:
       operationId: convenios_list
@@ -1525,6 +1542,35 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/mi-cuenta/privacidad/:
+    post:
+      operationId: mi_cuenta_privacidad_create
+      description: 'DC-44: para las cuentas que no lo aceptaron o cuando cambia la
+        versión del aviso.'
+      summary: Aceptar el aviso de privacidad vigente
+      tags:
+      - mi-cuenta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AceptarPrivacidadRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AceptarPrivacidadRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AceptarPrivacidadRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrivacidadAceptada'
+          description: ''
   /api/mi-cuenta/reservas/:
     get:
       operationId: mi_cuenta_reservas_list
@@ -1601,6 +1647,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/SolicitudRespuesta'
           description: ''
+        '403':
+          description: '`aceptar_privacidad`: falta aceptar el aviso vigente (DC-44)'
         '429':
           description: '`limite_telefono`'
   /api/portal/{slug}/:
@@ -2971,6 +3019,13 @@ components:
       description: |-
         * `ANULAR` - ANULAR
         * `CERRAR` - CERRAR
+    AceptarPrivacidadRequest:
+      type: object
+      properties:
+        acepta:
+          type: boolean
+      required:
+      - acepta
     ActorEnum:
       enum:
       - CONDUCTOR
@@ -3373,6 +3428,17 @@ components:
       required:
       - id
       - nombre
+    ConfiguracionPublica:
+      type: object
+      properties:
+        soporte_correo:
+          type: string
+          format: email
+          nullable: true
+          description: Correo de soporte de FlotaÁgil (SOPORTE_CORREO); null si no
+            está configurado.
+      required:
+      - soporte_correo
     Convenio:
       type: object
       properties:
@@ -3606,10 +3672,15 @@ components:
           writeOnly: true
           minLength: 1
           maxLength: 128
+        acepta_privacidad:
+          type: boolean
+          description: 'DC-44: acepta el aviso de privacidad y los avisos de sus viajes
+            por WhatsApp (una vez).'
         sitio_web:
           type: string
           description: 'Campo trampa: debe ir vacío'
       required:
+      - acepta_privacidad
       - email
       - nombre
       - password
@@ -3660,10 +3731,9 @@ components:
             la recogida sugerida (DC-42).'
         capacidad_maxima:
           type: integer
-          nullable: true
           readOnly: true
-          description: 'Pasajeros por viaje: capacidad del vehículo activo más grande;
-            null sin vehículos (DC-43).'
+          description: 'Pasajeros por viaje: el vehículo más grande de la empresa;
+            4 sin vehículos (DC-43).'
       required:
       - antelacion_vuelo_internacional_min
       - antelacion_vuelo_nacional_min
@@ -4700,6 +4770,17 @@ components:
       - lat
       - lon
       - registrada_en
+    PrivacidadAceptada:
+      type: object
+      properties:
+        aceptada_en:
+          type: string
+          format: date-time
+        version:
+          type: string
+      required:
+      - aceptada_en
+      - version
     Punto:
       type: object
       properties:
@@ -5152,8 +5233,9 @@ components:
       - telefono
     SolicitudCuentaRequest:
       type: object
-      description: 'Los datos del pasajero salen de la cuenta: nombre y teléfono se
-        ignoran si vienen.'
+      description: |-
+        Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
+        acepta nada (la cuenta ya aceptó una vez); las aceptaciones se ignoran si vienen.
       properties:
         nombre:
           type: string
@@ -5216,8 +5298,6 @@ components:
           type: string
           writeOnly: true
       required:
-      - acepta_privacidad
-      - acepta_whatsapp
       - destino_dir
       - origen_dir
     SolicitudRespuesta:
@@ -5543,7 +5623,13 @@ components:
         debe_cambiar_password:
           type: boolean
           readOnly: true
+        debe_aceptar_privacidad:
+          type: boolean
+          readOnly: true
+          description: 'DC-44: pasajero con cuenta que debe aceptar el aviso de privacidad
+            vigente.'
       required:
+      - debe_aceptar_privacidad
       - debe_cambiar_password
       - email
       - empresa

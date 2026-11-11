@@ -161,9 +161,8 @@ class TestDesdeElAeropuerto:
 class TestCapacidad:
     def test_la_empresa_publica_su_capacidad_maxima(self, cliente, empresa):
         ruta = reverse("portal-empresa", args=[empresa.slug])
-        assert cliente.get(ruta).data["capacidad_maxima"] is None
+        assert cliente.get(ruta).data["capacidad_maxima"] == 4  # sin vehículos
         VehiculoFactory(empresa=empresa, capacidad=4)
-        VehiculoFactory(empresa=empresa, capacidad=7, activo=False)
         VehiculoFactory(empresa=empresa, capacidad=6)
         datos = cliente.get(ruta).data
         assert datos["capacidad_maxima"] == 6
@@ -172,16 +171,24 @@ class TestCapacidad:
             180,
         )
 
-    def test_no_supera_la_mayor_capacidad_activa(self, con_cuenta, empresa):
+    def test_cuentan_tambien_los_vehiculos_inactivos(self, cliente, empresa):
         VehiculoFactory(empresa=empresa, capacidad=4)
         VehiculoFactory(empresa=empresa, capacidad=7, activo=False)
+        assert cliente.get(reverse("portal-empresa", args=[empresa.slug])).data["capacidad_maxima"] == 7
+
+    def test_no_supera_la_mayor_capacidad_de_la_flota(self, con_cuenta, empresa):
+        VehiculoFactory(empresa=empresa, capacidad=4)
+        VehiculoFactory(empresa=empresa, capacidad=5, activo=False)
+        respuesta = pedir(con_cuenta, pasajeros=6)
+        assert respuesta.status_code == 400
+        assert "hasta 5 pasajeros" in str(respuesta.data["pasajeros"][0])
+        assert pedir(con_cuenta, pasajeros=5).status_code == 201
+
+    def test_sin_vehiculos_el_limite_es_4(self, con_cuenta):
         respuesta = pedir(con_cuenta, pasajeros=5)
         assert respuesta.status_code == 400
         assert "hasta 4 pasajeros" in str(respuesta.data["pasajeros"][0])
         assert pedir(con_cuenta, pasajeros=4).status_code == 201
-
-    def test_sin_vehiculos_activos_no_limita(self, con_cuenta):
-        assert pedir(con_cuenta, pasajeros=6).status_code == 201
 
     def test_al_asignar_exige_la_capacidad_del_vehiculo(self, cliente, despachador, empresa):
         cliente.force_authenticate(despachador)

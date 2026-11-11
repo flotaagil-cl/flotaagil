@@ -669,6 +669,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/configuracion-publica/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Configuración pública
+         * @description Lo que las pantallas sin sesión necesitan saber de la instalación (ingreso del panel).
+         */
+        get: operations["configuracion_publica_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/convenios/": {
         parameters: {
             query?: never;
@@ -974,6 +994,26 @@ export interface paths {
          * @description Borra la credencial y el correo; las reservas y el pasajero quedan como de invitado.
          */
         delete: operations["mi_cuenta_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mi-cuenta/privacidad/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aceptar el aviso de privacidad vigente
+         * @description DC-44: para las cuentas que no lo aceptaron o cuando cambia la versión del aviso.
+         */
+        post: operations["mi_cuenta_privacidad_create"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1676,6 +1716,9 @@ export interface components {
          * @enum {string}
          */
         AccionEnum: "ANULAR" | "CERRAR";
+        AceptarPrivacidadRequest: {
+            acepta: boolean;
+        };
         /**
          * @description * `CONDUCTOR` - Conductor
          *     * `DESPACHADOR` - Despachador
@@ -1833,6 +1876,13 @@ export interface components {
             id: number;
             nombre: string;
         };
+        ConfiguracionPublica: {
+            /**
+             * Format: email
+             * @description Correo de soporte de FlotaÁgil (SOPORTE_CORREO); null si no está configurado.
+             */
+            soporte_correo: string | null;
+        };
         Convenio: {
             readonly id: number;
             readonly cliente_nombre: string;
@@ -1918,6 +1968,8 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+            /** @description DC-44: acepta el aviso de privacidad y los avisos de sus viajes por WhatsApp (una vez). */
+            acepta_privacidad: boolean;
             /** @description Campo trampa: debe ir vacío */
             sitio_web?: string;
         };
@@ -1945,8 +1997,8 @@ export interface components {
             antelacion_vuelo_nacional_min: number;
             /** @description Al aeropuerto: minutos antes de un vuelo internacional para la recogida sugerida (DC-42). */
             antelacion_vuelo_internacional_min: number;
-            /** @description Pasajeros por viaje: capacidad del vehículo activo más grande; null sin vehículos (DC-43). */
-            readonly capacidad_maxima: number | null;
+            /** @description Pasajeros por viaje: el vehículo más grande de la empresa; 4 sin vehículos (DC-43). */
+            readonly capacidad_maxima: number;
         };
         EmpresaResumen: {
             readonly id: number;
@@ -2438,6 +2490,11 @@ export interface components {
             /** Format: date-time */
             registrada_en: string;
         };
+        PrivacidadAceptada: {
+            /** Format: date-time */
+            aceptada_en: string;
+            version: string;
+        };
         Punto: {
             direccion: string;
             /** Format: double */
@@ -2634,7 +2691,10 @@ export interface components {
             /** @description Declaro que el pasajero autorizó recibir avisos por WhatsApp */
             declara_autorizacion: boolean;
         };
-        /** @description Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. */
+        /**
+         * @description Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
+         *     acepta nada (la cuenta ya aceptó una vez); las aceptaciones se ignoran si vienen.
+         */
         SolicitudCuentaRequest: {
             nombre?: string;
             telefono?: string;
@@ -2662,8 +2722,8 @@ export interface components {
             /** @description Titular más acompañantes; no supera la capacidad de la flota (DC-43). */
             pasajeros?: number;
             maletas?: number;
-            acepta_privacidad: boolean;
-            acepta_whatsapp: boolean;
+            acepta_privacidad?: boolean;
+            acepta_whatsapp?: boolean;
             sitio_web?: string;
         };
         SolicitudRespuesta: {
@@ -2803,6 +2863,8 @@ export interface components {
             rol: components["schemas"]["RolEnum"];
             readonly empresa: components["schemas"]["EmpresaResumen"];
             readonly debe_cambiar_password: boolean;
+            /** @description DC-44: pasajero con cuenta que debe aceptar el aviso de privacidad vigente. */
+            readonly debe_aceptar_privacidad: boolean;
         };
         Vehiculo: {
             readonly id: number;
@@ -4081,6 +4143,25 @@ export interface operations {
             };
         };
     };
+    configuracion_publica_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionPublica"];
+                };
+            };
+        };
+    };
     convenios_list: {
         parameters: {
             query?: {
@@ -4553,6 +4634,31 @@ export interface operations {
             };
         };
     };
+    mi_cuenta_privacidad_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AceptarPrivacidadRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AceptarPrivacidadRequest"];
+                "multipart/form-data": components["schemas"]["AceptarPrivacidadRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivacidadAceptada"];
+                };
+            };
+        };
+    };
     mi_cuenta_reservas_list: {
         parameters: {
             query?: {
@@ -4632,6 +4738,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SolicitudRespuesta"];
                 };
+            };
+            /** @description `aceptar_privacidad`: falta aceptar el aviso vigente (DC-44) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description `limite_telefono` */
             429: {

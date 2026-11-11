@@ -50,7 +50,7 @@ class TestEmpresaPublica:
             "margen_nacional_min": 20,
             "antelacion_vuelo_nacional_min": 120,
             "antelacion_vuelo_internacional_min": 180,
-            "capacidad_maxima": None,
+            "capacidad_maxima": 4,
         }
 
     def test_margen_configurable(self, cliente, empresa):
