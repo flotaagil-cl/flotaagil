@@ -307,7 +307,15 @@ def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, d
     }
 
 
-def cancelar(cuenta: CuentaPasajero, viaje_id: int, *, usuario) -> Viaje:
+# HU-44: motivos que el pasajero elige al cancelar desde su cuenta (quedan en el texto del motivo).
+MOTIVOS_CANCELACION = {
+    "CAMBIO_DE_PLANES": "Cambié de planes",
+    "VUELO_CANCELADO": "Mi vuelo se canceló",
+    "OTRO": "Otro motivo",
+}
+
+
+def cancelar(cuenta: CuentaPasajero, viaje_id: int, *, usuario, motivo: str | None = None) -> Viaje:
     viaje = reservas_de(cuenta).filter(pk=viaje_id).first()
     if viaje is None:
         from django.http import Http404
@@ -321,7 +329,11 @@ def cancelar(cuenta: CuentaPasajero, viaje_id: int, *, usuario) -> Viaje:
             EstadoViaje.CANCELADO,
             actor=Actor.PASAJERO,
             usuario=usuario,
-            motivo_cancelacion="Cancelada por el pasajero desde su cuenta.",
+            motivo_cancelacion=(
+                f"Cancelada por el pasajero desde su cuenta: {MOTIVOS_CANCELACION[motivo]}."
+                if motivo in MOTIVOS_CANCELACION
+                else "Cancelada por el pasajero desde su cuenta."
+            ),
             origen_cancelacion=OrigenCancelacion.PASAJERO,
         )
     except estados.TransicionInvalida as error:

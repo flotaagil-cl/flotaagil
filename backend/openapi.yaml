@@ -1628,6 +1628,17 @@ paths:
         required: true
       tags:
       - mi-cuenta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelarMiReservaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CancelarMiReservaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CancelarMiReservaRequest'
       security:
       - jwtAuth: []
       responses:
@@ -3260,6 +3271,18 @@ components:
         * `TELEFONO` - TELEFONO
         * `WHATSAPP` - WHATSAPP
         * `CONVENIO` - CONVENIO
+    CancelarMiReservaRequest:
+      type: object
+      properties:
+        motivo:
+          allOf:
+          - $ref: '#/components/schemas/MotivoEnum'
+          description: |-
+            HU-44: motivo elegido.
+
+            * `CAMBIO_DE_PLANES` - Cambié de planes
+            * `VUELO_CANCELADO` - Mi vuelo se canceló
+            * `OTRO` - Otro motivo
     CancelarRequest:
       type: object
       properties:
@@ -4345,6 +4368,8 @@ components:
           type: string
         canal:
           $ref: '#/components/schemas/CanalEnum'
+        sentido:
+          $ref: '#/components/schemas/SentidoEnum'
         origen_dir:
           type: string
           maxLength: 200
@@ -4404,6 +4429,16 @@ components:
       - total
       - totales
       - viajes
+    MotivoEnum:
+      enum:
+      - CAMBIO_DE_PLANES
+      - VUELO_CANCELADO
+      - OTRO
+      type: string
+      description: |-
+        * `CAMBIO_DE_PLANES` - Cambié de planes
+        * `VUELO_CANCELADO` - Mi vuelo se canceló
+        * `OTRO` - Otro motivo
     MotivoTerminoEnum:
       enum:
       - CONDUCTOR

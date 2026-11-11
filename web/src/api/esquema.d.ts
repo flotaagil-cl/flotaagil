@@ -1836,6 +1836,16 @@ export interface components {
          * @enum {string}
          */
         CanalPanelEnum: "TELEFONO" | "WHATSAPP" | "CONVENIO";
+        CancelarMiReservaRequest: {
+            /**
+             * @description HU-44: motivo elegido.
+             *
+             *     * `CAMBIO_DE_PLANES` - Cambié de planes
+             *     * `VUELO_CANCELADO` - Mi vuelo se canceló
+             *     * `OTRO` - Otro motivo
+             */
+            motivo?: components["schemas"]["MotivoEnum"];
+        };
         CancelarRequest: {
             motivo: string;
         };
@@ -2282,6 +2292,7 @@ export interface components {
             estado?: components["schemas"]["EstadoViajeEnum"];
             estado_texto: string;
             canal: components["schemas"]["CanalEnum"];
+            sentido?: components["schemas"]["SentidoEnum"];
             origen_dir: string;
             destino_dir: string;
             /** Format: date-time */
@@ -2306,6 +2317,13 @@ export interface components {
             totales: components["schemas"]["TotalPorMetodo"][];
             total: number;
         };
+        /**
+         * @description * `CAMBIO_DE_PLANES` - Cambié de planes
+         *     * `VUELO_CANCELADO` - Mi vuelo se canceló
+         *     * `OTRO` - Otro motivo
+         * @enum {string}
+         */
+        MotivoEnum: "CAMBIO_DE_PLANES" | "VUELO_CANCELADO" | "OTRO";
         /**
          * @description * `CONDUCTOR` - Conductor
          *     * `CUENTA_DESHABILITADA` - Cuenta deshabilitada
@@ -4854,7 +4872,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CancelarMiReservaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CancelarMiReservaRequest"];
+                "multipart/form-data": components["schemas"]["CancelarMiReservaRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

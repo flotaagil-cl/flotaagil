@@ -38,6 +38,7 @@ class MiReservaSerializer(serializers.ModelSerializer):
             "estado",
             "estado_texto",
             "canal",
+            "sentido",
             "origen_dir",
             "destino_dir",
             "recogida_en",
@@ -267,18 +268,28 @@ class MisReservasView(ListAPIView):
         )
 
 
+class CancelarMiReservaSerializer(serializers.Serializer):
+    motivo = serializers.ChoiceField(
+        choices=list(cuentas.MOTIVOS_CANCELACION.items()), required=False, help_text="HU-44: motivo elegido."
+    )
+
+
 class CancelarMiReservaView(APIView):
     permission_classes = SOLO_PASAJERO
 
     @extend_schema(
         tags=["mi-cuenta"],
         summary="Cancelar una reserva sin conductor asignado (RN-09)",
-        request=None,
+        request=CancelarMiReservaSerializer,
         responses={200: MiReservaSerializer, 404: None, 409: OpenApiResponse(description="`con_conductor`")},
     )
     def post(self, request, pk):
         cuenta = cuentas.cuenta_activa(request.user)
-        viaje = cuentas.cancelar(cuenta, pk, usuario=request.user)
+        entrada = CancelarMiReservaSerializer(data=request.data or {})
+        entrada.is_valid(raise_exception=True)
+        viaje = cuentas.cancelar(
+            cuenta, pk, usuario=request.user, motivo=entrada.validated_data.get("motivo")
+        )
         return Response(
             MiReservaSerializer(Viaje.objects.prefetch_related("historial").get(pk=viaje.pk)).data
         )

@@ -84,3 +84,33 @@ class TestTuViaje:
     def test_otros_roles_no_entran(self, cliente, despachador, mio):
         cliente.force_authenticate(despachador)
         assert cliente.get(url(mio)).status_code == 403
+
+
+@pytest.mark.django_db
+class TestCancelarConMotivo:
+    """HU-44: cancelar desde la cuenta solo sin conductor (RN-09), con un motivo opcional."""
+
+    def test_con_motivo_queda_en_el_viaje(self, con_cuenta, mio):
+        ruta = reverse("mi-cuenta-cancelar", args=[mio.pk])
+        respuesta = con_cuenta.post(ruta, {"motivo": "VUELO_CANCELADO"}, format="json")
+        assert respuesta.status_code == 200
+        assert respuesta.json()["sentido"] == mio.sentido
+        mio.refresh_from_db()
+        assert mio.estado == E.CANCELADO
+        assert mio.motivo_cancelacion == "Cancelada por el pasajero desde su cuenta: Mi vuelo se canceló."
+
+    def test_sin_motivo_sigue_funcionando(self, con_cuenta, mio):
+        assert con_cuenta.post(reverse("mi-cuenta-cancelar", args=[mio.pk])).status_code == 200
+        mio.refresh_from_db()
+        assert mio.motivo_cancelacion == "Cancelada por el pasajero desde su cuenta."
+
+    def test_motivo_desconocido(self, con_cuenta, mio):
+        ruta = reverse("mi-cuenta-cancelar", args=[mio.pk])
+        assert con_cuenta.post(ruta, {"motivo": "OTRA_COSA"}, format="json").status_code == 400
+
+    def test_con_conductor_no_se_cancela(self, con_cuenta, mio):
+        Viaje.objects.filter(pk=mio.pk).update(estado=E.EN_CAMINO)
+        respuesta = con_cuenta.post(
+            reverse("mi-cuenta-cancelar", args=[mio.pk]), {"motivo": "OTRO"}, format="json"
+        )
+        assert respuesta.status_code == 409
