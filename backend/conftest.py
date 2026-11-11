@@ -99,7 +99,8 @@ def cliente_con_cuenta(empresa, *, consentimiento=True, email="ana@correo.exampl
     cuenta.usuario.save()
     web = APIClient(HTTP_ORIGIN=ORIGEN_PANEL)
     respuesta = web.post(reverse("auth-token"), {"email": email, "password": CLAVE_PASAJERO}, format="json")
-    assert respuesta.status_code == 200, respuesta.data
+    if respuesta.status_code != 200:
+        pytest.fail(f"El pasajero de prueba no pudo iniciar sesión: {respuesta.status_code} {respuesta.data}")
     web.credentials(HTTP_AUTHORIZATION=f"Bearer {respuesta.data['access']}")
     return web
 
