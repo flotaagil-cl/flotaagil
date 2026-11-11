@@ -1,0 +1,116 @@
+/*
+ * HU-37: sistema visual del portal «Tiffany degradé» (docs/diseño/portal/diseno-portal/README.md).
+ *
+ * Los colores viven solo aquí: los componentes usan las variables. Se aplican bajo .tema-portal, así el panel
+ * conserva su estilo. El color por empresa queda preparado: basta con redefinir los tres tokens de marca
+ * (--color-primario-900, --color-primario-700 y --color-tiffany) en el elemento .tema-portal y los degradés,
+ * el foco y los pines los siguen.
+ *
+ * Plus Jakarta Sans se sirve desde el propio build (@fontsource, subconjunto latino), sin CDN.
+ */
+@import '@fontsource/plus-jakarta-sans/latin-400.css';
+@import '@fontsource/plus-jakarta-sans/latin-500.css';
+@import '@fontsource/plus-jakarta-sans/latin-600.css';
+@import '@fontsource/plus-jakarta-sans/latin-700.css';
+@import '@fontsource/plus-jakarta-sans/latin-800.css';
+
+.tema-portal {
+  /* Marca (cambiables por empresa). */
+  --color-primario-900: #0b4f5c;
+  --color-primario-700: #0c7f7d;
+  --color-tiffany: #81d8d0;
+  --color-tiffany-50: #e3f6f4;
+  --color-hero-fin: #2fa39c;
+
+  /* Superficies y texto. */
+  --fondo: #f2fbfa;
+  --superficie: #ffffff;
+  --texto: #0f2a2e;
+  --texto-suave: #4f6a6c;
+  --sobre-oscuro: #ffffff;
+  --borde: #cfe8e5;
+  /* Borde de los campos: 3:1 contra la superficie y el fondo (WCAG 1.4.11); --borde es solo decorativo. */
+  --borde-campo: #5f8f8b;
+  --suave: #ddf3f1;
+  --mapa: #e1f0ee;
+  --parque: #d3e6d8;
+  --calle: #ffffff;
+  --peligro: #b42318;
+  --exito: #1a7f45;
+  --sombra: rgb(15 42 46 / 12%);
+
+  /* Insignias de estado (fondo / texto). */
+  --insignia-info-fondo: var(--color-tiffany);
+  --insignia-info-texto: #0f2a2e;
+  --insignia-ok-fondo: #d9f2e3;
+  --insignia-ok-texto: #14532d;
+  --insignia-revision-fondo: #fdf0d5;
+  --insignia-revision-texto: #7a4b00;
+  --insignia-peligro-fondo: #fde3e1;
+  --insignia-peligro-texto: #8a1c12;
+  --insignia-neutra-fondo: var(--suave);
+  --insignia-neutra-texto: var(--texto-suave);
+
+  /* Degradés. */
+  --grad-boton: linear-gradient(90deg, var(--color-primario-900), var(--color-primario-700));
+  --grad-destacado: linear-gradient(110deg, var(--color-tiffany-50), var(--color-tiffany));
+  --grad-hero: linear-gradient(
+    140deg,
+    var(--color-primario-900) 0%,
+    var(--color-primario-700) 65%,
+    var(--color-hero-fin) 100%
+  );
+
+  /* Nombres generales que también usan los componentes compartidos (Aviso, Cargando). */
+  --acento: var(--color-primario-700);
+  --acento-hover: var(--color-primario-900);
+  --acento-suave: var(--color-tiffany-50);
+  --sobre-acento: var(--sobre-oscuro);
+  --info-fondo: var(--color-tiffany-50);
+  --info-borde: var(--color-tiffany);
+  --error-fondo: var(--insignia-peligro-fondo);
+  --error-borde: var(--peligro);
+  --error-texto: var(--insignia-peligro-texto);
+  --foco: var(--color-primario-900);
+
+  /* Tipografía. */
+  --fuente: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --texto-base: 15px;
+  --texto-etiqueta: 13px;
+
+  /* Medidas. */
+  --alto-campo: 50px;
+  --alto-boton: 54px;
+  --radio-campo: 10px;
+  --radio-boton: 12px;
+  --radio-tarjeta: 16px;
+  --radio-hero: 24px;
+  --radio-panel: 22px;
+  --toque: 44px;
+
+  /* El diseño es claro: el portal no cambia con el modo oscuro del sistema. */
+  color-scheme: light;
+  min-height: 100dvh;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--fuente);
+  font-size: var(--texto-base);
+}
+
+.tema-portal :focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* Texto solo para lectores de pantalla. */
+.tema-portal .solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

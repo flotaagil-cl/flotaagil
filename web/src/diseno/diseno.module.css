@@ -1,0 +1,673 @@
+/* HU-37: componentes del portal. Solo variables de tokens.css; sin colores sueltos. */
+
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--toque);
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radio-boton);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.boton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.principal {
+  min-height: var(--alto-boton);
+  background: var(--grad-boton);
+  color: var(--sobre-oscuro);
+  font-size: 16px;
+}
+.principal:hover:not(:disabled) {
+  background: var(--color-primario-900);
+}
+.secundario {
+  background: var(--superficie);
+  color: var(--color-primario-900);
+  border-color: var(--borde-campo);
+}
+.texto {
+  padding: 0 8px;
+  background: transparent;
+  color: var(--texto);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.peligro {
+  min-height: var(--alto-boton);
+  background: var(--peligro);
+  color: var(--sobre-oscuro);
+}
+.ancho {
+  width: 100%;
+}
+
+/* ---------- Campos ---------- */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.etiqueta {
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
+  color: var(--texto);
+}
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.control > svg {
+  position: absolute;
+  left: 14px;
+  color: var(--color-primario-700);
+  pointer-events: none;
+}
+.entrada {
+  width: 100%;
+  min-height: var(--alto-campo);
+  padding: 0 14px;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 16px;
+}
+.conIcono .entrada {
+  padding-left: 44px;
+}
+.entrada::placeholder {
+  color: var(--texto-suave);
+}
+.entrada[aria-invalid='true'] {
+  border: 2px solid var(--peligro);
+}
+.ayuda {
+  margin: 0;
+  font-size: var(--texto-etiqueta);
+  color: var(--texto-suave);
+}
+.errorCampo {
+  margin: 0;
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
+  color: var(--peligro);
+}
+
+.datoFijo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 58px;
+  padding: 8px 16px;
+  border-radius: var(--radio-campo);
+  background: var(--suave);
+  color: var(--color-primario-700);
+}
+.datoFijoTexto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0;
+  color: var(--texto);
+}
+.datoFijoEtiqueta {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+.datoFijoValor {
+  font-weight: 600;
+}
+.datoFijoCandado {
+  color: var(--texto-suave);
+}
+
+/* ---------- Insignias, tarjetas y destacados ---------- */
+.insignia {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.insignia[data-tono='info'] {
+  background: var(--insignia-info-fondo);
+  color: var(--insignia-info-texto);
+}
+.insignia[data-tono='ok'] {
+  background: var(--insignia-ok-fondo);
+  color: var(--insignia-ok-texto);
+}
+.insignia[data-tono='revision'] {
+  background: var(--insignia-revision-fondo);
+  color: var(--insignia-revision-texto);
+}
+.insignia[data-tono='peligro'] {
+  background: var(--insignia-peligro-fondo);
+  color: var(--insignia-peligro-texto);
+}
+.insignia[data-tono='neutra'] {
+  background: var(--insignia-neutra-fondo);
+  color: var(--insignia-neutra-texto);
+}
+
+.tarjeta {
+  padding: 20px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+}
+
+.destacado {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radio-tarjeta);
+  background: var(--grad-destacado);
+  color: var(--texto);
+}
+.destacadoIcono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--superficie);
+  color: var(--color-primario-700);
+}
+.destacadoTitulo {
+  margin: 0;
+  font-weight: 800;
+}
+.destacadoTexto {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ---------- Línea de tiempo ---------- */
+.linea {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.paso {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding-bottom: 18px;
+}
+.paso:last-child {
+  padding-bottom: 0;
+}
+/* Tramo que une un paso con el siguiente. */
+.paso:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  bottom: 0;
+  left: 11px;
+  width: 2px;
+  background: var(--borde);
+}
+.paso[data-estado='hecho']:not(:last-child)::before {
+  background: var(--color-primario-700);
+}
+.marcaPaso {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--suave);
+  color: var(--sobre-oscuro);
+}
+.paso[data-estado='hecho'] .marcaPaso {
+  background: var(--color-primario-700);
+}
+.paso[data-estado='actual'] .marcaPaso {
+  border: 4px solid var(--color-primario-700);
+  background: var(--superficie);
+}
+.textoPaso {
+  display: flex;
+  flex-direction: column;
+}
+.tituloPaso {
+  font-weight: 700;
+}
+.paso[data-estado='pendiente'] .tituloPaso {
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+.detallePaso {
+  font-size: var(--texto-etiqueta);
+  color: var(--texto-suave);
+}
+
+/* ---------- Contador ---------- */
+.contador {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.contadorFila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.contadorBoton {
+  display: grid;
+  place-items: center;
+  width: var(--toque);
+  height: var(--toque);
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto);
+  cursor: pointer;
+}
+.contadorBoton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.contadorValor {
+  min-width: 36px;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ---------- Pestañas ---------- */
+.pestanas {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--borde);
+  overflow-x: auto;
+}
+.pestana {
+  min-height: var(--toque);
+  padding: 0 4px;
+  margin-right: 24px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--texto-suave);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pestana[aria-selected='true'] {
+  border-bottom-color: var(--color-primario-700);
+  color: var(--texto);
+  font-weight: 700;
+}
+.panelPestana {
+  padding-top: 24px;
+}
+
+/* ---------- Diálogo ---------- */
+.fondoDialogo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--sombra);
+}
+.fondoDialogo[data-variante='menu'] {
+  place-items: start end;
+  padding-top: 72px;
+}
+.dialogo {
+  width: min(100%, 440px);
+  max-height: calc(100dvh - 32px);
+  padding: 20px;
+  overflow-y: auto;
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: 0 16px 40px var(--sombra);
+}
+.fondoDialogo[data-variante='menu'] .dialogo {
+  width: min(100%, 320px);
+}
+.dialogoCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.dialogoTitulo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+.dialogoCerrar {
+  display: grid;
+  place-items: center;
+  width: var(--toque);
+  height: var(--toque);
+  border: 0;
+  border-radius: 50%;
+  background: var(--suave);
+  color: var(--texto);
+  cursor: pointer;
+}
+
+/* ---------- Marco del portal ---------- */
+.marco {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.saltar {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 60;
+  padding: 10px 16px;
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto);
+}
+.saltar:focus {
+  top: 12px;
+}
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  min-height: 72px;
+  padding: 0 48px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+}
+.marca {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: var(--toque);
+  color: var(--texto);
+  font-size: 18px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.logo {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--color-primario-700);
+  color: var(--sobre-oscuro);
+  font-size: 14px;
+  font-weight: 800;
+}
+.nav {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+}
+.navEnlace {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--toque);
+  padding: 0 12px;
+  border-radius: var(--radio-campo);
+  color: var(--texto);
+  text-decoration: none;
+}
+.navEnlace[aria-current='page'] {
+  font-weight: 700;
+}
+.navEnlace:hover {
+  background: var(--fondo);
+}
+.botonCuenta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--toque);
+  margin-left: auto;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.menuCuenta {
+  display: flex;
+  flex-direction: column;
+}
+.menuEnlace {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--borde);
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menuEnlace:last-child {
+  border-bottom: 0;
+}
+.contenido {
+  flex: 1;
+  outline: none;
+}
+
+/* ---------- Pantalla con mapa ---------- */
+.conMapa {
+  display: grid;
+  grid-template-columns: minmax(0, 516px) minmax(0, 1fr);
+  gap: 48px;
+  padding: 36px 48px 36px;
+}
+.panel {
+  min-width: 0;
+}
+.asa {
+  display: none;
+}
+.zonaMapa {
+  position: sticky;
+  top: 36px;
+  height: min(756px, calc(100dvh - 72px - 72px));
+  min-height: 420px;
+  overflow: hidden;
+  border-radius: var(--radio-hero);
+}
+.volver {
+  display: none;
+}
+.chipMapa {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow: 0 2px 8px var(--sombra);
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
+}
+
+/* ---------- Mapa de respaldo ---------- */
+.mapa {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.mapaFondo {
+  fill: var(--mapa);
+}
+.mapaParque {
+  fill: var(--parque);
+}
+.mapaCalle {
+  fill: none;
+  stroke: var(--calle);
+  stroke-width: 12;
+}
+.mapaRuta {
+  fill: none;
+  stroke: var(--color-primario-700);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.pinPrincipal {
+  fill: var(--color-primario-700);
+  stroke: var(--superficie);
+  stroke-width: 3;
+}
+.pinIcono {
+  fill: none;
+  stroke: var(--sobre-oscuro);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pinVehiculo {
+  fill: var(--superficie);
+  stroke: var(--borde);
+  stroke-width: 1.5;
+}
+.pinVehiculoIcono {
+  fill: none;
+  stroke: var(--texto);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Celular ---------- */
+@media (max-width: 899px) {
+  .barra {
+    gap: 12px;
+    min-height: 64px;
+    padding: 0 16px;
+  }
+  .nav,
+  .nombreUsuario {
+    display: none;
+  }
+  /* Sobre el mapa: la marca y la cuenta flotan como fichas. */
+  .barra[data-movil='flotante'] {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    left: 16px;
+    z-index: 5;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .barra[data-movil='flotante'] .marca,
+  .barra[data-movil='flotante'] .botonCuenta {
+    padding: 4px 14px 4px 4px;
+    border-radius: 999px;
+    background: var(--superficie);
+    box-shadow: 0 2px 8px var(--sombra);
+  }
+  .barra[data-movil='flotante'] .botonCuenta {
+    padding: 2px;
+  }
+  .barra[data-movil='oculta'] {
+    display: none;
+  }
+  .marca {
+    font-size: 16px;
+  }
+
+  .conMapa {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0;
+    padding: 0;
+  }
+  .zonaMapa {
+    position: relative;
+    top: 0;
+    height: 260px;
+    min-height: 0;
+    border-radius: 0;
+  }
+  .panel {
+    position: relative;
+    z-index: 1;
+    margin-top: -24px;
+    padding: 12px 20px 32px;
+    border-radius: var(--radio-panel) var(--radio-panel) 0 0;
+    background: var(--superficie);
+  }
+  .asa {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 0 auto 16px;
+    border-radius: 2px;
+    background: var(--borde);
+  }
+  .volver {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: grid;
+    place-items: center;
+    width: var(--toque);
+    height: var(--toque);
+    border-radius: 50%;
+    background: var(--superficie);
+    box-shadow: 0 2px 8px var(--sombra);
+    color: var(--texto);
+  }
+  .chipMapa {
+    top: 20px;
+  }
+}

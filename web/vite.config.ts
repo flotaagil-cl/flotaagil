@@ -55,6 +55,8 @@ export default defineConfig({
     testTimeout: 20_000,
     setupFiles: ['./src/pruebas/setup.ts'],
     restoreMocks: true,
+    // HU-37: las pruebas de src/diseno leen sus CSS (contraste de los tokens y que no haya colores sueltos).
+    css: { include: [/src\/diseno\/.+\.css/] },
     coverage: {
       // Activada siempre: el CI corre `npx vitest run` y los umbrales se exigen igual.
       enabled: true,
@@ -72,6 +74,7 @@ export default defineConfig({
         'src/portal/**': MINIMO,
         'src/flota/**': MINIMO,
         'src/mapa/**': MINIMO,
+        'src/diseno/**': MINIMO,
         'src/entorno.ts': MINIMO,
       },
     },
