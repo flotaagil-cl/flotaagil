@@ -47,3 +47,9 @@ Reglas:
 - Viaje asignado: pantalla completa en degradé hero, con anillo de cuenta regresiva de 60 s y botones Rechazar y Aceptar.
 - Al finalizar: monto cobrado y método de pago (efectivo, transferencia o convenio).
 - No se cambian los permisos, el GPS ni nada nativo.
+
+## Ingreso al panel (panel/00-login.png)
+`/login` no tiene empresa en la dirección, así que lleva la marca de FlotaÁgil con la apariencia por defecto. La apariencia de cada empresa se aplica después de ingresar.
+- El portal (`/solicitar/:slug`) sigue con su propio ingreso, con la marca de la empresa.
+- Recuperar contraseña: el personal del panel no tiene recuperación por correo. Se lo pide al administrador, que le genera una temporal (DC-14). El texto de la pantalla lo explica.
+- Si un pasajero o un convenio entra por `/login`, la pantalla le indica que use el enlace de su empresa de transporte.
