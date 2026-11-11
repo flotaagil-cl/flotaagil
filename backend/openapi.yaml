@@ -3650,8 +3650,25 @@ components:
           type: integer
           description: Minutos que se suman a la llegada del vuelo cuando no se indica
             la recogida (RN-17).
+        antelacion_vuelo_nacional_min:
+          type: integer
+          description: 'Al aeropuerto: minutos antes de un vuelo nacional para la
+            recogida sugerida (DC-42).'
+        antelacion_vuelo_internacional_min:
+          type: integer
+          description: 'Al aeropuerto: minutos antes de un vuelo internacional para
+            la recogida sugerida (DC-42).'
+        capacidad_maxima:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 'Pasajeros por viaje: capacidad del vehículo activo más grande;
+            null sin vehículos (DC-43).'
       required:
+      - antelacion_vuelo_internacional_min
+      - antelacion_vuelo_nacional_min
       - anticipacion_minima_min
+      - capacidad_maxima
       - expiracion_verificacion_min
       - margen_nacional_min
       - razon_social
@@ -5097,6 +5114,27 @@ components:
           allOf:
           - $ref: '#/components/schemas/VueloLlegadaRequest'
           description: Solo para viajes desde el aeropuerto.
+        vuelo_salida:
+          allOf:
+          - $ref: '#/components/schemas/VueloSalidaRequest'
+          description: Solo para viajes al aeropuerto (HU-39).
+        lo_antes_posible:
+          type: boolean
+          default: false
+          description: 'HU-39: recogida ahora + la anticipación mínima (DC-10); ignora
+            `recogida_en`.'
+        pasajeros:
+          type: integer
+          maximum: 7
+          minimum: 1
+          default: 1
+          description: Titular más acompañantes; no supera la capacidad de la flota
+            (DC-43).
+        maletas:
+          type: integer
+          maximum: 20
+          minimum: 0
+          default: 0
         acepta_privacidad:
           type: boolean
         acepta_whatsapp:
@@ -5155,6 +5193,27 @@ components:
           allOf:
           - $ref: '#/components/schemas/VueloLlegadaRequest'
           description: Solo para viajes desde el aeropuerto.
+        vuelo_salida:
+          allOf:
+          - $ref: '#/components/schemas/VueloSalidaRequest'
+          description: Solo para viajes al aeropuerto (HU-39).
+        lo_antes_posible:
+          type: boolean
+          default: false
+          description: 'HU-39: recogida ahora + la anticipación mínima (DC-10); ignora
+            `recogida_en`.'
+        pasajeros:
+          type: integer
+          maximum: 7
+          minimum: 1
+          default: 1
+          description: Titular más acompañantes; no supera la capacidad de la flota
+            (DC-43).
+        maletas:
+          type: integer
+          maximum: 20
+          minimum: 0
+          default: 0
         acepta_privacidad:
           type: boolean
         acepta_whatsapp:
@@ -5221,6 +5280,14 @@ components:
         * `VUELO_CANCELADO` - Vuelo cancelado
         * `VUELO_DESVIADO` - Vuelo desviado
         * `SIN_DATOS` - Sin datos de la API
+    TipoVueloEnum:
+      enum:
+      - NACIONAL
+      - INTERNACIONAL
+      type: string
+      description: |-
+        * `NACIONAL` - Nacional
+        * `INTERNACIONAL` - Internacional
     Tokens:
       type: object
       properties:
@@ -5621,6 +5688,24 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
+        pasajeros:
+          type: integer
+          maximum: 7
+          minimum: 1
+        maletas:
+          type: integer
+          maximum: 20
+          minimum: 0
+        vuelo_salida_en:
+          type: string
+          format: date-time
+          nullable: true
+        vuelo_salida_tipo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/TipoVueloEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
         conductor:
           allOf:
           - $ref: '#/components/schemas/ConductorResumen'
@@ -5834,6 +5919,24 @@ components:
           maximum: 2147483647
           minimum: 0
           nullable: true
+        pasajeros:
+          type: integer
+          maximum: 7
+          minimum: 1
+        maletas:
+          type: integer
+          maximum: 20
+          minimum: 0
+        vuelo_salida_en:
+          type: string
+          format: date-time
+          nullable: true
+        vuelo_salida_tipo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/TipoVueloEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
         conductor:
           allOf:
           - $ref: '#/components/schemas/ConductorResumen'
@@ -5978,10 +6081,28 @@ components:
         hora_llegada:
           type: string
           format: date-time
-          description: Hora programada de llegada del vuelo.
+          description: Hora programada de llegada del vuelo. Obligatoria si no viene
+            `fecha`.
+        fecha:
+          type: string
+          format: date
+          description: 'HU-39: día de llegada; la hora la da la API de vuelos. Si
+            no responde, se pide la hora.'
       required:
-      - hora_llegada
       - numero
+    VueloSalidaRequest:
+      type: object
+      description: 'HU-39: vuelo de salida en los viajes al aeropuerto (DC-42).'
+      properties:
+        hora:
+          type: string
+          format: date-time
+          description: Hora de salida del vuelo.
+        tipo:
+          $ref: '#/components/schemas/TipoVueloEnum'
+      required:
+      - hora
+      - tipo
   securitySchemes:
     jwtAuth:
       type: http

@@ -1941,6 +1941,12 @@ export interface components {
             expiracion_verificacion_min: number;
             /** @description Minutos que se suman a la llegada del vuelo cuando no se indica la recogida (RN-17). */
             margen_nacional_min: number;
+            /** @description Al aeropuerto: minutos antes de un vuelo nacional para la recogida sugerida (DC-42). */
+            antelacion_vuelo_nacional_min: number;
+            /** @description Al aeropuerto: minutos antes de un vuelo internacional para la recogida sugerida (DC-42). */
+            antelacion_vuelo_internacional_min: number;
+            /** @description Pasajeros por viaje: capacidad del vehículo activo más grande; null sin vehículos (DC-43). */
+            readonly capacidad_maxima: number | null;
         };
         EmpresaResumen: {
             readonly id: number;
@@ -2615,6 +2621,20 @@ export interface components {
             sentido?: components["schemas"]["SentidoEnum"];
             /** @description Solo para viajes desde el aeropuerto. */
             vuelo?: components["schemas"]["VueloLlegadaRequest"];
+            /** @description Solo para viajes al aeropuerto (HU-39). */
+            vuelo_salida?: components["schemas"]["VueloSalidaRequest"];
+            /**
+             * @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`.
+             * @default false
+             */
+            lo_antes_posible: boolean;
+            /**
+             * @description Titular más acompañantes; no supera la capacidad de la flota (DC-43).
+             * @default 1
+             */
+            pasajeros: number;
+            /** @default 0 */
+            maletas: number;
             acepta_privacidad: boolean;
             acepta_whatsapp: boolean;
             sitio_web?: string;
@@ -2642,6 +2662,20 @@ export interface components {
             sentido?: components["schemas"]["SentidoEnum"];
             /** @description Solo para viajes desde el aeropuerto. */
             vuelo?: components["schemas"]["VueloLlegadaRequest"];
+            /** @description Solo para viajes al aeropuerto (HU-39). */
+            vuelo_salida?: components["schemas"]["VueloSalidaRequest"];
+            /**
+             * @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`.
+             * @default false
+             */
+            lo_antes_posible: boolean;
+            /**
+             * @description Titular más acompañantes; no supera la capacidad de la flota (DC-43).
+             * @default 1
+             */
+            pasajeros: number;
+            /** @default 0 */
+            maletas: number;
             acepta_privacidad: boolean;
             acepta_whatsapp: boolean;
             sitio_web?: string;
@@ -2674,6 +2708,12 @@ export interface components {
          * @enum {string}
          */
         TipoAlertaVueloEnum: "ETA_CAMBIADA" | "VUELO_CANCELADO" | "VUELO_DESVIADO" | "SIN_DATOS";
+        /**
+         * @description * `NACIONAL` - Nacional
+         *     * `INTERNACIONAL` - Internacional
+         * @enum {string}
+         */
+        TipoVueloEnum: "NACIONAL" | "INTERNACIONAL";
         Tokens: {
             access: string;
             refresh: string;
@@ -2822,6 +2862,11 @@ export interface components {
             /** Format: date-time */
             recogida_en: string;
             tarifa?: number | null;
+            pasajeros?: number;
+            maletas?: number;
+            /** Format: date-time */
+            vuelo_salida_en?: string | null;
+            vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             conductor: components["schemas"]["ConductorResumen"] | null;
             vehiculo: components["schemas"]["VehiculoResumen"] | null;
             convenio: components["schemas"]["ConvenioResumen"] | null;
@@ -2897,6 +2942,11 @@ export interface components {
             /** Format: date-time */
             recogida_en: string;
             tarifa?: number | null;
+            pasajeros?: number;
+            maletas?: number;
+            /** Format: date-time */
+            vuelo_salida_en?: string | null;
+            vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             conductor: components["schemas"]["ConductorResumen"] | null;
             vehiculo: components["schemas"]["VehiculoResumen"] | null;
             convenio: components["schemas"]["ConvenioResumen"] | null;
@@ -2949,9 +2999,23 @@ export interface components {
             numero: string;
             /**
              * Format: date-time
-             * @description Hora programada de llegada del vuelo.
+             * @description Hora programada de llegada del vuelo. Obligatoria si no viene `fecha`.
              */
-            hora_llegada: string;
+            hora_llegada?: string;
+            /**
+             * Format: date
+             * @description HU-39: día de llegada; la hora la da la API de vuelos. Si no responde, se pide la hora.
+             */
+            fecha?: string;
+        };
+        /** @description HU-39: vuelo de salida en los viajes al aeropuerto (DC-42). */
+        VueloSalidaRequest: {
+            /**
+             * Format: date-time
+             * @description Hora de salida del vuelo.
+             */
+            hora: string;
+            tipo: components["schemas"]["TipoVueloEnum"];
         };
     };
     responses: never;

@@ -257,6 +257,7 @@ SPECTACULAR_SETTINGS = {
         "EstadoConvenioEnum": "apps.convenios.models.EstadoConvenio",
         "RolEnum": "apps.cuentas.models.Rol",
         "RolPanelEnum": ["ADMINISTRADOR", "DESPACHADOR"],
+        "TipoVueloEnum": "apps.reservas.models.TipoVuelo",
     },
 }
 
