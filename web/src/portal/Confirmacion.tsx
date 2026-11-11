@@ -61,7 +61,8 @@ export function Confirmacion({ cuerpo, respuesta, destacado, alHacerOtra }: Prop
           <>
             <dt>Vuelo</dt>
             <dd>
-              {cuerpo.vuelo.numero} · llegada {formatearFechaHora(cuerpo.vuelo.hora_llegada)}
+              {cuerpo.vuelo.numero}
+              {cuerpo.vuelo.hora_llegada && ` · llegada ${formatearFechaHora(cuerpo.vuelo.hora_llegada)}`}
             </dd>
           </>
         )}

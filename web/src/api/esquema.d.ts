@@ -2623,18 +2623,11 @@ export interface components {
             vuelo?: components["schemas"]["VueloLlegadaRequest"];
             /** @description Solo para viajes al aeropuerto (HU-39). */
             vuelo_salida?: components["schemas"]["VueloSalidaRequest"];
-            /**
-             * @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`.
-             * @default false
-             */
-            lo_antes_posible: boolean;
-            /**
-             * @description Titular más acompañantes; no supera la capacidad de la flota (DC-43).
-             * @default 1
-             */
-            pasajeros: number;
-            /** @default 0 */
-            maletas: number;
+            /** @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`. */
+            lo_antes_posible?: boolean;
+            /** @description Titular más acompañantes; no supera la capacidad de la flota (DC-43). */
+            pasajeros?: number;
+            maletas?: number;
             acepta_privacidad: boolean;
             acepta_whatsapp: boolean;
             sitio_web?: string;
@@ -2664,18 +2657,11 @@ export interface components {
             vuelo?: components["schemas"]["VueloLlegadaRequest"];
             /** @description Solo para viajes al aeropuerto (HU-39). */
             vuelo_salida?: components["schemas"]["VueloSalidaRequest"];
-            /**
-             * @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`.
-             * @default false
-             */
-            lo_antes_posible: boolean;
-            /**
-             * @description Titular más acompañantes; no supera la capacidad de la flota (DC-43).
-             * @default 1
-             */
-            pasajeros: number;
-            /** @default 0 */
-            maletas: number;
+            /** @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`. */
+            lo_antes_posible?: boolean;
+            /** @description Titular más acompañantes; no supera la capacidad de la flota (DC-43). */
+            pasajeros?: number;
+            maletas?: number;
             acepta_privacidad: boolean;
             acepta_whatsapp: boolean;
             sitio_web?: string;

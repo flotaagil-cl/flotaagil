@@ -94,17 +94,15 @@ class SolicitudSerializer(serializers.Serializer):
     vuelo_salida = VueloSalidaSerializer(required=False, help_text="Solo para viajes al aeropuerto (HU-39).")
     lo_antes_posible = serializers.BooleanField(
         required=False,
-        default=False,
         help_text="HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`.",
     )
     pasajeros = serializers.IntegerField(
         required=False,
-        default=1,
         min_value=1,
         max_value=MAX_PASAJEROS,
         help_text="Titular más acompañantes; no supera la capacidad de la flota (DC-43).",
     )
-    maletas = serializers.IntegerField(required=False, default=0, min_value=0, max_value=20)
+    maletas = serializers.IntegerField(required=False, min_value=0, max_value=20)
     acepta_privacidad = serializers.BooleanField()
     acepta_whatsapp = serializers.BooleanField()
     # Campo trampa para bots: el formulario lo oculta; una persona lo deja vacío.

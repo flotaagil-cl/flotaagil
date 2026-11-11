@@ -16,6 +16,9 @@ export const EMPRESA_PORTAL: EmpresaPublica = {
   anticipacion_minima_min: 30,
   expiracion_verificacion_min: 15,
   margen_nacional_min: 20,
+  antelacion_vuelo_nacional_min: 120,
+  antelacion_vuelo_internacional_min: 180,
+  capacidad_maxima: 6,
 };
 
 interface Programada {
@@ -83,7 +86,7 @@ export class ServidorPortalFalso {
       if (!empresa) return json(404, { detail: 'No encontrado.' });
       const recogida = cuerpo.recogida_en
         ? Date.parse(cuerpo.recogida_en)
-        : Date.parse(cuerpo.vuelo!.hora_llegada) + empresa.margen_nacional_min * 60_000;
+        : Date.parse(cuerpo.vuelo!.hora_llegada!) + empresa.margen_nacional_min * 60_000;
       const verificado = this.verificados.has(cuerpo.telefono);
       const respuesta: SolicitudRespuesta = verificado
         ? {

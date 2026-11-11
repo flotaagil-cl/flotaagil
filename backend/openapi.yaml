@@ -5120,21 +5120,18 @@ components:
           description: Solo para viajes al aeropuerto (HU-39).
         lo_antes_posible:
           type: boolean
-          default: false
           description: 'HU-39: recogida ahora + la anticipación mínima (DC-10); ignora
             `recogida_en`.'
         pasajeros:
           type: integer
           maximum: 7
           minimum: 1
-          default: 1
           description: Titular más acompañantes; no supera la capacidad de la flota
             (DC-43).
         maletas:
           type: integer
           maximum: 20
           minimum: 0
-          default: 0
         acepta_privacidad:
           type: boolean
         acepta_whatsapp:
@@ -5199,21 +5196,18 @@ components:
           description: Solo para viajes al aeropuerto (HU-39).
         lo_antes_posible:
           type: boolean
-          default: false
           description: 'HU-39: recogida ahora + la anticipación mínima (DC-10); ignora
             `recogida_en`.'
         pasajeros:
           type: integer
           maximum: 7
           minimum: 1
-          default: 1
           description: Titular más acompañantes; no supera la capacidad de la flota
             (DC-43).
         maletas:
           type: integer
           maximum: 20
           minimum: 0
-          default: 0
         acepta_privacidad:
           type: boolean
         acepta_whatsapp:
