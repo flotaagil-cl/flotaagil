@@ -4,7 +4,7 @@ import { Icono } from './Icono';
 
 interface Props {
   etiqueta: string;
-  /** Lo que se cuenta, en singular, para los botones: «Quitar un pasajero». */
+  /** Lo que se cuenta, con su artículo, para los botones: «un pasajero», «una maleta». */
   unidad: string;
   valor: number;
   min?: number;
@@ -22,13 +22,13 @@ export function Contador({ etiqueta, unidad, valor, min = 0, max, onCambiar, err
         {etiqueta}
       </span>
       <div className={e.contadorFila}>
-        <button type="button" className={e.contadorBoton} aria-label={`Quitar un ${unidad}`} disabled={valor <= min} onClick={() => onCambiar(valor - 1)}>
+        <button type="button" className={e.contadorBoton} aria-label={`Quitar ${unidad}`} disabled={valor <= min} onClick={() => onCambiar(valor - 1)}>
           <Icono nombre="menos" tamano={18} />
         </button>
         <output className={e.contadorValor} aria-live="polite" aria-atomic="true">
           {valor}
         </output>
-        <button type="button" className={e.contadorBoton} aria-label={`Agregar un ${unidad}`} disabled={valor >= max} onClick={() => onCambiar(valor + 1)}>
+        <button type="button" className={e.contadorBoton} aria-label={`Agregar ${unidad}`} disabled={valor >= max} onClick={() => onCambiar(valor + 1)}>
           <Icono nombre="mas" tamano={18} />
         </button>
       </div>

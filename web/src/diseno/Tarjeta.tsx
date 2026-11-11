@@ -34,10 +34,12 @@ interface PropsDestacado {
   titulo?: string;
   icono?: NombreIcono;
   children?: ReactNode;
+  /** Acción a la derecha («Cambiar»). */
+  accion?: ReactNode;
 }
 
 /** Franja con el degradé destacado (por ejemplo, «Seguimos tu vuelo por ti»). */
-export function Destacado({ titulo, icono = 'avion', children }: PropsDestacado) {
+export function Destacado({ titulo, icono = 'avion', children, accion }: PropsDestacado) {
   return (
     <div className={e.destacado}>
       <span className={e.destacadoIcono}>
@@ -47,6 +49,7 @@ export function Destacado({ titulo, icono = 'avion', children }: PropsDestacado)
         {titulo && <p className={e.destacadoTitulo}>{titulo}</p>}
         {children && <p className={e.destacadoTexto}>{children}</p>}
       </div>
+      {accion}
     </div>
   );
 }

@@ -18,6 +18,7 @@ export const ICONOS = {
   menos: 'M5 12h14',
   usuario: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0',
   salir: 'M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10',
+  reloj: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v4.5l3 2',
   lista: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01',
   llave: 'M7.5 20a3.5 3.5 0 1 1 3.2-4.9L19 6.8M15.5 10.3l2 2M13.5 12.3l1.5 1.5',
 } as const;

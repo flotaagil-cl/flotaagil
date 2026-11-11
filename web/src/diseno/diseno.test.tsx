@@ -91,7 +91,7 @@ describe('HU-37 · componentes del portal', () => {
     const usuario = userEvent.setup();
     function Prueba() {
       const [valor, setValor] = useState(1);
-      return <Contador etiqueta="Pasajeros" unidad="pasajero" valor={valor} min={1} max={2} onCambiar={setValor} error="Máximo 2." />;
+      return <Contador etiqueta="Pasajeros" unidad="un pasajero" valor={valor} min={1} max={2} onCambiar={setValor} error="Máximo 2." />;
     }
     render(<Prueba />);
     const grupo = screen.getByRole('group', { name: 'Pasajeros' });

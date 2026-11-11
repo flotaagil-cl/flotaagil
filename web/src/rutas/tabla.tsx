@@ -33,7 +33,8 @@ export const ROLES_PASAJERO: Rol[] = ['PASAJERO'];
 /** HU-33: adónde llega cada rol después de iniciar sesión. */
 export function inicioDeRol(rol: Rol): string {
   if (rol === 'CONVENIO') return '/mi-convenio';
-  if (rol === 'PASAJERO') return '/mis-reservas';
+  // HU-39: el pasajero llega a pedir su traslado.
+  if (rol === 'PASAJERO') return '/pedir';
   return '/';
 }
 
@@ -189,6 +190,8 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           lazy: async () => ({ Component: (await import('./RutaAutenticada')).RutaAutenticada }),
           children: [
             { path: '/primer-ingreso', lazy: async () => ({ Component: (await import('../paginas/PrimerIngreso')).PrimerIngreso }) },
+            // HU-39: inicio y pedido del pasajero con el marco del portal (fuera del marco del panel).
+            { path: '/pedir/:tipo?', lazy: async () => ({ Component: (await import('../pedido/Pedir')).Pedir }) },
             {
               path: '/',
               lazy: async () => ({ Component: (await import('../componentes/Layout')).Layout }),

@@ -30,7 +30,7 @@ describe('destino por rol', () => {
     ['ADMINISTRADOR', '/'],
     ['DESPACHADOR', '/'],
     ['CONVENIO', '/mi-convenio'],
-    ['PASAJERO', '/mis-reservas'],
+    ['PASAJERO', '/pedir'],
   ] as const)('%s → %s', (rol, ruta) => {
     expect(inicioDeRol(rol)).toBe(ruta);
   });
@@ -42,11 +42,10 @@ describe('destino por rol', () => {
     expect(router.state.location.pathname).toBe('/mi-convenio');
   });
 
-  it('el pasajero llega a «Mis reservas»', async () => {
+  it('el pasajero llega a pedir su traslado (HU-39)', async () => {
     const { router } = montarLogin();
     await entrar('pasajero@andes.example');
-    expect(await screen.findByRole('heading', { name: 'Mis reservas' })).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/mis-reservas');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
   });
 
   it('el ingreso del portal ofrece recuperar la contraseña; el del panel pide una temporal al administrador', async () => {

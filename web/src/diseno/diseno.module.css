@@ -1135,3 +1135,154 @@
     background: none;
   }
 }
+
+/* ---------- Segmentado (HU-39) ---------- */
+.segmentado {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.segmentado legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+.segmentadoOpciones {
+  display: flex;
+  gap: 8px;
+}
+.segmentado[data-forma='bloque'] .segmentadoOpciones {
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radio-campo);
+  background: var(--suave);
+}
+.segmentadoOpcion {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  min-height: var(--toque);
+  cursor: pointer;
+}
+.segmentado[data-forma='pastillas'] .segmentadoOpcion {
+  flex: none;
+}
+.segmentadoOpcion input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.segmentadoOpcion span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  color: var(--texto);
+}
+.segmentado[data-forma='pastillas'] .segmentadoOpcion span {
+  min-height: var(--toque);
+  border: 1px solid var(--borde-campo);
+  border-radius: 999px;
+  background: var(--superficie);
+}
+.segmentadoOpcion input:checked + span {
+  font-weight: 700;
+}
+.segmentado[data-forma='bloque'] .segmentadoOpcion input:checked + span {
+  background: var(--superficie);
+  box-shadow: 0 1px 4px var(--sombra);
+}
+.segmentado[data-forma='pastillas'] .segmentadoOpcion input:checked + span {
+  border-color: transparent;
+  background: var(--color-primario-900);
+  color: var(--sobre-oscuro);
+}
+.segmentadoOpcion input:focus-visible + span {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+/* ---------- Pedido (HU-39) ---------- */
+.tituloPagina {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.8px;
+  line-height: 44px;
+}
+.subtituloPagina {
+  margin: 4px 0 24px;
+  color: var(--texto-suave);
+}
+.opcionViaje {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 14px 16px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  color: var(--texto);
+  text-decoration: none;
+}
+.opcionViaje > svg:last-child {
+  margin-left: auto;
+  color: var(--texto-suave);
+}
+.opcionIcono {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio-campo);
+  background: var(--suave);
+  color: var(--color-primario-700);
+}
+.opcionTitulo {
+  display: block;
+  font-weight: 700;
+}
+.opcionDetalle {
+  display: block;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+.saludo {
+  margin: 0;
+  color: var(--texto-suave);
+}
+.filaContadores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 48px;
+}
+.destacadoAccion {
+  margin-left: auto;
+  align-self: flex-start;
+  min-height: var(--toque);
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+@media (max-width: 899px) {
+  .tituloPagina {
+    font-size: 24px;
+    letter-spacing: -0.4px;
+    line-height: 30px;
+  }
+  .subtituloPagina {
+    margin-bottom: 16px;
+  }
+}

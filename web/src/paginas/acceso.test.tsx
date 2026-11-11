@@ -78,7 +78,7 @@ describe('HU-38 · ingreso del portal (/solicitar/:slug/ingresar)', () => {
     await userEvent.type(await screen.findByLabelText('Correo'), 'pasajero@andes.example');
     await userEvent.type(screen.getByLabelText('Contraseña'), 'clave');
     await userEvent.click(screen.getByRole('button', { name: 'Ingresar' }));
-    await waitFor(() => expect(router.state.location.pathname).toBe('/mis-reservas'));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
   });
 });
 
