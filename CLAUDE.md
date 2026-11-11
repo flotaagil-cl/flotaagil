@@ -34,12 +34,13 @@ web/       React + Vite: panel y portal                  responsable: Renato
 app/       React + Capacitor: app del conductor          responsable: Renato
 infra/     docker-compose, nginx, runbook, inventario    responsable: Carlos
 docs/      informes, decisiones, evidencias de pruebas   ambos
+docs/diseno/  referencias de diseño (portal, panel, app)  ambos
 .github/   CI, plantillas, Dependabot
 ```
 
 ## Dominio
 
-**Roles:** administrador, despachador, conductor, pasajero (sin cuenta), supervisor de convenio. Multiempresa: todo registro pertenece a una EMPRESA y un usuario solo ve los de la suya (RN-13).
+**Roles:** administrador, despachador, conductor, pasajero (con cuenta para pedir en el portal, CC-18), supervisor de convenio (cuenta de la empresa cliente). Multiempresa: todo registro pertenece a una EMPRESA y un usuario solo ve los de la suya (RN-13).
 
 **Entidades (Anexo D, mismos nombres):** EMPRESA, USUARIO, CONDUCTOR, VEHICULO, CONDUCTOR_VEHICULO, CONVENIO, PASAJERO, VIAJE, VUELO, ASIGNACION, HISTORIAL_ESTADO, PAGO_VIAJE, CALIFICACION, GEOCERCA, FILA_AEROPUERTO, POSICION_GPS, MENSAJE_WHATSAPP, AUDITORIA.
 
@@ -51,7 +52,7 @@ docs/      informes, decisiones, evidencias de pruebas   ambos
 - RN-03 Un conductor tiene a lo más un viaje en ejecución.
 - RN-04 Sin respuesta en 60 s la reserva vuelve a SOLICITADO.
 - RN-05 Con más de un vehículo, el conductor declara cuál usa antes de quedar Disponible.
-- RN-06 Reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min.
+- RN-06 Reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min. Desde CC-18 (DC-41) en el portal solo se pide con cuenta: el teléfono se verifica una vez al activarla y las reservas nacen en SOLICITADO; RN-06 queda para las reservas anteriores.
 - RN-07 Reservas por link de convenio vigente omiten la verificación del teléfono.
 - RN-08 Desactivar un convenio invalida su link sin afectar el historial.
 - RN-09 El pasajero cancela por WhatsApp solo sin conductor asignado.
@@ -67,11 +68,13 @@ docs/      informes, decisiones, evidencias de pruebas   ambos
 
 Los valores marcados como supuestos (márgenes, 10 min fuera de geocerca, 15 min de no presentación, polígono del aeropuerto) van como **parámetros configurables por empresa**, nunca fijos en el código.
 
+**Portal (rediseño, HU-37 en adelante):** el pasajero pide con cuenta (CC-18) y acepta el aviso de privacidad una sola vez al crearla (DC-44). La referencia visual está en `docs/diseno/` (README y capturas a 390 y 1440 px); los colores van solo como tokens de `web/src/diseno/tokens.css`.
+
 **No funcionales clave:** latencia GPS p95 < 5 s; API p95 < 2 s con 50 usuarios; TLS 1.2+ con HSTS; contraseñas PBKDF2-SHA256; cobertura ≥ 70 % en módulos de negocio; toda transición de estado y acción sensible auditada; integraciones con reintento exponencial y webhooks idempotentes; consumo de la app < 50 MB por turno de 8 h.
 
 ## Forma de trabajo
 
-- **Scrum**, sprints de 2 semanas, tablero en GitHub Projects «FlotaÁgil — Backlog». Backlog completo en `docs/backlog/backlog.json` (31 HU, 213 SP).
+- **Scrum**, sprints de 2 semanas, tablero en GitHub Projects «FlotaÁgil — Backlog». Backlog completo en `docs/backlog/backlog.json` (44 HU, 274 SP).
 - **Nunca push directo a `main`.** Todo entra por PR con CI en verde y revisión del otro integrante. Fusión *squash*.
 - **Ramas:** `feat/HU-03-reservas`, `fix/HU-16-monto-pago`, `chore/…`, `docs/…`, `test/…`. Una rama por HU o tarea.
 - **Commits y título del PR:** Conventional Commits en español con scope del área: `feat(backend): crear modelo VIAJE`, `fix(app): …`. El PR referencia el issue (`Closes #12`).
