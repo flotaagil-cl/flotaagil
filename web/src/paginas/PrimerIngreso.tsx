@@ -1,17 +1,25 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { ErrorApi, resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
+import { Boton } from '../diseno/Boton';
+import { Campo } from '../diseno/Campo';
+import e from '../diseno/diseno.module.css';
+import { Icono } from '../diseno/Icono';
+import { MarcoPortal } from '../diseno/MarcoPortal';
+import { PantallaAcceso } from '../diseno/PantallaAcceso';
+import { MINIMO_PASSWORD, reglasPassword } from '../diseno/password';
+import { ReglasPassword } from '../diseno/ReglasPassword';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
-import estilos from './Login.module.css';
 
-const MINIMO = 10;
+/** Roles con la marca de su empresa; el personal del panel ve la de FlotaÁgil. */
+const DEL_PORTAL = new Set(['PASAJERO', 'CONVENIO']);
 
 /**
- * DC-40: primer ingreso con contraseña temporal (DC-14) para todos los roles web. La API responde 403
- * `cambio_password_requerido` en todo salvo cambiar la contraseña, así que la guarda de rutas trae aquí a quien
- * tenga `debe_cambiar_password`. Al cambiarla, se vuelve a iniciar sesión con la nueva y se sigue a su vista.
+ * DC-40 con el diseño de HU-41: primer ingreso con contraseña temporal (DC-14) para todos los roles web. La API
+ * responde 403 `cambio_password_requerido` en todo salvo cambiar la contraseña, así que la guarda de rutas trae aquí
+ * a quien tenga `debe_cambiar_password`. Al cambiarla, se vuelve a iniciar sesión con la nueva y se sigue a su vista.
  */
 export function PrimerIngreso() {
   const { sesion, estado } = useSesion();
@@ -24,20 +32,24 @@ export function PrimerIngreso() {
   const [falla, setFalla] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
+  useEffect(() => {
+    document.title = 'Crea tu contraseña';
+  }, []);
+
   if (estado.fase !== 'autenticada') return null;
   const { usuario } = estado;
   if (!usuario.debe_cambiar_password) return <Navigate to={inicioDeRol(usuario.rol)} replace />;
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
-    const e: Record<string, string> = {};
-    if (!actual) e.actual = 'Ingresa la contraseña temporal.';
-    if (nueva.length < MINIMO) e.nueva = `Mínimo ${MINIMO} caracteres.`;
-    else if (nueva === actual) e.nueva = 'Debe ser distinta de la temporal.';
-    if (repetida !== nueva) e.repetida = 'Las contraseñas no coinciden.';
-    setErrores(e);
+    const encontrados: Record<string, string> = {};
+    if (!actual) encontrados.actual = 'Ingresa la contraseña temporal.';
+    if (nueva.length < MINIMO_PASSWORD) encontrados.nueva = `Mínimo ${MINIMO_PASSWORD} caracteres.`;
+    else if (nueva === actual) encontrados.nueva = 'Debe ser distinta de la temporal.';
+    if (repetida !== nueva) encontrados.repetida = 'Las contraseñas no coinciden.';
+    setErrores(encontrados);
     setFalla(null);
-    if (Object.keys(e).length) return;
+    if (Object.keys(encontrados).length) return;
     setEnviando(true);
     try {
       await resultado(api.POST('/api/auth/password/', { body: { password_actual: actual, password_nueva: nueva } }));
@@ -62,47 +74,53 @@ export function PrimerIngreso() {
     }
   }
 
-  const campo = (id: string, etiqueta: string, valor: string, cambiar: (v: string) => void, autocompletar: string) => (
-    <div className={estilos.campo}>
-      <label htmlFor={`primer-${id}`}>{etiqueta}</label>
-      <input
-        id={`primer-${id}`}
-        type="password"
-        autoComplete={autocompletar}
-        value={valor}
-        aria-invalid={errores[id] ? true : undefined}
-        aria-describedby={errores[id] ? `primer-${id}-error` : undefined}
-        onChange={(evento) => cambiar(evento.target.value)}
-      />
-      {errores[id] && (
-        <span id={`primer-${id}-error`} className={estilos.errorCampo}>
-          {errores[id]}
-        </span>
-      )}
-    </div>
-  );
-
+  const delPortal = DEL_PORTAL.has(usuario.rol);
+  const salida = delPortal ? `/solicitar/${usuario.empresa.slug}/ingresar` : '/login';
   return (
-    <main className={estilos.pagina}>
-      <form className={estilos.tarjeta} onSubmit={(evento) => void enviar(evento)} noValidate aria-labelledby="titulo-primer-ingreso">
-        <h1 id="titulo-primer-ingreso">
-          <span className={estilos.marca}>FlotaÁgil</span> Crea tu contraseña
-        </h1>
-        <p>
-          Hola, {usuario.nombre}. Entraste con una contraseña temporal: elige una propia para seguir.
-        </p>
-        {falla && <Aviso tipo="error">{falla}</Aviso>}
-        {campo('actual', 'Contraseña temporal', actual, setActual, 'current-password')}
-        {campo('nueva', 'Contraseña nueva', nueva, setNueva, 'new-password')}
-        {campo('repetida', 'Repite la contraseña nueva', repetida, setRepetida, 'new-password')}
-        <p>Al menos {MINIMO} caracteres, distinta de la temporal.</p>
-        <button type="submit" className={estilos.boton} disabled={enviando}>
-          {enviando ? 'Guardando…' : 'Guardar y continuar'}
-        </button>
-        <button type="button" className={estilos.boton} onClick={() => void sesion.logout().then(() => navegar('/login', { replace: true }))}>
-          Cerrar sesión
-        </button>
-      </form>
-    </main>
+    <MarcoPortal
+      marca={delPortal ? usuario.empresa.razon_social : 'FlotaÁgil'}
+      logo={delPortal ? undefined : <Icono nombre="auto" />}
+      inicio="/primer-ingreso"
+      barraMovil="oculta"
+    >
+      <PantallaAcceso
+        titulo="Crea tu contraseña"
+        subtitulo={`Hola, ${usuario.nombre}. Entraste con una contraseña temporal: elige una propia para seguir.`}
+        movil="hero"
+      >
+        <form className={e.formulario} onSubmit={(evento) => void enviar(evento)} noValidate aria-label="Crea tu contraseña">
+          {falla && <Aviso tipo="error">{falla}</Aviso>}
+          <Campo etiqueta="Contraseña temporal" type="password" autoComplete="current-password" value={actual} onChange={(evento) => setActual(evento.target.value)} error={errores.actual} />
+          <Campo
+            etiqueta="Contraseña nueva"
+            type="password"
+            autoComplete="new-password"
+            value={nueva}
+            onChange={(evento) => setNueva(evento.target.value)}
+            error={errores.nueva}
+            aria-describedby="reglas-primer-ingreso"
+          />
+          <Campo
+            etiqueta="Repite la contraseña nueva"
+            type="password"
+            autoComplete="new-password"
+            value={repetida}
+            onChange={(evento) => setRepetida(evento.target.value)}
+            error={errores.repetida}
+          />
+          <ReglasPassword reglas={reglasPassword(nueva, repetida)} id="reglas-primer-ingreso" />
+          <Boton type="submit" ancho cargando={enviando}>
+            {enviando ? 'Guardando…' : 'Guardar y continuar'}
+          </Boton>
+          <button
+            type="button"
+            className={`${e.destacadoAccion} ${e.centrado}`}
+            onClick={() => void sesion.logout().then(() => navegar(salida, { replace: true }))}
+          >
+            Cerrar sesión
+          </button>
+        </form>
+      </PantallaAcceso>
+    </MarcoPortal>
   );
 }

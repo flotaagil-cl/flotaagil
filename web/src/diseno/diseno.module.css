@@ -1296,3 +1296,57 @@
   color: var(--texto);
   text-underline-offset: 3px;
 }
+
+/* ---------- Reglas de la contraseña (HU-41) ---------- */
+.reglas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+.reglas li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reglas li[data-cumple='true'] {
+  color: var(--texto);
+}
+.reglaMarca {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--suave);
+  color: var(--texto-suave);
+}
+.reglas li[data-cumple='true'] .reglaMarca {
+  background: var(--exito);
+  color: var(--sobre-oscuro);
+}
+.esperando {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--radio-campo);
+  background: var(--color-tiffany-50);
+  font-weight: 600;
+}
+.esperando::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--insignia-revision-texto);
+}
+.esperando[data-activa='true']::before {
+  background: var(--exito);
+}

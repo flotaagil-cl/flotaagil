@@ -228,6 +228,12 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           // HU-38: en el celular el título va en la banda con el degradé, sin la barra.
           handle: { barraMovil: 'oculta', completa: true },
         },
+        {
+          // HU-41: volver a activar la cuenta (reenviar el mensaje o corregir el número).
+          path: 'activar',
+          lazy: async () => ({ Component: (await import('../portal/paginas/Activar')).Activar }),
+          handle: { barraMovil: 'oculta', completa: true },
+        },
       ],
     },
     {

@@ -58,12 +58,20 @@ export function IngresarPortal() {
             {...register('email')}
           />
           <Campo etiqueta="Contraseña" type="password" autoComplete="current-password" error={errors.password?.message} {...register('password')} />
-          <Link to="/recuperar" className={`${e.enlace} ${e.derecha}`}>
+          <Link to={`/recuperar?empresa=${slug}`} className={`${e.enlace} ${e.derecha}`}>
             ¿Olvidaste tu contraseña?
           </Link>
           <Boton type="submit" ancho cargando={isSubmitting}>
             {isSubmitting ? 'Ingresando…' : 'Ingresar'}
           </Boton>
+          {error && empresa.data && (
+            <p className={e.nota}>
+              ¿Creaste tu cuenta y no la activaste?{' '}
+              <Link to={`/solicitar/${slug}/activar`} className={e.enlace}>
+                Activa tu cuenta
+              </Link>
+            </p>
+          )}
         </form>
         {empresa.data && (
           <>

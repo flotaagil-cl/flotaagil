@@ -8,7 +8,8 @@ import { PantallaAcceso } from '../../diseno/PantallaAcceso';
 import { Destacado } from '../../diseno/Tarjeta';
 import { useCrearCuenta } from '../api';
 import { useContextoPortal } from '../contexto';
-import { mostrarTelefono, normalizarWhatsapp } from '../telefono';
+import { ActivarCuenta } from '../ActivarCuenta';
+import { enmascarar, normalizarWhatsapp } from '../telefono';
 
 interface Campos {
   nombre: string;
@@ -86,14 +87,9 @@ export function CrearCuenta() {
 
   if (enviado) {
     return (
-      <PantallaAcceso titulo="Confirma tu cuenta" subtitulo="Falta un paso para empezar a pedir." movil="hero" volver={{ a: ingresar, texto: 'Volver a ingresar' }}>
-        <Destacado titulo="Revisa tu WhatsApp" icono="mensaje">
-          Te enviamos un mensaje al {mostrarTelefono(enviado)}. Responde CONFIRMAR CUENTA en los próximos {empresa.expiracion_verificacion_min} minutos
-          para activarla.
-        </Destacado>
-        <Link to={ingresar} className={`${e.enlace} ${e.centrado}`}>
-          Ir a ingresar
-        </Link>
+      <PantallaAcceso titulo="Activa tu cuenta" subtitulo="Un último paso: confirma que el WhatsApp es tuyo." movil="hero" volver={{ a: ingresar, texto: 'Volver a ingresar' }}>
+        <ActivarCuenta api={api} slug={slug} email={datos.email.trim()} password={datos.password} telefono={enmascarar(enviado)} />
+        <p className={e.nota}>El mensaje vale {empresa.expiracion_verificacion_min} minutos desde el último envío.</p>
       </PantallaAcceso>
     );
   }

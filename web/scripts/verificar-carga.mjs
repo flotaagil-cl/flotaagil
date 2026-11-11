@@ -54,6 +54,7 @@ export const DIFERIDOS = [
   'src/portal/paginas/Privacidad.tsx',
   'src/portal/paginas/RegistroEmpresa.tsx',
   'src/portal/paginas/CrearCuenta.tsx',
+  'src/portal/paginas/Activar.tsx',
   'src/cuentas-web/Recuperar.tsx',
   'src/caja/Caja.tsx',
   'src/cuentas-web/MiConvenio.tsx',
@@ -77,6 +78,7 @@ export const REGLAS = [
   // HU-34 y HU-35: registro de la empresa, cuenta del pasajero y recuperar la contraseña, sin sesión.
   { desde: 'src/portal/paginas/RegistroEmpresa.tsx', nombre: '/solicitar/registro-empresa', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/CrearCuenta.tsx', nombre: '/solicitar/cuenta', prohibido: PANEL_Y_SESION },
+  { desde: 'src/portal/paginas/Activar.tsx', nombre: '/solicitar/activar', prohibido: PANEL_Y_SESION },
   { desde: 'src/cuentas-web/Recuperar.tsx', nombre: '/recuperar', prohibido: PANEL_Y_SESION },
 ];
 

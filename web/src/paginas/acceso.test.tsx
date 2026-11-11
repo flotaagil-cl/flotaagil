@@ -62,7 +62,7 @@ describe('HU-38 · ingreso del portal (/solicitar/:slug/ingresar)', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Ingresar' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Crear cuenta' })).toHaveAttribute('href', '/solicitar/transportes-andes/cuenta');
     expect(screen.getByRole('banner')).toContainElement(screen.getAllByRole('link', { name: '¿Eres empresa? Registra tu convenio' })[0]);
-    expect(screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
+    expect(screen.getByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar?empresa=transportes-andes');
     expect(document.title).toBe('Ingresar · Transportes Andes Demo SpA');
   });
 
@@ -117,8 +117,10 @@ describe('HU-38 · crear cuenta', () => {
     const { recibidos } = montarCrear();
     await completar();
     await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
-    expect(await screen.findByRole('heading', { name: 'Confirma tu cuenta' })).toBeInTheDocument();
-    expect(screen.getByText(/Responde CONFIRMAR CUENTA en los próximos 15 minutos/)).toBeInTheDocument();
+    // HU-41: al crearla pasa a «Activa tu cuenta» con el número enmascarado.
+    expect(await screen.findByRole('heading', { name: 'Activa tu cuenta' })).toBeInTheDocument();
+    expect(screen.getByText(/Escribe CONFIRMAR CUENTA al mensaje que enviamos a \+569\*{6}21/)).toBeInTheDocument();
+    expect(screen.getByText(/El mensaje vale 15 minutos/)).toBeInTheDocument();
     expect(recibidos[0]).toEqual({
       nombre: 'Paula Pasajera',
       email: 'paula@correo.example',
@@ -127,7 +129,6 @@ describe('HU-38 · crear cuenta', () => {
       acepta_privacidad: true, // DC-44: la casilla del alta es el consentimiento único
       sitio_web: '',
     });
-    expect(screen.getByRole('link', { name: 'Ir a ingresar' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
   });
 
   it('valida antes de enviar: obligatorios, mínimo de la contraseña y aviso de privacidad', async () => {

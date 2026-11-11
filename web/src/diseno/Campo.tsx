@@ -14,10 +14,10 @@ interface PropsCampo extends ComponentProps<'input'> {
 }
 
 /** Campo de texto con su etiqueta. Acepta `ref` (React 19), así sirve con react-hook-form. */
-export function Campo({ etiqueta, error, ayuda, icono, prefijo, id, className, ...resto }: PropsCampo) {
+export function Campo({ etiqueta, error, ayuda, icono, prefijo, id, className, 'aria-describedby': describeExtra, ...resto }: PropsCampo) {
   const generado = useId();
   const idCampo = id ?? generado;
-  const describe = [ayuda ? `${idCampo}-ayuda` : null, error ? `${idCampo}-error` : null].filter(Boolean).join(' ');
+  const describe = [ayuda ? `${idCampo}-ayuda` : null, error ? `${idCampo}-error` : null, describeExtra].filter(Boolean).join(' ');
   return (
     <div className={[e.campo, className].filter(Boolean).join(' ')}>
       <label htmlFor={idCampo} className={e.etiqueta}>

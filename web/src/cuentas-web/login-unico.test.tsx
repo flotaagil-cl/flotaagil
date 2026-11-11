@@ -50,7 +50,7 @@ describe('destino por rol', () => {
 
   it('el ingreso del portal ofrece recuperar la contraseña; el del panel pide una temporal al administrador', async () => {
     montarLogin('/solicitar/transportes-andes/ingresar');
-    expect(await screen.findByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
+    expect(await screen.findByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar?empresa=transportes-andes');
   });
 
   it('el despachador sigue llegando a Inicio', async () => {

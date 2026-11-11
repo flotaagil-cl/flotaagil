@@ -1,15 +1,11 @@
 /** HU-35: cuenta opcional del pasajero en la web. */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
-import { App } from '../App';
-import { crearEntorno, crearLocks } from '../pruebas/entornoFalso';
 import { montarPanel } from '../pruebas/montar';
 import type { Respuesta, ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
-import { EMPRESA_PORTAL, ServidorPortalFalso } from '../pruebas/servidorPortalFalso';
-import { crearRutas } from '../rutas/tabla';
+import { EMPRESA_PORTAL } from '../pruebas/servidorPortalFalso';
 
 const CUENTA = {
   nombre: 'Pablo Pasajero',
@@ -85,46 +81,4 @@ describe('mis reservas', () => {
 
 // Crear cuenta (HU-35 con el diseño de HU-38): src/paginas/acceso.test.tsx.
 
-describe('recuperar la contraseña', () => {
-  function montarPublica(ruta: string, respuestas: Record<string, number>) {
-    const servidor = new ServidorPortalFalso();
-    const recibidas: string[] = [];
-    servidor.fetch = async (entrada, init) => {
-      const peticion = entrada instanceof Request ? entrada : new Request(entrada, init);
-      const camino = new URL(peticion.url).pathname;
-      recibidas.push(camino);
-      const estado = respuestas[camino] ?? 404;
-      return new Response(estado === 400 ? JSON.stringify({ token: ['El enlace no es válido o ya venció. Pide uno nuevo.'] }) : null, {
-        status: estado,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    };
-    const { entorno } = crearEntorno({ servidor, locks: crearLocks(), ahora: servidor.ahora });
-    const rutas = crearRutas();
-    const router = createMemoryRouter(rutas, { initialEntries: [ruta] });
-    render(<App entorno={entorno} rutas={rutas} router={router} />);
-    return recibidas;
-  }
-
-  it('pide el enlace y responde lo mismo exista o no', async () => {
-    const recibidas = montarPublica('/recuperar', { '/api/auth/recuperar/': 202 });
-    await userEvent.type(await screen.findByLabelText('Correo'), 'paula@correo.example');
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar enlace' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(/te enviamos un enlace/);
-    expect(recibidas).toEqual(['/api/auth/recuperar/']);
-  });
-
-  it('elige la nueva con el enlace', async () => {
-    montarPublica('/recuperar/MQ/tok-en', { '/api/auth/recuperar/confirmar/': 204 });
-    await userEvent.type(await screen.findByLabelText('Contraseña nueva'), 'Otra-Clave-Sintetica');
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('Listo');
-  });
-
-  it('un enlace vencido lo explica', async () => {
-    montarPublica('/recuperar/MQ/tok-en', { '/api/auth/recuperar/confirmar/': 400 });
-    await userEvent.type(await screen.findByLabelText('Contraseña nueva'), 'Otra-Clave-Sintetica');
-    await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('El enlace no es válido o ya venció');
-  });
-});
+// Recuperar la contraseña y activar la cuenta (HU-41): src/cuentas-web/recuperar.test.tsx.
