@@ -637,6 +637,29 @@
         "HU-20"
       ],
       "estado_cambio": "Nueva (CC-16)"
+    },
+    {
+      "id": "HU-36",
+      "titulo": "Usuarios del panel",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como administrador, quiero crear y administrar los usuarios administradores y despachadores de mi empresa, para dar y quitar acceso al panel sin ayuda técnica.",
+      "criterios": "Pantalla «Usuarios» solo para administrador con los administradores y despachadores de su empresa. Crear con nombre, correo y rol y contraseña temporal (DC-14). Editar nombre y rol, desactivar con revocación inmediata y restablecer. No se desactiva ni se quita el rol a sí mismo; la empresa nunca queda sin administrador activo. Correo usado con mensaje claro (PR-15). Todo en auditoría; otra empresa 404; despachador 403.",
+      "prioridad": "Alta",
+      "sp": 3,
+      "sprint": "Sprint 4",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-12",
+        "RN-13"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-10",
+        "HU-33"
+      ],
+      "estado_cambio": "Nueva (CC-17)"
     }
   ],
   "tareas": [

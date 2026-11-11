@@ -1219,6 +1219,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/usuarios/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Usuarios del panel de mi empresa
+         * @description HU-36: administradores y despachadores de la empresa. Ni conductores, ni convenios, ni pasajeros.
+         */
+        get: operations["usuarios_list"];
+        put?: never;
+        /**
+         * Crear un usuario del panel
+         * @description Genera una contraseña temporal (DC-14) que se muestra una sola vez. Queda en auditoría.
+         */
+        post: operations["usuarios_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/usuarios/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Detalle de un usuario del panel
+         * @description HU-36: administradores y despachadores de la empresa. Ni conductores, ni convenios, ni pasajeros.
+         */
+        get: operations["usuarios_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Editar nombre o rol
+         * @description Cambiar el rol cierra las sesiones del usuario. Queda en auditoría.
+         */
+        patch: operations["usuarios_partial_update"];
+        trace?: never;
+    };
+    "/api/usuarios/{id}/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activar un usuario del panel
+         * @description HU-36: administradores y despachadores de la empresa. Ni conductores, ni convenios, ni pasajeros.
+         */
+        post: operations["usuarios_activar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/usuarios/{id}/desactivar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Desactivar un usuario del panel
+         * @description Revoca sus sesiones al instante. Queda en auditoría.
+         */
+        post: operations["usuarios_desactivar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/usuarios/{id}/password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restablecer la contraseña con una temporal
+         * @description DC-14: la temporal se muestra una sola vez y cierra sus sesiones.
+         */
+        post: operations["usuarios_password_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vehiculos/": {
         parameters: {
             query?: never;
@@ -2224,6 +2332,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["ReservaDelConvenio"][];
         };
+        PaginatedUsuarioPanelList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["UsuarioPanel"][];
+        };
         PaginatedVehiculoList: {
             /** @example 123 */
             count: number;
@@ -2288,6 +2411,10 @@ export interface components {
             direccion?: string | null;
             encargado_nombre?: string | null;
             encargado_telefono?: (string) | null;
+        };
+        PatchedUsuarioPanelEditarRequest: {
+            nombre?: string;
+            rol?: components["schemas"]["RolPanelEnum"];
         };
         /** @description La patente no se edita: otra patente es otro vehículo. */
         PatchedVehiculoEditarRequest: {
@@ -2462,6 +2589,12 @@ export interface components {
          */
         RolEnum: "ADMINISTRADOR" | "DESPACHADOR" | "CONDUCTOR" | "CONVENIO" | "PASAJERO";
         /**
+         * @description * `ADMINISTRADOR` - ADMINISTRADOR
+         *     * `DESPACHADOR` - DESPACHADOR
+         * @enum {string}
+         */
+        RolPanelEnum: "ADMINISTRADOR" | "DESPACHADOR";
+        /**
          * @description * `DESDE_AEROPUERTO` - Desde el aeropuerto
          *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto
          *     * `URBANO` - Urbano
@@ -2570,6 +2703,12 @@ export interface components {
             expira_en: string | null;
             mensaje: string;
         };
+        Temporal: {
+            /** @description Se muestra una sola vez */
+            password_temporal: string;
+            /** Format: date-time */
+            vence_en: string;
+        };
         TerminarTurnoRequest: {
             motivo: string;
         };
@@ -2635,6 +2774,46 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
+        };
+        UsuarioCreado: {
+            readonly id: number;
+            readonly nombre: string;
+            /** Format: email */
+            readonly email: string;
+            readonly rol: components["schemas"]["RolEnum"];
+            readonly activo: boolean;
+            /** @description SIN_PASSWORD, TEMPORAL, TEMPORAL_VENCIDA o ACTIVA */
+            readonly acceso: string;
+            /**
+             * Último inicio de sesión
+             * Format: date-time
+             */
+            readonly last_login: string | null;
+            /** @description Se muestra una sola vez */
+            readonly password_temporal: string;
+            /** Format: date-time */
+            readonly vence_en: string;
+        };
+        UsuarioPanel: {
+            readonly id: number;
+            readonly nombre: string;
+            /** Format: email */
+            readonly email: string;
+            readonly rol: components["schemas"]["RolEnum"];
+            readonly activo: boolean;
+            /** @description SIN_PASSWORD, TEMPORAL, TEMPORAL_VENCIDA o ACTIVA */
+            readonly acceso: string;
+            /**
+             * Último inicio de sesión
+             * Format: date-time
+             */
+            readonly last_login: string | null;
+        };
+        UsuarioPanelCrearRequest: {
+            nombre: string;
+            /** Format: email */
+            email: string;
+            rol: components["schemas"]["RolPanelEnum"];
         };
         UsuarioSesion: {
             readonly id: number;
@@ -4783,6 +4962,190 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TurnoPorCerrar"][];
+                };
+            };
+        };
+    };
+    usuarios_list: {
+        parameters: {
+            query?: {
+                /** @description Un número de página dentro del conjunto de resultados paginado. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedUsuarioPanelList"];
+                };
+            };
+        };
+    };
+    usuarios_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UsuarioPanelCrearRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UsuarioPanelCrearRequest"];
+                "multipart/form-data": components["schemas"]["UsuarioPanelCrearRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioCreado"];
+                };
+            };
+            /** @description Datos inválidos o correo usado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    usuarios_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este usuario. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioPanel"];
+                };
+            };
+        };
+    };
+    usuarios_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este usuario. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedUsuarioPanelEditarRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedUsuarioPanelEditarRequest"];
+                "multipart/form-data": components["schemas"]["PatchedUsuarioPanelEditarRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioPanel"];
+                };
+            };
+            /** @description `propio_rol`, `propia_cuenta` o `ultimo_administrador` (la empresa debe tener uno activo). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    usuarios_activar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este usuario. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioPanel"];
+                };
+            };
+        };
+    };
+    usuarios_desactivar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este usuario. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsuarioPanel"];
+                };
+            };
+            /** @description `propio_rol`, `propia_cuenta` o `ultimo_administrador` (la empresa debe tener uno activo). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    usuarios_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este usuario. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Temporal"];
                 };
             };
         };

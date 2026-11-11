@@ -40,6 +40,7 @@ describe('menú y permisos', () => {
       'Conductores',
       'Conversaciones',
       'Reportes',
+      'Usuarios',
       'Cierre de caja',
       'Convenios',
     ]);

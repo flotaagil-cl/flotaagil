@@ -58,6 +58,7 @@ export const DIFERIDOS = [
   'src/cuentas-web/MiConvenio.tsx',
   'src/cuentas-web/MisReservas.tsx',
   'src/reservas/paginas/Contingencia.tsx',
+  'src/usuarios/Usuarios.tsx',
 ];
 
 /** Desde dónde se mira y qué no puede cargar. `desde: null` = el paquete inicial. */

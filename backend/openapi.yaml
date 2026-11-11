@@ -1998,6 +1998,193 @@ paths:
                 items:
                   $ref: '#/components/schemas/TurnoPorCerrar'
           description: ''
+  /api/usuarios/:
+    get:
+      operationId: usuarios_list
+      description: 'HU-36: administradores y despachadores de la empresa. Ni conductores,
+        ni convenios, ni pasajeros.'
+      summary: Usuarios del panel de mi empresa
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsuarioPanelList'
+          description: ''
+    post:
+      operationId: usuarios_create
+      description: Genera una contraseña temporal (DC-14) que se muestra una sola
+        vez. Queda en auditoría.
+      summary: Crear un usuario del panel
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsuarioPanelCrearRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsuarioPanelCrearRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsuarioPanelCrearRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioCreado'
+          description: ''
+        '400':
+          description: Datos inválidos o correo usado
+  /api/usuarios/{id}/:
+    get:
+      operationId: usuarios_retrieve
+      description: 'HU-36: administradores y despachadores de la empresa. Ni conductores,
+        ni convenios, ni pasajeros.'
+      summary: Detalle de un usuario del panel
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este usuario.
+        required: true
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPanel'
+          description: ''
+    patch:
+      operationId: usuarios_partial_update
+      description: Cambiar el rol cierra las sesiones del usuario. Queda en auditoría.
+      summary: Editar nombre o rol
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este usuario.
+        required: true
+      tags:
+      - usuarios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuarioPanelEditarRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuarioPanelEditarRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUsuarioPanelEditarRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPanel'
+          description: ''
+        '409':
+          description: '`propio_rol`, `propia_cuenta` o `ultimo_administrador` (la
+            empresa debe tener uno activo).'
+  /api/usuarios/{id}/activar/:
+    post:
+      operationId: usuarios_activar_create
+      description: 'HU-36: administradores y despachadores de la empresa. Ni conductores,
+        ni convenios, ni pasajeros.'
+      summary: Activar un usuario del panel
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este usuario.
+        required: true
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPanel'
+          description: ''
+  /api/usuarios/{id}/desactivar/:
+    post:
+      operationId: usuarios_desactivar_create
+      description: Revoca sus sesiones al instante. Queda en auditoría.
+      summary: Desactivar un usuario del panel
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este usuario.
+        required: true
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPanel'
+          description: ''
+        '409':
+          description: '`propio_rol`, `propia_cuenta` o `ultimo_administrador` (la
+            empresa debe tener uno activo).'
+  /api/usuarios/{id}/password/:
+    post:
+      operationId: usuarios_password_create
+      description: 'DC-14: la temporal se muestra una sola vez y cierra sus sesiones.'
+      summary: Restablecer la contraseña con una temporal
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este usuario.
+        required: true
+      tags:
+      - usuarios
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Temporal'
+          description: ''
   /api/vehiculos/:
     get:
       operationId: vehiculos_list
@@ -4277,6 +4464,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ReservaDelConvenio'
+    PaginatedUsuarioPanelList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsuarioPanel'
     PaginatedVehiculoList:
       type: object
       required:
@@ -4416,6 +4626,15 @@ components:
             pattern: ^\+[1-9]\d{7,14}$
           - type: string
             maxLength: 0
+    PatchedUsuarioPanelEditarRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        rol:
+          $ref: '#/components/schemas/RolPanelEnum'
     PatchedVehiculoEditarRequest:
       type: object
       description: 'La patente no se edita: otra patente es otro vehículo.'
@@ -4855,6 +5074,14 @@ components:
         * `CONDUCTOR` - Conductor
         * `CONVENIO` - Convenio
         * `PASAJERO` - Pasajero
+    RolPanelEnum:
+      enum:
+      - ADMINISTRADOR
+      - DESPACHADOR
+      type: string
+      description: |-
+        * `ADMINISTRADOR` - ADMINISTRADOR
+        * `DESPACHADOR` - DESPACHADOR
     SentidoEnum:
       enum:
       - DESDE_AEROPUERTO
@@ -5075,6 +5302,18 @@ components:
       - expira_en
       - mensaje
       - recogida_en
+    Temporal:
+      type: object
+      properties:
+        password_temporal:
+          type: string
+          description: Se muestra una sola vez
+        vence_en:
+          type: string
+          format: date-time
+      required:
+      - password_temporal
+      - vence_en
     TerminarTurnoRequest:
       type: object
       properties:
@@ -5231,6 +5470,110 @@ components:
       - direccion
       - lat
       - lon
+    UsuarioCreado:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolEnum'
+          readOnly: true
+        activo:
+          type: boolean
+          readOnly: true
+        acceso:
+          type: string
+          readOnly: true
+          description: SIN_PASSWORD, TEMPORAL, TEMPORAL_VENCIDA o ACTIVA
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Último inicio de sesión
+        password_temporal:
+          type: string
+          readOnly: true
+          description: Se muestra una sola vez
+        vence_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - acceso
+      - activo
+      - email
+      - id
+      - last_login
+      - nombre
+      - password_temporal
+      - rol
+      - vence_en
+    UsuarioPanel:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        rol:
+          allOf:
+          - $ref: '#/components/schemas/RolEnum'
+          readOnly: true
+        activo:
+          type: boolean
+          readOnly: true
+        acceso:
+          type: string
+          readOnly: true
+          description: SIN_PASSWORD, TEMPORAL, TEMPORAL_VENCIDA o ACTIVA
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: Último inicio de sesión
+      required:
+      - acceso
+      - activo
+      - email
+      - id
+      - last_login
+      - nombre
+      - rol
+    UsuarioPanelCrearRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 120
+        rol:
+          $ref: '#/components/schemas/RolPanelEnum'
+      required:
+      - email
+      - nombre
+      - rol
     UsuarioSesion:
       type: object
       properties:

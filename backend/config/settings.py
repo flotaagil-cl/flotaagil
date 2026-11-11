@@ -255,6 +255,8 @@ SPECTACULAR_SETTINGS = {
         "TipoAlertaVueloEnum": "apps.aeropuerto.models.TipoAlertaVuelo",
         "DireccionMensajeEnum": "apps.reservas.models.DireccionMensaje",
         "EstadoConvenioEnum": "apps.convenios.models.EstadoConvenio",
+        "RolEnum": "apps.cuentas.models.Rol",
+        "RolPanelEnum": ["ADMINISTRADOR", "DESPACHADOR"],
     },
 }
 

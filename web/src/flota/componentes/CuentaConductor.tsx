@@ -114,7 +114,20 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
   );
 }
 
-function DialogoPassword({ password, vence, correo, alCerrar }: { password: string; vence: string; correo: string; alCerrar: () => void }) {
+/** Temporal recién generada (DC-14): se muestra una sola vez. También la usa la pantalla de usuarios (HU-36). */
+export function DialogoPassword({
+  password,
+  vence,
+  correo,
+  quien = 'al conductor',
+  alCerrar,
+}: {
+  password: string;
+  vence: string;
+  correo: string;
+  quien?: string;
+  alCerrar: () => void;
+}) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const [copiada, setCopiada] = useState<boolean | null>(null);
 
@@ -151,7 +164,7 @@ function DialogoPassword({ password, vence, correo, alCerrar }: { password: stri
       <div className={estilos.formularioDialogo}>
         <h2 id="titulo-password">Contraseña temporal</h2>
         <p>
-          Entrégasela al conductor para su primer ingreso con <strong>{correo}</strong>. No se volverá a mostrar: si se
+          Entrégasela {quien} para su primer ingreso con <strong>{correo}</strong>. No se volverá a mostrar: si se
           pierde, genera otra.
         </p>
         <p className={estilos.password} aria-label="Contraseña temporal">

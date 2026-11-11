@@ -1,8 +1,8 @@
 """HU-36 (CC-17, DC-37): el administrador administra los usuarios del panel de su empresa.
 
-Solo ADMINISTRADOR y DESPACHADOR: los conductores tienen su pantalla (HU-10) y las cuentas de convenio y pasajero
-no aparecen. Crear y restablecer usan la contraseña temporal de DC-14 (se muestra una vez, vence a las 72 h y
-obliga a cambiarla). Desactivar revoca las sesiones al instante.
+Solo ADMINISTRADOR y DESPACHADOR: los conductores tienen su pantalla (HU-10) y las cuentas de convenio y
+pasajero no aparecen. Crear y restablecer usan la contraseña temporal de DC-14 (se muestra una vez, vence a
+las 72 h y obliga a cambiarla). Desactivar revoca las sesiones al instante.
 
 Reglas: el administrador no se desactiva ni se quita el rol a sí mismo, y la empresa nunca queda sin al
 menos un administrador activo. Las operaciones que podrían dejarla sin administrador bloquean la fila de la
