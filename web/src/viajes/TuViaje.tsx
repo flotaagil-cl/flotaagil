@@ -15,6 +15,7 @@ import { Avatar, Insignia, Tarjeta } from '../diseno/Tarjeta';
 import { formatearFechaHora } from '../hora/hora';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
+import { CancelarViaje } from './CancelarViaje';
 import { MarcoPasajero } from './MarcoPasajero';
 import { INSIGNIA, INSIGNIA_VUELO, pasosDelViaje, textoDeCancelacion, TIPO_DE_VIAJE, type TuViaje as Viaje } from './viaje';
 
@@ -137,6 +138,7 @@ export function TuViaje() {
           </Tarjeta>
         )}
 
+        {v.cancelable && <CancelarViaje id={v.id} resumen={`Reserva ${v.id} · ${formatearFechaHora(v.recogida_en)}`} />}
         {cancelacion && <p className={e.nota}>{cancelacion}</p>}
       </div>
     );

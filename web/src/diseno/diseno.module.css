@@ -1496,3 +1496,42 @@
   letter-spacing: 1.5px;
   white-space: nowrap;
 }
+
+/* ---------- Mis viajes y cancelar (HU-44) ---------- */
+.paginaAngosta {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(100% - 32px, 860px);
+  margin: 0 auto;
+  padding: 36px 0 48px;
+}
+.listaViajes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.viajeTexto {
+  flex: 1;
+  min-width: 0;
+}
+.radios {
+  display: flex;
+  flex-direction: column;
+}
+.botonEnlacePeligro {
+  align-self: flex-start;
+  min-height: var(--toque);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--peligro);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

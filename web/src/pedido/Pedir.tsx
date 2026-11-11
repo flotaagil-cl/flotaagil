@@ -17,6 +17,7 @@ import { Pestanas } from '../diseno/Pestanas';
 import { Destacado } from '../diseno/Tarjeta';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
+import { CUENTA_PASAJERO, ENLACES_PASAJERO } from '../viajes/viaje';
 import { FormularioPedido } from './FormularioPedido';
 import { ErrorApi } from '../api/resultado';
 import { mostrarTelefono } from '../portal/telefono';
@@ -108,10 +109,7 @@ export function Pedir() {
       else setFalla('No se pudo enviar tu pedido. Revisa tu conexión e intenta de nuevo.');
     }
   }
-  const enlaces = [
-    { a: '/pedir', texto: 'Pedir traslado' },
-    { a: '/mis-reservas', texto: 'Mis viajes' },
-  ];
+  const enlaces = ENLACES_PASAJERO;
   const salir = () => void sesion.logout().then(() => navegar(`/solicitar/${slug}/ingresar`, { replace: true }));
 
   let panel;
@@ -189,7 +187,7 @@ export function Pedir() {
             </Link>
           ))}
         </nav>
-        <Link to="/mis-reservas" className={`${e.enlace} ${e.centrado}`}>
+        <Link to="/mis-viajes" className={`${e.enlace} ${e.centrado}`}>
           Mis viajes
         </Link>
       </div>
@@ -228,7 +226,7 @@ export function Pedir() {
 
   if (etapa.fase === 'recibido') {
     return (
-      <MarcoPortal marca={usuario.empresa.razon_social} inicio="/pedir" enlaces={enlaces} usuario={usuario} onCerrarSesion={salir}>
+      <MarcoPortal marca={usuario.empresa.razon_social} inicio="/pedir" enlaces={enlaces} enlacesCuenta={CUENTA_PASAJERO} usuario={usuario} onCerrarSesion={salir}>
         <div className={e.recibido}>
           <span className={e.recibidoMarca} aria-hidden="true">
             <Icono nombre="check" tamano={36} />
@@ -256,6 +254,7 @@ export function Pedir() {
       marca={usuario.empresa.razon_social}
       inicio="/pedir"
       enlaces={enlaces}
+      enlacesCuenta={CUENTA_PASAJERO}
       usuario={usuario}
       onCerrarSesion={salir}
       barraMovil={conFormulario ? 'oculta' : 'flotante'}

@@ -22,6 +22,8 @@ interface Props {
   /** Adónde lleva la marca. */
   inicio?: string;
   enlaces?: EnlacePortal[];
+  /** Enlaces que van solo en el menú de la cuenta. */
+  enlacesCuenta?: EnlacePortal[];
   usuario?: { nombre: string } | null;
   onCerrarSesion?: () => void;
   /** En el celular: «flotante» deja la barra sobre el mapa; «oculta» la saca (pantallas con volver). */
@@ -39,7 +41,7 @@ interface Props {
  * Marco del portal (HU-37): barra superior con la marca, la navegación y la cuenta. En el celular la
  * navegación pasa al menú de la cuenta (diálogo), que también tiene «Cerrar sesión».
  */
-export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, accion, pie, children }: Props) {
+export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], enlacesCuenta = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, accion, pie, children }: Props) {
   const [menu, setMenu] = useState(false);
   return (
     <div className={`tema-portal ${e.marco}`} style={colores as CSSProperties | undefined}>
@@ -83,7 +85,7 @@ export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], usuario, 
       </header>
       <Dialogo abierto={menu} titulo="Tu cuenta" variante="menu" onCerrar={() => setMenu(false)}>
         <nav aria-label="Cuenta" className={e.menuCuenta}>
-          {enlaces.map((enlace) => (
+          {[...enlaces, ...enlacesCuenta].map((enlace) => (
             <Link key={enlace.a} to={enlace.a} className={e.menuEnlace} onClick={() => setMenu(false)}>
               {enlace.texto}
               <Icono nombre="derecha" tamano={18} />

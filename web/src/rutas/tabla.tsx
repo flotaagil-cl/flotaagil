@@ -195,6 +195,8 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
               path: '/aceptar-privacidad',
               lazy: async () => ({ Component: (await import('../paginas/AceptarPrivacidad')).AceptarPrivacidad }),
             },
+            // HU-44: los viajes del pasajero, próximos y anteriores.
+            { path: '/mis-viajes', lazy: async () => ({ Component: (await import('../viajes/MisViajes')).MisViajes }) },
             // HU-43: el viaje del pasajero con su estado, conductor y vuelo.
             { path: '/mis-viajes/:id', lazy: async () => ({ Component: (await import('../viajes/TuViaje')).TuViaje }) },
             // HU-39: inicio y pedido del pasajero con el marco del portal (fuera del marco del panel).

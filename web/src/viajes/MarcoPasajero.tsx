@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { MarcoPortal } from '../diseno/MarcoPortal';
 import { useSesion } from '../sesion/SesionProvider';
-import { ENLACES_PASAJERO } from './viaje';
+import { CUENTA_PASAJERO, ENLACES_PASAJERO } from './viaje';
 
 /** Marco de las pantallas del pasajero con sesión: marca de su empresa, navegación y cerrar sesión. */
 export function MarcoPasajero({ barraMovil = 'normal', children }: { barraMovil?: 'normal' | 'flotante' | 'oculta'; children: ReactNode }) {
@@ -16,6 +16,7 @@ export function MarcoPasajero({ barraMovil = 'normal', children }: { barraMovil?
       marca={usuario.empresa.razon_social}
       inicio="/pedir"
       enlaces={ENLACES_PASAJERO}
+      enlacesCuenta={CUENTA_PASAJERO}
       usuario={usuario}
       onCerrarSesion={salir}
       barraMovil={barraMovil}

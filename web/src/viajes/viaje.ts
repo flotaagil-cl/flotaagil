@@ -18,6 +18,9 @@ export const ENLACES_PASAJERO = [
   { a: '/mis-viajes', texto: 'Mis viajes' },
 ];
 
+/** Solo en el menú de la cuenta: datos y eliminar la cuenta (pantalla anterior, hasta «Mi perfil» de HU-45). */
+export const CUENTA_PASAJERO = [{ a: '/mis-reservas', texto: 'Mi cuenta' }];
+
 export const INSIGNIA: Record<EstadoViaje, { texto: string; tono: TonoInsignia }> = {
   PENDIENTE_CONFIRMACION: { texto: 'Por confirmar', tono: 'revision' },
   SOLICITADO: { texto: 'Buscando conductor', tono: 'neutra' },
@@ -80,6 +83,19 @@ export function pasosDelViaje(viaje: TuViaje): PasoLinea[] {
       estado: i <= llegado ? 'hecho' : i === llegado + 1 ? 'actual' : 'pendiente',
     };
   });
+}
+
+/** HU-44: los viajes terminados van en «Anteriores». */
+export function esAnterior(estado?: EstadoViaje): boolean {
+  return estado === 'FINALIZADO' || estado === 'CANCELADO';
+}
+
+/** «SCL → Hotel Cumbres»: el aeropuerto como SCL y de cada dirección lo que va antes de la primera coma. */
+export function tramo(viaje: { sentido?: string; origen_dir: string; destino_dir: string }): string {
+  const corta = (direccion: string) => direccion.split(',')[0].trim();
+  const origen = viaje.sentido === 'DESDE_AEROPUERTO' ? 'SCL' : corta(viaje.origen_dir);
+  const destino = viaje.sentido === 'HACIA_AEROPUERTO' ? 'SCL' : corta(viaje.destino_dir);
+  return `${origen} → ${destino}`;
 }
 
 /** HU-44 (RN-09): solo sin conductor asignado se cancela desde la cuenta; si no, el texto para la central. */
