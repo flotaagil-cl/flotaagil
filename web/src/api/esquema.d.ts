@@ -2520,6 +2520,20 @@ export interface components {
             tarifa?: number | null;
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
         };
+        /** @description HU-42: con cuenta, la respuesta trae el número de la reserva (el pasajero solo ve las suyas). */
+        PedidoRecibido: {
+            estado: string;
+            /** Format: date-time */
+            recogida_en: string;
+            /**
+             * Format: date-time
+             * @description Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.
+             */
+            expira_en: string | null;
+            mensaje: string;
+            /** @description Número de la reserva, para «Ver mi viaje». */
+            id: number;
+        };
         PerfilConductor: {
             readonly id: number;
             readonly nombre: string;
@@ -4793,7 +4807,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SolicitudRespuesta"];
+                    "application/json": components["schemas"]["PedidoRecibido"];
                 };
             };
             /** @description `aceptar_privacidad`: falta aceptar el aviso vigente (DC-44) */

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { ErrorApi } from '../api/resultado';
 import { Boton } from '../diseno/Boton';
 import { Campo, DatoFijo } from '../diseno/Campo';
 import { Contador } from '../diseno/Contador';
@@ -11,7 +10,6 @@ import { hoy } from '../hora/hora';
 import {
   AEROPUERTO,
   armarPedido,
-  erroresDelServidor,
   horaDe,
   recogidaSugerida,
   textoAntelacion,
@@ -26,22 +24,25 @@ import {
 interface Props {
   tipo: TipoPedido;
   empresa: EmpresaPublica;
-  enviar: (cuerpo: CuerpoPedido) => Promise<unknown>;
-  alEnviar: (cuerpo: CuerpoPedido) => void;
+  /** HU-42: al volver de «Revisa tu pedido» (editar o error del servidor) se conservan los datos. */
+  iniciales?: ValoresPedido;
+  erroresIniciales?: Errores;
+  /** HU-42: con los datos válidos se pasa a revisar; el envío ocurre al confirmar. */
+  alRevisar: (valores: ValoresPedido, cuerpo: CuerpoPedido) => void;
 }
 
 /** HU-39: datos de cada tipo de viaje, con pasajeros y maletas. */
-export function FormularioPedido({ tipo, empresa, enviar, alEnviar }: Props) {
-  const [v, setV] = useState<ValoresPedido>(VALORES_INICIALES);
-  const [errores, setErrores] = useState<Errores>({});
-  const [enviando, setEnviando] = useState(false);
-  const [pedirHoraLlegada, setPedirHoraLlegada] = useState(false);
+export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar }: Props) {
+  const [v, setV] = useState<ValoresPedido>(iniciales ?? VALORES_INICIALES);
+  const [errores, setErrores] = useState<Errores>(erroresIniciales ?? {});
+  // La API de vuelos no respondió: el servidor pidió la hora de llegada para no inventarla.
+  const pedirHoraLlegada = Boolean(erroresIniciales?.vueloHora || iniciales?.vueloHora);
   const cambiar = <K extends keyof ValoresPedido>(campo: K, valor: ValoresPedido[K]) => setV((actual) => ({ ...actual, [campo]: valor }));
   const texto = (campo: keyof ValoresPedido) => (evento: { target: { value: string } }) => cambiar(campo, evento.target.value as never);
   const maximo = empresa.capacidad_maxima;
   const minimoFecha = hoy();
 
-  async function pedir(evento: FormEvent) {
+  function revisar(evento: FormEvent) {
     evento.preventDefault();
     const armado = armarPedido(tipo, v, empresa);
     if ('errores' in armado) {
@@ -49,24 +50,7 @@ export function FormularioPedido({ tipo, empresa, enviar, alEnviar }: Props) {
       return;
     }
     setErrores({});
-    setEnviando(true);
-    try {
-      await enviar(armado.cuerpo);
-      alEnviar(armado.cuerpo);
-    } catch (error) {
-      if (error instanceof ErrorApi && error.estado === 400) {
-        const delServidor = erroresDelServidor(error.cuerpo);
-        // La API de vuelos no respondió: se pide la hora de llegada para no inventarla.
-        if (delServidor.vueloHora) setPedirHoraLlegada(true);
-        setErrores(delServidor);
-      } else if (error instanceof ErrorApi && error.estado === 429) {
-        setErrores({ general: 'Ya pediste varios traslados hace poco. Espera unos minutos e intenta de nuevo.' });
-      } else {
-        setErrores({ general: 'No se pudo enviar tu pedido. Revisa tu conexión e intenta de nuevo.' });
-      }
-    } finally {
-      setEnviando(false);
-    }
+    alRevisar(v, armado.cuerpo);
   }
 
   const contadores = (
@@ -80,7 +64,7 @@ export function FormularioPedido({ tipo, empresa, enviar, alEnviar }: Props) {
   const antelacion = v.salidaTipo === 'INTERNACIONAL' ? empresa.antelacion_vuelo_internacional_min : empresa.antelacion_vuelo_nacional_min;
 
   return (
-    <form className={e.formulario} onSubmit={(evento) => void pedir(evento)} noValidate aria-label="Datos del traslado">
+    <form className={e.formulario} onSubmit={revisar} noValidate aria-label="Datos del traslado">
       {errores.general && (
         <p className={e.alerta} role="alert">
           {errores.general}
@@ -174,8 +158,8 @@ export function FormularioPedido({ tipo, empresa, enviar, alEnviar }: Props) {
         </>
       )}
 
-      <Boton type="submit" ancho cargando={enviando}>
-        {enviando ? 'Enviando…' : 'Pedir mi traslado'}
+      <Boton type="submit" ancho>
+        Pedir mi traslado
       </Boton>
       <p className={e.nota}>
         Te avisaremos de tu viaje por WhatsApp. Tus datos se tratan según el{' '}

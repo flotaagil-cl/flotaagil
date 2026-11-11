@@ -65,6 +65,12 @@ class SolicitudCuentaSerializer(SolicitudSerializer):
         return valor
 
 
+class PedidoRecibidoSerializer(SolicitudRespuestaSerializer):
+    """HU-42: con cuenta, la respuesta trae el número de la reserva (el pasajero solo ve las suyas)."""
+
+    id = serializers.IntegerField(help_text="Número de la reserva, para «Ver mi viaje».")
+
+
 class AceptarPrivacidadSerializer(serializers.Serializer):
     acepta = serializers.BooleanField()
 
@@ -159,7 +165,7 @@ class SolicitudMiCuentaView(APIView):
         summary="Pedir un viaje con mi cuenta",
         request=SolicitudCuentaSerializer,
         responses={
-            201: SolicitudRespuestaSerializer,
+            201: PedidoRecibidoSerializer,
             403: OpenApiResponse(description="`aceptar_privacidad`: falta aceptar el aviso vigente (DC-44)"),
             429: OpenApiResponse(description="`limite_telefono`"),
         },
@@ -169,5 +175,6 @@ class SolicitudMiCuentaView(APIView):
         cuenta = cuentas.cuenta_activa(request.user)
         entrada = SolicitudCuentaSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        _, respuesta = cuentas.solicitar(cuenta, entrada.validated_data, usuario=request.user)
-        return Response(SolicitudRespuestaSerializer(respuesta).data, status=status.HTTP_201_CREATED)
+        viaje, respuesta = cuentas.solicitar(cuenta, entrada.validated_data, usuario=request.user)
+        datos = {**respuesta, "id": viaje.pk}
+        return Response(PedidoRecibidoSerializer(datos).data, status=status.HTTP_201_CREATED)

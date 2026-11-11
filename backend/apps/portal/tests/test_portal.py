@@ -82,6 +82,7 @@ class TestCuentaObligatoria:
         respuesta = con_cuenta.post(url(), solicitud(), format="json")
         assert respuesta.status_code == 201, respuesta.data
         viaje = Viaje.objects.get()
+        assert respuesta.data["id"] == viaje.pk  # HU-42: número de la reserva para «Ver mi viaje»
         assert (viaje.estado, viaje.pasajero.telefono) == (EstadoViaje.SOLICITADO, "+56900009101")
         # La declaración del supervisor es solo del convenio (DC-27).
         assert (viaje.autorizacion_avisos_en, viaje.autorizacion_avisos_supervisor) == (None, None)

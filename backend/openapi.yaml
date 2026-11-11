@@ -1645,7 +1645,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SolicitudRespuesta'
+                $ref: '#/components/schemas/PedidoRecibido'
           description: ''
         '403':
           description: '`aceptar_privacidad`: falta aceptar el aviso vigente (DC-44)'
@@ -4807,6 +4807,33 @@ components:
           allOf:
           - $ref: '#/components/schemas/VueloEntradaRequest'
           nullable: true
+    PedidoRecibido:
+      type: object
+      description: 'HU-42: con cuenta, la respuesta trae el número de la reserva (el
+        pasajero solo ve las suyas).'
+      properties:
+        estado:
+          type: string
+        recogida_en:
+          type: string
+          format: date-time
+        expira_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono
+            ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.'
+        mensaje:
+          type: string
+        id:
+          type: integer
+          description: Número de la reserva, para «Ver mi viaje».
+      required:
+      - estado
+      - expira_en
+      - id
+      - mensaje
+      - recogida_en
     PerfilConductor:
       type: object
       properties:

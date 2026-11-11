@@ -19,10 +19,13 @@ function montarPedido(ruta = '/pedir', respuestas: (() => Response)[] = []) {
     const peticion = entrada instanceof Request ? entrada : new Request(entrada, init);
     const { pathname } = new URL(peticion.url);
     if (pathname === '/api/portal/transportes-andes/') return json(200, EMPRESA);
+    if (pathname === '/api/mi-cuenta/') {
+      return json(200, { nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', telefono: '+56987654321', empresa: 'Transportes Andes Demo SpA', empresa_slug: 'transportes-andes' });
+    }
     if (pathname === '/api/mi-cuenta/solicitudes/') {
       enviados.push(await peticion.json());
       const siguiente = respuestas.shift();
-      return siguiente ? siguiente() : json(201, { estado: 'SOLICITADO', recogida_en: '2026-11-12T12:00:00Z', expira_en: null, mensaje: 'ok' });
+      return siguiente ? siguiente() : json(201, { id: 20481, estado: 'SOLICITADO', recogida_en: '2026-11-12T12:00:00Z', expira_en: null, mensaje: 'ok' });
     }
     return original(peticion);
   };
@@ -137,63 +140,128 @@ describe('HU-39 · pantalla del pedido', () => {
     expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
-  it('desde el aeropuerto: envía y confirma; si la API no respondió, pide la hora de llegada', async () => {
+  /** HU-42: del formulario a «Revisa tu pedido». */
+  const pedir = () => userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+  const confirmar = () => userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+  const filas = () =>
+    Object.fromEntries(
+      within(screen.getByRole('region', { name: /Desde el aeropuerto|Al aeropuerto|En la ciudad/ }))
+        .getAllByRole('term')
+        .map((termino) => [termino.textContent, termino.nextElementSibling?.textContent]),
+    );
+
+  it('desde el aeropuerto: revisa, confirma y llega a «Pedido recibido» con el número de reserva', async () => {
+    const { enviados, router } = montarPedido('/pedir/desde-aeropuerto');
+    await userEvent.type(await screen.findByLabelText('Número de vuelo'), 'LA 845');
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-11-20' } });
+    await userEvent.type(screen.getByLabelText('¿A dónde vas?'), 'Hotel Cumbres, Vitacura');
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar una maleta' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar una maleta' }));
+    await pedir();
+    expect(await screen.findByRole('heading', { name: 'Revisa tu pedido' })).toBeInTheDocument();
+    expect(enviados).toEqual([]); // nada se envía hasta confirmar
+    await waitFor(() => expect(filas()).toMatchObject({ Nombre: 'Pablo Pasajero' }));
+    expect(filas()).toEqual({
+      Vuelo: 'LA 845',
+      Llegada: '20-11-2026',
+      Origen: 'Aeropuerto de Santiago (SCL)',
+      Destino: 'Hotel Cumbres, Vitacura',
+      Pasajeros: '1 · 2 maletas',
+      Nombre: 'Pablo Pasajero',
+      WhatsApp: '+56 9 8765 4321',
+    });
+    expect(screen.getByText('Seguimos tu vuelo por ti')).toBeInTheDocument();
+    await confirmar();
+    expect(await screen.findByRole('heading', { name: '¡Listo! Recibimos tu pedido' })).toBeInTheDocument();
+    expect(screen.getByText('20481')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver mi viaje' })).toHaveAttribute('href', '/mis-viajes/20481');
+    expect(enviados[0]).toMatchObject({ vuelo: { numero: 'LA 845', fecha: '2026-11-20' }, pasajeros: 1, maletas: 2 });
+    await userEvent.click(screen.getByRole('button', { name: 'Volver al inicio' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
+    expect(await screen.findByLabelText('Número de vuelo')).toHaveValue('');
+  });
+
+  it('editar datos vuelve al formulario con lo escrito', async () => {
+    montarPedido('/pedir/en-la-ciudad');
+    await userEvent.type(await screen.findByLabelText('Origen'), 'Av. Providencia 1208');
+    await userEvent.type(screen.getByLabelText('Destino'), 'Plaza de Armas');
+    await pedir();
+    expect(filas()).toMatchObject({ Recogida: 'Lo antes posible (en unos 30 min)', Pasajeros: '1 · 0 maletas' });
+    await userEvent.click(screen.getByRole('button', { name: 'Editar datos' }));
+    expect(screen.getByLabelText('Origen')).toHaveValue('Av. Providencia 1208');
+    expect(screen.getByLabelText('Destino')).toHaveValue('Plaza de Armas');
+  });
+
+  it('si la API de vuelos no respondió, vuelve al formulario y pide la hora de llegada', async () => {
     const { enviados } = montarPedido('/pedir/desde-aeropuerto', [() => json(400, { vuelo: { hora_llegada: ['No pudimos consultar tu vuelo en este momento. Indica la hora de llegada.'] } })]);
     await userEvent.type(await screen.findByLabelText('Número de vuelo'), 'LA 845');
     fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-11-20' } });
     await userEvent.type(screen.getByLabelText('¿A dónde vas?'), 'Av. Apoquindo 3000');
     await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar una maleta' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+    await pedir();
+    await confirmar();
     const hora = await screen.findByLabelText('Hora de llegada');
     expect(hora).toHaveAccessibleDescription(/Indica la hora de llegada/);
+    expect(screen.getByLabelText('¿A dónde vas?')).toHaveValue('Av. Apoquindo 3000');
     fireEvent.change(hora, { target: { value: '19:05' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
-    expect(await screen.findByRole('heading', { name: 'Recibimos tu pedido' })).toBeInTheDocument();
-    expect(enviados[0]).toMatchObject({ vuelo: { numero: 'LA 845', fecha: '2026-11-20' }, pasajeros: 2, maletas: 1 });
+    await pedir();
+    expect(filas()).toMatchObject({ Llegada: 'vie 20-11-2026 19:05' });
+    await confirmar();
+    await screen.findByRole('heading', { name: '¡Listo! Recibimos tu pedido' });
+    expect(enviados[0]).toMatchObject({ vuelo: { numero: 'LA 845', fecha: '2026-11-20' }, pasajeros: 2 });
     expect(enviados[1]).toMatchObject({ vuelo: { numero: 'LA 845', hora_llegada: '2026-11-20T22:05:00.000Z' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir otro traslado' }));
-    expect(screen.getByLabelText('Número de vuelo')).toHaveValue('');
   });
 
-  it('al aeropuerto: recogida sugerida con «Cambiar»; tipo de vuelo con radios', async () => {
+  it('al aeropuerto: recogida sugerida con «Cambiar»; el resumen muestra el vuelo de salida y la recogida', async () => {
     const { enviados } = montarPedido('/pedir/al-aeropuerto');
     await userEvent.type(await screen.findByLabelText('¿Dónde te recogemos?'), 'Los Leones 100');
     fireEvent.change(screen.getByLabelText('Fecha del vuelo'), { target: { value: '2026-11-20' } });
     fireEvent.change(screen.getByLabelText('Hora de salida'), { target: { value: '08:40' } });
     expect(screen.getByText('Te recogemos a las 05:40')).toBeInTheDocument();
     expect(screen.getByText(/3 horas antes de tu vuelo internacional/)).toBeInTheDocument();
+    await pedir();
+    expect(filas()).toMatchObject({ 'Vuelo de salida': 'Internacional · vie 20-11-2026 08:40', Recogida: 'vie 20-11-2026 05:40' });
+    await userEvent.click(screen.getByRole('button', { name: 'Editar datos' }));
     await userEvent.click(screen.getByRole('radio', { name: 'Nacional' }));
     expect(screen.getByText('Te recogemos a las 06:40')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Cambiar' }));
     fireEvent.change(screen.getByLabelText('Fecha de recogida'), { target: { value: '2026-11-20' } });
     fireEvent.change(screen.getByLabelText('Hora de recogida'), { target: { value: '06:00' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
-    await screen.findByRole('heading', { name: 'Recibimos tu pedido' });
+    await pedir();
+    expect(filas()).toMatchObject({ Recogida: 'vie 20-11-2026 06:00' });
+    await confirmar();
+    await screen.findByRole('heading', { name: '¡Listo! Recibimos tu pedido' });
     expect(enviados[0]).toMatchObject({ vuelo_salida: { tipo: 'NACIONAL' }, recogida_en: '2026-11-20T09:00:00.000Z', sentido: 'HACIA_AEROPUERTO' });
   });
 
-  it('al aeropuerto: si la sugerida ya pasó, el error del servidor se ve aunque no se haya cambiado', async () => {
+  it('al aeropuerto: si la sugerida ya pasó, el error del servidor se ve en el formulario', async () => {
     montarPedido('/pedir/al-aeropuerto', [() => json(400, { recogida_en: ['La recogida debe ser al menos 30 minutos después de ahora.'] })]);
     await userEvent.type(await screen.findByLabelText('¿Dónde te recogemos?'), 'Los Leones 100');
     fireEvent.change(screen.getByLabelText('Fecha del vuelo'), { target: { value: '2026-11-20' } });
     fireEvent.change(screen.getByLabelText('Hora de salida'), { target: { value: '08:40' } });
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+    await pedir();
+    await confirmar();
     expect(await screen.findByRole('alert')).toHaveTextContent('al menos 30 minutos');
   });
 
-  it('en la ciudad: lo antes posible por defecto; programar pide fecha y hora; errores 429 y de red', async () => {
+  it('en la ciudad: 429 y red se ven en «Revisa tu pedido» sin perder lo escrito; programar pide fecha y hora', async () => {
     const { enviados } = montarPedido('/pedir/en-la-ciudad', [() => json(429, { detail: 'x' }), () => json(500, {})]);
     await userEvent.type(await screen.findByLabelText('Origen'), 'Av. Providencia 1208');
     await userEvent.type(screen.getByLabelText('Destino'), 'Plaza de Armas');
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+    await pedir();
+    await confirmar();
     expect(await screen.findByRole('alert')).toHaveTextContent('Ya pediste varios traslados');
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+    await confirmar();
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('No se pudo enviar tu pedido'));
     expect(enviados[0]).toMatchObject({ lo_antes_posible: true });
+    await userEvent.click(screen.getByRole('button', { name: 'Editar datos' }));
     await userEvent.click(screen.getByRole('radio', { name: 'Programar' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+    await pedir();
     expect(screen.getByLabelText('Hora')).toHaveAccessibleDescription('Indica la fecha y hora de recogida.');
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-11-20' } });
+    fireEvent.change(screen.getByLabelText('Hora'), { target: { value: '10:00' } });
+    await pedir();
+    expect(filas()).toMatchObject({ Recogida: 'vie 20-11-2026 10:00' });
     expect(enviados).toHaveLength(2);
   });
 

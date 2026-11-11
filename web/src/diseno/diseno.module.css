@@ -1371,3 +1371,84 @@
     justify-content: flex-start;
   }
 }
+
+/* ---------- Revisa tu pedido y pedido recibido (HU-42) ---------- */
+.resumen {
+  padding: 18px 20px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+}
+.resumenTitulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.resumenTitulo svg {
+  color: var(--color-primario-700);
+}
+.resumenFilas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+.resumenFilas > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.resumenFilas dt {
+  color: var(--texto-suave);
+}
+.resumenFilas dd {
+  margin: 0;
+  text-align: right;
+}
+.resumenCuenta {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borde);
+}
+.recibido {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(100% - 32px, 480px);
+  margin: 0 auto;
+  padding: 72px 0;
+  text-align: center;
+}
+.recibido .subtituloPagina {
+  margin: 0;
+}
+.recibidoMarca {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--grad-destacado);
+  color: var(--color-primario-700);
+}
+.numeroReserva {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 10px 24px;
+  border-radius: var(--radio-campo);
+  background: var(--suave);
+}
+.numeroReserva span {
+  color: var(--texto-suave);
+  font-size: 12px;
+}
+.numeroReserva strong {
+  font-size: 24px;
+  letter-spacing: 1px;
+}

@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
+import { Boton } from '../diseno/Boton';
 import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
 import { Icono } from '../diseno/Icono';
@@ -17,9 +18,16 @@ import { Destacado } from '../diseno/Tarjeta';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import { FormularioPedido } from './FormularioPedido';
-import { esTipo, TIPOS, type CuerpoPedido, type TipoPedido } from './pedido';
+import { ErrorApi } from '../api/resultado';
+import { mostrarTelefono } from '../portal/telefono';
+import { erroresDelServidor, esTipo, resumenPedido, TIPOS, type CuerpoPedido, type Errores, type TipoPedido, type ValoresPedido } from './pedido';
 
 const SCL = { lat: -33.393, lng: -70.794 };
+
+type Etapa =
+  | { fase: 'formulario'; valores?: ValoresPedido; errores?: Errores }
+  | { fase: 'revision'; tipo: TipoPedido; valores: ValoresPedido; cuerpo: CuerpoPedido }
+  | { fase: 'recibido'; id: number };
 const ICONOS: Record<TipoPedido, NombreIcono> = { 'desde-aeropuerto': 'aterrizaje', 'al-aeropuerto': 'despegue', 'en-la-ciudad': 'auto' };
 const ANGOSTO = '(max-width: 899px)';
 
@@ -54,7 +62,9 @@ export function Pedir() {
   const navegar = useNavigate();
   const { tipo: parametro } = useParams();
   const angosto = useAngosto();
-  const [enviado, setEnviado] = useState<CuerpoPedido | null>(null);
+  // HU-42: formulario → «Revisa tu pedido» → «Pedido recibido».
+  const [etapa, setEtapa] = useState<Etapa>({ fase: 'formulario' });
+  const [falla, setFalla] = useState<string | null>(null);
   const usuario = estado.fase === 'autenticada' ? estado.usuario : null;
   const slug = usuario?.empresa.slug ?? '';
   const empresa = useQuery({
@@ -66,6 +76,12 @@ export function Pedir() {
   const pedir = useMutation({
     mutationFn: (cuerpo: CuerpoPedido) => resultado(api.POST('/api/mi-cuenta/solicitudes/', { body: cuerpo })),
   });
+  const cuenta = useQuery({
+    queryKey: ['mi-cuenta'],
+    queryFn: () => resultado(api.GET('/api/mi-cuenta/')),
+    enabled: usuario?.rol === 'PASAJERO',
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     document.title = `Pedir traslado · ${usuario?.empresa.razon_social ?? 'FlotaÁgil'}`;
@@ -76,6 +92,22 @@ export function Pedir() {
   if (parametro !== undefined && !esTipo(parametro)) return <Navigate to="/pedir" replace />;
 
   const tipo: TipoPedido | null = esTipo(parametro) ? parametro : angosto ? null : 'desde-aeropuerto';
+  const revisando = etapa.fase === 'revision' && etapa.tipo === tipo ? etapa : null;
+  const volverAlFormulario = (cambios: Partial<Extract<Etapa, { fase: 'formulario' }>> = {}) =>
+    setEtapa({ fase: 'formulario', valores: revisando?.valores, ...cambios });
+
+  async function confirmar() {
+    if (!revisando) return;
+    setFalla(null);
+    try {
+      const respuesta = await pedir.mutateAsync(revisando.cuerpo);
+      setEtapa({ fase: 'recibido', id: respuesta.id });
+    } catch (error) {
+      if (error instanceof ErrorApi && error.estado === 400) volverAlFormulario({ errores: erroresDelServidor(error.cuerpo) });
+      else if (error instanceof ErrorApi && error.estado === 429) setFalla('Ya pediste varios traslados hace poco. Espera unos minutos e intenta de nuevo.');
+      else setFalla('No se pudo enviar tu pedido. Revisa tu conexión e intenta de nuevo.');
+    }
+  }
   const enlaces = [
     { a: '/pedir', texto: 'Pedir traslado' },
     { a: '/mis-reservas', texto: 'Mis viajes' },
@@ -85,19 +117,55 @@ export function Pedir() {
   let panel;
   if (empresa.isPending) panel = <Cargando />;
   else if (empresa.isError) panel = <Aviso tipo="error">No pudimos cargar los datos de tu empresa. Recarga la página.</Aviso>;
-  else if (enviado) {
+  else if (etapa.fase === 'recibido') {
+    panel = null;
+  } else if (revisando) {
+    const actual = TIPOS.find((t) => t.id === revisando.tipo)!;
     panel = (
       <div className={e.formulario}>
-        <h1 className={e.tituloPagina}>Recibimos tu pedido</h1>
-        <Destacado titulo="Te avisaremos por WhatsApp" icono="mensaje">
-          Cuando la central te asigne un conductor, te llegará su nombre y la patente del vehículo.
-        </Destacado>
-        <Link to="/mis-reservas" className={claseBoton('principal', true)}>
-          Ver mis viajes
-        </Link>
-        <button type="button" className={claseBoton('texto')} onClick={() => setEnviado(null)}>
-          Pedir otro traslado
-        </button>
+        <div>
+          <h1 className={e.tituloPagina}>Revisa tu pedido</h1>
+          <p className={e.subtituloPagina}>Confirma que todo esté bien antes de enviarlo.</p>
+        </div>
+        <section className={e.resumen} aria-labelledby="resumen-titulo">
+          <h2 id="resumen-titulo" className={e.resumenTitulo}>
+            <Icono nombre={ICONOS[revisando.tipo]} /> {actual.titulo}
+          </h2>
+          <dl className={e.resumenFilas}>
+            {resumenPedido(revisando.tipo, revisando.valores, revisando.cuerpo, empresa.data).map(([etiqueta, valor]) => (
+              <div key={etiqueta}>
+                <dt>{etiqueta}</dt>
+                <dd>{valor}</dd>
+              </div>
+            ))}
+          </dl>
+          {cuenta.data && (
+            <dl className={`${e.resumenFilas} ${e.resumenCuenta}`}>
+              <div>
+                <dt>Nombre</dt>
+                <dd>{cuenta.data.nombre}</dd>
+              </div>
+              <div>
+                <dt>WhatsApp</dt>
+                <dd>{mostrarTelefono(cuenta.data.telefono)}</dd>
+              </div>
+            </dl>
+          )}
+        </section>
+        {revisando.tipo === 'desde-aeropuerto' && (
+          <Destacado titulo="Seguimos tu vuelo por ti">Si se atrasa, tu conductor ya lo sabe. No tienes que avisarnos.</Destacado>
+        )}
+        {falla && (
+          <p className={e.alerta} role="alert">
+            {falla}
+          </p>
+        )}
+        <Boton ancho cargando={pedir.isPending} onClick={() => void confirmar()}>
+          {pedir.isPending ? 'Enviando…' : 'Confirmar pedido'}
+        </Boton>
+        <Boton variante="secundario" ancho onClick={() => volverAlFormulario()}>
+          Editar datos
+        </Boton>
       </div>
     );
   } else if (tipo === null) {
@@ -127,8 +195,19 @@ export function Pedir() {
       </div>
     );
   } else {
+    const borrador: { valores?: ValoresPedido; errores?: Errores } = etapa.fase === 'formulario' ? etapa : {};
     const formulario = (
-      <FormularioPedido key={tipo} tipo={tipo} empresa={empresa.data} enviar={pedir.mutateAsync} alEnviar={setEnviado} />
+      <FormularioPedido
+        key={`${tipo}-${borrador.valores ? 'borrador' : 'nuevo'}`}
+        tipo={tipo}
+        empresa={empresa.data}
+        iniciales={borrador.valores}
+        erroresIniciales={borrador.errores}
+        alRevisar={(valores, cuerpo) => {
+          setFalla(null);
+          setEtapa({ fase: 'revision', tipo, valores, cuerpo });
+        }}
+      />
     );
     const actual = TIPOS.find((t) => t.id === tipo)!;
     panel = angosto ? (
@@ -147,7 +226,31 @@ export function Pedir() {
     );
   }
 
-  const conFormulario = tipo !== null && !enviado;
+  if (etapa.fase === 'recibido') {
+    return (
+      <MarcoPortal marca={usuario.empresa.razon_social} inicio="/pedir" enlaces={enlaces} usuario={usuario} onCerrarSesion={salir}>
+        <div className={e.recibido}>
+          <span className={e.recibidoMarca} aria-hidden="true">
+            <Icono nombre="check" tamano={36} />
+          </span>
+          <h1 className={e.tituloPagina}>¡Listo! Recibimos tu pedido</h1>
+          <p className={e.subtituloPagina}>Te avisaremos por WhatsApp cuando la central te asigne un conductor.</p>
+          <p className={e.numeroReserva}>
+            <span>N.º de reserva</span>
+            <strong>{etapa.id}</strong>
+          </p>
+          <Link to={`/mis-viajes/${etapa.id}`} className={claseBoton('principal', true)}>
+            Ver mi viaje
+          </Link>
+          <button type="button" className={e.botonEnlace} onClick={() => { setEtapa({ fase: 'formulario' }); navegar('/pedir'); }}>
+            Volver al inicio
+          </button>
+        </div>
+      </MarcoPortal>
+    );
+  }
+
+  const conFormulario = tipo !== null;
   return (
     <MarcoPortal
       marca={usuario.empresa.razon_social}

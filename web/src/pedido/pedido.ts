@@ -4,7 +4,7 @@
  */
 
 import type { components } from '../api/esquema';
-import { aIso, instanteDeCampo, paredDe } from '../hora/hora';
+import { aIso, formatearFecha, formatearFechaHora, instanteDeCampo, paredDe } from '../hora/hora';
 
 export type EmpresaPublica = components['schemas']['EmpresaPublica'];
 export type CuerpoPedido = components['schemas']['SolicitudCuentaRequest'];
@@ -188,4 +188,26 @@ export function erroresDelServidor(cuerpo: unknown): Errores {
   };
   const limpios = Object.fromEntries(Object.entries(errores).filter(([, valor]) => valor)) as Errores;
   return Object.keys(limpios).length ? limpios : { general: primero(c.detail) ?? 'Revisa los datos del pedido.' };
+}
+
+/** HU-42: filas de «Revisa tu pedido», en el orden del diseño. */
+export function resumenPedido(tipo: TipoPedido, v: ValoresPedido, cuerpo: CuerpoPedido, empresa: EmpresaPublica): [string, string][] {
+  const filas: [string, string][] = [];
+  const pasajeros = `${cuerpo.pasajeros ?? 1} · ${cuerpo.maletas ?? 0} ${cuerpo.maletas === 1 ? 'maleta' : 'maletas'}`;
+  if (tipo === 'desde-aeropuerto' && cuerpo.vuelo) {
+    filas.push(['Vuelo', cuerpo.vuelo.numero]);
+    filas.push(['Llegada', cuerpo.vuelo.hora_llegada ? formatearFechaHora(cuerpo.vuelo.hora_llegada) : formatearFecha(v.vueloFecha)]);
+  }
+  if (tipo === 'al-aeropuerto' && cuerpo.vuelo_salida) {
+    const tipoVuelo = cuerpo.vuelo_salida.tipo === 'INTERNACIONAL' ? 'Internacional' : 'Nacional';
+    filas.push(['Vuelo de salida', `${tipoVuelo} · ${formatearFechaHora(cuerpo.vuelo_salida.hora)}`]);
+    const recogida = cuerpo.recogida_en ? Date.parse(cuerpo.recogida_en) : recogidaSugerida(v, empresa);
+    if (recogida !== null) filas.push(['Recogida', formatearFechaHora(new Date(recogida).toISOString())]);
+  }
+  filas.push(['Origen', cuerpo.origen_dir], ['Destino', cuerpo.destino_dir]);
+  if (tipo === 'en-la-ciudad') {
+    filas.push(['Recogida', cuerpo.lo_antes_posible ? `Lo antes posible (en unos ${empresa.anticipacion_minima_min} min)` : formatearFechaHora(cuerpo.recogida_en!)]);
+  }
+  filas.push(['Pasajeros', pasajeros]);
+  return filas;
 }
