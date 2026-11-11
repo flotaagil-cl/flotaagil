@@ -159,9 +159,10 @@ def reservas_de(cuenta: CuentaPasajero):
 
 def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, dict]:
     """Sin verificación (el teléfono se confirmó al crear la cuenta). Mantiene el límite por teléfono."""
-    from apps.portal.servicios import _verificar_limite_telefono, vuelo_y_recogida
+    from apps.portal.servicios import _verificar_limite_telefono, validar_capacidad, vuelo_y_recogida
 
     empresa = cuenta.empresa
+    validar_capacidad(empresa, datos.get("pasajeros", 1))  # DC-43
     _verificar_limite_telefono(empresa, cuenta.pasajero.telefono)
     vuelo, recogida = vuelo_y_recogida(empresa, datos)
     with transaction.atomic():
@@ -174,6 +175,10 @@ def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, d
                 "destino_dir": datos["destino_dir"],
                 "recogida_en": recogida,
                 "vuelo": vuelo,
+                # HU-39 (DC-42).
+                "pasajeros": datos.get("pasajeros", 1),
+                "maletas": datos.get("maletas", 0),
+                "vuelo_salida": datos.get("vuelo_salida"),
             },
             canal=Canal.WEB,
             estado_inicial=EstadoViaje.SOLICITADO,

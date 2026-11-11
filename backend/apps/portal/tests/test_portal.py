@@ -48,6 +48,9 @@ class TestEmpresaPublica:
             "anticipacion_minima_min": 30,
             "expiracion_verificacion_min": 15,
             "margen_nacional_min": 20,
+            "antelacion_vuelo_nacional_min": 120,
+            "antelacion_vuelo_internacional_min": 180,
+            "capacidad_maxima": None,
         }
 
     def test_margen_configurable(self, cliente, empresa):

@@ -112,6 +112,8 @@ def candidatos(viaje: Viaje) -> list[dict]:
             usuario__activo=True,
             estado=EstadoConductor.DISPONIBLE,
             vehiculo_activo__isnull=False,
+            # DC-43: solo vehículos donde caben los pasajeros del viaje.
+            vehiculo_activo__capacidad__gte=viaje.pasajeros,
         )
         .exclude(pk__in=con_viaje_en_ejecucion(viaje.empresa_id))
         .select_related("usuario", "vehiculo_activo")
@@ -221,6 +223,12 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} no está Disponible (RN-01).")
         if conductor.vehiculo_activo is None:
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} no tiene vehículo declarado (RN-05).")
+        vehiculo = conductor.vehiculo_activo
+        if vehiculo.capacidad < viaje.pasajeros:
+            raise AsignacionNoPermitida(
+                f"El vehículo {vehiculo.patente} lleva hasta {vehiculo.capacidad} pasajeros y este viaje "
+                f"es de {viaje.pasajeros} (DC-43)."
+            )
         if Viaje.objects.filter(conductor=conductor, estado__in=EN_EJECUCION).exists():
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} ya tiene un viaje en ejecución (RN-03).")
         sugerido = next((f["id"] for f in candidatos(viaje) if f["sugerido"]), None)

@@ -94,6 +94,9 @@ class ConfiguracionEmpresa(models.Model):
     # DC-31: días en que un teléfono verificado por WhatsApp no se vuelve a verificar en el portal (P1.1).
     # Con 0, toda solicitud del portal se verifica.
     vigencia_verificacion_dias = _minutos(90)
+    # DC-42 (HU-39): antelación sugerida de la recogida respecto del vuelo de salida (editable al pedir).
+    antelacion_vuelo_nacional_min = _minutos(120)
+    antelacion_vuelo_internacional_min = _minutos(180)
     # DC-33: antigüedad máxima de la hora real de una reserva de contingencia (HU-32).
     contingencia_max_dias = _minutos(7, minimo=1)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.

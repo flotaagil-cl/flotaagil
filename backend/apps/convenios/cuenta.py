@@ -32,11 +32,12 @@ def del_usuario(usuario) -> Convenio:
 
 def crear_solicitud(convenio: Convenio, datos: dict, *, usuario) -> tuple[Viaje, dict]:
     """RN-07: la reserva queda SOLICITADO, con el convenio y sin verificación por WhatsApp."""
-    from apps.portal.servicios import vuelo_y_recogida
+    from apps.portal.servicios import validar_capacidad, vuelo_y_recogida
 
     if convenio.estado != EstadoConvenio.APROBADO:
         raise ConvenioNoAprobado()
     empresa = convenio.empresa
+    validar_capacidad(empresa, datos.get("pasajeros", 1))  # DC-43
     vuelo, recogida = vuelo_y_recogida(empresa, datos)
     with transaction.atomic():
         viaje = reservas.crear_viaje(
@@ -48,6 +49,10 @@ def crear_solicitud(convenio: Convenio, datos: dict, *, usuario) -> tuple[Viaje,
                 "destino_dir": datos["destino_dir"],
                 "recogida_en": recogida,
                 "vuelo": vuelo,
+                # HU-39 (DC-42).
+                "pasajeros": datos.get("pasajeros", 1),
+                "maletas": datos.get("maletas", 0),
+                "vuelo_salida": datos.get("vuelo_salida"),
                 "convenio": convenio,
             },
             canal=Canal.CONVENIO,

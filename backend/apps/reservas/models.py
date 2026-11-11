@@ -61,6 +61,17 @@ class Sentido(models.TextChoices):
     URBANO = "URBANO", "Urbano"
 
 
+class TipoVuelo(models.TextChoices):
+    """HU-39: tipo del vuelo de salida (define la antelación sugerida de la recogida)."""
+
+    NACIONAL = "NACIONAL", "Nacional"
+    INTERNACIONAL = "INTERNACIONAL", "Internacional"
+
+
+# DC-43: un viaje lleva a lo más la capacidad del vehículo más grande (CHECK de VEHICULO: 1 a 7).
+MAX_PASAJEROS = 7
+
+
 class OrigenCancelacion(models.TextChoices):
     PASAJERO = "PASAJERO", "Pasajero"
     DESPACHADOR = "DESPACHADOR", "Despachador"
@@ -105,6 +116,14 @@ class Viaje(models.Model):
         db_default=EstadoViaje.PENDIENTE_CONFIRMACION,
     )
     tarifa = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
+    # DC-42 (HU-39): titular más acompañantes y equipaje declarados al pedir.
+    pasajeros = models.PositiveSmallIntegerField(
+        default=1, db_default=1, validators=[MinValueValidator(1), MaxValueValidator(MAX_PASAJEROS)]
+    )
+    maletas = models.PositiveSmallIntegerField(default=0, db_default=0, validators=[MaxValueValidator(20)])
+    # DC-42 (HU-39): vuelo de salida en los viajes al aeropuerto. Solo se guarda; no se monitorea.
+    vuelo_salida_en = models.DateTimeField(null=True, blank=True)
+    vuelo_salida_tipo = models.CharField(max_length=13, choices=TipoVuelo.choices, null=True, blank=True)
     motivo_cancelacion = models.CharField(max_length=200, null=True, blank=True)
     origen_cancelacion = models.CharField(
         max_length=14, choices=OrigenCancelacion.choices, null=True, blank=True
@@ -132,6 +151,14 @@ class Viaje(models.Model):
             models.CheckConstraint(condition=Q(sentido__in=Sentido.values), name="viaje_sentido_valido"),
             models.CheckConstraint(
                 condition=Q(tarifa__isnull=True) | Q(tarifa__gte=0), name="viaje_tarifa_no_negativa"
+            ),
+            models.CheckConstraint(
+                condition=Q(pasajeros__gte=1, pasajeros__lte=MAX_PASAJEROS), name="viaje_pasajeros_1_7"
+            ),
+            models.CheckConstraint(condition=Q(maletas__lte=20), name="viaje_maletas_max_20"),
+            models.CheckConstraint(
+                condition=Q(vuelo_salida_tipo__isnull=True) | Q(vuelo_salida_tipo__in=TipoVuelo.values),
+                name="viaje_vuelo_salida_tipo_valido",
             ),
             models.CheckConstraint(
                 condition=~Q(estado=EstadoViaje.CANCELADO)

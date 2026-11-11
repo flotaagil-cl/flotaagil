@@ -172,6 +172,10 @@ def crear_viaje(
             destino_geo=destino,
             recogida_en=datos["recogida_en"],
             tarifa=datos.get("tarifa"),
+            pasajeros=datos.get("pasajeros", 1),
+            maletas=datos.get("maletas", 0),
+            vuelo_salida_en=(datos.get("vuelo_salida") or {}).get("hora"),
+            vuelo_salida_tipo=(datos.get("vuelo_salida") or {}).get("tipo"),
             estado=estado_inicial,
         )
         _guardar_vuelo(viaje, vuelo)
