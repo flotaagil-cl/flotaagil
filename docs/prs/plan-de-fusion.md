@@ -14,7 +14,7 @@ Para Carlos. Son 5 PR encadenados hacia `main`, **en este orden**, y después 4 
 
 - **Carlos solo usa la web.** Abre, revisa y fusiona ahí. El paso 5 requiere una terminal y **lo hace Claude desde el PC de Renato**, cuando Renato le avisa que se fusionó el PR.
 - **No uses el botón «Update branch» en los PR 2, 3 y 4, ni abras uno antes de que Renato confirme el paso 5.** Generaría conflictos: las ramas están encadenadas y la fusión es *squash*.
-- **Revisión:** el ruleset exige una aprobación. Si tú abres el PR, lo aprueba Renato.
+- **Revisión:** desde DC-47 el ruleset no exige aprobaciones (sigue exigiendo el PR, *squash*, conversaciones resueltas y el check `ci`). La revisión del otro integrante se mantiene como acuerdo de trabajo: si tú abres el PR, lo revisa Renato.
 - **Estos PR son grandes** (el 1 toca muchos archivos). Conviene revisar cada uno con su `docs/prs/HU-XX.md` y sus evidencias en `docs/evidencias/`.
 
 ## Por qué hay un paso fuera de la web
