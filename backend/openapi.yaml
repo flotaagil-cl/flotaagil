@@ -1593,6 +1593,29 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedMiReservaList'
           description: ''
+  /api/mi-cuenta/reservas/{id}/:
+    get:
+      operationId: mi_cuenta_reservas_retrieve
+      description: Solo un viaje del pasajero (404 si no es suyo); conductor y patente
+        desde ACEPTADO.
+      summary: Tu viaje (HU-43)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TuViaje'
+          description: ''
   /api/mi-cuenta/reservas/{id}/cancelar/:
     post:
       operationId: mi_cuenta_reservas_cancelar_create
@@ -3510,6 +3533,13 @@ components:
       - nombre
       - rut
       - telefono
+    ConductorDeMiViaje:
+      type: object
+      properties:
+        nombre:
+          type: string
+      required:
+      - nombre
     ConductorResumen:
       type: object
       properties:
@@ -4691,6 +4721,19 @@ components:
       - id
       - nombre
       - telefono
+    Paso:
+      type: object
+      description: 'Historial para el pasajero: solo el estado y la hora (sin quién
+        lo cambió).'
+      properties:
+        estado:
+          type: string
+        creado_en:
+          type: string
+          format: date-time
+      required:
+      - creado_en
+      - estado
     PasswordTemporal:
       type: object
       properties:
@@ -4926,6 +4969,18 @@ components:
       - direccion
       - lat
       - lon
+    PuntoDeMiViaje:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+      required:
+      - lat
+      - lng
     RechazoRequest:
       type: object
       properties:
@@ -5535,6 +5590,95 @@ components:
       - metodo
       - monto
       - viajes
+    TuViaje:
+      type: object
+      description: 'HU-43: el viaje del pasajero con su cuenta (solo los suyos).'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/EstadoViajeEnum'
+        estado_texto:
+          type: string
+        sentido:
+          $ref: '#/components/schemas/SentidoEnum'
+        origen_dir:
+          type: string
+          maxLength: 200
+        destino_dir:
+          type: string
+          maxLength: 200
+        origen:
+          allOf:
+          - $ref: '#/components/schemas/PuntoDeMiViaje'
+          readOnly: true
+        destino:
+          allOf:
+          - $ref: '#/components/schemas/PuntoDeMiViaje'
+          readOnly: true
+        recogida_en:
+          type: string
+          format: date-time
+        pasajeros:
+          type: integer
+          maximum: 7
+          minimum: 1
+        maletas:
+          type: integer
+          maximum: 20
+          minimum: 0
+        vuelo_salida_en:
+          type: string
+          format: date-time
+          nullable: true
+        vuelo_salida_tipo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/TipoVueloEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+        cancelable:
+          type: boolean
+          readOnly: true
+        conductor:
+          allOf:
+          - $ref: '#/components/schemas/ConductorDeMiViaje'
+          nullable: true
+          readOnly: true
+        vehiculo:
+          allOf:
+          - $ref: '#/components/schemas/VehiculoDeMiViaje'
+          nullable: true
+          readOnly: true
+        vuelo:
+          allOf:
+          - $ref: '#/components/schemas/VueloDeMiViaje'
+          nullable: true
+          readOnly: true
+        pasos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Paso'
+          readOnly: true
+      required:
+      - cancelable
+      - conductor
+      - creado_en
+      - destino
+      - destino_dir
+      - estado_texto
+      - id
+      - origen
+      - origen_dir
+      - pasos
+      - recogida_en
+      - vehiculo
+      - vuelo
     Turno:
       type: object
       properties:
@@ -5862,6 +6006,16 @@ components:
           minimum: 1
       required:
       - anio
+      - marca_modelo
+      - patente
+    VehiculoDeMiViaje:
+      type: object
+      properties:
+        marca_modelo:
+          type: string
+        patente:
+          type: string
+      required:
       - marca_modelo
       - patente
     VehiculoDeclarado:
@@ -6283,6 +6437,25 @@ components:
           nullable: true
       required:
       - fecha
+      - hora_programada
+      - numero
+    VueloDeMiViaje:
+      type: object
+      properties:
+        numero:
+          type: string
+        hora_programada:
+          type: string
+          format: date-time
+        hora_estimada:
+          type: string
+          format: date-time
+          nullable: true
+        estado_vuelo:
+          type: string
+      required:
+      - estado_vuelo
+      - hora_estimada
       - hora_programada
       - numero
     VueloEntradaRequest:

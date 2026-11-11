@@ -1036,6 +1036,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mi-cuenta/reservas/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tu viaje (HU-43)
+         * @description Solo un viaje del pasajero (404 si no es suyo); conductor y patente desde ACEPTADO.
+         */
+        get: operations["mi_cuenta_reservas_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mi-cuenta/reservas/{id}/cancelar/": {
         parameters: {
             query?: never;
@@ -1917,6 +1937,9 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        ConductorDeMiViaje: {
+            nombre: string;
+        };
         ConductorResumen: {
             id: number;
             nombre: string;
@@ -2475,6 +2498,12 @@ export interface components {
             nombre: string;
             telefono: string;
         };
+        /** @description Historial para el pasajero: solo el estado y la hora (sin quién lo cambió). */
+        Paso: {
+            estado: string;
+            /** Format: date-time */
+            creado_en: string;
+        };
         PasswordTemporal: {
             /** @description Se muestra una sola vez. No se guarda en texto plano. */
             password_temporal: string;
@@ -2565,6 +2594,12 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
+        };
+        PuntoDeMiViaje: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
         };
         RechazoRequest: {
             motivo: string;
@@ -2840,6 +2875,31 @@ export interface components {
             viajes: number;
             monto: number;
         };
+        /** @description HU-43: el viaje del pasajero con su cuenta (solo los suyos). */
+        TuViaje: {
+            readonly id: number;
+            estado?: components["schemas"]["EstadoViajeEnum"];
+            estado_texto: string;
+            sentido?: components["schemas"]["SentidoEnum"];
+            origen_dir: string;
+            destino_dir: string;
+            readonly origen: components["schemas"]["PuntoDeMiViaje"];
+            readonly destino: components["schemas"]["PuntoDeMiViaje"];
+            /** Format: date-time */
+            recogida_en: string;
+            pasajeros?: number;
+            maletas?: number;
+            /** Format: date-time */
+            vuelo_salida_en?: string | null;
+            vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: date-time */
+            readonly creado_en: string;
+            readonly cancelable: boolean;
+            readonly conductor: components["schemas"]["ConductorDeMiViaje"] | null;
+            readonly vehiculo: components["schemas"]["VehiculoDeMiViaje"] | null;
+            readonly vuelo: components["schemas"]["VueloDeMiViaje"] | null;
+            readonly pasos: components["schemas"]["Paso"][];
+        };
         Turno: {
             readonly id: number;
             conductor_id: number;
@@ -2960,6 +3020,10 @@ export interface components {
             marca_modelo: string;
             anio: number;
             capacidad?: number;
+        };
+        VehiculoDeMiViaje: {
+            marca_modelo: string;
+            patente: string;
         };
         VehiculoDeclarado: {
             id: number;
@@ -3103,6 +3167,14 @@ export interface components {
             recogida_propuesta?: string | null;
             /** Format: date-time */
             propuesta_en?: string | null;
+        };
+        VueloDeMiViaje: {
+            numero: string;
+            /** Format: date-time */
+            hora_programada: string;
+            /** Format: date-time */
+            hora_estimada: string | null;
+            estado_vuelo: string;
         };
         VueloEntradaRequest: {
             /** @description Código IATA, p. ej. LA123 o H2 456. */
@@ -4748,6 +4820,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedMiReservaList"];
+                };
+            };
+        };
+    };
+    mi_cuenta_reservas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TuViaje"];
                 };
             };
         };

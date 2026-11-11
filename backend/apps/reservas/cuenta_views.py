@@ -136,7 +136,7 @@ CON_CONDUCTOR_VISIBLE = frozenset(
 )
 
 
-class PuntoSerializer(serializers.Serializer):
+class PuntoDeMiViajeSerializer(serializers.Serializer):
     lat = serializers.FloatField()
     lng = serializers.FloatField()
 
@@ -203,11 +203,11 @@ class TuViajeSerializer(serializers.ModelSerializer):
     def get_cancelable(self, viaje) -> bool:
         return viaje.estado in cuentas.CANCELABLES
 
-    @extend_schema_field(PuntoSerializer)
+    @extend_schema_field(PuntoDeMiViajeSerializer)
     def get_origen(self, viaje):
         return {"lat": viaje.origen_geo.y, "lng": viaje.origen_geo.x}
 
-    @extend_schema_field(PuntoSerializer)
+    @extend_schema_field(PuntoDeMiViajeSerializer)
     def get_destino(self, viaje):
         return {"lat": viaje.destino_geo.y, "lng": viaje.destino_geo.x}
 
