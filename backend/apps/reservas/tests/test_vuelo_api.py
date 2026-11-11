@@ -131,22 +131,21 @@ class TestPortal:
             "acepta_whatsapp": True,
         }
 
-    def test_la_recogida_se_calcula_con_la_llegada_confirmada(self, cliente, empresa, consultor):
+    def test_la_recogida_se_calcula_con_la_llegada_confirmada(self, con_cuenta, empresa, consultor):
         """RN-17 con la hora de la API: llegada corregida + margen nacional."""
         hora = llegada()
-        respuesta = cliente.post(
-            reverse("portal-solicitudes", args=[empresa.slug]), self.solicitud(hora), format="json"
-        )
+        # HU-40: el pedido web es con cuenta.
+        respuesta = con_cuenta.post(reverse("mi-cuenta-solicitudes"), self.solicitud(hora), format="json")
         assert respuesta.status_code == 201, respuesta.json()
         viaje = Viaje.objects.get()
         margen = timedelta(minutes=empresa.configuracion.margen_nacional_min)
         assert viaje.recogida_en == hora + timedelta(minutes=10) + margen
         assert viaje.vuelo.ultima_consulta_en is not None
 
-    def test_vuelo_inexistente(self, cliente, empresa, consultor):
+    def test_vuelo_inexistente(self, con_cuenta, empresa, consultor):
         consultor.modo = "no_existe"
-        respuesta = cliente.post(
-            reverse("portal-solicitudes", args=[empresa.slug]), self.solicitud(llegada()), format="json"
+        respuesta = con_cuenta.post(
+            reverse("mi-cuenta-solicitudes"), self.solicitud(llegada()), format="json"
         )
         assert respuesta.status_code == 400
         assert "No encontramos el vuelo LA123" in respuesta.json()["vuelo"]["numero"][0]

@@ -6,8 +6,6 @@ borra la base de datos (`docker compose -f infra/docker-compose.dev.yml down -v`
 inserción y no permite borrar los usuarios que la referencian.
 Los correos usan el dominio reservado .example (RFC 2606) y los RUT son ficticios con dígito válido.
 
-Con --pendientes, además completa hasta 2 solicitudes vigentes en PENDIENTE_CONFIRMACION por empresa demo
-(las de la carga inicial vencen a los 15 min). La expiración no cambia: vencen en el plazo real de la empresa.
 """
 
 import os
@@ -15,16 +13,13 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
-from django.utils import timezone
 
 from apps.aeropuerto.models import Geocerca
 from apps.aeropuerto.zonas import NOMBRE_ZONA_SCL, poligono_scl
 from apps.comun.validadores import digito_verificador
 from apps.cuentas.models import Empresa, Plan, Rol, Usuario
 from apps.flota import demo as demo_flota
-from apps.portal import demo as demo_portal
 from apps.reservas import demo as demo_reservas
-from apps.reservas.expiracion import vence_en
 
 SEMILLA = 2026
 
@@ -61,13 +56,8 @@ class Command(BaseCommand):
             default=os.environ.get("DATOS_DEMO_PASSWORD"),
             help="Contraseña de los usuarios y del convenio demo (por defecto, DATOS_DEMO_PASSWORD).",
         )
-        parser.add_argument(
-            "--pendientes",
-            action="store_true",
-            help="Completa hasta 2 solicitudes vigentes en PENDIENTE_CONFIRMACION por empresa demo.",
-        )
 
-    def handle(self, *args, password, pendientes=False, **opciones):
+    def handle(self, *args, password, **opciones):
         if not settings.DEBUG:
             raise CommandError("datos_demo solo corre con DJANGO_DEBUG=true.")
         if not password:
@@ -78,7 +68,6 @@ class Command(BaseCommand):
         faker = Faker("es_CL")
         faker.seed_instance(SEMILLA)
         usuarios_creados = viajes_creados = 0
-        solicitudes = []
         with transaction.atomic():
             for numero, datos in enumerate(EMPRESAS):
                 empresa, _ = Empresa.objects.get_or_create(
@@ -106,19 +95,12 @@ class Command(BaseCommand):
                         conductores.append(usuario)
                 perfiles = demo_flota.cargar(empresa, numero, conductores)
                 viajes_creados += demo_reservas.cargar(empresa, numero, perfiles, faker, password)
-                if pendientes:
-                    solicitudes += demo_portal.completar(empresa, numero, faker)
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Datos demo listos ({usuarios_creados} usuarios y {viajes_creados} viajes nuevos)."
             )
         )
-        if pendientes:
-            self.stdout.write(f"Solicitudes pendientes nuevas: {len(solicitudes)}.")
-            for viaje in solicitudes:
-                vence = timezone.localtime(vence_en(viaje)).strftime("%H:%M")
-                self.stdout.write(f"  {viaje.empresa.slug}  viaje {viaje.pk}  vence a las {vence}")
         for datos in EMPRESAS:
             self.stdout.write(f"  {datos['razon_social']}  →  /solicitar/{datos['slug']}")
             for rol, alias in USUARIOS_POR_EMPRESA:

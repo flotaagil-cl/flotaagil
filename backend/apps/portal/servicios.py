@@ -1,25 +1,16 @@
-"""HU-19: solicitud de viaje desde el portal público (sin cuenta)."""
+"""Reglas comunes de las solicitudes web: límites, vuelo y hora de recogida.
+
+Desde HU-40 (CC-18) no hay pedido sin cuenta: las usan el pasajero con cuenta
+(`/api/mi-cuenta/solicitudes/`) y la empresa en convenio (`/api/mi-convenio/solicitudes/`)."""
 
 from datetime import timedelta
 
 from django.conf import settings
-from django.db import transaction
 from django.utils import timezone
 from rest_framework.exceptions import Throttled, ValidationError
 
-from apps.integraciones.notificaciones import AVISO_CONFIRMACION
-from apps.reservas import avisos, tareas
 from apps.reservas import servicios as reservas
-from apps.reservas.expiracion import vence_en
-from apps.reservas.models import Actor, Canal, EstadoViaje, Pasajero, Sentido, Viaje
-
-MENSAJE = (
-    "Recibimos tu solicitud. Te enviaremos un WhatsApp para confirmarla; si no la confirmas antes del "
-    "plazo, se cancelará automáticamente."
-)
-MENSAJE_VERIFICADO = (
-    "Tu solicitud quedó registrada. Te avisaremos por WhatsApp cuando la central asigne un conductor."
-)
+from apps.reservas.models import Canal, Viaje
 
 
 class LimiteIP(Throttled):
@@ -76,68 +67,3 @@ def vuelo_y_recogida(empresa, datos: dict) -> tuple[dict | None, object]:
             {"recogida_en": [f"La recogida debe ser al menos {minutos} minutos después de ahora."]}
         )
     return vuelo_verificado, recogida
-
-
-def telefono_verificado(empresa, telefono: str) -> bool:
-    """DC-31: el pasajero de ese número en la empresa confirmó por WhatsApp dentro de la vigencia."""
-    dias = empresa.configuracion.vigencia_verificacion_dias
-    if dias <= 0:
-        return False
-    return Pasajero.objects.filter(
-        empresa=empresa, telefono=telefono, verificado_en__gte=timezone.now() - timedelta(days=dias)
-    ).exists()
-
-
-def crear_solicitud(empresa, datos: dict) -> tuple[Viaje | None, dict]:
-    """Crea la reserva en PENDIENTE_CONFIRMACION y pide la verificación por WhatsApp. Si el teléfono se
-    verificó hace poco (DC-31), la crea en SOLICITADO y envía el aviso de confirmación (HU-21).
-
-    Devuelve el viaje (None si la solicitud vino de un bot) y los datos de la respuesta.
-    """
-    config = empresa.configuracion
-    vuelo_verificado, recogida = vuelo_y_recogida(empresa, datos)
-
-    if datos.get("sitio_web"):
-        # Campo trampa: se responde como si nada para no darle pistas al bot.
-        ahora = timezone.now()
-        return None, {
-            "estado": EstadoViaje.PENDIENTE_CONFIRMACION,
-            "recogida_en": recogida,
-            "expira_en": ahora + timedelta(minutes=config.expiracion_verificacion_min),
-            "mensaje": MENSAJE,
-        }
-
-    _verificar_limite_telefono(empresa, datos["telefono"])
-    verificado = telefono_verificado(empresa, datos["telefono"])
-    with transaction.atomic():
-        viaje = reservas.crear_viaje(
-            empresa=empresa,
-            datos={
-                "pasajero": {"nombre": datos["nombre"], "telefono": datos["telefono"]},
-                "sentido": datos.get("sentido", Sentido.URBANO),
-                "origen_dir": datos["origen_dir"],
-                "destino_dir": datos["destino_dir"],
-                "recogida_en": recogida,
-                "vuelo": vuelo_verificado,
-            },
-            canal=Canal.WEB,
-            estado_inicial=EstadoViaje.SOLICITADO if verificado else EstadoViaje.PENDIENTE_CONFIRMACION,
-            actor=Actor.PASAJERO,
-        )
-        # Las aceptaciones se registran con la hora de la última solicitud (DC-11).
-        ahora = timezone.now()
-        Pasajero.objects.filter(pk=viaje.pasajero_id).update(opt_in_en=ahora, privacidad_aceptada_en=ahora)
-        if verificado:
-            avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21
-            expira_en = None
-        else:
-            viaje = Viaje.objects.select_related("pasajero", "empresa__configuracion").get(pk=viaje.pk)
-            expira_en = vence_en(viaje)
-            tareas.al_confirmar(tareas.enviar_verificacion, viaje.pk, expira_en.isoformat())
-
-    return viaje, {
-        "estado": viaje.estado,
-        "recogida_en": viaje.recogida_en,
-        "expira_en": expira_en,
-        "mensaje": MENSAJE_VERIFICADO if verificado else MENSAJE,
-    }

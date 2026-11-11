@@ -74,3 +74,41 @@ def administrador(empresa):
 @pytest.fixture
 def conductor(empresa):
     return UsuarioFactory(empresa=empresa, rol="CONDUCTOR")
+
+
+CLAVE_PASAJERO = "Clave-Sintetica-2026"
+
+
+@pytest.fixture
+def con_cuenta(empresa):
+    """HU-40 (CC-18): pasajero con cuenta confirmada y sesión web; solo así se pide en el portal.
+
+    El PASAJERO usa el teléfono +56900009101 en la empresa.
+    """
+    from django.urls import reverse
+    from django.utils import timezone
+
+    from apps.reservas.models import CuentaPasajero
+    from apps.reservas.tests.fabricas import PasajeroFactory
+
+    pasajero = PasajeroFactory(
+        empresa=empresa, nombre="Ana Pérez", telefono="+56900009101", verificado_en=timezone.now()
+    )
+    usuario = UsuarioFactory(empresa=empresa, rol="PASAJERO", email="ana@correo.example", nombre="Ana Pérez")
+    usuario.set_password(CLAVE_PASAJERO)
+    usuario.save()
+    CuentaPasajero.objects.create(
+        usuario=usuario,
+        empresa=empresa,
+        nombre=pasajero.nombre,
+        telefono=pasajero.telefono,
+        pasajero=pasajero,
+        confirmada_en=timezone.now(),
+    )
+    web = APIClient(HTTP_ORIGIN=ORIGEN_PANEL)
+    respuesta = web.post(
+        reverse("auth-token"), {"email": usuario.email, "password": CLAVE_PASAJERO}, format="json"
+    )
+    assert respuesta.status_code == 200, respuesta.data
+    web.credentials(HTTP_AUTHORIZATION=f"Bearer {respuesta.data['access']}")
+    return web

@@ -1091,26 +1091,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/portal/{slug}/solicitudes/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Solicitar un viaje sin cuenta
-         * @description Crea la reserva en PENDIENTE_CONFIRMACION. Se confirma respondiendo el WhatsApp (HU-20) antes de `expira_en`; si no, se cancela (RN-06). Si el teléfono se verificó dentro de `vigencia_verificacion_dias` de la empresa (DC-31), queda SOLICITADO, `expira_en` es NULL y se envía el aviso de confirmación.
-         */
-        post: operations["portal_solicitudes_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/reportes/{tipo}/": {
         parameters: {
             query?: never;
@@ -2645,32 +2625,6 @@ export interface components {
         SolicitudCuentaRequest: {
             nombre?: string;
             telefono?: string;
-            origen_dir: string;
-            destino_dir: string;
-            /**
-             * Format: date-time
-             * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
-             */
-            recogida_en?: string | null;
-            /**
-             * @description Si no viene: DESDE_AEROPUERTO cuando hay vuelo, URBANO si no.
-             *
-             *     * `DESDE_AEROPUERTO` - Desde el aeropuerto
-             *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto
-             *     * `URBANO` - Urbano
-             */
-            sentido?: components["schemas"]["SentidoEnum"];
-            /** @description Solo para viajes desde el aeropuerto. */
-            vuelo?: components["schemas"]["VueloLlegadaRequest"];
-            acepta_privacidad: boolean;
-            acepta_whatsapp: boolean;
-            sitio_web?: string;
-        };
-        /** @description HU-19: solicitud de viaje sin cuenta. */
-        SolicitudRequest: {
-            nombre: string;
-            /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
-            telefono: string;
             origen_dir: string;
             destino_dir: string;
             /**
@@ -4745,49 +4699,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-            /** @description Empresa inexistente o inactiva */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Demasiadas solicitudes. `code`: `limite_ip` (desde la misma IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono` (varias solicitudes con el mismo número). */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    portal_solicitudes_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SolicitudRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["SolicitudRequest"];
-                "multipart/form-data": components["schemas"]["SolicitudRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SolicitudRespuesta"];
-                };
             };
             /** @description Empresa inexistente o inactiva */
             404: {

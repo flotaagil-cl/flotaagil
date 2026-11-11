@@ -1,5 +1,6 @@
 /**
- * Llamadas del portal público (HU-19): /api/portal/{slug}/ y /api/portal/{slug}/solicitudes/.
+ * Llamadas del portal público: /api/portal/{slug}/ (HU-19), crear cuenta y registro de empresa. Desde HU-40
+ * (CC-18) no hay pedido sin cuenta.
  *
  * Sin sesión: cliente openapi-fetch propio, sin el middleware de access y renovación del panel. Las rutas
  * del portal no cargan nada de src/sesion/ (lo verifica scripts/verificar-carga.mjs).
@@ -12,8 +13,9 @@ import type { components, paths } from '../api/esquema';
 import { resultado } from '../api/resultado';
 
 export type EmpresaPublica = components['schemas']['EmpresaPublica'];
-export type Solicitud = components['schemas']['SolicitudRequest'];
 export type SolicitudConvenio = components['schemas']['SolicitudConvenioRequest'];
+/** Datos del viaje que envía el formulario (los mismos del convenio, sin su declaración). */
+export type Solicitud = Omit<SolicitudConvenio, 'declara_autorizacion'>;
 /** El formulario sirve a los dos: la declaración solo existe en la cuenta del convenio (HU-34). */
 export type CuerpoSolicitud = Solicitud & Partial<Pick<SolicitudConvenio, 'declara_autorizacion'>>;
 export type SolicitudRespuesta = components['schemas']['SolicitudRespuesta'];
@@ -34,13 +36,6 @@ export function useEmpresa(api: ClientePortal, slug: string) {
     queryFn: () => resultado(api.GET('/api/portal/{slug}/', { params: { path: { slug } } })),
     // Sin reintentos automáticos: un 404 es la respuesta y una falla de red se reintenta con el botón.
     staleTime: 5 * 60_000,
-  });
-}
-
-export function useSolicitar(api: ClientePortal, slug: string) {
-  return useMutation({
-    mutationFn: (solicitud: Solicitud) =>
-      resultado(api.POST('/api/portal/{slug}/solicitudes/', { params: { path: { slug } }, body: solicitud })),
   });
 }
 

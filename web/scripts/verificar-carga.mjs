@@ -49,7 +49,7 @@ export const DIFERIDOS = [
   'src/flota/paginas/ConductorNuevo.tsx',
   'src/flota/paginas/ImportarConductores.tsx',
   'src/portal/LayoutPortal.tsx',
-  'src/portal/paginas/Solicitar.tsx',
+  'src/portal/paginas/IrAlIngreso.tsx',
   'src/portal/paginas/Privacidad.tsx',
   'src/portal/paginas/RegistroEmpresa.tsx',
   'src/portal/paginas/CrearCuenta.tsx',
@@ -68,7 +68,7 @@ export const REGLAS = [
   { desde: 'src/paginas/Login.tsx', nombre: 'login', prohibido: RESERVAS_Y_PORTAL },
   // Portal público (/solicitar): nada del panel ni de la sesión.
   { desde: 'src/portal/LayoutPortal.tsx', nombre: '/solicitar (marco)', prohibido: PANEL_Y_SESION },
-  { desde: 'src/portal/paginas/Solicitar.tsx', nombre: '/solicitar (formulario)', prohibido: PANEL_Y_SESION },
+  { desde: 'src/portal/paginas/IrAlIngreso.tsx', nombre: '/solicitar (va al ingreso)', prohibido: PANEL_Y_SESION },
   { desde: 'src/portal/paginas/Privacidad.tsx', nombre: '/solicitar/privacidad', prohibido: PANEL_Y_SESION },
   // HU-34 y HU-35: registro de la empresa, cuenta del pasajero y recuperar la contraseña, sin sesión.
   { desde: 'src/portal/paginas/RegistroEmpresa.tsx', nombre: '/solicitar/registro-empresa', prohibido: PANEL_Y_SESION },

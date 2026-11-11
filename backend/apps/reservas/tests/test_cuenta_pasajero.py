@@ -296,12 +296,3 @@ class TestEliminar:
         assert Viaje.objects.filter(pasajero=pasajero).count() == 1
         assert entrar()[1].status_code == 401
         assert Auditoria.objects.filter(accion="ELIMINAR_CUENTA").exists()
-
-    def test_el_invitado_sigue_igual(self, cliente, empresa, twilio, django_capture_on_commit_callbacks):
-        with django_capture_on_commit_callbacks(execute=True):
-            respuesta = cliente.post(
-                reverse("portal-solicitudes", args=[empresa.slug]),
-                {**TestReservas().solicitud(), "nombre": "Invitado", "telefono": "+56900009399"},
-                format="json",
-            )
-        assert respuesta.data["estado"] == "PENDIENTE_CONFIRMACION"

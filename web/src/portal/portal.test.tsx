@@ -1,8 +1,14 @@
-/** Portal público (HU-19, CP-07) con el backend falso, sin sesión, en varias zonas horarias. */
+/**
+ * Portal público (HU-19, CP-07) con el backend falso, sin sesión, en varias zonas horarias.
+ *
+ * HU-40 (CC-18): ya no hay pedido como invitado, pero el formulario lo siguen usando la cuenta del pasajero y la
+ * del convenio. Aquí se prueba solo, dentro del marco del portal, con un arnés que lo envía al servidor falso.
+ */
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter } from 'react-router';
+import { useState } from 'react';
+import { createMemoryRouter, type RouteObject } from 'react-router';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { App } from '../App';
 import { MENSAJES } from '../api/errores';
@@ -10,9 +16,71 @@ import { crearEntorno, crearLocks } from '../pruebas/entornoFalso';
 import { ServidorPortalFalso } from '../pruebas/servidorPortalFalso';
 import { cambiarZona } from '../pruebas/zona';
 import { crearRutas } from '../rutas/tabla';
+import { ErrorApi } from '../api/resultado';
+import { useEntorno } from '../entornoContexto';
+import type { CuerpoSolicitud, SolicitudRespuesta } from './api';
+import { Confirmacion } from './Confirmacion';
+import { useContextoPortal } from './contexto';
+import { FormularioSolicitud } from './FormularioSolicitud';
 import { MENSAJES_PORTAL } from './formulario';
+import { NoDisponible } from './NoDisponible';
 
-const RUTA = '/solicitar/transportes-andes';
+const PORTAL = '/solicitar/transportes-andes';
+const RUTA = `${PORTAL}/arnes`;
+
+/** El formulario como lo usaba la página de invitado: enviar, confirmar y volver a pedir. */
+function ArnesFormulario() {
+  const { empresa, slug } = useContextoPortal();
+  const entorno = useEntorno();
+  const [enviada, setEnviada] = useState<{ cuerpo: CuerpoSolicitud; respuesta: SolicitudRespuesta } | null>(null);
+  const [vuelta, setVuelta] = useState(0);
+  const [noDisponible, setNoDisponible] = useState(false);
+  if (noDisponible) return <NoDisponible />;
+  if (enviada) {
+    return (
+      <Confirmacion
+        {...enviada}
+        alHacerOtra={() => {
+          setEnviada(null);
+          setVuelta((n) => n + 1);
+        }}
+      />
+    );
+  }
+  async function solicitar(cuerpo: CuerpoSolicitud): Promise<SolicitudRespuesta> {
+    let respuesta: Response;
+    try {
+      respuesta = await entorno.fetch(
+        new Request(`${entorno.origen}/api/portal/${slug}/solicitudes/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(cuerpo),
+        }),
+      );
+    } catch {
+      throw new ErrorApi(0, null);
+    }
+    const datos: unknown = await respuesta.json().catch(() => null);
+    if (!respuesta.ok) throw new ErrorApi(respuesta.status, datos);
+    return datos as SolicitudRespuesta;
+  }
+  return (
+    <FormularioSolicitud
+      key={vuelta}
+      empresa={empresa}
+      solicitar={solicitar}
+      intro={`Te enviaremos un WhatsApp para confirmar tu solicitud. Tendrás ${empresa.expiracion_verificacion_min} minutos para responderlo.`}
+      alEnviar={setEnviada}
+      alNoDisponible={() => setNoDisponible(true)}
+    />
+  );
+}
+
+function conArnes(rutas: RouteObject[]): RouteObject[] {
+  const portal = rutas.find((ruta) => ruta.path === '/solicitar/:slug')!;
+  portal.children = [...(portal.children ?? []), { path: 'arnes', Component: ArnesFormulario }];
+  return rutas;
+}
 
 function montarPortal(ruta = RUTA, servidor = new ServidorPortalFalso()) {
   const locks = crearLocks();
@@ -22,7 +90,7 @@ function montarPortal(ruta = RUTA, servidor = new ServidorPortalFalso()) {
     canales++;
     return null;
   };
-  const rutas = crearRutas();
+  const rutas = conArnes(crearRutas());
   const router = createMemoryRouter(rutas, { initialEntries: [ruta] });
   render(<App entorno={entorno} rutas={rutas} router={router} />);
   return { servidor, router, locks, canales: () => canales };
@@ -86,10 +154,10 @@ describe('carga del portal', () => {
   });
 
   it('página de privacidad con la franja de texto provisional', async () => {
-    montarPortal(`${RUTA}/privacidad`);
+    montarPortal(`${PORTAL}/privacidad`);
     expect(await screen.findByRole('heading', { name: 'Aviso de privacidad' })).toBeInTheDocument();
     expect(screen.getByText('Texto provisional, pendiente de aprobación.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver al formulario' })).toHaveAttribute('href', RUTA);
+    expect(screen.getByRole('link', { name: 'Volver al ingreso' })).toHaveAttribute('href', '/login?empresa=transportes-andes');
   });
 });
 
@@ -151,7 +219,7 @@ describe('formulario', () => {
     await abrir();
     const desplegable = screen.getByText('Leer el aviso de privacidad').closest('details')!;
     expect(within(desplegable).getByText('Texto provisional, pendiente de aprobación.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Aviso de privacidad' })).toHaveAttribute('href', `${RUTA}/privacidad`);
+    expect(screen.getByRole('link', { name: 'Aviso de privacidad' })).toHaveAttribute('href', `${PORTAL}/privacidad`);
   });
 
   it('anticipación mínima: antes de ahora + 30 min no se envía', async () => {
@@ -391,6 +459,14 @@ describe('errores del envío', () => {
     await act(async () => servidor.entregar());
     await screen.findByRole('heading', { name: 'Solicitud recibida' });
     expect(servidor.cuerpos).toHaveLength(1);
+  });
+});
+
+describe('HU-40 · cuenta obligatoria', () => {
+  it('la dirección del portal ya no muestra un formulario: lleva al ingreso de la empresa', async () => {
+    const { router } = montarPortal('/solicitar/transportes-andes');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    expect(router.state.location.search).toBe('?empresa=transportes-andes');
   });
 });
 

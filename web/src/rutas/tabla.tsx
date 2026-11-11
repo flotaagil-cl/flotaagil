@@ -194,12 +194,13 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
       ],
     },
     {
-      // Portal público del pasajero (HU-19): sin sesión ni refresh silencioso.
+      // Portal público de la empresa (HU-19): sin sesión ni refresh silencioso.
       path: '/solicitar/:slug',
       lazy: async () => ({ Component: (await import('../portal/LayoutPortal')).LayoutPortal }),
       ...comunes,
       children: [
-        { index: true, lazy: async () => ({ Component: (await import('../portal/paginas/Solicitar')).Solicitar }) },
+        // HU-40 (CC-18): sin pedido como invitado; la dirección del portal lleva al ingreso de la empresa.
+        { index: true, lazy: async () => ({ Component: (await import('../portal/paginas/IrAlIngreso')).IrAlIngreso }) },
         {
           path: 'privacidad',
           lazy: async () => ({ Component: (await import('../portal/paginas/Privacidad')).Privacidad }),

@@ -9,8 +9,9 @@ export function Privacidad() {
     <section className={estilos.tarjeta}>
       <h1>Aviso de privacidad</h1>
       <TextoPrivacidad razonSocial={empresa.razon_social} />
-      <Link to={`/solicitar/${slug}`} className={estilos.botonSecundario}>
-        Volver al formulario
+      {/* HU-40: ya no hay formulario de invitado; se vuelve al ingreso de la empresa. */}
+      <Link to={`/login?empresa=${slug}`} className={estilos.botonSecundario}>
+        Volver al ingreso
       </Link>
     </section>
   );

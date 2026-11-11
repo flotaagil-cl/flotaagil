@@ -311,10 +311,10 @@ class TestWebhooks:
 
 @pytest.mark.django_db
 class TestPortalYComando:
-    def test_la_solicitud_del_portal_envia_la_verificacion(
-        self, cliente, empresa, django_capture_on_commit_callbacks
+    def test_la_solicitud_web_envia_el_aviso_de_confirmacion(
+        self, con_cuenta, empresa, django_capture_on_commit_callbacks
     ):
-        """CP-07: crear la solicitud deja el mensaje de verificación registrado."""
+        """CP-07 con HU-40: el pedido con cuenta no se verifica y deja registrado el aviso de confirmación."""
         datos = {
             "nombre": "Ana Pérez",
             "telefono": "+56900009001",
@@ -325,10 +325,11 @@ class TestPortalYComando:
             "acepta_whatsapp": True,
         }
         with django_capture_on_commit_callbacks(execute=True):
-            respuesta = cliente.post(reverse("portal-solicitudes", args=[empresa.slug]), datos, format="json")
+            respuesta = con_cuenta.post(reverse("mi-cuenta-solicitudes"), datos, format="json")
         assert respuesta.status_code == 201
         mensaje = MensajeWhatsapp.objects.get()
-        assert (mensaje.direccion, mensaje.tipo) == (DireccionMensaje.SALIENTE, TipoMensaje.PLANTILLA)
+        assert mensaje.direccion == DireccionMensaje.SALIENTE
+        assert mensaje.viaje.estado == EstadoViaje.SOLICITADO
 
     def test_simular_confirmar(self, pendiente, settings, capsys):
         settings.DEBUG = True
