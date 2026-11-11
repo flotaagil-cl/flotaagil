@@ -20,5 +20,9 @@ export function RutaAutenticada() {
     const destino = volver === '/' ? '/login' : `/login?volver=${encodeURIComponent(volver)}`;
     return <Navigate to={destino} replace />;
   }
+  // DC-40: con contraseña temporal (DC-14) la API rechaza todo salvo cambiarla: primero el primer ingreso.
+  if (estado.usuario.debe_cambiar_password && ubicacion.pathname !== '/primer-ingreso') {
+    return <Navigate to="/primer-ingreso" replace />;
+  }
   return <Outlet />;
 }

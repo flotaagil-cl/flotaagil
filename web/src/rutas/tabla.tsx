@@ -183,6 +183,7 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
         {
           lazy: async () => ({ Component: (await import('./RutaAutenticada')).RutaAutenticada }),
           children: [
+            { path: '/primer-ingreso', lazy: async () => ({ Component: (await import('../paginas/PrimerIngreso')).PrimerIngreso }) },
             {
               path: '/',
               lazy: async () => ({ Component: (await import('../componentes/Layout')).Layout }),

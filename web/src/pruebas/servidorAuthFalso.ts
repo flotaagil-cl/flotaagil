@@ -28,6 +28,7 @@ export const USUARIOS: UsuarioFalso[] = [
   { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
   { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true, debe_cambiar_password: false },
   { id: 5, nombre: 'Clara Cliente', email: 'convenio@andes.example', rol: 'CONVENIO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
+  { id: 7, nombre: 'Tomás Temporal', email: 'temporal@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'Temporal123', debe_cambiar_password: true },
   { id: 6, nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false },
 ];
 
@@ -175,6 +176,18 @@ export class ServidorAuthFalso {
         return this.login((await peticion.json()) as { email: string; password: string });
       case 'POST /api/auth/refresh/':
         return this.refresh(cookie);
+      case 'POST /api/auth/password/': {
+        // DC-40: cambio de la temporal (DC-14). Sin cambio de canal: la sesión siguiente se pide con login.
+        const access = peticion.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
+        const usuario = this.accessVigentes.get(access);
+        if (!usuario) return { estado: 401, cuerpo: { detail: 'Token inválido.', code: 'token_not_valid' } };
+        const { password_actual, password_nueva } = (await peticion.json()) as { password_actual: string; password_nueva: string };
+        if (this.efectivo(usuario).password !== password_actual) {
+          return { estado: 400, cuerpo: { password_actual: ['La contraseña actual no es correcta.'] } };
+        }
+        this.cambios.set(usuario.id, { password: password_nueva, debe_cambiar_password: false });
+        return { estado: 200, cuerpo: { access: this.emitirAccess(this.efectivo(usuario)) } };
+      }
       case 'POST /api/auth/logout/':
         if (cookie) this.listaNegra.add(cookie);
         return { estado: 204, cookie: null };
@@ -193,9 +206,17 @@ export class ServidorAuthFalso {
     }
   }
 
+  /** Cambios de contraseña hechos en esta prueba (no tocan la lista compartida USUARIOS). */
+  private cambios = new Map<number, { password: string; debe_cambiar_password: boolean }>();
+
+  private efectivo(usuario: UsuarioFalso): UsuarioFalso {
+    return { ...usuario, ...this.cambios.get(usuario.id) };
+  }
+
   private login({ email, password }: { email: string; password: string }): Respuesta {
     if (this.limitarLogin) return { estado: 429, cuerpo: { detail: 'Demasiadas solicitudes.', code: 'throttled' } };
-    const usuario = USUARIOS.find((u) => u.email === email);
+    const encontrado = USUARIOS.find((u) => u.email === email);
+    const usuario = encontrado && this.efectivo(encontrado);
     if (!usuario || usuario.password !== password) {
       return { estado: 401, cuerpo: { detail: 'Correo o contraseña incorrectos.', code: 'credenciales_invalidas' } };
     }
