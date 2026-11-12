@@ -9,3 +9,7 @@ from .settings import *  # noqa: F403
 
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_BROKER_URL = "memory://"
+
+# Origen del panel en las pruebas (el mismo ORIGEN_PANEL de conftest.py). Las rutas WebSocket lo leen al
+# importarse (apps/flota/routing.py), antes de que un fixture pueda cambiarlo: no puede depender del .env.
+PANEL_ORIGENES = ["http://localhost:5173"]
