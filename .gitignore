@@ -73,3 +73,6 @@ desktop.ini
 
 # Pruebas manuales locales (scripts y capturas)
 .manual/
+
+# Traspaso entre sesiones de trabajo (local)
+docs/sesion-actual.md

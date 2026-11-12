@@ -79,7 +79,14 @@ Los valores marcados como supuestos (márgenes, 10 min fuera de geocerca, 15 min
 - **Scrum**, sprints de 2 semanas, tablero en GitHub Projects «FlotaÁgil — Backlog». Backlog completo en `docs/backlog/backlog.json` (44 HU, 274 SP).
 - **Nunca push directo a `main`.** Todo entra por PR con el check `ci` en verde y fusión *squash* (historial lineal); el ruleset «Proteger main» no se modifica. Hoy no exige aprobaciones (DC-47): Renato integra con la lista de chequeo de `docs/prs/lista-de-chequeo.md`. Las ramas fusionadas no se borran (el informe cita sus hashes).
 - **Ramas:** `feat/HU-03-reservas`, `fix/HU-16-monto-pago`, `chore/…`, `docs/…`, `test/…`. Una rama por HU o tarea.
-- **Commits y título del PR:** Conventional Commits en español con scope del área: `feat(backend): crear modelo VIAJE`, `fix(app): …`. El PR referencia el issue (`Closes #12`).
+- **Commits y título del PR:** Conventional Commits en español con scope del área: `feat(backend): crear modelo VIAJE`, `fix(app): …`. El PR referencia el issue: `Closes #12` si termina la HU, `Refs #12` si es parcial.
+- **Flujo del tablero** («FlotaÁgil — Backlog», `orgs/flotaagil-cl/projects/1`):
+  - Al crear la rama de una HU o tarea, su tarjeta pasa a **En curso**.
+  - Cada commit de esa rama lleva `Refs #N` con el número del issue (no el código de la HU).
+  - El PR que termina la HU usa `Closes #N` y la tarjeta pasa a **En revisión**; al fusionarlo, a **Hecho**. Los PR parciales (por ejemplo, el backend de una HU) usan `Refs #N` y no mueven la tarjeta. Las tareas técnicas sin issue no llevan ninguno de los dos.
+  - Si los workflows del tablero no mueven la tarjeta, se mueve a mano y se confirma leyendo el tablero. Nadie cierra issues a mano: los cierra el `Closes #N` al fusionar en `main`.
+  - Los keywords de cierre solo actúan en PR cuya base es `main`; antes de fusionar, verificar con `gh pr view <N> --json baseRefName,closingIssuesReferences`.
+  - En la fusión *squash*, el mensaje lleva la lista de HU, DC y CC y los `Closes #N` o `Refs #N` del PR.
 - **Versiones:** SemVer. Línea base `v0.1`–`v0.4` al cierre de cada sprint y `v1.0.0` en producción.
 - **Definición de terminado** (revisar contra la DoD del Informe 1): criterios de aceptación cumplidos, pruebas automatizadas de la HU en verde, cobertura ≥ 70 % en lo tocado, PR revisado, sin secretos ni datos personales, documentación actualizada si hubo cambio (Anexo B).
 - **Cambios de alcance:** issue con plantilla «Solicitud de cambio». No se agrega funcionalidad fuera del backlog sin ese issue.
