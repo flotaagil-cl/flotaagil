@@ -466,8 +466,8 @@ def tecnologias(r):
         "**Recuperación del desembolso:** los $770.000 de desembolso presupuestado (equipamiento, nube, licencias y dominio) se recuperan con la licencia del primer cliente "
         "más ocho meses de operación (500.000 + 8 × 35.350 = $782.800).",
         "**Recuperación de la inversión valorizada:** recuperar los $14.047.000, que en su mayoría son horas propias del equipo, exige crecer. "
-        "Con una cartera de 11 clientes (3 Inicial, 4 Estándar y 4 Avanzado) se obtienen $4.000.000 en licencias y $438.650 mensuales "
-        "(549.800 de contribución menos 111.150 de costos fijos). Como la cartera se forma de manera gradual, la recuperación se evalúa con "
+        "Con una cartera de 10 clientes (4 Avanzado, 3 Estándar y 3 Inicial) se obtienen $3.650.000 en licencias y $396.850 mensuales "
+        "(500.000 de contribución menos 103.150 de costos fijos). Como la cartera se forma de manera gradual, la recuperación se evalúa con "
         "flujo de caja descontado más abajo ({T:van_res}).",
         "**Soporte Plus:** cada contratación agrega $49.000 mensuales sin costo variable, porque usa la misma guardia del equipo.",
         "**Palanca de costo:** el 78 % del costo variable es WhatsApp enviado a través de Twilio. Es el costo que retira CC-19.",
@@ -495,9 +495,9 @@ def tecnologias(r):
     van_eval(r)
     r.P("**Conclusión.** Para el cliente la solución es económicamente factible: en el escenario meta recupera la licencia en poco más de un mes, "
         "con un VAN a tres años cercano a $12 millones, y aun en el escenario prudente el VAN es positivo y la licencia se recupera antes de un "
-        "año. Para FlotaÁgil, el proyecto es **viable condicionado a CC-19 y a alcanzar 11 clientes**: la operación se sostiene desde el primer "
+        "año. Para FlotaÁgil, el proyecto es **viable condicionado a CC-19 y a incorporar tres clientes nuevos por año**: la operación se sostiene desde el primer "
         "cliente, pero con la mensajería vía Twilio la inversión valorizada no se recupera en tres años; con CC-19, aun pagando su desarrollo, "
-        "el VAN es positivo hasta una tasa de 15 % y la inversión se recupera en unos dos años y medio, siempre que la cartera llegue a la meta. "
+        "el VAN es positivo hasta una tasa de 15 % y la inversión se recupera en menos de dos años, siempre que la cartera crezca al ritmo previsto. "
         "Por eso CC-19 es la primera prioridad de la versión 1.1, y la cartera y el consumo por reserva se revisan periódicamente (R-04). La coherencia de estas hipótesis con las metas de los KPI se muestra en la sección 5.1.")
 
     r.H3("Factibilidad implementativa")
@@ -570,10 +570,10 @@ def van_eval(r):
         "sensibilidad a 8 % y 15 %; flujos al cierre de cada año y año 0 = puesta en marcha; precios, consumos y costos fijos de esta sección, "
         "sin IVA. El cliente paga la licencia en el año 0 y recibe el beneficio neto de la {T:benef} cada año. FlotaÁgil invierte los "
         "$14.047.000 valorizados en el año 0, cobra una licencia por cada cliente que se incorpora y obtiene el resultado de operar su "
-        "cartera, que crece de 1 a 4 y a 11 clientes (año 2: el cliente actual, un Avanzado, un Estándar y un Inicial; año 3: 4 Avanzado, "
-        "4 Estándar y 3 Inicial). **Por qué 1 → 4 → 11:** el primer año se dedica a estabilizar el producto con el cliente actual, que luego "
-        "sirve de caso de referencia ante otros operadores de taxi turismo y de traslados al aeropuerto, y 11 es la cartera con la que el "
-        "punto anterior recupera la inversión valorizada; es una meta comercial, no una demanda validada. El escenario con CC-19 es una "
+        "cartera, que suma tres clientes nuevos por año, uno de cada plan: 4 clientes en el año 1 (el cliente actual, un Avanzado, un Estándar "
+        "y un Inicial), 7 en el año 2 y 10 en el año 3 (4 Avanzado, 3 Estándar y 3 Inicial). **Por qué 4 → 7 → 10:** el cliente actual sirve "
+        "de referencia desde el primer año y la meta comercial es incorporar tres flotas por año, una de cada tamaño; es una meta, no una "
+        "demanda validada. El escenario con CC-19 es una "
         f"**proyección de la versión 1.1**: suma en el año 1 su desarrollo, estimado en {dv.CC19_HORAS} horas a la tarifa del presupuesto "
         f"({dv.pesos(dv.TARIFA_HORA)} por hora, más 10 % de imprevistos), es decir, {dv.pesos(dv.CC19_COSTO)}, y desde ese año opera sin Twilio. "
         "El detalle año a año y la estimación por componente están en el Anexo J.")
@@ -587,13 +587,11 @@ def van_eval(r):
     r.table("van_flujo", "Flujo de caja anual de FlotaÁgil", ["Escenario", "Año 0", "Año 1", "Año 2", "Año 3", "VAN 12 %"], [
         (dv.ESCENARIOS["actual"], *[dv.pesos(x) for x in fa], dv.pesos(dv.van(fa))),
         (dv.ESCENARIOS["cc19"], *[dv.pesos(x) for x in fc], dv.pesos(dv.van(fc))),
-        ("Clientes activos", "1", "1", "4", "11", "—"),
+        ("Clientes activos", "1", "4", "7", "10", "—"),
     ], [4.6, 2.5, 2.1, 2.1, 2.4, 2.3], font=7.8,
         source=f"Elaboración propia. Año 0: inversión valorizada más la licencia del cliente actual. Año 1 con CC-19: incluye su desarrollo ({dv.pesos(dv.CC19_COSTO)}).")
     inc = dv.van(fc) - dv.van(fa)
-    v4 = dv.van_con_cartera("cc19", ["A", "A", "E", "I"])
-    v9 = dv.van_con_cartera("cc19", ["A"] * 3 + ["E"] * 3 + ["I"] * 3)
-    v10 = dv.van_con_cartera("cc19", ["A"] * 4 + ["E"] * 3 + ["I"] * 3)
+    v2, v1 = dv.van(dv.flujos_flotaagil("cc19", cartera=dv.CARTERA_2_POR_ANIO)), dv.van(dv.flujos_flotaagil("cc19", cartera=dv.CARTERA_1_POR_ANIO))
     da, dc = dv.flujos_flotaagil("actual", dv.INV_DESEMBOLSO), dv.flujos_flotaagil("cc19", dv.INV_DESEMBOLSO)
     r.bullets([
         "**Cliente:** la inversión es pequeña frente al beneficio. En el escenario meta la licencia se recupera en "
@@ -607,9 +605,9 @@ def van_eval(r):
         f"positivo al 15 % ({dv.pesos(dv.van(fc, 0.15))}); la TIR es {dv.pct(dv.tir(fc))}, sobre las tres tasas evaluadas, y la inversión se "
         f"recupera en {dv.periodo(dv.pri(fc))} ({dv.periodo(dv.pri(fc, dv.TASA))} con flujos descontados). Frente a seguir con Twilio, CC-19 "
         f"aporta {dv.pesos(inc)} de VAN neto de su costo.",
-        "**Sensibilidad a la cartera:** el resultado depende de llegar a la meta. Con CC-19, si en el año 3 la cartera se queda en 4 clientes "
-        f"el VAN es {dv.pesos(v4)}; con 9 clientes es {dv.pesos(v9)} y recién con 10 pasa a positivo ({dv.pesos(v10)}). Por eso la cartera "
-        "se sigue cada trimestre junto con el consumo por reserva (R-04).",
+        "**Sensibilidad a la cartera:** con CC-19 y **dos clientes nuevos por año** (cartera 3 → 5 → 7), el VAN al 12 % baja a "
+        f"{dv.pesos(v2)}; con uno solo por año (2 → 3 → 4) es {dv.pesos(v1)}. El límite está entre uno y dos clientes nuevos por año, por lo "
+        "que la cartera se sigue cada trimestre junto con el consumo por reserva (R-04).",
         "**Si solo se mira el desembolso:** con los $847.000 que efectivamente se gastan (equipamiento, nube, licencias, dominio e imprevistos), "
         f"el VAN es positivo en ambos escenarios ({dv.pesos(dv.van(da))} y {dv.pesos(dv.van(dc))} al 12 %). La diferencia con la evaluación "
         "valorizada es el costo de oportunidad de las horas del equipo.",

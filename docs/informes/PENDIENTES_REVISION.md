@@ -28,7 +28,7 @@ Ambos informes generan con la revisión automática en **0 errores y 0 avisos** 
 
 ## Agregado el 12/11 (pedido de Renato)
 
-- **2.1.9 y Anexo J:** evaluación a tres años con VAN, TIR y PRI desde el cliente y desde FlotaÁgil; tasa 12 % con sensibilidad 8 % y 15 %; cartera 1 → 4 → 11 (justificada en el texto). Cifras en `generador/data_van.py` (`python data_van.py` las imprime). TIR del cliente meta: «No significativa (inversión inicial mínima)». CC-19 como proyección v1.1 con su desarrollo (150 h, $2.294.000) en el año 1. Conclusión: viable condicionado a CC-19 y a alcanzar 11 clientes.
+- **2.1.9 y Anexo J:** evaluación a tres años con VAN, TIR y PRI desde el cliente y desde FlotaÁgil; tasa 12 % con sensibilidad 8 % y 15 %; cartera 4 → 7 → 10, tres clientes nuevos por año (justificada en el texto). Cifras en `generador/data_van.py` (`python data_van.py` las imprime). TIR del cliente meta: «No significativa (inversión inicial mínima)». CC-19 como proyección v1.1 con su desarrollo (150 h, $2.294.000) en el año 1. Conclusión: viable condicionado a CC-19 y a incorporar tres clientes nuevos por año.
 - **Escenario con CC-19:** operación del cliente actual $163.650 → $60.650 (−63 %), $88 → $20 por reserva, ahorro ≈ $1.236.000 al año, margen Avanzado ≈ 18 % → ≈ 70 %; los planes ya no incluyen WhatsApp.
 - **Guía de estudio:** datos al día y preguntas 16 y 17 (rentabilidad y CC-19).
 

@@ -25,11 +25,11 @@ Complementa `PENDIENTES_REVISION.md`. Leer ambos al retomar los informes.
 - **Biometría:** se descarta para el pasajero (desproporcionada). Para el conductor, una posible "selfie de turno" revisada por el despachador como evolución, sin datos biométricos.
 
 ## Evaluación económica (12/11/2026)
-- Horizonte de 3 años, tasa de 12 % con sensibilidad a 8 % y 15 %, cartera de FlotaÁgil 1 → 4 → 11 clientes.
+- Horizonte de 3 años, tasa de 12 % con sensibilidad a 8 % y 15 %, cartera de FlotaÁgil 4 → 7 → 10 clientes: tres nuevos por año, uno de cada plan (decisión del 12/11, reemplaza a 1 → 4 → 11).
 - Dos miradas: cliente actual (escenario meta y prudente) y FlotaÁgil como negocio, con la operación actual y con CC-19.
 - CC-19 se evalúa como proyección v1.1 e incluye su desarrollo en el año 1: 150 h × $13.900 (tarifa del presupuesto) + 10 % = $2.294.000 (Anexo J).
-- Resultado: cliente VAN ≈ $12 M (TIR no significativa por inversión mínima); FlotaÁgil con Twilio VAN ≈ −$5,3 M; con CC-19 VAN ≈ +$2,7 M, TIR 19,7 %, PRI ≈ 2 años y 6 meses. Con 9 clientes en el año 3 el VAN es levemente negativo; desde 10, positivo.
-- Conclusión del informe: viable condicionado a CC-19 y a alcanzar 11 clientes.
+- Resultado: cliente VAN ≈ $12 M (TIR no significativa por inversión mínima); FlotaÁgil con Twilio VAN −$3.321.962 (TIR −1,5 %); con CC-19 VAN $8.027.041 al 12 % y $6.766.208 al 15 %, TIR 38,0 %, PRI 1 año y 11 meses (descontado 2 años y 2 meses). Sensibilidad con CC-19: 2 clientes nuevos por año, VAN $2.700.872; 1 por año, −$3.844.231.
+- Conclusión del informe: viable condicionado a CC-19 y a incorporar tres clientes nuevos por año.
 - CC-19 se presenta como escenario «con CC-19»: los planes ya no incluyen WhatsApp y mantienen su precio.
 
 ## Plazo

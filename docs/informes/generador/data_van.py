@@ -40,8 +40,11 @@ CC19_TAREAS = [
 CC19_HORAS = sum(h for _, h in CC19_TAREAS)
 CC19_COSTO = int(round(CC19_HORAS * TARIFA_HORA * 1.10, -3))
 
-# Cartera activa en cada año: 1 → 4 → 11 clientes (el primero es el cliente actual).
-CARTERA = {1: ["A"], 2: ["A", "A", "E", "I"], 3: ["A"] * 4 + ["E"] * 4 + ["I"] * 3}
+# Cartera activa en cada año: 4 → 7 → 10 clientes; tres nuevos por año, uno de cada plan (el primero es el cliente actual).
+CARTERA = {1: ["A", "A", "E", "I"], 2: ["A"] * 3 + ["E"] * 2 + ["I"] * 2, 3: ["A"] * 4 + ["E"] * 3 + ["I"] * 3}
+# Sensibilidad: clientes nuevos por año rotando los planes (Avanzado, Estándar, Inicial…).
+CARTERA_2_POR_ANIO = {1: ["A", "A", "E"], 2: ["A", "A", "E", "I", "A"], 3: ["A", "A", "E", "I", "A", "E", "I"]}
+CARTERA_1_POR_ANIO = {1: ["A", "A"], 2: ["A", "A", "E"], 3: ["A", "A", "E", "I"]}
 
 # Cliente actual (Tabla de beneficio de 2.1.9): escenario meta y escenario prudente (margen 20 %, sin caja).
 CLIENTE = {
@@ -50,13 +53,14 @@ CLIENTE = {
 }
 
 
-def detalle_flotaagil(esc, inversion=INV_VALORIZADA):
+def detalle_flotaagil(esc, inversion=INV_VALORIZADA, cartera=None):
+    cartera = cartera or CARTERA
     filas, previa = [], ["A"]
     flujo0 = -inversion + LIC["A"]
     filas.append(dict(anio=0, clientes=1, planes=0, consumo=0, fijos=0, operacion=0, licencias=LIC["A"],
                       inversion=-inversion, flujo=flujo0))
     for y in range(1, HORIZONTE + 1):
-        cart = CARTERA[y]
+        cart = cartera[y]
         nuevos = list(cart)
         for t in previa:
             nuevos.remove(t)
@@ -79,8 +83,16 @@ def detalle_flotaagil(esc, inversion=INV_VALORIZADA):
     return filas
 
 
-def flujos_flotaagil(esc, inversion=INV_VALORIZADA):
-    return [f["flujo"] for f in detalle_flotaagil(esc, inversion)]
+def flujos_flotaagil(esc, inversion=INV_VALORIZADA, cartera=None):
+    return [f["flujo"] for f in detalle_flotaagil(esc, inversion, cartera)]
+
+
+def resumen_cartera(lista, esc="actual"):
+    """Licencias, contribución, fijos y resultado mensual de una cartera estable (tabla del Anexo J)."""
+    lic = sum(LIC[t] for t in lista)
+    contrib = sum(PLAN[t] - CONSUMO[esc][t] for t in lista)
+    fijos = FIJO + FIJO_ADIC * (len(lista) - 1)
+    return lic, contrib, fijos, contrib - fijos
 
 
 def flujos_cliente(clave):
