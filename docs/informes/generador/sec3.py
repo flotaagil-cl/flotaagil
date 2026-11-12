@@ -1,4 +1,5 @@
 from data_tests import CP
+from datos import PRUEBAS
 
 KPI = [
     # id, nombre, objetivo, que mide/relevancia, formula, variables/unidad, fuente, metodo, base, meta, plazo, frecuencia, responsable, umbrales, accion
@@ -85,13 +86,14 @@ def kpi_sla(r):
     r.table("smart", "Justificación SMART de cada KPI", ["ID", "Específico", "Medible", "Alcanzable", "Relevante", "Temporal"], smart,
             [1.3, 3.8, 3.4, 6.2, 4.6, 2.9], font=7.0)
     r.landscape_off()
-    r.P("**Indicador auxiliar.** Las solicitudes del portal que expiran o se cancelan antes de que el pasajero confirme por WhatsApp no son "
-        "reservas confirmadas, por lo que no entran en KPI-01 ni en KPI-08. Se miden aparte, con su propia población: *tasa de solicitudes no "
-        "confirmadas* = (solicitudes del portal que terminan en PENDIENTE_CONFIRMACION → CANCELADO ÷ solicitudes del portal recibidas) × 100. "
-        "No tiene meta, porque incluye las solicitudes falsas que la verificación debe filtrar; se vigila su tendencia.")
+    r.P("**Indicador auxiliar.** Las cuentas de pasajero que se crean y no se activan, porque nadie confirma el teléfono por WhatsApp, no "
+        "generan reservas, por lo que no entran en KPI-01 ni en KPI-08. Se miden aparte, con su propia población: *tasa de cuentas no "
+        "activadas* = (cuentas de pasajero creadas en el período que no se activan dentro del plazo ÷ cuentas creadas en el período) × 100. No "
+        "tiene meta, porque incluye los registros falsos que la verificación debe filtrar; se vigila su tendencia. Desde CC-18 reemplaza a la "
+        "tasa de solicitudes no confirmadas, porque el pedido sin cuenta ya no existe.")
     r.P("**Estado en el sistema.** El módulo de reportes construido (HU-06) ya entrega la liquidación por conductor y método de pago, la "
         "facturación por convenio y la tasa de cancelación por origen, esta última sobre todas las reservas del período (DC-29). La separación "
-        "de las reservas confirmadas para KPI-08 y el cierre de caja que alimenta a KPI-05 se construyen con HU-31 (CC-12).")
+        "de las reservas confirmadas para KPI-08 y el cierre de caja que alimenta a KPI-05 quedaron construidos con HU-31 (CC-12, DC-32).")
     r.P("**Coherencia entre indicadores, modelo de datos y factibilidad económica.** La {T:coher} verifica que las metas, las entidades y los "
         "supuestos económicos usen los mismos valores.")
     r.table("coher", "Coherencia entre KPI, modelo de datos y factibilidad económica", ["Relación", "Verificación", "Dónde"], [
@@ -170,7 +172,7 @@ def pruebas_normas(r):
         ("Contrato con terceros", "Twilio (sandbox) y API de vuelos con credenciales reales", "pytest, respuestas grabadas", "Carlos", "Semana 14–15", "R-04, R-12, cambios del proveedor"),
         ("End-to-end", "Flujos P1, P2 y P3 en el navegador, en escritorio y a 390 px", "Playwright", "Renato", "Al cierre de cada historia (stack local); en staging desde la semana 15", "Regresiones de interfaz"),
         ("Humo", "Salud, login, WSS, reserva de prueba", "Script en Actions", "Carlos", "Cada despliegue", "Despliegues fallidos"),
-        ("Regresión", "Suite completa automatizada (2.075 pruebas al corte)", "GitHub Actions", "Automática", "Cada PR a main", "Efectos colaterales"),
+        ("Regresión", f"Suite completa automatizada ({PRUEBAS} pruebas al corte)", "GitHub Actions", "Automática", "Cada PR a main", "Efectos colaterales"),
         ("Carga y estrés", "50 usuarios REST y 50 conductores WSS; rampa hasta el quiebre", "k6", "Carlos", "Semana 15, en staging", "RNF-02, RNF-03"),
         ("Seguridad", "OWASP ZAP, Bandit, auditoría de dependencias, permisos por rol y empresa", "ZAP, Bandit, Dependabot", "Carlos", "Bandit y permisos en cada historia; ZAP en la semana 15", "OWASP Top 10, RN-13"),
         ("Usabilidad y accesibilidad", "Tareas con una mano (SUS); contraste y teclado del portal (WCAG 2.1 AA)", "Guion, SUS, axe", "Renato", "Semanas 15–16", "RNF-06, R-05"),
@@ -221,11 +223,11 @@ def pruebas_normas(r):
         "el caso vuelve a ejecutarse y aprueba. Las evidencias (capturas, reportes de CI, salidas de k6 y ZAP) se guardan en /docs/evidencias del "
         "repositorio y se enlazan desde el caso.")
     r.table("sev", "Severidad de defectos y tratamiento", ["Severidad", "Criterio", "Tratamiento"], sev, [2.4, 7.0, 7.2], font=8)
-    r.P("**Casos de prueba.** Se diseñaron 37 casos que cubren flujos principales, alternativos y excepciones, datos inválidos y valores límite, "
+    r.P("**Casos de prueba.** Se diseñaron 45 casos que cubren flujos principales, alternativos y excepciones, datos inválidos y valores límite, "
         "permisos por rol y empresa, integración con servicios externos, integridad y persistencia, rendimiento y concurrencia, seguridad, "
         "usabilidad, recuperación y aceptación. La {T:cp_res} los resume; el Anexo G contiene cada caso con objetivo, precondiciones, datos, pasos, "
         "resultado esperado, prioridad, responsable y los campos de resultado obtenido, estado y evidencia. CP-36 y CP-37 se agregaron con las "
-        "historias HU-31 y HU-32, incorporadas al Sprint 4.")
+        "historias HU-31 y HU-32, incorporadas al Sprint 4, y CP-38 a CP-45 con las historias de CC-16 a CC-18 (HU-33 a HU-45).")
     r.P("**Rediseño de CP-14 (concurrencia).** La versión anterior asignaba un viaje a un conductor que ya tenía otro: probaba la regla RN-03, "
         "pero una asignación después de la otra, sin competencia real. El caso se rediseñó con **simultaneidad real** en dos variantes: A) dos "
         "despachadores asignan **la misma reserva** a conductores distintos; B) dos despachadores asignan **el mismo conductor** a reservas "
@@ -234,11 +236,15 @@ def pruebas_normas(r):
         "que exactamente una petición responda 200 y la otra 409, con una sola ASIGNACION y sin errores 5xx. El mecanismo que lo garantiza ya "
         "está construido: la asignación toma un bloqueo de fila (SELECT … FOR UPDATE) sobre la reserva y sobre el conductor dentro de una "
         "transacción y revalida el estado después de obtenerlo, de modo que la segunda petición espera, ve la reserva ya asignada (o al "
-        "conductor ya ocupado) y es rechazada. La técnica de prueba es la misma que ya verifica la renovación concurrente de la sesión.")
-    r.P("**Estado de ejecución al corte (semana 14).** Se ejecutaron los 27 casos de las historias de los cuatro sprints (CP-01 a CP-27): 20 con resultado conforme y "
-        "7 conformes de forma parcial, porque dependen de servicios reales (Twilio, API de vuelos), de un teléfono real, de carga con 50 "
-        "conductores o, en el caso de CP-14, de la versión rediseñada. Los 10 restantes (CP-28 a CP-37) se ejecutan en el cierre del Sprint 4, en "
-        "staging o en la UAT. Los resultados y la evolución de las pruebas automáticas se presentan en la sección 7.7 y en el Anexo G.")
+        "conductor ya ocupado) y es rechazada. La técnica de prueba es la misma que ya verifica la renovación concurrente de la sesión. **Resultado "
+        "(semana 14):** en ambas variantes una petición respondió 200 y la otra 409, con una sola ASIGNACION. La prueba además dejó a la vista "
+        "un riesgo de interbloqueo: la recepción de posiciones tomaba los bloqueos en el orden inverso (conductor y luego viaje), lo que se "
+        "corrigió con un bloqueo consultivo.")
+    r.P("**Estado de ejecución al corte (semana 14).** Se ejecutaron 37 casos: los 27 de las historias de los cuatro sprints (CP-01 a CP-27), "
+        "CP-36 y CP-37 de las historias de la EF2 y CP-38 a CP-45 de las historias de CC-16 a CC-18. De ellos, 30 son conformes y 7 conformes de "
+        "forma parcial, porque dependen de servicios reales (Twilio, API de vuelos), de un teléfono real o de carga con 50 conductores. Los 8 "
+        "restantes (CP-28 a CP-35) se ejecutan en staging, en el teléfono de pruebas o en la UAT. Los resultados y la evolución de las pruebas "
+        "automáticas se presentan en el Anexo P y en el Anexo G.")
     rows = [(c[0], c[1], c[2], c[3], c[8], c[10]) for c in CP]
     r.table("cp_res", "Resumen de casos de prueba", ["ID", "Requisito", "Tipo", "Objetivo", "Prioridad", "Sprint"], rows, [1.4, 2.6, 3.0, 6.6, 1.5, 1.5], font=7.6)
 
@@ -265,7 +271,7 @@ def pruebas_normas(r):
     ]
     r.landscape_on()
     r.table("normas", "Normas, marcos y obligaciones incorporados", ["Norma y edición", "Naturaleza", "Motivo", "Apartados o prácticas adoptadas", "Afecta a", "Responsable", "Evidencia"], normas,
-            [4.0, 2.4, 3.4, 5.4, 2.6, 2.2, 3.4], font=7.4,
+            [4.0, 2.4, 3.4, 5.4, 2.6, 2.2, 3.4], font=6.9,
             source="Elaboración propia con base en International Organization for Standardization (2013, 2021, 2022, 2023), Object Management Group (2017), OWASP Foundation (2021a, 2021b), World Wide Web Consortium (2018), Schwaber y Sutherland (2020), Axelos (2019), Biblioteca del Congreso Nacional de Chile (1970, 1992, 1999, 2023, 2024) y Dirección del Trabajo (2022).")
     r.landscape_off()
     r.P("**Ámbito y limitaciones de la adopción.** De ISO/IEC 27001 se adoptan controles del Anexo A pertinentes a una aplicación SaaS pequeña, sin "

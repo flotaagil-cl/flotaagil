@@ -124,7 +124,7 @@ E["VIAJE"] = ("Unidad central del negocio: un traslado desde su solicitud hasta 
     ("tarifa", "INTEGER", "Sí", "", "Tarifa acordada (CLP)", "≥ 0; definida por el cliente", "NULL", ""),
     ("motivo_cancelacion", "VARCHAR(200)", "Sí", "", "Motivo de cancelación", "Obligatorio si CANCELADO", "NULL", ""),
     ("origen_cancelacion", "VARCHAR(14)", "Sí", "", "Quién canceló", "PASAJERO | DESPACHADOR | ADMINISTRADOR | SUPERVISOR | SISTEMA (DC-08)", "NULL", ""),
-    ("autorizacion_avisos_en", "TIMESTAMPTZ", "Sí", "", "Momento en que el supervisor del convenio declaró que el pasajero autorizó los avisos (DC-27)", "UTC; solo reservas por link de convenio", "NULL", ""),
+    ("autorizacion_avisos_en", "TIMESTAMPTZ", "Sí", "", "Momento en que el supervisor del convenio declaró que el pasajero autorizó los avisos (DC-27)", "UTC; solo reservas de convenio", "NULL", ""),
     ("autorizacion_avisos_supervisor", "VARCHAR(80)", "Sí", "", "Nombre que escribió el supervisor al declarar (DC-27)", "Texto; el supervisor no tiene cuenta", "NULL", "Personal"),
     ("folio_contingencia", "VARCHAR(12)", "Sí", "UK (empresa)", "Folio de la planilla de contingencia (CC-15)", "Obligatorio y único por empresa si canal = CONTINGENCIA", "NULL", ""),
     ("creado_en", "TIMESTAMPTZ", "No", "", "Fecha de ingreso al sistema", "UTC; en una reserva de contingencia es posterior a recogida_en", "now()", ""),

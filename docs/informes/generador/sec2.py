@@ -1,3 +1,4 @@
+from datos import DC_MAX
 from data_cu import CU
 from datamodel import E
 
@@ -32,24 +33,26 @@ def arquitectura(r):
     # ---------- P1
     r.landscape_on()
     r.H3("P1 · Recepción y confirmación de reservas")
-    r.figure(F + "bpmn_p1.png", "p1", "BPMN del proceso P1 Recepción y confirmación de reservas (TO-BE)", width_cm=21.5)
+    r.figure(F + "bpmn_p1.png", "p1", "BPMN del proceso P1 Recepción y confirmación de reservas (TO-BE)", width_cm=20.0)
     r.landscape_off()
     bpmn_desc(r, "d_p1", "Descripción del proceso P1", [
-        ("Objetivo", "Registrar toda solicitud en una fuente única, con identidad del solicitante verificada, sin transcripción manual."),
-        ("Participantes", "Pasajero o supervisor de convenio (pool externo); Plataforma FlotaÁgil y Despachador (carriles)."),
-        ("Inicio", "Tres canales: solicitud web del portal (evento de mensaje), link de convenio y llamada o WhatsApp recibido por el despachador."),
-        ("Actividades", "Registrar reserva PENDIENTE_CONFIRMACION → Verificar teléfono por WhatsApp (P1.1) → ¿Confirmada?; Validar link y contraseña → "
-                        "Registrar reserva de convenio; Ingresar reserva en el panel; Registrar estado SOLICITADO y notificar."),
-        ("Reglas", "RN-06 (sin confirmación no hay reserva; expira en 15 min), RN-07 (convenio sin verificación), RN-08 (link inactivo), RN-13."),
-        ("Excepciones", "Reserva expirada o cancelada en P1.1; acceso de convenio rechazado (bloqueo tras 5 intentos)."),
-        ("Entradas / salidas", "Entrada: datos del viaje y, si aplica, número de vuelo. Salida: reserva en SOLICITADO con confirmación enviada por WhatsApp."),
-        ("Mejora", "Elimina la transcripción (7,4 % de errores) y la pérdida de reservas anotadas en distintos medios; el vuelo queda registrado para P2.2."),
-        ("Requerimientos", "HU-03, HU-19, HU-20, HU-25, HU-26 · CU-01, CU-12, CU-13."),
+        ("Objetivo", "Registrar toda solicitud en una fuente única, hecha por un solicitante con cuenta habilitada, sin transcripción manual."),
+        ("Participantes", "Pasajero o empresa cliente con convenio (pool externo); Plataforma FlotaÁgil y Despachador (carriles)."),
+        ("Inicio", "Dos canales: ingreso al portal con la cuenta del pasajero o del convenio (evento de mensaje) y llamada o WhatsApp recibido por el despachador."),
+        ("Actividades", "¿Cuenta habilitada? → si no, Crear y habilitar la cuenta (P1.1) → ¿Habilitada?; Recibir pedido y validar datos, capacidad y "
+                        "vuelo; Ingresar reserva en el panel; Registrar estado SOLICITADO y notificar."),
+        ("Reglas", "RN-06 (teléfono verificado una vez, al activar la cuenta), RN-07 (convenio aprobado sin verificación), RN-08 (convenio desactivado sin acceso), RN-13."),
+        ("Excepciones", "Cuenta sin activar o convenio rechazado en P1.1; pedido con más pasajeros que la capacidad de la flota (DC-43); bloqueo del ingreso tras 5 intentos."),
+        ("Entradas / salidas", "Entrada: datos del viaje (tipo, origen, destino, hora, pasajeros, maletas y vuelo si aplica). Salida: reserva en SOLICITADO con su número y aviso al pasajero."),
+        ("Mejora", "Elimina la transcripción (7,4 % de errores) y la pérdida de reservas anotadas en distintos medios; cada reserva queda en el historial de su cuenta y el vuelo queda registrado para P2.2."),
+        ("Requerimientos", "HU-03, HU-19, HU-25, HU-26, HU-33, HU-39, HU-40, HU-42 · CU-01, CU-12."),
     ])
-    r.figure(F + "bpmn_p1_1.png", "p1_1", "Subproceso P1.1 Verificar teléfono por WhatsApp", width_cm=15.5)
-    r.P("P1.1 usa una compuerta basada en eventos: el primer evento que ocurra (botón Confirmar, botón Cancelar o temporizador de 15 minutos) "
-        "decide el camino. Si el número ya fue verificado en una reserva anterior, no se envía la plantilla, lo que reduce costo y fricción. "
-        "Las tres tareas de servicio son automáticas; el pasajero solo pulsa un botón en WhatsApp.")
+    r.figure(F + "bpmn_p1_1.png", "p1_1", "Subproceso P1.1 Crear y habilitar la cuenta", width_cm=16.0)
+    r.P("P1.1 se ejecuta una sola vez por solicitante, no en cada reserva (CC-16 y CC-18). Una compuerta exclusiva separa los dos tipos de "
+        "cuenta. La del **pasajero** usa una compuerta basada en eventos: si responde «CONFIRMAR CUENTA» por WhatsApp dentro de 15 minutos, el "
+        "teléfono queda verificado y la cuenta activa; si vence el plazo, la cuenta queda sin activar y el mensaje se puede reenviar o corregir el "
+        "número (RN-06). La de la **empresa cliente** queda EN_REVISION hasta que el administrador la aprueba o la rechaza con motivo, y el "
+        "resultado se avisa por correo (HU-34). Requerimientos: HU-20, HU-34, HU-35, HU-38, HU-41 · CU-06, CU-13.")
 
     # ---------- P2
     r.landscape_on()
@@ -103,21 +106,23 @@ def arquitectura(r):
         "diferencia, la registra con una observación, que queda en auditoría; al confirmar, la plataforma guarda el CIERRE_CAJA con el monto "
         "registrado, el monto rendido, la diferencia, el responsable y la fecha. Es la fuente del KPI-05. El subproceso se corrigió tras la EF2 "
         "(CC-12): antes terminaba en «cerrar turno» sin dejar un registro de lo rendido. La liquidación por conductor y método ya está "
-        "construida (HU-06, HU-18); el registro del cierre se construye con HU-31.")
+        "construida (HU-06, HU-18); el registro del cierre está construido con HU-31 (DC-32).")
 
     # ---------- CU
     r.H2("Diagramas de caso de uso")
     r.P("El diagrama de la Figura {F:cu} delimita el sistema y muestra los cinco actores humanos y los tres sistemas externos que participan como "
-        "actores secundarios. Los 17 casos de uso cubren las 25 HU de los cuatro sprints y las dos incorporadas tras la EF2 (HU-31 en CU-08 y HU-32 en CU-01). Se usa «extend» cuando un comportamiento solo ocurre bajo una condición: "
-        "la verificación del teléfono (CU-13) extiende la solicitud (CU-12) cuando no proviene de un convenio, y la fila virtual (CU-16) extiende la "
-        "asignación (CU-03) cuando la recogida es en el aeropuerto. No se usó «include» porque no hay comportamiento obligatorio compartido que "
+        "actores secundarios. Los 17 casos de uso cubren las 25 HU de los cuatro sprints, las dos incorporadas tras la EF2 (HU-31 en CU-08 y HU-32 "
+        "en CU-01) y las de CC-16 a CC-18 (HU-33 a HU-45 en CU-05, CU-06, CU-12 y CU-13). Se usa «extend» cuando un comportamiento solo ocurre "
+        "bajo una condición: la fila virtual (CU-16) extiende la asignación (CU-03) cuando la recogida es en el aeropuerto. Desde CC-18 la "
+        "verificación del teléfono ya no extiende la solicitud: ocurre una sola vez al crear y activar la cuenta (CU-13), que es precondición de "
+        "CU-12 junto con el convenio aprobado (CU-06). No se usó «include» porque no hay comportamiento obligatorio compartido que "
         "convenga separar, ni generalización de actores, porque los roles tienen permisos disjuntos (RBAC).")
     r.figure(F + "uml_cu.png", "cu", "Diagrama de casos de uso de FlotaÁgil (UML 2.5)", width_cm=15.2)
     rows = [(c["id"], c["nombre"], c["act"], c["sec"], c["req"]) for c in CU]
     r.table("cu_res", "Casos de uso, actores y requerimientos", ["ID", "Caso de uso", "Actor principal", "Actores secundarios", "HU · RN"], rows,
             [1.4, 4.4, 3.0, 3.4, 4.4], font=8)
     r.P("**Consistencia con los procesos:** P1 se apoya en CU-01, CU-12 y CU-13; P2 en CU-02, CU-03, CU-10, CU-15 y CU-16; P3 en CU-11 y CU-14; "
-        "P3.2 en CU-08. La especificación completa de cada caso de uso —objetivo, actores, precondiciones, evento de inicio, flujo principal con "
+        "P3.2 en CU-08; el subproceso P1.1, en CU-06 y CU-13. La especificación completa de cada caso de uso —objetivo, actores, precondiciones, evento de inicio, flujo principal con "
         "acciones del actor y respuestas del sistema, flujos alternativos, excepciones, postcondiciones y reglas— está en el Anexo E. A modo de "
         "ejemplo, la {T:cu03} presenta CU-03.")
     c = CU[2]
@@ -188,13 +193,14 @@ def arquitectura(r):
         "los turnos que antes se guardaban en dos columnas de CONDUCTOR (DC-26), y cada cálculo de KPI-03, KPI-04 y KPI-05 y cada cierre se "
         "reconstruyen desde registros del diccionario (Anexo F).")
     r.P("**Cambios de la semana 14 (CC-16 a CC-18).** Al pasar a un inicio de sesión único y a pedir siempre con cuenta, el modelo cambió en "
-        "tres puntos ({T:ent_s14}). Ninguno rompe la trazabilidad de los viajes ya registrados: las migraciones dejan los convenios existentes "
+        "cuatro puntos ({T:ent_s14}). Ninguno rompe la trazabilidad de los viajes ya registrados: las migraciones dejan los convenios existentes "
         "aprobados y las reservas anteriores conservan su verificación por WhatsApp (RN-06).")
     r.table("ent_s14", "Cambios del modelo de datos por CC-16 a CC-18", ["Entidad", "Cambio", "Motivo", "Decisión"], [
         ("CUENTA_PASAJERO (nueva)", "Usuario de rol PASAJERO ligado a un PASAJERO al confirmar el teléfono; registra la aceptación del aviso de privacidad y su versión", "Pedir con cuenta (CC-18) y dejar evidencia del consentimiento (Ley 21.719)", "DC-36, DC-44, DC-45"),
         ("CONVENIO", "Se retiran el token del link y la contraseña compartida; se agregan estado (EN_REVISION, APROBADO, RECHAZADO, INACTIVO), encargado, revisión y cuenta propia", "Cada empresa cliente entra con su cuenta y el administrador la aprueba (CC-16)", "DC-35"),
         ("VIAJE", "pasajeros, maletas, vuelo_salida_en y vuelo_salida_tipo; la autorización de avisos queda ligada al usuario del convenio", "Asignar un vehículo con capacidad suficiente y sugerir la hora de salida hacia el aeropuerto", "DC-42, DC-43"),
         ("USUARIO", "rol agrega CONVENIO y PASAJERO", "Un solo inicio de sesión web para los cinco roles", "DC-34"),
+        ("PASAJERO y CUENTA_PASAJERO", "PASAJERO.telefono admite nulo; CUENTA_PASAJERO guarda el WhatsApp nuevo por confirmar; al eliminar la cuenta, los datos personales se anonimizan y se conservan viajes, pagos y auditoría", "Derecho de supresión del titular (Ley 21.719, HU-45)", "DC-50"),
     ], [3.0, 6.0, 5.0, 2.6], font=8)
     r.P("**Decisiones principales:**")
     r.bullets([
@@ -220,7 +226,7 @@ def arquitectura(r):
     r.P("**Relación con procesos y casos de uso:** P1 escribe PASAJERO, VIAJE, VUELO y MENSAJE_WHATSAPP; P2 lee POSICION_GPS, FILA_AEROPUERTO y "
         "CONDUCTOR y escribe ASIGNACION y ALERTA_VUELO; el inicio y el término de la jornada del conductor (CU-09) abren y cierran TURNO; P3 escribe HISTORIAL_ESTADO, PAGO_VIAJE y CALIFICACION; P3.2 lee TURNO y PAGO_VIAJE y escribe CIERRE_CAJA y AUDITORIA. El "
         "diccionario de datos completo, con tipo, longitud, nulidad, claves, dominios, valores por defecto, validaciones y sensibilidad de cada campo, "
-        "está en el Anexo F, actualizado con las decisiones de cambio DC-01 a DC-47 de la construcción y con los cambios CC-12 a CC-18, y usa los mismos nombres del diagrama.")
+        f"está en el Anexo F, actualizado con las decisiones de cambio DC-01 a DC-{DC_MAX} de la construcción y con los cambios CC-12 a CC-18, y usa los mismos nombres del diagrama.")
 
     # ---------- topología
     r.H2("Topología de comunicaciones")
@@ -249,7 +255,7 @@ def arquitectura(r):
         "banda ancha en la central; la meta de latencia de 5 s (RNF-02) deja margen para redes móviles degradadas.")
     r.P("**Protección.** TLS en todo el tráfico externo con HSTS; JWT en cada petición y en el handshake WSS (enviado como subprotocolo, no en la URL, para que no quede en los registros); Security Group que solo abre 443 "
         "a Internet y 22 a la IP del equipo; validación de la firma X-Twilio-Signature en el webhook; CORS restringido al dominio propio; límites de "
-        "tasa en el login, el portal y el link de convenio. **Dependencias y efecto de su interrupción:** si cae la conexión del conductor, la app "
+        "tasa en el inicio de sesión, el registro de cuentas y la recuperación de contraseña. **Dependencias y efecto de su interrupción:** si cae la conexión del conductor, la app "
         "encola posiciones y reintenta, y el panel marca el dato como no confiable a los 60 s; si cae Internet en la central, el despachador opera "
         "desde un teléfono con datos móviles (8.2); si falla Twilio, los avisos quedan en cola y el despachador recibe una alerta; si falla la API de "
         "vuelos, se reintenta y se alerta tras dos fallas.")
@@ -261,7 +267,7 @@ def arquitectura(r):
 
     # ---------- infraestructura
     r.H2("Diagrama de Infraestructura")
-    r.P("La infraestructura es de **nube pública (IaaS)** en AWS, región us-east-1, sobre una instancia EC2 en una subred pública de una VPC "
+    r.P("La infraestructura es de **nube pública** con modelo de servicio de infraestructura (IaaS; Mell y Grance, 2011) en AWS, región us-east-1, sobre una instancia EC2 en una subred pública de una VPC "
         "propia. La aplicación, la base de datos y Redis corren como contenedores Docker en la misma instancia; el almacenamiento es un volumen EBS "
         "gp3 cifrado y los respaldos van a snapshots EBS y a un bucket S3.")
     r.figure(F + "infraestructura.png", "infra", "Infraestructura de producción en AWS", width_cm=16.4)
@@ -325,7 +331,7 @@ def arquitectura(r):
     r.P("**Autenticación y autorización.** Usuarios internos con contraseña y JWT: acceso de 15 min que vive solo en memoria y "
         "refresco de 12 h que rota en cada uso, con tope de sesión de 12 h. En el panel el refresco va en una cookie httpOnly con verificación del "
         "origen; en la app, en el almacén cifrado de Android (Keystore), con cierre de sesión en el servidor. Bloqueo de 15 min "
-        "tras cinco intentos; contraseña temporal con cambio obligatorio (DC-14); supervisores de convenio con link y contraseña; pasajeros identificados por la verificación de WhatsApp. Permisos por "
+        "tras cinco intentos; contraseña temporal con cambio obligatorio (DC-14); el mismo inicio de sesión sirve a los convenios (cuenta aprobada por el administrador) y a los pasajeros (cuenta activada al verificar su teléfono por WhatsApp). Permisos por "
         "rol en cada endpoint y filtro por empresa en cada consulta (RN-13). **Errores y registro de eventos:** manejador de excepciones de DRF con "
         "respuestas uniformes; registros en JSON con identificador de correlación por petición, retenidos 90 días; errores no controlados a Sentry; "
         "reintentos con espera exponencial para Twilio y la API de vuelos; webhooks idempotentes por su identificador.")
@@ -339,18 +345,47 @@ def arquitectura(r):
         ("RNF-13 Tolerancia a fallos", "Adaptadores con reintentos, cola en Celery, idempotencia de webhooks"),
     ]
     r.table("rnf_arq", "Cómo responde la arquitectura a los requerimientos no funcionales", ["Requerimiento", "Mecanismo"], rnf_map, [4.6, 12.0], font=8)
-    r.P("**Recorrido completo de información.** Un pasajero envía el formulario del portal (Presentación) → Nginx lo recibe por HTTPS (Borde) → la "
-        "API valida y crea el VIAJE en PENDIENTE_CONFIRMACION (Aplicación y Dominio, PostgreSQL) → Celery envía la plantilla por el adaptador de "
-        "WhatsApp (Integración) → el pasajero confirma y el webhook pasa la reserva a SOLICITADO → el despachador ve la reserva en el panel por WSS, "
+    r.P("**Recorrido completo de información.** Un pasajero con su cuenta activa envía el pedido desde el portal (Presentación) → Nginx lo recibe "
+        "por HTTPS (Borde) → la API valida la sesión, la capacidad y el vuelo y crea el VIAJE en SOLICITADO (Aplicación y Dominio, PostgreSQL) → "
+        "Celery envía el aviso de confirmación por el adaptador de WhatsApp (Integración) → el despachador ve la reserva en el panel por WSS, "
         "pide sugerencias (PostGIS) y asigna → la app recibe la asignación, el conductor acepta, envía posiciones durante el trayecto y registra el "
         "pago → el viaje queda FINALIZADO y alimenta reportes y KPI. Cada paso deja su traza en HISTORIAL_ESTADO y en los registros de eventos.")
     adr = [
         ("Monolito modular en una instancia", "Simplicidad y costo", "Punto único de falla; escalamiento vertical", "Snapshots, AMI y escalamiento a t4g.medium"),
         ("PostgreSQL en contenedor", "Ahorro frente a RDS (≈ USD 15/mes)", "Respaldos y parches a cargo del equipo", "DLM, pg_dump, prueba mensual de restauración"),
         ("Capacitor para la app", "Reutilización de React", "GPS en segundo plano según fabricante (R-01)", "PoC H-3; alternativa en primer plano"),
-        ("WhatsApp vía Twilio", "Sandbox inmediato y SDK", "Costo por mensaje (R-04)", "Adaptador; migración a Cloud API"),
+        ("WhatsApp vía Twilio", "Sandbox inmediato y SDK", "Costo por mensaje (R-04) y plantillas de Meta (R-12)", "Adaptador; en la versión 1.1 se reemplaza por el chat interno (CC-19)"),
         ("Datos en us-east-1", "Costo y servicios", "Transferencia internacional (Ley 21.719)", "Garantías contractuales y aviso de privacidad"),
     ]
     r.table("adr", "Decisiones, limitaciones y riesgos arquitectónicos", ["Decisión", "Motivo", "Limitación o riesgo", "Medida"], adr, [3.6, 3.4, 4.6, 5.0], font=8)
     r.P("**Consistencia.** Las capas corresponden a los componentes de la {T:comp}, a los contenedores de la Figura {F:infra}, a los flujos de la "
         "{T:flujos} y a las entidades de la Figura {F:er}; las tecnologías son las seleccionadas en el capítulo III.")
+
+    r.H3("Diseño aprobado para la versión 1.1 (CC-19 a CC-21)")
+    r.P("El cliente aprobó en la semana 14 tres cambios que se construyen **después de esta entrega**, en la versión 1.1, para no comprometer "
+        "la UAT. Se presentan aquí como diseño: no forman parte de lo construido ni de las pruebas al corte. El de mayor efecto es **CC-19**, "
+        "que aprovecha que desde CC-18 todos los usuarios tienen cuenta para reemplazar a WhatsApp como canal con el pasajero ({T:cc19}).")
+    r.table("cc19", "Diseño de CC-19: chat interno y retiro de WhatsApp", ["Elemento", "Diseño"], [
+        ("Chat interno", "Conversaciones por WebSocket (Django Channels, la misma capa de tiempo real del mapa) en ambos sentidos: pasajero ↔ central, "
+         "desde que pide hasta 24 h después del viaje; central ↔ conductor, durante todo el turno; y conductor ↔ pasajero, solo en EN_CAMINO y "
+         "EN_ZONA, con respuestas rápidas para que el conductor no escriba mientras maneja. La central responde como equipo y puede leer el chat "
+         "conductor ↔ pasajero, con auditoría."),
+        ("Verificación de la cuenta", "Por correo, con un enlace que vence a las 24 h; reemplaza la confirmación por WhatsApp de HU-20."),
+        ("Avisos al pasajero", "Notificación del navegador (Web Push) y correo (Amazon SES), con una casilla para aceptar el correo de viajes. Los "
+         "correos de la cuenta (activación y recuperación) se envían siempre."),
+        ("Emergencias sin costo", "Botones «Llamar a la central» (tel:) y «Escribir a la central por WhatsApp» (wa.me, desde el WhatsApp propio "
+         "del pasajero), sin intermediario."),
+        ("Modelo de datos", "Entidades nuevas CONVERSACION y MENSAJE_CHAT, con empresa (RN-13) y retención de 12 meses (RN-15); MENSAJE_WHATSAPP "
+         "queda como historial."),
+        ("Historias y reglas afectadas", "Cambian HU-20, HU-21, HU-24 y HU-30, RN-06 (verificación por correo) y RN-09 (cancelar desde la cuenta "
+         "o por el chat); se retira Twilio por completo."),
+        ("Efecto", "Desaparece la dependencia de las plantillas de Meta (R-12) y el costo por mensaje (R-04): el consumo variable baja de ≈ $88 "
+         "a ≈ $20 por reserva (sección 3.1)."),
+        ("Riesgo aceptado", "En iPhone, el aviso del navegador solo funciona con el portal agregado a la pantalla de inicio; si no, el aviso "
+         "llega por correo."),
+    ], [3.6, 13.0], font=8)
+    r.P("**CC-20** unifica el aspecto del panel y de la app del conductor con el sistema visual del portal («Tiffany degradé», HU-37), y "
+        "**CC-21** permite que cada empresa cliente muestre su logo, su nombre y sus colores en el portal, algo que los tokens de HU-37 ya "
+        "dejan preparado. Las llamadas de voz dentro de la plataforma (WebRTC) quedan como evolución sin solicitud de cambio, y la biometría "
+        "se descartó: para el pasajero es desproporcionada, y para el conductor se evaluará una fotografía de inicio de turno revisada por el "
+        "despachador, sin datos biométricos.")

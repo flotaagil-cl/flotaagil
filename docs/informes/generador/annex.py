@@ -2,6 +2,7 @@ from data_backlog import HU, RETIRADAS, SPRINTS, RESP, NUEVAS
 from data_cu import CU
 from data_tests import CP
 from datamodel import E, REL
+from datos import DC_MAX
 
 
 def AH(r, title):
@@ -18,11 +19,11 @@ def anexos(r):
     idx = [("A", "Product Backlog vigente y estado de cada historia", "2.3, 9.1"),
            ("B", "Instrumentos de levantamiento", "2.3"),
            ("C", "Evidencias del levantamiento y entrevista de seguimiento (EV-08)", "1.1, 2.3"),
-           ("D", "Registro de solicitudes de cambio (CC-01 a CC-18) y decisiones de cambio (DC-01 a DC-47)", "1.1, 1.3, VII, 8.3"),
+           ("D", f"Registro de solicitudes de cambio (CC-01 a CC-21) y decisiones de cambio (DC-01 a DC-{DC_MAX})", "1.1, 1.3, VII, 8.3"),
            ("E", "Especificación de casos de uso", "4.2"), ("F", "Diccionario de datos", "4.4"),
            ("G", "Casos de prueba y resultado de su ejecución", "6.1, VII"),
            ("H", "Máquina de estados del viaje", "1.1, 4.1"), ("I", "Matriz de trazabilidad", "2.3, X"),
-           ("J", "Respaldo de costos, modelo comercial, punto de equilibrio y matrices de decisión", "2.6, 3.1"), ("K", "Glosario", "Transversal"),
+           ("J", "Respaldo de costos, modelo comercial, punto de equilibrio, flujo de caja a tres años (VAN, TIR y PRI) y matrices de decisión", "2.6, 3.1"), ("K", "Glosario", "Transversal"),
            ("L", "Procedimientos operativos (PO-01 a PO-07) y formularios", "8.1–8.3"),
            ("M", "Informe técnico de la prueba de concepto de GPS en segundo plano (H-3)", "2.6, VII"),
            ("N", "Ecosistema de desarrollo implementado (Sprint 0)", "VII, IX"),
@@ -35,20 +36,23 @@ def anexos(r):
     AH(r, "Anexo A. Product Backlog vigente")
     r.P("Historias vigentes con criterios de aceptación, prioridad, estimación (story points, planning poker sobre Fibonacci con HU-17 = 3 SP "
         "como referencia), sprint asignado, cambio respecto del backlog validado el 28/08/2026 y estado de construcción al corte de la semana 14. Las 25 "
-        "historias de los cuatro sprints están construidas y en revisión; las dos de la {T:backlog_n} se incorporaron al Sprint 4 tras la EF2.")
+        "historias de los cuatro sprints están construidas e integradas en la rama principal; las dos de la {T:backlog_n} se incorporaron al "
+        "Sprint 4 tras la EF2. HU-11, HU-19, HU-20 y HU-25 se muestran en su versión vigente, ajustada por CC-16 y CC-18.")
     NOTA = {"HU-24": "; el promedio por conductor se ve en HU-06", "HU-18": "; guarda solo el último turno (pasa a TURNO con HU-31)",
             "HU-27": "; aviso al pasajero pendiente (PR-14)", "HU-26": "; vuelos de salida fuera del MVP (PR-08)"}
     def est(h):
-        return h[7] + "\n**Construida, en revisión**" + NOTA.get(h[0], "")
+        return h[7] + "\n**Construida e integrada**" + NOTA.get(h[0], "")
     rows = [(h[0], h[1], h[2], h[3], h[4], str(h[5]), h[6].replace("S", "Sprint ") + "\n" + RESP.get(h[0], "Carlos"), est(h)) for h in HU]
     r.table("backlog", "Product Backlog vigente", ["ID", "Épica", "Historia de usuario", "Criterios de aceptación", "Prior.", "SP", "Sprint y resp.", "Estado"], rows,
             [1.3, 2.0, 6.0, 7.2, 1.3, 0.9, 1.6, 2.7], font=7.4)
-    rows = [(h[0], h[1], h[2], h[3], h[4], str(h[5]), h[6].replace("S", "Sprint ") + "\n" + ("Renato" if h[0] == "HU-31" else "Carlos"), h[7] + "\n**Construida, en revisión**") for h in NUEVAS]
+    rows = [(h[0], h[1], h[2], h[3], h[4], str(h[5]), h[6].replace("S", "Sprint ") + "\n" + ("Renato" if h[0] == "HU-31" else "Carlos"), h[7] + "\n**Construida e integrada**") for h in NUEVAS]
     r.table("backlog_n", "Historias incorporadas tras la EF2", ["ID", "Épica", "Historia de usuario", "Criterios de aceptación", "Prior.", "SP", "Sprint y resp.", "Estado"], rows,
             [1.3, 2.0, 6.0, 7.2, 1.3, 0.9, 1.9, 2.4], font=7.4)
     from data_hu_cc import HU_CC
     r.P("Las historias de la {T:backlog_cc} nacen de las solicitudes de cambio CC-16 a CC-18, aprobadas por el Product Owner en la semana 14 "
-        "(Anexo D). HU-33 a HU-44 se construyeron en el Sprint 4; HU-45 a HU-49 quedan para la versión 1.1, después de la UAT, para no comprometer la puesta en marcha.")
+        "(Anexo D). HU-33 a HU-44 se construyeron en el Sprint 4, y HU-45 (perfil y eliminación de la cuenta) se adelantó desde la versión 1.1 "
+        "porque responde a un derecho del titular de los datos (Ley N° 21.719). HU-46 a HU-49 quedan para la versión 1.1, después de la UAT, para "
+        "no comprometer la puesta en marcha.")
     rows = [(x[0], x[1], x[2], x[3], x[4], x[5], x[6], "**" + x[7] + "**") for x in HU_CC]
     r.table("backlog_cc", "Historias incorporadas por las solicitudes de cambio CC-16 a CC-18", ["ID", "Épica", "Historia de usuario", "Criterios de aceptación", "SP", "Origen", "Resp.", "Estado"], rows,
             [1.3, 2.0, 6.0, 7.6, 0.9, 1.3, 1.6, 2.6], font=7.2)
@@ -114,8 +118,9 @@ def anexos(r):
     ], [1.4, 3.4, 1.8, 10.0], font=8.2)
     r.P("**C.2 Acta de validación del Product Backlog (28/08/2026, EV-07).** Acuerdos: se aprueba el alcance del MVP con 25 historias; la "
         "definición de tarifas queda como decisión del cliente y el sistema solo registra el monto cobrado; se excluyen las pasarelas de pago; el "
-        "temporizador de aceptación es de 60 s con reasignación por el despachador; se valida el acceso de convenios por link y contraseña, con la "
-        "custodia de la contraseña a cargo de la empresa cliente; y queda pendiente evaluar el paso de SMS a WhatsApp Business API, que luego se "
+        "temporizador de aceptación es de 60 s con reasignación por el despachador; se valida un acceso digital para los convenios protegido "
+        "con contraseña, cuya custodia queda a cargo de la empresa cliente (en la semana 14 se reemplazó por una cuenta propia de cada empresa, "
+        "CC-16); y queda pendiente evaluar el paso de SMS a WhatsApp Business API, que luego se "
         "aprobó como CC-01.")
     r.table("evidencias_lev", "Registro de evidencias", ["Código", "Tipo", "Descripción", "Fecha"], [
         ("EV-01", "Transcripción", "Entrevista al administrador, 8 páginas", "12/08/2026"),
@@ -172,8 +177,13 @@ def anexos(r):
     cc += [
         ("CC-16", "Cliente / PO (10/11/2026)", "Inicio de sesión web único para todos los roles; autoregistro de convenios con aprobación del administrador (reemplaza el link con contraseña); cuenta del pasajero", "A: HU-33, 34 y 35 (+24 SP); retira el acceso por link de HU-11 y HU-25 · T: Sprint 4 · Q: CP de inicio de sesión, aprobación y activación · R: R-07 baja (sin contraseña compartida)", "PO"),
         ("CC-17", "Cliente / PO (10/11/2026)", "Administración de usuarios del panel por el administrador", "A: HU-36 (+3 SP) · Q: la empresa nunca queda sin administrador; revocación inmediata de sesiones", "PO"),
-        ("CC-18", "Cliente / PO (11/11/2026)", "Cuenta obligatoria para pedir en el portal y rediseño del portal (tres tipos de viaje, revisa tu pedido, tu viaje, mis viajes)", "A: HU-37 a 44 en el Sprint 4 (+40 SP) y HU-45 a 49 (+21 SP) en la versión 1.1 · T: HU-45 a 49 después de la UAT · Q: privacidad aceptada una vez al crear la cuenta (DC-44) · R: retira el pedido como invitado, con lo que baja el riesgo de reservas falsas", "PO + cliente"),
+        ("CC-18", "Cliente / PO (11/11/2026)", "Cuenta obligatoria para pedir en el portal y rediseño del portal (tres tipos de viaje, revisa tu pedido, tu viaje, mis viajes)", "A: HU-37 a 44 (+40 SP) y HU-45 (+5 SP, adelantada por privacidad) en el Sprint 4; HU-46 a 49 (+16 SP) en la versión 1.1 · T: HU-46 a 49 después de la UAT · Q: privacidad aceptada una vez al crear la cuenta (DC-44) · R: retira el pedido sin cuenta, con lo que baja el riesgo de reservas falsas", "PO + cliente"),
+        ("CC-19", "Cliente / PO (12/11/2026)", "Chat interno por WebSocket en ambos sentidos (pasajero ↔ central, central ↔ conductor y conductor ↔ pasajero); verificación de la cuenta por correo; avisos por notificación del navegador (Web Push) y por correo (Amazon SES); se retira Twilio", "A: cambian HU-20, 21, 24 y 30, RN-06 y RN-09; nuevas CONVERSACION y MENSAJE_CHAT · T: versión 1.1, después de la UAT · C: baja el costo variable al eliminar los mensajes de WhatsApp · Q: retención de 12 meses (RN-15) y permisos por empresa (RN-13) · R: desaparece la dependencia de las plantillas de Meta; se acepta que en iPhone el aviso del navegador exige agregar el portal a la pantalla de inicio (si no, llega por correo)", "PO + cliente"),
+        ("CC-20", "Equipo / PO (12/11/2026)", "Unificación visual del panel y la app del conductor con el sistema «Tiffany degradé» del portal", "A: versión 1.1, sin cambio de funciones · Q: los tres clientes comparten tokens y componentes", "PO"),
+        ("CC-21", "Cliente / PO (12/11/2026)", "Apariencia por empresa: logo, nombre y colores del portal", "A: versión 1.1; los tokens de HU-37 ya lo permiten · Q: cada empresa cliente muestra su marca", "PO"),
     ]
+    r.P("CC-19 a CC-21 están aprobadas para después de la entrega: se presentan como diseño (sección 4.7) y no forman parte de lo "
+        "construido al corte.")
     r.table("cc_det", "Detalle de las solicitudes de cambio", ["Código", "Solicitante", "Cambio", "Análisis de impacto", "Aprobó"], cc,
             [1.3, 2.6, 4.0, 6.8, 1.9], font=7.6)
     r.P("**D.2 Decisiones de cambio de la construcción.** Durante la construcción, todo desvío respecto del diccionario de datos del diseño se "
@@ -227,14 +237,18 @@ def anexos(r):
         ("DC-44", "Columnas nuevas", "CUENTA_PASAJERO, PASAJERO", "Aviso de privacidad y avisos por WhatsApp aceptados una vez al crear la cuenta, con su versión", "Implementado"),
         ("DC-45", "Columna nueva", "CUENTA_PASAJERO, USUARIO", "Reenvío del mensaje de activación y recuperación de contraseña con enlace de 30 min", "Implementado"),
         ("DC-46", "Precisión de uso", "VIAJE, HISTORIAL_ESTADO", "El pasajero ve y cancela solo sus propios viajes", "Implementado"),
-        ("DC-47", "Acuerdo de integración", "— (proceso)", "El ruleset de main exige el check de CI y fusión squash; sin aprobación obligatoria mientras el equipo opere con un integrante, con lista de chequeo", "Vigente"),
+        ("DC-47", "Acuerdo de integración", "— (proceso)", "El ruleset de main exige pull request, check de CI y fusión squash; la revisión cruzada pasa a ser un acuerdo de trabajo con lista de chequeo y deja de ser una aprobación obligatoria de GitHub", "Vigente"),
+        ("DC-48", "Índice y tarea", "POSICION_GPS", "Índice por fecha y tarea diaria que borra las posiciones de más de 30 días (RN-15)", "Implementado"),
+        ("DC-49", "Cambio de repositorio", "— (proceso)", "El repositorio pasa a la organización Flotaagil-CL con su historial, issues, tablero y ruleset; CI en verde en el repositorio nuevo", "Aplicado"),
+        ("DC-50", "Columnas y anonimización", "PASAJERO, CUENTA_PASAJERO, USUARIO, MENSAJE_WHATSAPP", "WhatsApp nuevo por confirmar; eliminar la cuenta anonimiza los datos personales y conserva viajes, pagos y auditoría", "Implementado"),
     ]
     r.table("dc", "Decisiones de cambio de la construcción", ["Código", "Tipo", "Tabla", "Cambio", "Estado"], dc, [1.3, 2.3, 3.5, 7.3, 2.2], font=7.6)
     r.P("**D.3 Pendientes por resolver.** Los temas que requieren una decisión del Product Owner o del cliente se registran como PR-xx. A la "
         "fecha de corte siguen abiertos PR-01 (retención de la auditoría frente a RN-15), PR-03 (corrección del teléfono del pasajero), PR-04 "
         "(texto del aviso de privacidad), PR-05 (portal en inglés), PR-09, PR-11 y PR-12 (credenciales de servicios externos), PR-13 (aviso con "
-        "la app cerrada) y PR-14 (aviso al pasajero cuando cambia la hora de recogida, que requiere una plantilla de Meta); PR-08 (vuelos de "
-        "salida) quedó pospuesto fuera del MVP y PR-02, PR-06, PR-07 y PR-10 están cerrados.")
+        "la app cerrada), PR-14 (aviso al pasajero cuando cambia la hora de recogida, que requiere una plantilla de Meta) y PR-15 (el correo es "
+        "único en todo el sistema, por lo que una persona necesita un correo distinto por empresa); PR-08 (vuelos de salida) quedó pospuesto "
+        "fuera del MVP y PR-02, PR-06, PR-07 y PR-10 están cerrados. PR-11 y PR-14 dejan de aplicar cuando se implemente CC-19, que retira Twilio.")
 
     # ---------------- C
     AH(r, "Anexo E. Especificación de casos de uso")
@@ -249,9 +263,9 @@ def anexos(r):
     # ---------------- D
     r.landscape_on()
     AH(r, "Anexo F. Diccionario de datos")
-    r.P("Diccionario vigente, con las decisiones de cambio DC-01 a DC-47 ya incorporadas (cada campo agregado o modificado indica su DC) y con "
+    r.P(f"Diccionario vigente, con las decisiones de cambio DC-01 a DC-{DC_MAX} ya incorporadas (cada campo agregado o modificado indica su DC) y con "
         "los cambios originados en la EF2: las entidades TURNO y CIERRE_CAJA (CC-12), el dominio de EMPRESA.plan (CC-13) y el canal CONTINGENCIA "
-        "con su folio (CC-15), todos ya implementados (DC-32, DC-33 y DC-39), y los cambios de la semana 14: convenio con cuenta propia, cuenta del pasajero y capacidad del viaje (CC-16 a CC-18). "
+        "con su folio (CC-15), todos ya implementados (DC-32, DC-33 y DC-39), y los cambios de la semana 14: convenio con cuenta propia, cuenta del pasajero, capacidad del viaje y eliminación de la cuenta con anonimización (CC-16 a CC-18, DC-50). "
         "Convenciones: PK clave primaria, FK clave foránea, UK valor único. Todas las claves foráneas usan ON DELETE PROTECT. Fechas y horas en "
         "UTC (TIMESTAMPTZ) y se muestran en hora de Chile. Montos en pesos chilenos enteros. Columna «Sensible»: dato personal, credencial o "
         "ubicación con acceso restringido por rol.")
@@ -266,31 +280,41 @@ def anexos(r):
     AH(r, "Anexo G. Casos de prueba y resultado de su ejecución")
     r.P("Estado al corte de la semana 14. Los casos de las historias construidas se ejecutaron de forma automática y manual contra el "
         "backend real con datos sintéticos; su evidencia está en *docs/evidencias/HU-xx/* del repositorio. Los que dependen de servicios reales, "
-        "teléfono real, carga o de la versión rediseñada de CP-14 se indican como parciales, y los que requieren staging, producción o las "
-        "historias nuevas, como planificados.")
+        "teléfono real o carga se indican como parciales, y los que requieren staging o producción, como planificados. CP-38 a CP-45 cubren las "
+        "historias de las solicitudes de cambio CC-16 a CC-18 (HU-33 a HU-45).")
     EJEC = {
         "CP-01": ("OK", "HU-10"), "CP-02": ("OK", "HU-10"), "CP-03": ("OK", "HU-13"), "CP-04": ("OK", "HU-13"),
         "CP-05": ("OK", "HU-03"), "CP-06": ("OK", "HU-03"),
-        "CP-07": ("OK con doble de Twilio; falta Twilio real", "HU-20"), "CP-08": ("OK", "HU-20"), "CP-09": ("OK", "HU-19"),
+        "CP-07": ("OK con doble de Twilio (Sprint 1); desde CC-18 la verificación ocurre al activar la cuenta (CP-40)", "HU-20"),
+        "CP-08": ("OK; aplica a las reservas anteriores a CC-18", "HU-20"), "CP-09": ("OK; el límite se mantiene en la activación (CP-40)", "HU-19"),
         "CP-10": ("OK", "HU-20"), "CP-11": ("OK con respuestas simuladas", "HU-26"),
         "CP-12": ("Parcial: p95 59 ms con 2 conductores; falta carga con 50", "HU-02"),
         "CP-13": ("OK: vuelve a SOLICITADO a los 58–64 s", "HU-15"),
-        "CP-14": ("Parcial: la regla y el bloqueo de fila están construidos y la versión secuencial fue conforme; la versión simultánea se ejecuta en la semana 14", "HU-14"),
+        "CP-14": ("OK con PostgreSQL real: en ambas variantes una petición responde 200 y la otra 409; se corrigió un orden de bloqueo invertido", "CP-14"),
         "CP-15": ("OK", "HU-16"), "CP-16": ("OK con posiciones simuladas; falta GPS real", "HU-16, HU-21"), "CP-17": ("OK", "HU-21"),
         "CP-18": ("OK: 12 comprobaciones", "HU-04"), "CP-19": ("OK: lugares 1, 2 y 3 en orden de ingreso", "HU-29"),
         "CP-20": ("OK: a los 9 min conserva el lugar y a los 11 sale", "HU-29"),
         "CP-21": ("OK con API de vuelos simulada; alerta visible a los 10,9 s; falta FlightAware real", "HU-27, HU-28"),
-        "CP-22": ("OK: desactivar da 404 al instante, con la sesión abierta; historial intacto", "HU-11, HU-25"),
+        "CP-22": ("OK en el Sprint 3 y otra vez con la cuenta del convenio tras CC-16: la sesión abierta pierde el acceso al instante; historial intacto", "HU-11, HU-34"),
         "CP-23": ("OK: 404 para registros de otra empresa y 403 por rol, en cada historia", "HU-06, HU-11, HU-12"),
         "CP-24": ("OK: modelo y trigger rechazan cambios; la API responde 405", "HU-12"),
         "CP-25": ("OK: totales iguales a los esperados", "HU-06"),
-        "CP-26": ("OK: bloqueo al quinto intento, registrado como BLOQUEO_LINK", "HU-25"),
+        "CP-26": ("OK: bloqueo al quinto intento; desde CC-16 lo aplica el inicio de sesión único (DC-07)", "HU-25, HU-33"),
         "CP-27": ("OK con doble de Twilio; mensajes visibles en 5 a 15 s", "HU-30"),
         "CP-28": ("Planificado: semana 15, en staging", "—"), "CP-29": ("Planificado: semana 15, en staging", "—"),
         "CP-30": ("Planificado: semana 15, en staging", "—"), "CP-31": ("Planificado: semana 15, en staging", "—"),
         "CP-32": ("Planificado: semanas 15–16, teléfono real", "—"), "CP-33": ("Planificado: semanas 15–16, teléfono real", "—"),
         "CP-34": ("Planificado: primer despliegue (semana 15)", "—"), "CP-35": ("Planificado: semana 16", "—"),
-        "CP-36": ("Planificado: Sprint 4, con HU-31", "—"), "CP-37": ("Planificado: Sprint 4, con HU-32", "—"),
+        "CP-36": ("OK: diferencia calculada, observación exigida y segundo cierre rechazado", "HU-31"),
+        "CP-37": ("OK: 29 pruebas en verde; folio repetido rechazado y conciliación por folio", "HU-32"),
+        "CP-38": ("OK; correo con el adaptador de consola (SES sin credenciales reales)", "HU-33"),
+        "CP-39": ("OK; avisos por correo con el adaptador de consola", "HU-34"),
+        "CP-40": ("OK con doble de Twilio; falta Twilio real", "HU-35, HU-41"),
+        "CP-41": ("OK: 409 en ambos casos; revocación inmediata", "HU-36"),
+        "CP-42": ("OK con pasajero sintético", "HU-39, HU-40, HU-42"),
+        "CP-43": ("OK: 404 para el viaje ajeno; cancelar solo sin conductor", "HU-43, HU-44"),
+        "CP-44": ("OK: anonimización completa, 409 con viaje activo y purga de las posiciones de 31 y 90 días", "HU-45"),
+        "CP-45": ("OK: 57 pruebas de componentes; revisión a 390 y 1440 px", "HU-37, HU-38"),
     }
     rows = [(c[0], c[1], c[2], f"{c[3]}. Pre: {c[4]}", c[5], c[6], c[7], f"{c[8]} · {c[9]}", c[10],
              EJEC.get(c[0], ("Pendiente", "—"))[0], EJEC.get(c[0], ("Pendiente", "—"))[1]) for c in CP]
@@ -303,10 +327,12 @@ def anexos(r):
     AH(r, "Anexo H. Máquina de estados del viaje")
     r.P("Actualiza la máquina de estados de la formulación. Se agregan PENDIENTE_CONFIRMACION (reserva del portal a la espera de la confirmación por WhatsApp) y "
         "EN_ZONA (vehículo a menos de 150 m del origen, que dispara el aviso «tu vehículo te espera»), y la cancelación por el pasajero pasa a "
-        "hacerse respondiendo el mensaje de WhatsApp.")
+        "hacerse respondiendo el mensaje de WhatsApp. Desde CC-18 solo se pide con una cuenta activa, cuyo teléfono ya se verificó al activarla: "
+        "las reservas del portal nacen en SOLICITADO, y el pasajero también puede cancelar desde «Mis viajes» mientras no haya conductor (RN-09). "
+        "PENDIENTE_CONFIRMACION se conserva solo para las reservas anteriores a ese cambio.")
     r.figure("fig/estados.png", "estados", "Máquina de estados del viaje", width_cm=16.4)
     st = [
-        ("PENDIENTE_CONFIRMACION", "Reserva del portal sin confirmar", "→ SOLICITADO, → CANCELADO", "Pasajero (WhatsApp) o sistema (15 min)", "Nuevo"),
+        ("PENDIENTE_CONFIRMACION", "Reserva del portal sin confirmar (solo reservas anteriores a CC-18)", "→ SOLICITADO, → CANCELADO", "Pasajero (WhatsApp) o sistema (15 min)", "Nuevo; sin uso desde CC-18"),
         ("SOLICITADO", "Reserva confirmada sin conductor", "→ ASIGNADO, → CANCELADO", "Despachador; pasajero o supervisor (cancela)", "Vigente"),
         ("ASIGNADO", "Conductor notificado, 60 s para responder", "→ ACEPTADO, → SOLICITADO", "Conductor o temporizador", "Vigente"),
         ("ACEPTADO", "Conductor confirmó el viaje", "→ EN_CAMINO, → CANCELADO", "Conductor o despachador", "Vigente"),
@@ -323,7 +349,8 @@ def anexos(r):
     # ---------------- G
     AH(r, "Anexo I. Matriz de trazabilidad")
     r.P("Vincula cada historia con su objetivo, regla, proceso BPMN, caso de uso, componente, entidades principales y casos de prueba. Incluye "
-        "las dos historias incorporadas tras la EF2, que enlazan el proceso P3.2 y la continuidad con sus entidades, indicadores y pruebas.")
+        "las dos historias incorporadas tras la EF2, que enlazan el proceso P3.2 y la continuidad, y las de las solicitudes de cambio CC-16 a "
+        "CC-18 (HU-33 a HU-45), que enlazan la creación y habilitación de cuentas (P1.1) y el portal rediseñado.")
     tr = {
         "HU-01": ("OE-02", "RN-13", "P2", "CU-02", "Reservas y despacho, Gateway", "VIAJE, CONDUCTOR", "CP-12"),
         "HU-02": ("OE-02", "RN-13, RN-18", "P2", "CU-02", "Gateway tiempo real", "POSICION_GPS", "CP-12"),
@@ -332,7 +359,7 @@ def anexos(r):
         "HU-05": ("OE-02", "RN-11", "P3", "CU-04", "Reservas y despacho, Auditoría", "AUDITORIA", "CP-24"),
         "HU-06": ("OE-02", "RN-10", "P3.2", "CU-08", "Cobros y reportes", "PAGO_VIAJE", "CP-25"),
         "HU-10": ("OE-02", "RN-05", "—", "CU-05", "Flota", "CONDUCTOR, VEHICULO", "CP-01, CP-02"),
-        "HU-11": ("OE-02", "RN-08", "P1", "CU-06", "Convenios", "CONVENIO", "CP-22"),
+        "HU-11": ("OE-02", "RN-08", "P1.1", "CU-06", "Convenios", "CONVENIO", "CP-22, CP-39"),
         "HU-12": ("OE-02", "RN-12", "—", "CU-07", "Auditoría", "AUDITORIA", "CP-24"),
         "HU-13": ("OE-03", "RN-05, RN-18", "P2.1", "CU-09", "App, Flota", "CONDUCTOR, TURNO", "CP-03, CP-04"),
         "HU-14": ("OE-03", "—", "P2", "CU-10", "App, Gateway", "ASIGNACION", "CP-13"),
@@ -340,11 +367,11 @@ def anexos(r):
         "HU-16": ("OE-03", "RN-10", "P3, P3.1", "CU-11", "App, Cobros", "PAGO_VIAJE, HISTORIAL_ESTADO", "CP-15, CP-16"),
         "HU-17": ("OE-03", "—", "P3", "CU-11", "App", "—", "E2E"),
         "HU-18": ("OE-03", "—", "P3, P3.2", "CU-11", "App, Cobros", "PAGO_VIAJE, TURNO", "E2E"),
-        "HU-19": ("OE-02", "RN-06", "P1", "CU-12", "Portal, Reservas", "PASAJERO, VIAJE", "CP-07"),
-        "HU-20": ("OE-02", "RN-06", "P1.1", "CU-13", "Mensajería WhatsApp", "MENSAJE_WHATSAPP", "CP-07 a CP-10"),
+        "HU-19": ("OE-02", "RN-13", "P1", "CU-12", "Portal, Reservas", "PASAJERO, VIAJE", "CP-42"),
+        "HU-20": ("OE-02", "RN-06", "P1.1", "CU-13", "Mensajería WhatsApp", "MENSAJE_WHATSAPP", "CP-07 a CP-10, CP-40"),
         "HU-21": ("OE-02", "RN-09", "P3", "CU-14", "Mensajería WhatsApp", "MENSAJE_WHATSAPP", "CP-16, CP-17"),
         "HU-24": ("OE-02", "RN-14", "P3", "CU-14", "Mensajería, Cobros", "CALIFICACION", "E2E"),
-        "HU-25": ("OE-02", "RN-07, RN-08", "P1", "CU-12", "Portal, Convenios", "CONVENIO, VIAJE", "CP-22, CP-26"),
+        "HU-25": ("OE-02", "RN-07, RN-08", "P1", "CU-12", "Portal, Convenios", "CONVENIO, VIAJE", "CP-22, CP-26, CP-39"),
         "HU-26": ("OE-02", "—", "P1", "CU-01, CU-15", "Monitoreo de vuelos", "VUELO", "CP-11"),
         "HU-27": ("OE-02", "RN-02, RN-17", "P2.2", "CU-15", "Monitoreo y adaptador de vuelos", "VUELO, VIAJE", "CP-21"),
         "HU-28": ("OE-02", "RN-17", "P2.2", "CU-15", "Monitoreo de vuelos, Gateway", "VUELO, ALERTA_VUELO", "CP-21"),
@@ -354,6 +381,22 @@ def anexos(r):
     rows = [(h[0],) + tr[h[0]] for h in HU]
     rows.append(("HU-31", "OE-02", "RN-19", "P3.2", "CU-08", "Cobros y reportes, Auditoría", "TURNO, CIERRE_CAJA, PAGO_VIAJE", "CP-36"))
     rows.append(("HU-32", "OE-02", "RN-20", "P1 (retorno, 8.2)", "CU-01", "Reservas y despacho, Auditoría", "VIAJE, AUDITORIA", "CP-37, CP-30"))
+    rows += [
+        ("HU-33", "OE-02", "RN-13", "P1", "CU-12, CU-13", "Autenticación", "USUARIO", "CP-26, CP-38"),
+        ("HU-34", "OE-02", "RN-08, RN-12", "P1.1", "CU-06", "Convenios, Auditoría", "CONVENIO, USUARIO, AUDITORIA", "CP-22, CP-39"),
+        ("HU-35", "OE-02", "RN-06, RN-09", "P1.1", "CU-13", "Portal, Mensajería WhatsApp", "CUENTA_PASAJERO, PASAJERO", "CP-40"),
+        ("HU-36", "OE-02", "RN-13", "—", "CU-05", "Autenticación, Auditoría", "USUARIO, AUDITORIA", "CP-41"),
+        ("HU-37", "OE-02", "—", "—", "CU-12, CU-13", "Portal (sistema visual)", "—", "CP-45"),
+        ("HU-38", "OE-02", "RN-06", "P1.1", "CU-13", "Portal, Autenticación", "USUARIO, CUENTA_PASAJERO", "CP-38, CP-45"),
+        ("HU-39", "OE-02", "RN-13, RN-17", "P1", "CU-12", "Portal, Reservas, Monitoreo de vuelos", "VIAJE, VUELO", "CP-42"),
+        ("HU-40", "OE-02", "RN-06", "P1", "CU-12", "Portal, Reservas", "VIAJE, PASAJERO", "CP-42"),
+        ("HU-41", "OE-02", "RN-06", "P1.1", "CU-13", "Autenticación, Portal", "USUARIO, CUENTA_PASAJERO", "CP-40"),
+        ("HU-42", "OE-02", "—", "P1", "CU-12", "Portal", "VIAJE", "CP-42"),
+        ("HU-43", "OE-02", "RN-13", "P3", "CU-12", "Portal, Gateway", "VIAJE, HISTORIAL_ESTADO", "CP-43"),
+        ("HU-44", "OE-02", "RN-09", "P1", "CU-12", "Portal, Reservas", "VIAJE", "CP-43"),
+        ("HU-45", "OE-01", "RN-15", "—", "CU-13", "Portal, Flota", "USUARIO, PASAJERO, CUENTA_PASAJERO, POSICION_GPS", "CP-44"),
+        ("Modelo de datos y seguridad", "OE-01", "RN-13, RN-15", "—", "—", "Todos", "Modelo lógico completo", "CP-23, CP-24"),
+    ]
     rows.append(("RNF-01 a 13", "OE-04", "Transversal", "—", "—", "Arquitectura e infraestructura", "—", "CP-12, CP-14, 28 a 34"))
     r.table("traz", "Matriz de trazabilidad", ["HU", "Objetivo", "Reglas", "Proceso", "Caso de uso", "Componente", "Entidades", "Pruebas"], rows,
             [1.4, 1.3, 2.0, 1.6, 2.0, 3.3, 3.2, 1.8], font=7.4)
@@ -424,7 +467,43 @@ def anexos(r):
             source="Elaboración propia. El descuadre de caja se supone proporcional al número de reservas ($1.035.000 para 1.512).")
     r.P("**Cloud API.** Si la mensajería se envía por la Cloud API directa de Meta, el costo de WhatsApp del cliente actual baja de $104.000 a "
         "≈ $20.100 al mes y el costo variable total de ≈ $88 a ≈ $32 por reserva (48.600 ÷ 1.512). El resultado con un solo cliente Avanzado "
-        "pasa de $35.350 a $119.250 al mes. No se adopta todavía porque exige la verificación de negocio de cada empresa en Meta.")
+        "pasa de $35.350 a $119.250 al mes. Con CC-19, que retira WhatsApp y Twilio, esta alternativa deja de ser necesaria.")
+
+    import data_van as dv
+    r.P("**J.5 Flujo de caja proyectado a tres años.** Respaldo de la {T:van_res}. Tasa de descuento de 12 % anual; flujos al cierre de cada "
+        "año; año 0 = puesta en marcha. Consumo por cliente con la operación actual: $132.500 (Avanzado, volumen del cliente actual), "
+        "$79.200 (Estándar, 900 reservas) y $30.800 (Inicial, 350 reservas); con CC-19: $29.500, $18.000 y $7.000 (≈ $20 por reserva). "
+        "Costos fijos: $31.150 al mes más $8.000 por cada cliente adicional. Cartera activa: año 1, el cliente actual; año 2, 1 + 1 Avanzado, "
+        "1 Estándar y 1 Inicial; año 3, 4 Avanzado, 4 Estándar y 3 Inicial. Cada cliente nuevo paga su licencia el año en que se incorpora. "
+        "El escenario con CC-19 es una proyección de la versión 1.1 e incluye su desarrollo como inversión del año 1 ({T:j_cc19}).")
+    r.table("j_cc19", "Estimación del desarrollo de CC-19 (proyección v1.1)", ["Componente", "Horas"],
+            [(t, str(h)) for t, h in dv.CC19_TAREAS] + [
+                ("**Total de horas**", f"**{dv.CC19_HORAS}**"),
+                (f"Costo: {dv.CC19_HORAS} h × {dv.pesos(dv.TARIFA_HORA)} (tarifa del presupuesto: $1.500.000 ÷ 108 h) + 10 % de imprevistos", f"**{dv.pesos(dv.CC19_COSTO)}**"),
+            ], [13.6, 3.0], font=7.8,
+            source="Elaboración propia. Estimación previa a la planificación detallada de la versión 1.1; equivale a cerca de un sprint y medio del equipo.")
+    for esc, tid in (("actual", "j_flujo_act"), ("cc19", "j_flujo_cc19")):
+        filas = dv.detalle_flotaagil(esc)
+        rows = [(str(f["anio"]), str(f["clientes"]), dv.pesos(f["planes"]), dv.pesos(-f["consumo"]), dv.pesos(-f["fijos"]),
+                 dv.pesos(f["licencias"]), dv.pesos(f["inversion"]), "**" + dv.pesos(f["flujo"]) + "**", dv.pesos(f["acumulado"]),
+                 dv.pesos(f["descontado"]), dv.pesos(f["acum_desc"])) for f in filas]
+        r.table(tid, "Flujo de caja de FlotaÁgil · " + dv.ESCENARIOS[esc],
+                ["Año", "Clientes", "Planes", "Consumo", "Costos fijos", "Licencias", "Inversión", "Flujo neto", "Acumulado", "Descontado (12 %)", "Acumulado descontado"],
+                rows, [0.9, 1.2, 1.7, 1.6, 1.5, 1.5, 1.8, 1.8, 1.8, 1.7, 1.8], font=6.8,
+                source="Elaboración propia. Planes, consumo y costos fijos anuales (12 × mensual).")
+    rows = []
+    for clave in ("meta", "prudente"):
+        f = dv.flujos_cliente(clave)
+        rows.append((dv.CLIENTE[clave]["desc"], *[dv.pesos(x) for x in f], dv.pesos(dv.van(f)), dv.tir_texto(f), dv.periodo(dv.pri(f))))
+    r.table("j_flujo_cli", "Flujo de caja del cliente actual (plan Avanzado)", ["Escenario", "Año 0", "Año 1", "Año 2", "Año 3", "VAN 12 %", "TIR", "PRI"],
+            rows, [4.0, 1.5, 1.6, 1.6, 1.6, 1.7, 2.6, 1.6], font=7.2,
+            source="Elaboración propia. Año 0: licencia; años 1 a 3: 12 × beneficio neto mensual (meta $432.500; prudente $57.800, Tabla {T:sens}). "
+                   "La TIR del escenario meta no es significativa porque la inversión inicial es mínima frente al beneficio anual.")
+    da, dc = dv.flujos_flotaagil("actual", dv.INV_DESEMBOLSO), dv.flujos_flotaagil("cc19", dv.INV_DESEMBOLSO)
+    r.P("**Evaluación sobre el desembolso.** Si en el año 0 se considera solo el desembolso de $847.000 ($770.000 más 10 % de imprevistos), "
+        f"el VAN al 12 % es {dv.pesos(dv.van(da))} con la operación actual (TIR {dv.pct(dv.tir(da))}) y {dv.pesos(dv.van(dc))} con CC-19 "
+        f"(TIR {dv.pct(dv.tir(dc))}). La evaluación principal usa la inversión valorizada porque las horas del equipo tienen un costo de "
+        "oportunidad, aunque no sean un gasto.")
 
     # ---------------- I
     AH(r, "Anexo K. Glosario")
@@ -587,12 +666,13 @@ def anexos(r):
     # ---------------- L
     AH(r, "Anexo N. Ecosistema de desarrollo implementado (Sprint 0)")
     r.P("El Sprint 0 dejó operativo el entorno en el que se construyeron y se controlan todas las historias. La {T:eco} resume lo configurado "
-        "y cómo se verificó. Las figuras muestran el tablero al cierre del Sprint 0; al corte de la semana 14 las 25 historias están en la columna «En "
-        "revisión» y la tarea H-3 sigue «En curso», a la espera de la prueba en un teléfono real.")
+        "y cómo se verificó. Las figuras muestran el tablero al cierre del Sprint 0. En la semana 14 el repositorio pasó a la organización "
+        "*Flotaagil-CL* con su historial, issues, tablero y ruleset (DC-49); al corte, las historias construidas están en la columna «Hecho» y la "
+        "tarea H-3 sigue «En curso», a la espera de la prueba en un teléfono real.")
     eco = [
-        ("Organización", "flotaagil, con verificación en dos pasos obligatoria, permiso base de solo lectura y sin creación de repositorios por los miembros", "Lectura de la configuración por API"),
-        ("Repositorio", "flotaagil/flotaagil, público; carpetas backend/, web/, app/, infra/ y docs/ con su responsable; .gitignore que impide subir secretos, llaves de firma y evidencias sin anonimizar", "Primer commit en main"),
-        ("Protección de main", "Ruleset «Proteger main»: sin push directo ni borrado; pull request con 1 aprobación, resolución de conversaciones y fusión squash; check «ci» obligatorio; historial lineal. Excepción temporal para el administrador, solo vía pull request, hasta que se incorpore el segundo integrante", "Push directo de prueba rechazado (GH013)"),
+        ("Organización", "flotaagil (desde la semana 14, Flotaagil-CL), con verificación en dos pasos obligatoria, permiso base de solo lectura y sin creación de repositorios por los miembros", "Lectura de la configuración por API"),
+        ("Repositorio", "flotaagil/flotaagil (desde la semana 14, Flotaagil-CL/flotaagil), público; carpetas backend/, web/, app/, infra/ y docs/ con su responsable; .gitignore que impide subir secretos, llaves de firma y evidencias sin anonimizar", "Primer commit en main"),
+        ("Protección de main", "Ruleset «Proteger main»: sin push directo ni borrado; pull request con 1 aprobación, resolución de conversaciones y fusión squash; check «ci» obligatorio; historial lineal. En el repositorio nuevo el ruleset no tiene excepciones y la revisión cruzada es un acuerdo de trabajo con lista de chequeo (DC-47)", "Push directo de prueba rechazado (GH013)"),
         ("Integración continua", "GitHub Actions: título del PR en Conventional Commits; backend con Ruff, Bandit y pytest con cobertura ≥ 70 % sobre PostgreSQL 16 + PostGIS 3.4 y Redis; web y app con ESLint, typecheck, Vitest y build; job final «ci» obligatorio", "Primer run en verde"),
         ("Seguridad", "Secret scanning con push protection, alertas y actualizaciones de seguridad de Dependabot, reporte privado de vulnerabilidades", "Configuración leída por API; Dependabot abrió 4 PR"),
         ("Plantillas", "Issues de historia, defecto, solicitud de cambio (RFC del Anexo L) e incidente; plantilla de pull request con la definición de terminado; CODEOWNERS", "Archivos en .github/"),
@@ -605,7 +685,6 @@ def anexos(r):
     r.P("**Incidencia.** Al cargar el backlog, la creación de 27 issues en pocos segundos activó la detección automática de spam de GitHub y "
         "restringió la cuenta del integrante que ejecutó la carga: mientras dure, sus issues y pull requests no son visibles sin iniciar sesión "
         "y la integración continua no se ejecuta en sus pull requests. Se solicitó la revisión a GitHub (riesgo R-15) y a la fecha de corte "
-        "sigue sin respuesta. Por eso, un "
-        "visitante externo puede ver el repositorio y el tablero, pero aún no las tarjetas. Mientras se resuelve, el otro integrante tiene "
-        "acceso de escritura al repositorio y abre los pull requests de las ramas ya subidas, y el repositorio completo se respalda en un archivo "
-        "*git bundle*.")
+        "no tuvo respuesta. Como medida de mitigación, en la semana 14 el repositorio se trasladó a la organización *Flotaagil-CL* con su "
+        "historial, issues, tablero y ruleset, previo respaldo completo en un archivo *git bundle* (DC-49). En el repositorio nuevo la "
+        "integración continua corre en todos los pull requests y las tarjetas son visibles para cualquier visitante.")

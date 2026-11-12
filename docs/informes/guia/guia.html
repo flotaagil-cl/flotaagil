@@ -329,7 +329,7 @@ tr{break-inside:avoid}
 <p>Al corte hay <b>2.075 pruebas automáticas</b> (1.221 de backend, 765 de web y 89 de la app). La cobertura mínima exigida por la DoD es 70 % en los módulos de negocio.</p>
 <h2>Integración continua</h2>
 <p>Cada pull request dispara el workflow <code>ci</code> en GitHub Actions: instala dependencias, corre linters, Bandit y todas las pruebas. La rama <code>main</code> está protegida: no se puede subir directo, solo por PR con el check en verde, y la fusión es <i>squash</i> (un commit por historia, historial lineal).</p>
-<div class="box ojo"><div class="t">Ojo: pendientes reales</div>Todavía no está demostrado con WhatsApp real (plantillas aprobadas por Meta), con el GPS de un teléfono en la calle ni bajo carga en AWS. Las historias están construidas y «en revisión», a la espera de la fusión. Decirlo con claridad da más credibilidad que esconderlo.</div>
+<div class="box ojo"><div class="t">Ojo: pendientes reales</div>Todavía no está demostrado con WhatsApp real (plantillas aprobadas por Meta), con el GPS de un teléfono en la calle ni bajo carga en AWS. Las historias están construidas e integradas en <i>main</i>, con el CI en verde. Decirlo con claridad da más credibilidad que esconderlo.</div>
 
 <h1><span class="n">15</span>Forma de trabajo: Scrum y Git</h1>
 <table><tr><th>Rol</th><th>Quién</th><th>Qué hace</th></tr>
@@ -347,7 +347,7 @@ tr{break-inside:avoid}
 <li>Al cerrar el sprint se etiqueta una versión SemVer (v0.1 … v1.0.0).</li>
 </ol>
 <div class="box analogia"><div class="t">Analogía: DoR y DoD</div>La DoR es la <b>lista de ingredientes</b> antes de cocinar (no se empieza sin todo); la DoD es el <b>control de calidad</b> antes de servir (no sale de la cocina si no cumple).</div>
-<p><b>Cambios de alcance:</b> todo cambio entra como solicitud (CC-xx) con análisis de impacto y aprobación del PO. Los desvíos del diseño durante la construcción se registran como decisiones (DC-xx). Hay 18 CC y 47 DC.</p>
+<p><b>Cambios de alcance:</b> todo cambio entra como solicitud (CC-xx) con análisis de impacto y aprobación del PO. Los desvíos del diseño durante la construcción se registran como decisiones (DC-xx). Hay 21 CC y 50 DC; CC-19 a CC-21 están aprobadas para después de la entrega y se presentan como diseño.</p>
 
 <h1><span class="n">16</span>Glosario</h1>
 <table>
@@ -391,8 +391,10 @@ tr{break-inside:avoid}
 <div class="q"><b>11. ¿Qué es un adaptador y dónde lo usan?</b><br>Una capa que aísla a un proveedor: WhatsApp (Twilio o Meta), vuelos (AeroAPI o AeroDataBox), mapas y correo.</div>
 <div class="q"><b>12. ¿Por qué se eliminó la matriz RACI?</b><br>Mostraba conflicto de interés (mismo responsable y aprobador). En Scrum los roles separan quién construye y quién aprueba.</div>
 <div class="q"><b>13. ¿Para qué se agregaron TURNO y CIERRE_CAJA?</b><br>Sin ellos no se podía calcular la cuadratura ni los indicadores por turno (observación de la EF2).</div>
-<div class="q"><b>14. ¿Qué no está demostrado todavía?</b><br>WhatsApp con plantillas aprobadas por Meta, GPS en teléfono real en la calle, carga en AWS y la fusión de los PR.</div>
+<div class="q"><b>14. ¿Qué no está demostrado todavía?</b><br>WhatsApp con plantillas aprobadas por Meta, GPS en teléfono real en la calle, correo con Amazon SES real y carga en AWS.</div>
 <div class="q"><b>15. ¿FlotaÁgil está regulado por la Ley 21.553?</b><br>No: esa ley regula a las plataformas que intermedian con conductores independientes; FlotaÁgil es una herramienta interna de una empresa con flota. Su reglamento tampoco estaba publicado.</div>
+<div class="q"><b>16. ¿Es rentable FlotaÁgil?</b><br>Para el cliente, sí y de inmediato: con la licencia de $500.000 recupera la inversión en poco más de un mes y su VAN a tres años es cercano a $12 millones. Para FlotaÁgil depende del costo de mensajería: con Twilio el VAN a tres años es negativo (≈ −$5,3 millones al 12 %), porque el margen por cliente es muy estrecho. Con CC-19 (proyección v1.1, pagando su desarrollo de ≈ $2,3 millones) pasa a ≈ +$2,7 millones, con TIR de 19,7 % y recuperación en unos 2 años y 6 meses. Conclusión: viable condicionado a CC-19 y a llegar a 11 clientes; con 9 el VAN todavía es negativo. La TIR del cliente no se usa: con una inversión tan baja no es significativa.</div>
+<div class="q"><b>17. ¿Qué ahorra el CC-19?</b><br>Retira Twilio por completo: la operación mensual con el cliente actual baja de $163.650 a ≈ $60.650 (−63 %), el costo por reserva de ≈ $88 a ≈ $20 y se ahorran ≈ $1.236.000 al año. El margen del plan Avanzado sube de ≈ 18 % a ≈ 70 %. El cliente paga lo mismo; los avisos van por el navegador (Web Push, gratis) y por correo (Amazon SES, ≈ $1.000 al mes).</div>
 
 <h1><span class="n">18</span>Guion de un minuto para la presentación</h1>
 <div class="box defensa" style="font-size:11pt;line-height:1.65">
