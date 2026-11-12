@@ -98,3 +98,13 @@ Los valores marcados como supuestos (márgenes, 10 min fuera de geocerca, 15 min
 - Nunca subas secretos: `.env` está ignorado; usa `.env.example` con valores de ejemplo.
 - Nombres de modelos y tablas según el diccionario de datos (español, singular: `Viaje`, `Conductor`). Código y comentarios en español salvo términos técnicos estándar.
 - Si una decisión no está en el informe, pregúntala en vez de suponer.
+
+## Informes y evidencias
+
+- Los informes (Informe 1, Informe 2 y la guía) se generan desde `docs/informes/` (ver su README). No se editan el PDF ni el Word a mano.
+- Al cerrar cada HU o tarea, agrega una fila a `docs/estado-para-informe.md`: qué se construyó, cómo se verificó, pruebas agregadas, CC/DC y rutas de las capturas.
+- Cada vez que corras las suites completas, actualiza `docs/informes/datos/pruebas.json` (fecha, rama, número de pruebas en verde y cobertura de backend, web y app).
+- Capturas de evidencia en `docs/evidencias/HU-xx/`, a 390 y 1440 px, con datos sintéticos; preferir el script de Playwright del proyecto.
+- Al terminar, corre `cd docs/informes/generador && python extraer_datos.py` para refrescar las cifras.
+- **Alcance congelado desde el 12/11/2026:** todo cambio de alcance nuevo se registra como solicitud de cambio (CC) y queda para la versión 1.1. No se construye antes de la entrega salvo que Renato lo autorice de forma explícita.
+

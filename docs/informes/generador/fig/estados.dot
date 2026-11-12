@@ -1,0 +1,26 @@
+digraph SM {
+graph [rankdir=LR, fontname="Carlito", nodesep=0.35, ranksep=0.45, pad=0.2];
+node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#1b1f24", fontname="Carlito", fontsize=11];
+edge [fontname="Carlito", fontsize=9, color="#1b1f24", arrowsize=0.7];
+ini [shape=circle, label="", width=0.18, style=filled, fillcolor="#1b1f24"];
+PC [label="PENDIENTE_\nCONFIRMACION", fillcolor="#fff7ec"];
+SOL [label="SOLICITADO"]; ASI [label="ASIGNADO"]; ACE [label="ACEPTADO"]; ENC [label="EN_CAMINO"];
+ZON [label="EN_ZONA", fillcolor="#fff7ec"]; ABO [label="PASAJERO_\nA_BORDO"];
+FIN [label="FINALIZADO", fillcolor="#e9f5ec"]; CAN [label="CANCELADO", fillcolor="#fbeaea"];
+ini -> PC [label="formulario web"];
+ini -> SOL [label="despachador /\nconvenio"];
+PC -> SOL [label="confirma por\nWhatsApp"];
+PC -> CAN [label="cancela o\nexpira (15 min)"];
+SOL -> ASI [label="despachador\nconfirma"];
+ASI -> SOL [label="rechazo o\n60 s"];
+ASI -> ACE [label="conductor\nacepta"];
+ACE -> ENC [label="inicia\ntrayecto"];
+ENC -> ZON [label="< 150 m del\norigen"];
+ZON -> ABO [label="pasajero\na bordo"];
+ABO -> FIN [label="registra pago\n(RN-10)"];
+SOL -> CAN [label="pasajero (WhatsApp)\no despachador"];
+ACE -> CAN [label="despachador"]; ENC -> CAN [label="despachador"];
+ZON -> CAN [label="no presentación\n(15 min)"];
+ABO -> CAN [label="anulación forzada\n(HU-05)", style=dashed];
+{rank=same; FIN; CAN}
+}

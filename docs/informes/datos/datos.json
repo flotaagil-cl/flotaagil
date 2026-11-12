@@ -1,0 +1,58 @@
+{
+  "generado": "2026-11-12T07:00:49",
+  "hu_total": 44,
+  "sp_total": 274,
+  "dc_total": 48,
+  "dc_max": 49,
+  "dc_faltantes": [
+    48
+  ],
+  "cc_max": 18,
+  "entidades": 23,
+  "entidades_lista": [
+    "Vuelo",
+    "Geocerca",
+    "FilaAeropuerto",
+    "AlertaVuelo",
+    "Auditoria",
+    "Convenio",
+    "Empresa",
+    "ConfiguracionEmpresa",
+    "Usuario",
+    "Vehiculo",
+    "Conductor",
+    "ConductorVehiculo",
+    "PosicionGps",
+    "Turno",
+    "CierreCaja",
+    "Pasajero",
+    "Viaje",
+    "HistorialEstado",
+    "MensajeWhatsapp",
+    "Asignacion",
+    "PagoViaje",
+    "Calificacion",
+    "CuentaPasajero"
+  ],
+  "pruebas": {
+    "_ayuda": "Actualizar cada vez que se corren las suites completas (CLAUDE.md, «Informes y evidencias»). 'pruebas' = casos ejecutados en verde; 'cobertura' = % de líneas.",
+    "fecha": "2026-11-12",
+    "rama": "main (29a19e3)",
+    "backend": {
+      "pruebas": 1221,
+      "cobertura": 97.9,
+      "comando": "pytest -q"
+    },
+    "web": {
+      "pruebas": 765,
+      "cobertura": null,
+      "comando": "npm test (web)"
+    },
+    "app": {
+      "pruebas": 89,
+      "cobertura": null,
+      "comando": "npm test (app)"
+    }
+  },
+  "pruebas_total": 2075
+}
