@@ -1,5 +1,7 @@
 # Sprint 0: ecosistema GitHub de FlotaÁgil
 
+> Desde el 11-11-2026 el repositorio está en `Flotaagil-CL/flotaagil` (ver DC-49). Este archivo conserva las instrucciones originales del Sprint 0 sin cambios.
+
 Instrucciones para Claude Code. Ejecuta las etapas en orden. Al inicio de cada etapa di qué vas a hacer y espera mi confirmación. Si algo falla o no se puede hacer por API, detente y dime qué tengo que hacer en el navegador.
 
 Datos fijos:

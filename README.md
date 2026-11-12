@@ -8,7 +8,7 @@ Proyecto de Título TIHI84, INACAP La Granja.
 
 | Persona | Rol | Área |
 |---|---|---|
-| Renato González ([@renatogonzalez08-source](https://github.com/renatogonzalez08-source)) | Developer | `web/`, `app/` |
+| Renato González ([@RenatoGonzalez151](https://github.com/RenatoGonzalez151)) | Developer | `web/`, `app/` |
 | Carlos Ortiz | Scrum Master, líder, Developer | `backend/`, integraciones, `infra/` |
 | Juan Pérez | Product Owner (integrante simulado) | Prioriza y acepta incrementos |
 
@@ -38,7 +38,8 @@ docs/      informes, decisiones, backlog, evidencias     ambos
 ## Backlog y tablero
 
 - Backlog: [`docs/backlog/backlog.json`](docs/backlog/backlog.json), 25 HU + H-3 (178 SP) en 4 sprints de 2 semanas.
-- Tablero: [FlotaÁgil — Backlog](https://github.com/orgs/flotaagil/projects) (GitHub Projects).
+- Tablero: [FlotaÁgil — Backlog](https://github.com/orgs/flotaagil-cl/projects/1) (GitHub Projects, público).
+- Repositorio: `Flotaagil-CL/flotaagil` desde el 11-11-2026 ([DC-49](docs/diccionario-cambios.md)).
 
 ## Cómo contribuir
 
