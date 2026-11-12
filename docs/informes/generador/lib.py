@@ -15,6 +15,26 @@ BODY_COLOR = RGBColor(0x40, 0x40, 0x40)
 
 ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV"]
 
+# Propiedades del documento generado: la plantilla trae los nombres de quienes la editaron y el repositorio es público.
+AUTORIA = "FlotaÁgil"
+
+
+def fijar_metadatos(doc):
+    """Deja autor, último en modificar y empresa como AUTORIA (core.xml y app.xml)."""
+    cp = doc.core_properties
+    cp.author = AUTORIA
+    cp.last_modified_by = AUTORIA
+    for parte in doc.part.package.parts:
+        if str(parte.partname) != "/docProps/app.xml":
+            continue
+        xml = parte.blob.decode("utf-8")
+        empresa = "<Company>%s</Company>" % AUTORIA
+        if re.search(r"<Company\s*/>|<Company>.*?</Company>", xml, re.S):
+            xml = re.sub(r"<Company\s*/>|<Company>.*?</Company>", empresa, xml, count=1, flags=re.S)
+        else:
+            xml = xml.replace("</Properties>", empresa + "</Properties>")
+        parte._blob = xml.encode("utf-8")
+
 
 class Report:
     def __init__(self, template, cover):
@@ -505,4 +525,5 @@ class Report:
         self.normalize()
         self.finalize_sections()
         self.resolve_refs()
+        fijar_metadatos(self.doc)
         self.doc.save(path)
