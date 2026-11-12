@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Guía del proyecto FlotaÁgil</title>
+<style>
+@font-face{font-family:"PJS";font-weight:400;src:url("fuentes/plus-jakarta-sans-latin-400-normal.woff2")}
+@font-face{font-family:"PJS";font-weight:600;src:url("fuentes/plus-jakarta-sans-latin-600-normal.woff2")}
+@font-face{font-family:"PJS";font-weight:700;src:url("fuentes/plus-jakarta-sans-latin-700-normal.woff2")}
+@font-face{font-family:"PJS";font-weight:800;src:url("fuentes/plus-jakarta-sans-latin-800-normal.woff2")}
+:root{--p9:#0B4F5C;--p7:#0C7F7D;--tif:#81D8D0;--t50:#E3F6F4;--fondo:#F2FBFA;--txt:#0F2A2E;--suave:#4F6A6C;--borde:#CFE8E5;--amar:#FFF4D6;--amarB:#E8B931;--rojo:#B42318}
+@page{size:A4;margin:16mm 15mm 16mm 15mm}
+*{box-sizing:border-box}
+body{font-family:"PJS",sans-serif;color:var(--txt);font-size:10.4pt;line-height:1.55;margin:0;background:#fff}
+h1{font-size:21pt;color:var(--p9);margin:0 0 4mm;line-height:1.2;page-break-before:always;padding-top:2mm}
+h1 .n{display:inline-block;background:linear-gradient(110deg,var(--t50),var(--tif));color:var(--p9);border-radius:8px;padding:0 9px;margin-right:8px}
+h2{font-size:13.5pt;color:var(--p7);margin:6mm 0 2mm;break-after:avoid}
+h3{font-size:11pt;margin:4mm 0 1.5mm;color:var(--p9);break-after:avoid}
+p{margin:0 0 2.6mm}
+ul,ol{margin:0 0 3mm;padding-left:6mm}
+li{margin-bottom:1.2mm}
+code,.mono{font-family:"DejaVu Sans Mono",monospace;font-size:8.8pt;background:var(--t50);padding:0 3px;border-radius:3px}
+.cover{height:265mm;display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(140deg,#0B4F5C 0%,#0C7F7D 65%,#2FA39C 100%);color:#fff;border-radius:14px;padding:22mm 18mm;margin:0}
+.cover .k{letter-spacing:.18em;font-size:9pt;font-weight:700;opacity:.85}
+.cover h0{display:block;font-size:34pt;font-weight:800;line-height:1.08;margin-top:8mm}
+.cover .sub{font-size:13pt;margin-top:5mm;max-width:140mm;opacity:.95}
+.cover .meta{font-size:9.5pt;opacity:.9;line-height:1.7}
+.box{border-radius:10px;padding:3.2mm 4mm;margin:3mm 0 4mm;break-inside:avoid}
+.box .t{font-weight:800;font-size:9pt;letter-spacing:.06em;text-transform:uppercase;margin-bottom:1mm}
+.analogia{background:var(--fondo);border:1.5px solid var(--borde)}
+.analogia .t{color:var(--p7)}
+.defensa{background:linear-gradient(110deg,var(--t50),#d3f1ee);border-left:5px solid var(--p7)}
+.defensa .t{color:var(--p9)}
+.ojo{background:var(--amar);border-left:5px solid var(--amarB)}
+.ojo .t{color:#8a6500}
+table{width:100%;border-collapse:collapse;margin:2mm 0 4mm;font-size:9pt;break-inside:auto}
+th{background:var(--p9);color:#fff;text-align:left;padding:2mm 2.4mm;font-weight:700}
+td{padding:1.8mm 2.4mm;border-bottom:1px solid var(--borde);vertical-align:top}
+tr:nth-child(even) td{background:#F7FCFB}
+tr{break-inside:avoid}
+.fig{text-align:center;margin:3mm 0 4mm;break-inside:avoid}
+.fig img{max-width:100%;max-height:150mm;border:1px solid var(--borde);border-radius:8px}
+.fig .c{font-size:8.5pt;color:var(--suave);margin-top:1.2mm}
+.tree{font-family:"DejaVu Sans Mono",monospace;font-size:8.6pt;background:#0F2A2E;color:#E3F6F4;border-radius:10px;padding:4mm 5mm;white-space:pre;line-height:1.45;break-inside:avoid}
+.tree b{color:var(--tif);font-weight:700}
+.tree i{color:#9FB9BB;font-style:normal}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.card{border:1.5px solid var(--borde);border-radius:10px;padding:3mm 3.6mm;break-inside:avoid}
+.card h3{margin-top:0}
+.pill{display:inline-block;background:var(--t50);color:var(--p9);border-radius:99px;padding:0 7px;font-size:8.4pt;font-weight:700;margin:0 2px 1mm 0}
+.flow{counter-reset:paso;list-style:none;padding-left:0}
+.flow li{counter-increment:paso;position:relative;padding-left:10mm;margin-bottom:2.2mm}
+.flow li:before{content:counter(paso);position:absolute;left:0;top:0;width:7mm;height:7mm;border-radius:50%;background:var(--p7);color:#fff;font-weight:800;font-size:9pt;display:flex;align-items:center;justify-content:center}
+.toc{columns:2;column-gap:10mm;font-size:10pt}
+.toc div{break-inside:avoid;margin-bottom:1.6mm}
+.toc b{color:var(--p7)}
+.q{margin-bottom:2.4mm}
+.q b{color:var(--p9)}
+.small{font-size:8.8pt;color:var(--suave)}
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div>
+    <div class="k">PROYECTO DE TÍTULO · TIHI84 · INACAP LA GRANJA</div>
+    <h0>Guía del proyecto FlotaÁgil</h0>
+    <div class="sub">Qué construimos, con qué, por qué así y cómo explicarlo. Una guía para entender el sistema de punta a punta y defenderlo en la presentación.</div>
+  </div>
+  <div class="meta">
+    Renato González · Carlos Ortiz<br>
+    Estado al corte de la semana 14 (noviembre de 2026)<br>
+    Documento de estudio interno del equipo
+  </div>
+</section>
+
+<h1 style="page-break-before:always"><span class="n">0</span>Cómo usar esta guía</h1>
+<p>La guía está pensada para leerse en orden, de lo general a lo particular. Cada capítulo responde tres preguntas: <b>qué es</b>, <b>por qué lo elegimos</b> y <b>qué decir si nos preguntan</b>. Para que se fije, usa tres tipos de recuadro:</p>
+<div class="box analogia"><div class="t">Analogía</div>Una comparación con algo cotidiano para entender la idea antes de ver los detalles técnicos.</div>
+<div class="box defensa"><div class="t">Cómo defenderlo</div>La respuesta corta, en una o dos frases, que conviene dar si el profesor o la comisión pregunta por ese tema.</div>
+<div class="box ojo"><div class="t">Ojo</div>Un error común, una confusión frecuente o algo que todavía no está demostrado y que no hay que prometer.</div>
+<p>Al final hay un glosario y preguntas de repaso con respuesta. Un buen método de estudio es leer un capítulo, cerrar la guía e intentar explicarlo en voz alta en un minuto; luego, comprobar con las preguntas.</p>
+<h2>Contenido</h2>
+<div class="toc">
+<div><b>1.</b> El proyecto en una página</div>
+<div><b>2.</b> El problema y la propuesta de valor</div>
+<div><b>3.</b> Mapa general de la arquitectura</div>
+<div><b>4.</b> Las tecnologías, una por una, y por qué</div>
+<div><b>5.</b> La estructura del repositorio y por qué es así</div>
+<div><b>6.</b> El backend por dentro: las apps de Django</div>
+<div><b>7.</b> Los clientes: panel, portal y app del conductor</div>
+<div><b>8.</b> El modelo de datos explicado</div>
+<div><b>9.</b> Un viaje de punta a punta</div>
+<div><b>10.</b> Tiempo real: WebSocket, Redis y la geocerca</div>
+<div><b>11.</b> Tareas en segundo plano: Celery</div>
+<div><b>12.</b> Seguridad y privacidad</div>
+<div><b>13.</b> Infraestructura, respaldos y continuidad</div>
+<div><b>14.</b> Calidad: pruebas e integración continua</div>
+<div><b>15.</b> Forma de trabajo: Scrum y Git</div>
+<div><b>16.</b> Glosario</div>
+<div><b>17.</b> Preguntas de repaso con respuesta</div>
+<div><b>18.</b> Guion de un minuto para la presentación</div>
+</div>
+
+<h1><span class="n">1</span>El proyecto en una página</h1>
+<p><b>FlotaÁgil</b> es un SaaS (software que se arrienda como servicio en la nube) para empresas de <b>taxi turismo</b>: las de patente naranja que hacen traslados al aeropuerto, hoteles y empresas con convenio. Nuestro cliente es una PYME con 30 a 50 autos y unas 1.500 reservas al mes, que trabajaba con WhatsApp, Excel y un cuaderno.</p>
+<div class="grid2">
+<div class="card"><h3>Tres clientes, un backend</h3>
+<p><span class="pill">Panel web</span> administrador y despachador: mapa de la flota, reservas, despacho, reportes.</p>
+<p><span class="pill">Portal web</span> pasajero y empresa con convenio: pedir, seguir y cancelar viajes con su cuenta.</p>
+<p><span class="pill">App Android</span> conductor: turno, aceptar viajes, navegar, cobrar, enviar su ubicación.</p></div>
+<div class="card"><h3>Los números que hay que saber</h3>
+<p>12,1 % de reservas perdidas · 8 min 40 s por asignación · 35 % de tiempo muerto · $34.500 diarios de descuadre de caja.</p>
+<p>Metas: pérdida ≤ 5 %, asignación &lt; 3 min, tiempo muerto ≤ 28 %, cuadratura ≥ 98 %.</p>
+<p>Al corte: 25 + 2 + 12 historias construidas, 2.075 pruebas automáticas.</p></div>
+</div>
+<div class="box analogia"><div class="t">Analogía</div>Piensa en una <b>torre de control de aeropuerto</b>. Hoy el despachador es un controlador sin radar: pregunta por radio dónde está cada avión. FlotaÁgil le da el radar (mapa en vivo), el plan de vuelos (reservas y vuelos monitoreados), sugerencias de qué pista usar (asignación asistida) y un registro de todo lo que pasó (auditoría y reportes). La decisión sigue siendo del controlador.</div>
+<div class="box defensa"><div class="t">Cómo defenderlo</div>«FlotaÁgil no solo digitaliza la central: anticipa los atrasos de vuelos, recomienda al mejor conductor, alerta cuando algo se desvía y mide el negocio. La decisión final sigue siendo humana.»</div>
+
+<h1><span class="n">2</span>El problema y la propuesta de valor</h1>
+<h2>Las causas, no los síntomas</h2>
+<p>Con un diagrama de Ishikawa llegamos a tres causas raíz tecnológicas y una de decisión. Conviene recordarlas porque <b>cada parte del sistema responde a una</b>:</p>
+<table><tr><th>Causa raíz</th><th>Qué la resuelve</th></tr>
+<tr><td>No hay una fuente única de datos (WhatsApp, Excel y cuaderno por separado)</td><td>Una base de datos PostgreSQL y una API que usan todos los clientes</td></tr>
+<tr><td>No se sabe dónde está la flota</td><td>GPS de la app + WebSocket + mapa en vivo</td></tr>
+<tr><td>El cobro no se registra cuando ocurre</td><td>Pago obligatorio al finalizar cada viaje (RN-10) y cierre de caja por turno</td></tr>
+<tr><td>Se asigna por memoria, sin datos</td><td>Motor de sugerencia, monitoreo de vuelos, alertas e indicadores</td></tr></table>
+<h2>Las cinco capacidades diferenciadoras</h2>
+<p>El profesor pidió demostrar que el proyecto es más que «pasar el cuaderno al computador». Esta es la respuesta:</p>
+<ol>
+<li><b>Seguimos tu vuelo por ti.</b> Si el vuelo se atrasa, el sistema lo detecta y propone la nueva hora de recogida (hora estimada + 20 min nacional o 35 min internacional). El pasajero no tiene que avisar.</li>
+<li><b>Asignación inteligente asistida.</b> Filtra a los conductores disponibles, sin otro viaje y con capacidad suficiente, y los ordena por el turno de la fila del aeropuerto o por distancia real (PostGIS).</li>
+<li><b>Alertas de desviación.</b> Conductor que no responde en 60 s, llegada automática por geocerca, pasajero que no se presenta, conductor que sale de la fila.</li>
+<li><b>Tablero de indicadores.</b> Nueve KPI con semáforo y cierre de caja por turno.</li>
+<li><b>Predicción de demanda</b> (evolución, no está en el MVP): estimar viajes por hora con el historial y los vuelos programados.</li>
+</ol>
+<div class="box ojo"><div class="t">Ojo</div>La predicción de demanda <b>no está construida</b>: se presenta como evolución porque necesita al menos tres meses de datos reales. No la muestres como algo hecho.</div>
+
+<h1><span class="n">3</span>Mapa general de la arquitectura</h1>
+<div class="fig"><img src="../generador/fig/arquitectura.png"><div class="c">Arquitectura por capas de FlotaÁgil (la misma figura del Informe 2).</div></div>
+<p>Lee la figura de arriba hacia abajo:</p>
+<ol class="flow">
+<li><b>Clientes</b>: el navegador (panel y portal) y la app Android. Solo muestran y capturan datos; no guardan la «verdad».</li>
+<li><b>Nginx</b>: la puerta de entrada. Cifra la conexión (HTTPS) y reparte: lo que es API va a Gunicorn, lo que es tiempo real va a Daphne.</li>
+<li><b>Django</b>: el cerebro. Aplica las reglas de negocio (RN-01 a RN-20) y expone la API REST y los canales WebSocket.</li>
+<li><b>Celery</b>: el ayudante que trabaja en segundo plano (WhatsApp, vuelos, expiraciones).</li>
+<li><b>PostgreSQL + PostGIS</b>: la memoria permanente. <b>Redis</b>: la memoria rápida y el «altavoz» entre procesos.</li>
+<li><b>Servicios externos</b>: Twilio (WhatsApp), API de vuelos, mapas. Cada uno detrás de un <b>adaptador</b>.</li>
+</ol>
+<div class="box analogia"><div class="t">Analogía: un restaurante</div>Los clientes (panel, portal, app) son los <b>meseros</b>: toman pedidos y los llevan a la mesa. Nginx es el <b>recepcionista</b> que dirige a cada uno a su lugar. Django es la <b>cocina</b>, donde están las recetas (reglas de negocio). PostgreSQL es la <b>despensa</b> con el inventario oficial. Redis es la <b>pizarra</b> de la cocina donde se anotan los pedidos urgentes. Celery es el <b>ayudante</b> que hace los encargos que no pueden hacer esperar al cliente, como ir a comprar.</div>
+<div class="box defensa"><div class="t">Cómo defenderlo</div>«Es un monolito modular con API-first: un solo backend, ordenado por dominios, al que se conectan tres clientes. Lo preferimos a microservicios porque somos dos personas y una sola instancia; los módulos están separados para poder dividirlos si el producto crece.»</div>
+
+<h1><span class="n">4</span>Las tecnologías, una por una, y por qué</h1>
+<p>Cada tecnología se eligió con una <b>matriz ponderada</b> (criterios con peso, notas de 1 a 5). No hay que memorizar los puntajes, pero sí la razón principal.</p>
+<table>
+<tr><th style="width:22%">Tecnología</th><th style="width:30%">Qué hace en el proyecto</th><th>Por qué esta y no otra</th></tr>
+<tr><td><b>Python 3.12 + Django 5.2 LTS</b></td><td>Backend: modelos, reglas, API, panel de administración interno</td><td>Trae resuelto lo que más cuesta: usuarios y permisos, ORM, migraciones, admin. GeoDjango para mapas y Channels para tiempo real. LTS = soporte largo. FastAPI exigía armar todo eso a mano.</td></tr>
+<tr><td><b>Django REST Framework</b></td><td>Construir la API REST (JSON)</td><td>Serializadores que validan datos y permisos por vista; estándar de facto con Django.</td></tr>
+<tr><td><b>Django Channels + Daphne</b></td><td>WebSocket: mapa en vivo y avisos a la app</td><td>El mismo proyecto Django atiende HTTP y WebSocket; Daphne es el servidor que entiende WebSocket (ASGI).</td></tr>
+<tr><td><b>Celery 5.5</b></td><td>Tareas en segundo plano y programadas</td><td>Enviar un WhatsApp o consultar un vuelo puede tardar o fallar; no puede bloquear al usuario. Reintenta solo.</td></tr>
+<tr><td><b>PostgreSQL 16 + PostGIS 3.4</b></td><td>Base de datos relacional con funciones geográficas</td><td>Transacciones confiables (un pago y un viaje no pueden quedar a medias) y consultas «¿quién está a menos de X metros?» con índices espaciales. MongoDB no asegura esa integridad.</td></tr>
+<tr><td><b>Redis 7.2</b></td><td>Canal entre procesos, caché de la última posición, cola de Celery</td><td>Memoria muy rápida: guardar cada posición GPS en la base sería escribir cientos de veces por minuto.</td></tr>
+<tr><td><b>React 19 + Vite 6 + TypeScript</b></td><td>Panel y portal web</td><td>Un solo lenguaje y componentes reutilizables entre panel, portal y app. TypeScript detecta errores antes de ejecutar.</td></tr>
+<tr><td><b>Capacitor 7</b></td><td>Empaquetar la app React como app Android</td><td>Reutiliza el código web y da acceso al GPS en segundo plano. Una PWA deja de enviar la ubicación al minimizarse.</td></tr>
+<tr><td><b>Twilio WhatsApp API</b></td><td>Verificación, avisos, cancelación, calificación y chat</td><td>Cuesta menos de un tercio que el SMS y es el canal que el pasajero ya usa. Está detrás de un adaptador para cambiar a la API directa de Meta.</td></tr>
+<tr><td><b>FlightAware AeroAPI</b></td><td>Estado y hora estimada de los vuelos</td><td>Crédito gratuito para desarrollar; adaptador para cambiar a AeroDataBox (más barato) en producción.</td></tr>
+<tr><td><b>Docker + Docker Compose</b></td><td>Empaquetar cada servicio en un contenedor</td><td>«Funciona en mi máquina» deja de ser un problema: lo mismo corre en desarrollo, staging y producción.</td></tr>
+<tr><td><b>AWS (EC2 t4g.small, EBS, S3, Route 53, CloudWatch)</b></td><td>Infraestructura en la nube</td><td>Menor costo para la configuración mínima, snapshots y monitoreo integrados y experiencia del equipo. Un solo proveedor (no AWS «o» GCP).</td></tr>
+<tr><td><b>GitHub + GitHub Actions</b></td><td>Repositorio, tablero Scrum e integración continua</td><td>Todo en un lugar: código, issues, tablero y pruebas automáticas en cada pull request.</td></tr>
+</table>
+<div class="box analogia"><div class="t">Analogía: ARM y t4g</div>La instancia t4g usa procesadores ARM (Graviton), los mismos que los celulares: gastan menos y cuestan menos. Por eso todas las imágenes Docker deben existir en versión ARM64, igual que una app debe estar compilada para el teléfono donde se instala.</div>
+<div class="box defensa"><div class="t">Cómo defenderlo</div>«Elegimos tecnologías maduras, con buena documentación y que al menos uno del equipo conocía. Donde había riesgo (GPS en segundo plano) hicimos primero una prueba de concepto, y donde hay proveedores externos pusimos adaptadores para no quedar amarrados.»</div>
+
+<h1><span class="n">5</span>La estructura del repositorio y por qué es así</h1>
+<p>Usamos un <b>monorepo</b>: un solo repositorio con todas las partes. Así un cambio que toca backend y web va en un mismo pull request y la integración continua prueba todo junto.</p>
+<div class="tree"><b>flotaagil/</b>
+├── <b>backend/</b>          <i># Django: API REST, WebSocket, Celery (responsable: Carlos)</i>
+│   ├── config/        <i># settings, urls, asgi (WebSocket), wsgi (HTTP), celery</i>
+│   ├── apps/          <i># un módulo por dominio del negocio</i>
+│   │   ├── cuentas/   <i># usuarios, roles, inicio de sesión, JWT</i>
+│   │   ├── flota/     <i># conductores, vehículos, turnos, GPS, tiempo real</i>
+│   │   ├── reservas/  <i># viajes, estados, asignación, pagos, avisos, reportes</i>
+│   │   ├── aeropuerto/<i># vuelos, monitoreo, alertas, fila virtual, geocerca</i>
+│   │   ├── convenios/ <i># empresas cliente y su cuenta</i>
+│   │   ├── portal/    <i># lo que usa el portal del pasajero</i>
+│   │   ├── integraciones/ <i># adaptadores: WhatsApp, vuelos, correo, mapas</i>
+│   │   ├── auditoria/ <i># registro inmutable de acciones sensibles</i>
+│   │   └── comun/     <i># permisos, validadores y piezas compartidas</i>
+│   ├── conftest.py    <i># configuración común de las pruebas (pytest)</i>
+│   └── openapi.yaml   <i># contrato de la API</i>
+├── <b>web/</b>              <i># React + Vite: panel y portal (responsable: Renato)</i>
+│   └── src/  api/ sesion/ rutas/ mapa/ reservas/ viajes/ flota/ caja/
+│            convenios/ portal/ pedido/ diseno/ componentes/ pruebas/ …
+├── <b>app/</b>              <i># React + Capacitor: app del conductor (responsable: Renato)</i>
+│   └── src/  conductor/ gps/ pantallas/ sesion/ pruebas/
+├── <b>infra/</b>            <i># docker-compose, nginx, runbook, inventario (Carlos)</i>
+├── <b>docs/</b>             <i># backlog, diccionarios, evidencias por HU, diseño, PR</i>
+└── <b>.github/</b>          <i># workflow de CI, plantillas de issues, Dependabot</i></div>
+<h2>Por qué está ordenado así</h2>
+<ul>
+<li><b>Por responsabilidad y por persona.</b> Cada carpeta raíz tiene un dueño (backend y infra, Carlos; web y app, Renato), lo que reduce los conflictos al trabajar en paralelo.</li>
+<li><b>El backend por dominios, no por tipo de archivo.</b> En vez de una carpeta «modelos» y otra «vistas» gigantes, cada app de Django agrupa todo lo de un tema (modelo, servicios, vistas, pruebas). Si mañana hay que separar «aeropuerto» como servicio aparte, ya está aislado. Esto se llama <b>monolito modular</b>.</li>
+<li><b>Las integraciones aisladas.</b> Todo lo que habla con un tercero está en <code>integraciones/</code> detrás de un adaptador; el resto del código no sabe si el WhatsApp sale por Twilio o por Meta.</li>
+<li><b>La documentación vive con el código.</b> Las evidencias de cada historia (<code>docs/evidencias/HU-xx</code>) y el diccionario de cambios hacen que el avance sea verificable por cualquiera.</li>
+<li><b>Lo que no se versiona:</b> el <code>.env</code> con secretos, <code>node_modules</code>, builds. Solo se sube <code>.env.example</code> con valores de ejemplo.</li>
+</ul>
+<div class="box analogia"><div class="t">Analogía</div>Un monorepo es una casa con piezas separadas: cada uno tiene su pieza (backend, web, app), pero comparten la misma dirección, la misma llave y el mismo reglamento (CI, ramas protegidas). Un multirepo serían tres casas distintas: más independencia, pero más difícil coordinar una mudanza.</div>
+
+<h1><span class="n">6</span>El backend por dentro</h1>
+<h2>Las piezas de una app de Django</h2>
+<table><tr><th style="width:24%">Archivo</th><th>Para qué sirve</th><th style="width:34%">Analogía</th></tr>
+<tr><td><code>models.py</code></td><td>Define las tablas (VIAJE, CONDUCTOR…) como clases de Python</td><td>Los planos de los muebles de la despensa</td></tr>
+<tr><td><code>migrations/</code></td><td>Historial numerado de cambios al esquema de la base</td><td>El registro de remodelaciones de la casa</td></tr>
+<tr><td><code>serializers.py</code></td><td>Convierte objetos a JSON y valida lo que llega</td><td>El traductor que además revisa que el pedido esté completo</td></tr>
+<tr><td><code>views.py</code></td><td>Recibe la petición HTTP, revisa permisos y responde</td><td>El mesero que atiende la mesa</td></tr>
+<tr><td><code>servicios.py</code>, <code>asignacion.py</code>, <code>estados.py</code></td><td>Las reglas de negocio puras (por ejemplo, qué transiciones de estado se permiten)</td><td>Las recetas de la cocina</td></tr>
+<tr><td><code>tareas.py</code></td><td>Tareas de Celery (expirar reservas, consultar vuelos)</td><td>Los encargos del ayudante</td></tr>
+<tr><td><code>consumers.py</code>, <code>routing.py</code></td><td>Canales WebSocket</td><td>La radio de la central</td></tr>
+<tr><td><code>tests/</code></td><td>Pruebas automáticas de esa app</td><td>El control de calidad</td></tr></table>
+<h2>Reglas que viven en el backend</h2>
+<p>Las reglas nunca se confían solo al frontend: un usuario podría saltarse la pantalla y llamar a la API directamente. Las más importantes:</p>
+<ul>
+<li><b>RN-02</b> Ninguna asignación ni ajuste de recogida sin confirmación del despachador.</li>
+<li><b>RN-03</b> Un conductor tiene a lo más un viaje en ejecución (se protege con un bloqueo de fila en la base, ver CP-14).</li>
+<li><b>RN-04</b> Si el conductor no responde en 60 s, la reserva vuelve a SOLICITADO.</li>
+<li><b>RN-10</b> Ningún viaje se finaliza sin método de pago y monto.</li>
+<li><b>RN-13</b> Cada usuario solo ve los registros de su empresa (multiempresa).</li>
+<li><b>RN-18</b> La ubicación del conductor solo se registra en turno y con consentimiento.</li>
+</ul>
+<div class="box ojo"><div class="t">Ojo: la concurrencia</div>Si dos despachadores asignan al mismo conductor en el mismo instante, sin protección ambos podrían «ganar». Por eso la asignación toma un bloqueo <code>SELECT … FOR UPDATE</code> sobre la reserva y el conductor dentro de una transacción: el segundo espera, ve que ya está ocupado y recibe un error 409. CP-14 lo prueba con dos peticiones simultáneas reales.</div>
+
+<h1><span class="n">7</span>Los clientes: panel, portal y app</h1>
+<div class="grid2">
+<div class="card"><h3>Panel (web)</h3><p>Administrador y despachador. Mapa en vivo, reservas, sugerencia de conductor, alertas de vuelo, chat de WhatsApp, reportes, cierre de caja, auditoría y usuarios.</p></div>
+<div class="card"><h3>Portal (web)</h3><p>Pasajero con cuenta y empresa con convenio. Pedir en tres tipos de viaje (desde el aeropuerto, al aeropuerto, en la ciudad), revisar el pedido, ver «tu viaje» y «mis viajes», cancelar sin conductor asignado.</p></div>
+<div class="card"><h3>App del conductor</h3><p>Iniciar y terminar turno con el vehículo, aceptar o rechazar en 60 s, abrir Google Maps o Waze, marcar estados, registrar el cobro, ver «Mi turno». Envía el GPS cada 30 s solo en turno.</p></div>
+<div class="card"><h3>Lo que comparten</h3><p>React y TypeScript, la misma API, el mismo inicio de sesión (CC-16) y un sistema visual por tokens («Tiffany degradé») que cada empresa personaliza con su logo y color.</p></div>
+</div>
+<h2>¿Por qué el pasajero no tiene app?</h2>
+<p>Porque pedir un taxi turismo es algo ocasional: nadie quiere instalar una app para un traslado al aeropuerto. El portal web funciona en cualquier teléfono y WhatsApp hace el resto (avisos, cancelación, calificación). Desde CC-18 el pasajero <b>pide siempre con cuenta</b>: se verifica su teléfono una vez y no hay reservas de invitados, por seguridad.</p>
+<div class="box analogia"><div class="t">Analogía: tokens de diseño</div>Los tokens de color son como las <b>variables</b> de una planilla: si cambias el valor de una celda, todo lo que depende de ella se actualiza. Cambiar el color primario de una empresa recolorea todo el portal sin tocar un componente.</div>
+
+<h1><span class="n">8</span>El modelo de datos explicado</h1>
+<div class="fig"><img src="../generador/fig/modelo_datos.png" style="max-height:120mm"><div class="c">Modelo lógico (23 entidades). Los detalles están en el diccionario de datos del Informe 2.</div></div>
+<p>No hay que saberse las 23 tablas. Basta con entender cinco grupos:</p>
+<table><tr><th style="width:22%">Grupo</th><th style="width:36%">Tablas</th><th>Idea clave</th></tr>
+<tr><td>Inquilino</td><td>EMPRESA, CONFIGURACION_EMPRESA</td><td>Todo cuelga de una empresa (RN-13). Los márgenes y tiempos son parámetros por empresa, no números fijos en el código.</td></tr>
+<tr><td>Personas</td><td>USUARIO, CONDUCTOR, PASAJERO, CUENTA_PASAJERO, CONVENIO</td><td>Un USUARIO con rol; el conductor y el pasajero con cuenta se ligan a él.</td></tr>
+<tr><td>El viaje</td><td>VIAJE, HISTORIAL_ESTADO, ASIGNACION, PAGO_VIAJE, CALIFICACION, MENSAJE_WHATSAPP</td><td>VIAJE es el centro. Cada cambio de estado queda en HISTORIAL_ESTADO: de ahí salen los KPI.</td></tr>
+<tr><td>Flota y turnos</td><td>VEHICULO, CONDUCTOR_VEHICULO, TURNO, CIERRE_CAJA, POSICION_GPS</td><td>TURNO y CIERRE_CAJA nacieron de la EF2: sin ellos no se podía medir la cuadratura.</td></tr>
+<tr><td>Aeropuerto</td><td>VUELO, ALERTA_VUELO, GEOCERCA, FILA_AEROPUERTO</td><td>La geocerca es un polígono; la fila es el orden de llegada a ese polígono.</td></tr></table>
+<h2>Los estados del viaje</h2>
+<p>PENDIENTE_CONFIRMACION → SOLICITADO → ASIGNADO → ACEPTADO → EN_CAMINO → EN_ZONA → PASAJERO_A_BORDO → FINALIZADO, más CANCELADO. Si el conductor rechaza o no responde, ASIGNADO vuelve a SOLICITADO.</p>
+<div class="box analogia"><div class="t">Analogía: máquina de estados</div>Es como el seguimiento de un paquete: «recibido, en bodega, en reparto, entregado». Un paquete no puede pasar de «recibido» a «entregado» sin pasar por reparto, y el sistema rechaza cualquier salto no permitido.</div>
+<div class="box ojo"><div class="t">Ojo</div>HISTORIAL_ESTADO y AUDITORIA son <b>solo inserción</b>: un trigger de la base rechaza modificarlas o borrarlas. Es lo que da confianza a los reportes y a la auditoría.</div>
+
+<h1><span class="n">9</span>Un viaje de punta a punta</h1>
+<p>Si entiendes este recorrido, entiendes el sistema. Ejemplo: una pasajera que llega a Santiago en un vuelo internacional.</p>
+<ol class="flow">
+<li><b>Pide en el portal</b> con su cuenta: «Desde el aeropuerto», número de vuelo, 2 pasajeros y 3 maletas. El backend valida el vuelo contra la API de vuelos y crea el VIAJE en SOLICITADO.</li>
+<li><b>Celery programa el monitoreo</b> del vuelo: consultas desde 3 h antes, cada 30 min, y cada 10 min en la última hora.</li>
+<li><b>El vuelo se atrasa 50 min.</b> El monitoreo detecta el cambio, calcula la nueva recogida (hora estimada + 35 min) y deja una propuesta. El panel la muestra como alerta; el despachador la confirma (RN-02).</li>
+<li><b>Asignación.</b> El despachador abre la reserva y ve la sugerencia: el primero de la fila virtual del aeropuerto con un auto de capacidad suficiente. Confirma con un clic.</li>
+<li><b>Aviso al conductor.</b> El backend guarda la ASIGNACION y publica un evento en Redis; Channels lo entrega por WebSocket a la app. Tiene 60 s para aceptar.</li>
+<li><b>En camino y en zona.</b> La app envía su posición; al entrar a 150 m del punto de recogida el sistema marca EN_ZONA solo, y Celery envía el WhatsApp «tu vehículo te espera».</li>
+<li><b>A bordo y finalizado.</b> El conductor marca a bordo y, al llegar, registra método y monto. Sin eso no puede finalizar (RN-10).</li>
+<li><b>Después.</b> La pasajera recibe la encuesta por WhatsApp; el pago entra al turno del conductor y, al cerrar el turno, el administrador cuadra la caja (CIERRE_CAJA).</li>
+</ol>
+<div class="fig"><img src="../generador/fig/bpmn_p2.png" style="max-height:95mm"><div class="c">Proceso P2, despacho y asignación (BPMN 2.0).</div></div>
+
+<h1><span class="n">10</span>Tiempo real: WebSocket, Redis y la geocerca</h1>
+<h2>REST frente a WebSocket</h2>
+<p><b>REST</b> es pregunta y respuesta: el cliente pide, el servidor contesta y la conexión se cierra. Sirve para crear una reserva o consultar un reporte. <b>WebSocket</b> es una conexión que queda abierta en ambos sentidos: el servidor puede avisar sin que nadie pregunte. Sirve para mover los autos en el mapa y avisar una asignación.</p>
+<div class="box analogia"><div class="t">Analogía</div>REST es <b>mandar un correo</b> y esperar respuesta. WebSocket es <b>una llamada telefónica</b> que queda abierta: cualquiera de los dos habla cuando tiene algo que decir.</div>
+<h2>El camino de una posición GPS</h2>
+<ol class="flow">
+<li>La app envía la posición cada 30 s (solo en turno), con su precisión.</li>
+<li>El backend descarta lecturas imprecisas (más de 50 m para la geocerca), guarda la última en Redis y la persiste en POSICION_GPS.</li>
+<li>Publica el cambio en un grupo de Channels; todos los paneles de esa empresa lo reciben y mueven el auto en el mapa.</li>
+<li>PostGIS revisa si la posición cae dentro de una geocerca (zona del aeropuerto o radio de 150 m del origen) para la fila o para EN_ZONA.</li>
+</ol>
+<div class="box defensa"><div class="t">Cómo defenderlo</div>«Usamos Redis para no escribir en la base cientos de veces por minuto: la última posición vive en memoria y en la base queda el historial, que se borra a los 30 días.»</div>
+
+<h1><span class="n">11</span>Tareas en segundo plano: Celery</h1>
+<p>Hay trabajo que no puede hacer esperar al usuario o que debe ocurrir solo, a cierta hora. Para eso está Celery: un <b>worker</b> que ejecuta tareas en cola y un <b>beat</b> que las programa como un despertador.</p>
+<table><tr><th>Tarea</th><th>Por qué en segundo plano</th></tr>
+<tr><td>Enviar WhatsApp (verificación, avisos, encuesta)</td><td>Twilio puede tardar o fallar; se reintenta con espera exponencial</td></tr>
+<tr><td>Consultar vuelos</td><td>Programada según la hora del vuelo; compartida entre reservas del mismo vuelo</td></tr>
+<tr><td>Expirar solicitudes y asignaciones sin respuesta</td><td>Debe ocurrir aunque nadie esté mirando</td></tr>
+<tr><td>Purgar datos (GPS a 30 días, mensajes a 12 meses)</td><td>Cumplir la retención (RN-15) de forma automática</td></tr></table>
+<div class="box ojo"><div class="t">Ojo: idempotencia</div>Twilio puede enviar dos veces el mismo aviso de entrega (webhook). El sistema guarda el identificador del mensaje y, si llega repetido, no lo procesa de nuevo. Eso es <b>idempotencia</b>: hacer algo dos veces tiene el mismo efecto que hacerlo una.</div>
+
+<h1><span class="n">12</span>Seguridad y privacidad</h1>
+<h2>Autenticación con JWT</h2>
+<p>Al iniciar sesión el usuario recibe dos tokens: uno de <b>acceso</b> (15 min) que acompaña cada petición, y uno de <b>renovación</b> (12 h) que sirve para pedir otro de acceso. En el panel el de renovación va en una cookie <code>httpOnly</code> (JavaScript no la puede leer, así un script malicioso no la roba); en la app, en el almacén cifrado de Android.</p>
+<div class="box analogia"><div class="t">Analogía</div>El token de acceso es la <b>pulsera de un evento</b>: te deja entrar a todas partes, pero dura poco. El de renovación es tu <b>entrada original</b>, guardada en un lugar seguro, con la que pides una pulsera nueva.</div>
+<h2>Otras capas</h2>
+<ul>
+<li>Contraseñas con PBKDF2-SHA256 y sal; bloqueo tras 5 intentos.</li>
+<li>Permisos por rol y por empresa en cada vista (RN-13).</li>
+<li>HTTPS con TLS 1.2+ y HSTS; disco y respaldos cifrados; secretos en SSM, nunca en Git.</li>
+<li>Bandit (Python), ESLint, auditoría de dependencias y OWASP ZAP.</li>
+</ul>
+<h2>Privacidad del GPS de los conductores</h2>
+<p>Es el tema que el profesor pidió profundizar. Las seis ideas: <b>finalidad</b> (solo despacho, seguridad, fila e indicadores), <b>proporcionalidad</b> (solo en turno), <b>consentimiento</b> (aviso aceptado y registrado), <b>Reglamento Interno</b> (DT Ord. 148 si es dependiente), <b>acceso restringido</b> (admin y despachador de su empresa) y <b>retención</b> de 30 días con borrado automático.</p>
+<div class="box defensa"><div class="t">Cómo defenderlo</div>«El GPS es una herramienta de operación, no de vigilancia: se apaga al terminar el turno, el conductor sabe qué se registra y para qué, y los datos se borran a los 30 días. Cumple la Ley 21.719, que rige desde el 1 de diciembre de 2026, y el dictamen 148 de la Dirección del Trabajo.»</div>
+<div class="box ojo"><div class="t">Ojo: Ley 21.553 (Ley Uber)</div>Regula a las empresas que <b>intermedian</b> entre pasajeros y conductores independientes. FlotaÁgil es una herramienta interna de una empresa con flota propia, así que no es una EAT. Además, al corte de los informes su reglamento no se había publicado.</div>
+
+<h1><span class="n">13</span>Infraestructura, respaldos y continuidad</h1>
+<div class="fig"><img src="../generador/fig/infraestructura.png" style="max-height:105mm"><div class="c">Infraestructura en AWS us-east-1.</div></div>
+<p>Una instancia EC2 t4g.small (2 vCPU ARM, 2 GiB) corre todos los contenedores: Nginx, Gunicorn (API), Daphne (WebSocket), Celery, PostgreSQL con PostGIS y Redis. El disco es EBS gp3 cifrado y los respaldos van a S3.</p>
+<h2>Las dos siglas que siempre preguntan</h2>
+<div class="grid2">
+<div class="card"><h3>RTO = 2 horas</h3><p><b>Cuánto tiempo</b> podemos estar caídos como máximo. Es el tiempo de recrear la instancia y restaurar el respaldo; mientras, la central opera en modo manual.</p></div>
+<div class="card"><h3>RPO = 6 horas</h3><p><b>Cuántos datos</b> podemos perder como máximo. Hay snapshot del disco cada 6 h y respaldo lógico (pg_dump) cada 6 h, alternados: si uno falla, el otro cumple.</p></div>
+</div>
+<div class="box analogia"><div class="t">Analogía</div>El RPO es <b>cada cuánto guardas la partida</b> de un videojuego; el RTO, <b>cuánto tardas en volver a jugar</b> después de que se cortó la luz.</div>
+<p><b>Disponibilidad 99,0 %</b>: en un mes de 720 h permite 7 h 12 min de caída no programada. No prometemos 99,5 % porque una sola instancia no lo sostiene. <b>Retorno al servicio</b>: lo anotado en papel durante una caída se ingresa después con el canal CONTINGENCIA y su folio, sin avisos al pasajero (HU-32).</p>
+
+<h1><span class="n">14</span>Calidad: pruebas e integración continua</h1>
+<table><tr><th>Tipo</th><th>Herramienta</th><th>Qué asegura</th></tr>
+<tr><td>Unitarias</td><td>pytest, Vitest</td><td>Que cada regla funcione sola</td></tr>
+<tr><td>Integración</td><td>pytest-django con PostgreSQL real</td><td>Que API, base y Redis funcionen juntos</td></tr>
+<tr><td>Concurrencia</td><td>Hilos con barrera (CP-14)</td><td>Que dos asignaciones simultáneas no rompan RN-03</td></tr>
+<tr><td>Extremo a extremo</td><td>Playwright</td><td>Que los flujos funcionen en el navegador, también a 390 px</td></tr>
+<tr><td>Carga</td><td>k6 en staging</td><td>p95 &lt; 2 s con 50 usuarios y GPS &lt; 5 s</td></tr>
+<tr><td>Seguridad</td><td>Bandit, ZAP, Dependabot</td><td>Que no haya vulnerabilidades conocidas</td></tr>
+<tr><td>Aceptación</td><td>UAT con el cliente</td><td>Que el sistema resuelva su problema</td></tr></table>
+<p>Al corte hay <b>2.075 pruebas automáticas</b> (1.221 de backend, 765 de web y 89 de la app). La cobertura mínima exigida por la DoD es 70 % en los módulos de negocio.</p>
+<h2>Integración continua</h2>
+<p>Cada pull request dispara el workflow <code>ci</code> en GitHub Actions: instala dependencias, corre linters, Bandit y todas las pruebas. La rama <code>main</code> está protegida: no se puede subir directo, solo por PR con el check en verde, y la fusión es <i>squash</i> (un commit por historia, historial lineal).</p>
+<div class="box ojo"><div class="t">Ojo: pendientes reales</div>Todavía no está demostrado con WhatsApp real (plantillas aprobadas por Meta), con el GPS de un teléfono en la calle ni bajo carga en AWS. Las historias están construidas y «en revisión», a la espera de la fusión. Decirlo con claridad da más credibilidad que esconderlo.</div>
+
+<h1><span class="n">15</span>Forma de trabajo: Scrum y Git</h1>
+<table><tr><th>Rol</th><th>Quién</th><th>Qué hace</th></tr>
+<tr><td>Product Owner</td><td>Juan Pérez</td><td>Prioriza, define criterios de aceptación, aprueba incrementos y cambios</td></tr>
+<tr><td>Scrum Master</td><td>Carlos Ortiz</td><td>Facilita eventos y remueve impedimentos</td></tr>
+<tr><td>Developers</td><td>Renato (web y app) · Carlos (backend e infra)</td><td>Construyen y prueban</td></tr></table>
+<p><b>Por qué no hay matriz RACI:</b> el profesor marcó un conflicto de interés (la misma persona era responsable y aprobaba). En Scrum la separación la dan los roles: quien construye no aprueba.</p>
+<h2>El ciclo de una historia</h2>
+<ol class="flow">
+<li>La historia cumple la <b>DoR</b> (redactada, con criterios, estimada, sin bloqueos).</li>
+<li>Se crea una rama: <code>feat/HU-03-reservas</code>, <code>fix/…</code>, <code>docs/…</code>.</li>
+<li>Commits con <b>Conventional Commits</b> en español: <code>feat(backend): crear modelo VIAJE</code>.</li>
+<li>Pull request con <code>Closes #12</code>, CI en verde y lista de chequeo.</li>
+<li>Fusión squash a main; se cumple la <b>DoD</b>; la historia pasa a «Terminada».</li>
+<li>Al cerrar el sprint se etiqueta una versión SemVer (v0.1 … v1.0.0).</li>
+</ol>
+<div class="box analogia"><div class="t">Analogía: DoR y DoD</div>La DoR es la <b>lista de ingredientes</b> antes de cocinar (no se empieza sin todo); la DoD es el <b>control de calidad</b> antes de servir (no sale de la cocina si no cumple).</div>
+<p><b>Cambios de alcance:</b> todo cambio entra como solicitud (CC-xx) con análisis de impacto y aprobación del PO. Los desvíos del diseño durante la construcción se registran como decisiones (DC-xx). Hay 18 CC y 47 DC.</p>
+
+<h1><span class="n">16</span>Glosario</h1>
+<table>
+<tr><th style="width:24%">Término</th><th>Significado en simple</th></tr>
+<tr><td>SaaS</td><td>Software que se usa por internet pagando un servicio, sin instalar servidores propios</td></tr>
+<tr><td>API REST</td><td>Conjunto de direcciones (como <code>/api/viajes/</code>) por las que los clientes piden o envían datos en JSON</td></tr>
+<tr><td>JSON</td><td>Formato de texto para intercambiar datos entre programas</td></tr>
+<tr><td>WebSocket</td><td>Conexión que queda abierta para que el servidor avise en tiempo real</td></tr>
+<tr><td>ORM</td><td>Traductor entre clases de Python y tablas SQL</td></tr>
+<tr><td>Migración</td><td>Archivo que cambia el esquema de la base de forma controlada y reversible</td></tr>
+<tr><td>PostGIS / geocerca</td><td>Extensión geográfica de PostgreSQL / polígono o radio que dispara una acción al entrar</td></tr>
+<tr><td>JWT</td><td>Token firmado que prueba quién eres sin consultar la sesión en cada petición</td></tr>
+<tr><td>Multiempresa (multi-tenant)</td><td>Varias empresas en el mismo sistema, cada una viendo solo lo suyo</td></tr>
+<tr><td>Adaptador</td><td>Pieza que traduce un proveedor externo a una interfaz propia, para poder cambiarlo</td></tr>
+<tr><td>Idempotencia</td><td>Repetir una operación no cambia el resultado</td></tr>
+<tr><td>Contenedor (Docker)</td><td>Paquete con un programa y todo lo que necesita para correr igual en cualquier lugar</td></tr>
+<tr><td>CI</td><td>Integración continua: pruebas automáticas en cada cambio</td></tr>
+<tr><td>Squash</td><td>Unir todos los commits de una rama en uno al fusionar</td></tr>
+<tr><td>SemVer</td><td>Versiones mayor.menor.parche (1.0.0)</td></tr>
+<tr><td>p95</td><td>El 95 % de las respuestas tarda menos que ese valor</td></tr>
+<tr><td>RTO / RPO</td><td>Tiempo máximo caído / datos máximos perdidos</td></tr>
+<tr><td>KPI / SLA</td><td>Indicador del negocio / compromiso de servicio con el cliente</td></tr>
+<tr><td>DoR / DoD</td><td>Condiciones para empezar / para dar por terminada una historia</td></tr>
+<tr><td>HU / SP</td><td>Historia de usuario / story points (tamaño relativo)</td></tr>
+<tr><td>CC / DC</td><td>Solicitud de cambio de alcance / decisión de cambio durante la construcción</td></tr>
+<tr><td>BPMN / UML</td><td>Notaciones estándar para procesos / para diseño de software</td></tr>
+</table>
+
+<h1><span class="n">17</span>Preguntas de repaso</h1>
+<p class="small">Intenta responder antes de leer la respuesta.</p>
+<div class="q"><b>1. ¿Por qué FlotaÁgil es más que digitalizar la central?</b><br>Porque apoya decisiones con datos: anticipa atrasos de vuelos, recomienda conductores, alerta desviaciones y mide con KPI. Digitalizar solo registra.</div>
+<div class="q"><b>2. ¿Por qué Django y no FastAPI?</b><br>Django trae usuarios, permisos, ORM, migraciones, admin, GeoDjango y Channels; con FastAPI habría que armar todo eso y somos dos.</div>
+<div class="q"><b>3. ¿Para qué sirve Redis si ya tenemos PostgreSQL?</b><br>Como memoria rápida para la última posición, como canal entre procesos de Channels y como cola de Celery. No guarda nada que no esté también en PostgreSQL.</div>
+<div class="q"><b>4. ¿Qué pasa si dos despachadores asignan al mismo conductor a la vez?</b><br>Un bloqueo de fila en una transacción hace que solo uno gane; el otro recibe 409. Lo prueba CP-14 con peticiones simultáneas.</div>
+<div class="q"><b>5. ¿Por qué el pasajero no tiene app?</b><br>Pedir un taxi turismo es ocasional; un portal web y WhatsApp evitan instalar algo.</div>
+<div class="q"><b>6. ¿Por qué Capacitor y no una PWA?</b><br>La PWA deja de enviar el GPS al minimizarse; Capacitor permite el GPS en segundo plano y reutiliza el código React.</div>
+<div class="q"><b>7. ¿Cómo se protege la privacidad del conductor?</b><br>Solo en turno, con consentimiento, finalidad declarada, acceso por rol, Reglamento Interno y borrado a 30 días.</div>
+<div class="q"><b>8. ¿Qué es el RPO y cómo se cumple?</b><br>La pérdida máxima de datos: 6 h. Se cumple con snapshots y pg_dump cada 6 h, alternados.</div>
+<div class="q"><b>9. ¿Por qué 99,0 % y no 99,5 %?</b><br>Una sola instancia no sostiene 99,5 %; para más haría falta alta disponibilidad, fuera del alcance del MVP.</div>
+<div class="q"><b>10. ¿Por qué un monorepo?</b><br>Un cambio que cruza backend y web va en un solo PR y la CI prueba todo junto; con dos personas es más simple.</div>
+<div class="q"><b>11. ¿Qué es un adaptador y dónde lo usan?</b><br>Una capa que aísla a un proveedor: WhatsApp (Twilio o Meta), vuelos (AeroAPI o AeroDataBox), mapas y correo.</div>
+<div class="q"><b>12. ¿Por qué se eliminó la matriz RACI?</b><br>Mostraba conflicto de interés (mismo responsable y aprobador). En Scrum los roles separan quién construye y quién aprueba.</div>
+<div class="q"><b>13. ¿Para qué se agregaron TURNO y CIERRE_CAJA?</b><br>Sin ellos no se podía calcular la cuadratura ni los indicadores por turno (observación de la EF2).</div>
+<div class="q"><b>14. ¿Qué no está demostrado todavía?</b><br>WhatsApp con plantillas aprobadas por Meta, GPS en teléfono real en la calle, carga en AWS y la fusión de los PR.</div>
+<div class="q"><b>15. ¿FlotaÁgil está regulado por la Ley 21.553?</b><br>No: esa ley regula a las plataformas que intermedian con conductores independientes; FlotaÁgil es una herramienta interna de una empresa con flota. Su reglamento tampoco estaba publicado.</div>
+
+<h1><span class="n">18</span>Guion de un minuto para la presentación</h1>
+<div class="box defensa" style="font-size:11pt;line-height:1.65">
+<div class="t">Para decir de corrido</div>
+«Las empresas de taxi turismo pierden el 12 % de sus reservas, tardan casi 9 minutos en asignar un viaje y no cuadran la caja, porque trabajan con WhatsApp, Excel y un cuaderno. FlotaÁgil es un SaaS con un panel para la central, un portal para pasajeros y empresas con convenio, y una app para conductores.
+<br><br>Lo que lo diferencia es que no solo registra: sigue el vuelo del pasajero y ajusta la recogida si se atrasa, recomienda al mejor conductor según la fila del aeropuerto, la distancia y la capacidad, alerta cuando algo se desvía y mide el negocio con indicadores. Siempre decide una persona.
+<br><br>Lo construimos con Django y PostGIS, React y Capacitor, sobre AWS, con más de dos mil pruebas automáticas, cuidando la privacidad de los conductores: el GPS solo funciona en turno y se borra a los 30 días.»
+</div>
+<h2>Si preguntan algo que no sabes</h2>
+<p>Responde con lo que sí sabes y ofrece dónde está: «eso está en el capítulo de continuidad del Informe 2». Es mejor que inventar. Y si algo está pendiente, dilo: «está diseñado y lo probamos en la semana 15».</p>
+</body>
+</html>

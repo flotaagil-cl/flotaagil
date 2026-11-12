@@ -1,0 +1,4 @@
+generador/out/
+generador/__pycache__/
+*.pyc
+entregables/

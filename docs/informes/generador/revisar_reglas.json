@@ -1,0 +1,107 @@
+{
+  "_ayuda": "frases: patrones (regex, sin distinguir mayúsculas) que no deben aparecer; permitido_en = textos de capítulo o sección (H1/H2) donde sí se aceptan, por ejemplo el registro de cambios. cifras: patrón con un grupo numérico que se compara con datos.json.",
+  "frases": [
+    {
+      "patron": "\\b(Claude|ChatGPT|Copilot|Codex|Gemini)\\b|inteligencia artificial generativa|asistente de (IA|inteligencia)|modelo de lenguaje",
+      "motivo": "mención de herramientas de IA"
+    },
+    {
+      "patron": "link (de|del) convenio|link y contraseña|link con contraseña|por link|vía link|link protegido|link único|token del link",
+      "motivo": "convenio por link (retirado por CC-16)",
+      "permitido_en": [
+        "Anexo D",
+        "Anexo P",
+        "Continuidad con la etapa anterior",
+        "Retroalimentación",
+        "Modelo de datos"
+      ]
+    },
+    {
+      "patron": "sin crear cuenta|como invitado|continuar como invitado|formulario p[uú]blico",
+      "motivo": "pedido sin cuenta (retirado por CC-18)",
+      "permitido_en": [
+        "Anexo D",
+        "Anexo P",
+        "Continuidad con la etapa anterior",
+        "cambios",
+        "Plan de Mantención"
+      ]
+    },
+    {
+      "patron": "\\b22 entidades|DC-01 a DC-30|\\b30 decisiones",
+      "motivo": "cifra antigua del modelo o de las decisiones"
+    },
+    {
+      "patron": "1\\.746|1\\.066|\\b591 \\(|· 591",
+      "motivo": "conteo de pruebas antiguo",
+      "nivel": "error"
+    },
+    {
+      "patron": "cuatro pull requests|25 historias (están|siguen)|186 SP|25 de 27",
+      "motivo": "plan de fusión o avance anterior a CC-16–18"
+    },
+    {
+      "patron": "se construyen con HU-31|preceden? a HU-31",
+      "motivo": "HU-31 ya está construida"
+    },
+    {
+      "patron": "ghcr\\.io/flotaagil/",
+      "motivo": "organización antigua de GitHub (ahora flotaagil-cl)"
+    },
+    {
+      "patron": "un solo integrante|con un integrante",
+      "motivo": "redacción que expone que el equipo opera con una persona"
+    },
+    {
+      "patron": "AWS ?/ ?GCP|PostgreSQL 15",
+      "motivo": "infraestructura inconsistente",
+      "permitido_en": [
+        "Retroalimentación",
+        "Continuidad con la etapa anterior"
+      ]
+    },
+    {
+      "patron": "vigente desde el 1 de diciembre",
+      "motivo": "la Ley 21.719 entra en vigencia el 1/12/2026 (el informe es de noviembre)"
+    },
+    {
+      "patron": "\\bRACI\\b",
+      "motivo": "la matriz RACI se eliminó",
+      "permitido_en": [
+        "Retroalimentación",
+        "Equipo de trabajo"
+      ]
+    }
+  ],
+  "cifras": [
+    {
+      "clave": "entidades",
+      "patron": "\\b(\\d+) entidades",
+      "motivo": "número de entidades del modelo"
+    },
+    {
+      "clave": "dc_max",
+      "patron": "DC-01 a DC-(\\d+)",
+      "motivo": "última decisión de cambio"
+    },
+    {
+      "clave": "dc_total",
+      "patron": "\\b(\\d+) decisiones de cambio",
+      "motivo": "total de decisiones de cambio"
+    },
+    {
+      "clave": "pruebas_total",
+      "patron": "(\\d[\\d.]*) pruebas automáticas",
+      "motivo": "total de pruebas automáticas",
+      "permitido_en": [
+        "Anexo P"
+      ]
+    }
+  ],
+  "alias_autor": {
+    "International Organization for Standardization": "ISO|International Organization for Standardization",
+    "Project Management Institute": "PMI|Project Management Institute",
+    "Biblioteca del Congreso Nacional de Chile": "Biblioteca del Congreso Nacional de Chile",
+    "Amazon Web Services": "Amazon Web Services|AWS"
+  }
+}
