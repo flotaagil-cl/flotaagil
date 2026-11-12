@@ -2,6 +2,22 @@
 
 Para Carlos. Son 5 PR encadenados hacia `main`, **en este orden**, y después 4 PR cortos de ramas que quedaron fuera de la cadena (ver «Ramas fuera de la cadena»).
 
+## Estado (12-11-2026): PR 1 a 5 integrados en `main`
+
+Al cambiar de repositorio (DC-49), `main` avanzó por *fast-forward* de `5e39c7f` a `0f9e723`, la punta de la cadena, antes de aplicar el ruleset. Los 5 PR no se abrieron: su contenido entró completo y con los mismos hashes. Los pasos de abajo quedan como registro del procedimiento previsto y ya no se aplican a estos PR.
+
+| PR | Rama | Punta (hash) |
+|---|---|---|
+| 1 | `feat/HU-20-whatsapp` | `fa5a561` |
+| 2 | `feat/HU-24-calificacion` | `26adc4b` |
+| 3 | `fix/HU-27-origen-icao` | `224ca2e` |
+| 4 | `docs/plan-fusion-sprint4` | `56b17a1` |
+| 5 | `feat/HU-44-mis-viajes` (etiqueta `historial/HU-44-mis-viajes`) | `0f9e723` |
+
+Ramas intermedias del PR 5, también contenidas en `main`: `fix/decisiones-fase1` `01c790a`, `feat/HU-41-recuperacion` `5d0ce1d`, `feat/HU-42-revisa-pedido` `9e07aa3` y `feat/HU-43-tu-viaje` `bcfc929`.
+
+Después, por PR con *squash* y el check `ci` en verde: #59 `4a53aeb` (pruebas sin depender del `.env` y sin `assert` en `conftest.py`), #60 `e62b38d` (reintentos de apt) y #58 `bb13c8c` (prueba del CI). Las ramas fuera de la cadena siguen pendientes de decisión.
+
 | PR | Sprint | Rama de origen | Rama base | Issues que cierra |
 |---|---|---|---|---|
 | 1 | Sprint 1 | `feat/HU-20-whatsapp` | `main` | #9, #13, #16, #20, #22, #23, #27 |
@@ -29,7 +45,7 @@ Repite 1 a 5 para cada PR, en orden.
 
 | Paso | Quién | Qué |
 |---|---|---|
-| 1 | Carlos, en la web | **Abrir el PR** en https://github.com/flotaagil/flotaagil/compare. En «base» elige `main`; en «compare», la rama de origen. Copia el título y el cuerpo de abajo. |
+| 1 | Carlos, en la web | **Abrir el PR** en https://github.com/Flotaagil-CL/flotaagil/compare. En «base» elige `main`; en «compare», la rama de origen. Copia el título y el cuerpo de abajo. |
 | 2 | Carlos, en la web | **Esperar el CI:** `ci` debe quedar en verde. |
 | 3 | Renato | **Revisar y aprobar.** |
 | 4 | Carlos, en la web | **Fusionar** con «Squash and merge», y avisarle a Renato. |

@@ -8,7 +8,7 @@ La fuente de verdad es el Informe 2 (ES2). Si algo de este archivo choca con el 
 
 | Persona | Rol | Área |
 |---|---|---|
-| Renato González (`renatogonzalez08-source`) | Developer | `web/` (panel y portal), `app/` (app del conductor) |
+| Renato González (`RenatoGonzalez151`) | Developer | `web/` (panel y portal), `app/` (app del conductor) |
 | Carlos Ortiz (`ceal2013`) | Scrum Master, líder, Developer | `backend/`, integraciones, `infra/` |
 | Juan Pérez | Product Owner (integrante simulado) | Prioriza y acepta incrementos |
 
@@ -21,12 +21,14 @@ HU-02 y HU-29 se trabajan en pareja. Mientras Carlos no esté, Renato integra ca
 - **Web:** Node 22 LTS, TypeScript 5, React 19 + Vite 6. Panel (administrador, despachador) y portal (pasajero, convenios).
 - **App del conductor:** React + Capacitor 7 + background-geolocation. Solo Android 10+ (API 29–35).
 - **Pruebas:** pytest + pytest-django + coverage, Vitest, Playwright, k6, Bandit, Ruff, ESLint, OWASP ZAP.
-- **Infra:** Docker Compose, Nginx + Certbot, AWS EC2 t4g.small (ARM64, us-east-1), EBS gp3, S3, DLM, Route 53, CloudWatch, SSM Parameter Store. Imágenes en `ghcr.io/flotaagil/*`.
+- **Infra:** Docker Compose, Nginx + Certbot, AWS EC2 t4g.small (ARM64, us-east-1), EBS gp3, S3, DLM, Route 53, CloudWatch, SSM Parameter Store. Imágenes en `ghcr.io/flotaagil-cl/*`.
 - **Externos:** Twilio WhatsApp Business API, FlightAware AeroAPI / AeroDataBox (detrás de un adaptador), Google Maps JS API, Sentry, UptimeRobot.
 
 Todas las imágenes Docker deben tener variante ARM64.
 
 ## Estructura del repositorio
+
+Repositorio: `Flotaagil-CL/flotaagil` desde el 11-11-2026 (DC-49). El anterior, `flotaagil/flotaagil`, queda solo de lectura.
 
 ```
 backend/   Django (API REST, WebSocket, Celery)        responsable: Carlos

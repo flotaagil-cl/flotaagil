@@ -36,7 +36,7 @@ docker compose exec backend python manage.py crear_empresa \
 
 ## Pendientes de configuración
 
-- [ ] **Cuando Carlos Ortiz se sume al repositorio:** evaluar volver a exigir 1 aprobación en el ruleset «Proteger main» y quitar el bypass temporal (rol de administrador de la organización, modo «solo pull request»). Mientras tanto, Renato integra cada PR con el check `ci` y la lista de chequeo de [`prs/lista-de-chequeo.md`](prs/lista-de-chequeo.md) (DC-47).
+- [ ] **Cuando Carlos Ortiz se sume al repositorio:** evaluar volver a exigir 1 aprobación en el ruleset «Proteger main». Desde DC-49 el ruleset no tiene bypass. Mientras tanto, Renato integra cada PR con el check `ci` y la lista de chequeo de [`prs/lista-de-chequeo.md`](prs/lista-de-chequeo.md) (DC-47).
 - [ ] Descomentar en `.github/CODEOWNERS` las líneas de Carlos para `backend/` e `infra/`.
 - [ ] Activar en `.github/dependabot.yml` las entradas `pip`, `npm` y `docker` cuando existan los manifiestos.
 
