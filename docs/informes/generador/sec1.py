@@ -1,4 +1,5 @@
 from data_backlog import HU, RETIRADAS, NUEVAS
+from datos import PRUEBAS, PRUEBAS_DETALLE, DC_MAX, DC_TOTAL, ENTIDADES
 
 
 def intro(r):
@@ -18,16 +19,21 @@ def intro(r):
         "Android para conductores, sobre un backend Django con PostgreSQL/PostGIS, comunicación en tiempo real por WebSocket y tareas en segundo "
         "plano. Respecto de la formulación original incorpora tres cambios de fondo: la verificación y los avisos al pasajero pasan del SMS a "
         "WhatsApp Business API; se agrega el foco aeropuerto (seguimiento de vuelos, ajuste de la hora de recogida y fila virtual), surgido de una "
-        "entrevista con el cliente; y el contacto con el pasajero se concentra en un chat de WhatsApp atendido desde el panel.")
-    r.P("**Avance a la fecha de corte:** los Sprints 0 a 3 están terminados y el Sprint 4 está en curso. Están construidas y probadas las 25 "
-        "historias del backlog validado (**178 SP**), las dos originadas en la EF2 (HU-31 y HU-32, 8 SP) y las doce que nacen de los cambios "
-        "pedidos por el cliente en la semana 14 (HU-33 a HU-44, CC-16 a CC-18): inicio de sesión único, convenios con cuenta propia, "
-        "administración de usuarios del panel y portal rediseñado en el que el pasajero pide siempre con cuenta. Todas están «En revisión», a "
-        "la espera de su fusión por pull request. HU-45 a HU-49 quedan para la versión 1.1. El sistema cubre el ciclo completo: reserva desde "
-        "el panel, el portal o la cuenta de un convenio, verificación por WhatsApp, validación y monitoreo del vuelo, despacho asistido con "
-        "fila virtual del aeropuerto, aceptación en 60 s, ejecución con geocerca y pago, avisos y calificación, cierre forzado, turnos y cierre "
-        "de caja, reportes, auditoría, indicadores y chat. Suma **2.075 pruebas automáticas** (1.221 de backend, 765 de web y 89 de la app). "
-        "Quedan la fusión, las pruebas con servicios y teléfono reales, el despliegue en AWS y la UAT.")
+        "entrevista con el cliente; y el contacto con el pasajero se concentra en un chat de WhatsApp atendido desde el panel. A ellos se suma un "
+        "cuarto, pedido por el cliente en la semana 14: el portal funciona con cuenta, de modo que el pasajero y la empresa con convenio piden "
+        "con su propia cuenta, sin contraseñas compartidas y con el teléfono verificado una sola vez.")
+    r.P("**Avance a la fecha de corte:** los Sprints 0 a 3 están terminados y el Sprint 4 está en curso. Están construidas, probadas e "
+        "integradas en la rama principal las 25 historias del backlog validado (**178 SP**), las dos originadas en la EF2 (HU-31 y HU-32, 8 SP) "
+        "y las trece que nacen de los cambios pedidos por el cliente en la semana 14 (HU-33 a HU-45, 72 SP, CC-16 a CC-18): inicio de sesión "
+        "único, convenios con cuenta propia, administración de usuarios del panel, portal rediseñado en el que el pasajero pide siempre con "
+        "cuenta, y perfil con eliminación de la cuenta. HU-46 a HU-49 quedan para la versión 1.1. El sistema cubre el ciclo completo: reserva "
+        "desde el panel, el portal o la cuenta de un convenio, verificación del teléfono al activar la cuenta, validación y monitoreo del vuelo, "
+        "despacho asistido con fila virtual del aeropuerto, aceptación en 60 s, ejecución con geocerca y pago, avisos y calificación, cierre "
+        "forzado, turnos y cierre de caja, reportes, auditoría, indicadores y chat. "
+        f"Suma **{PRUEBAS} pruebas automáticas** ({PRUEBAS_DETALLE}). "
+        "Quedan las pruebas con servicios y teléfono reales, el despliegue en AWS y la UAT. El cliente aprobó además, para después de esta "
+        "entrega, un chat interno que reemplaza a WhatsApp y a Twilio (CC-19) y la unificación visual y la apariencia por empresa (CC-20 y "
+        "CC-21); se presentan como diseño, no como construido.")
     r.P("**Alcance vigente:** reserva (panel, portal, convenio y WhatsApp), verificación del pasajero, despacho asistido con confirmación humana, "
         "fila virtual del aeropuerto, monitoreo de vuelos, ejecución del viaje con estados, registro del cobro, cierre de caja por turno, reportes, "
         "auditoría y chat. **Exclusiones:** pasarelas de pago, definición de tarifas, facturación electrónica, aplicación nativa para pasajeros, "
@@ -65,7 +71,10 @@ def intro(r):
         ("CC-15", "Canal CONTINGENCIA y procedimiento de carga diferida de los viajes anotados durante una caída", "Observación de la EF2: faltaba el retorno al servicio tras la contingencia manual", "HU-32, RN-20, VIAJE, 8.2, PO-06, CP-37", "Aprobado e implementado (HU-32)"),
         ("CC-16", "Inicio de sesión web único; convenios con cuenta propia y aprobación del administrador; cuenta del pasajero", "Pedido del cliente: un solo acceso y sin contraseñas compartidas por link", "HU-33, HU-34, HU-35; CONVENIO, CUENTA_PASAJERO, USUARIO", "Aprobado e implementado"),
         ("CC-17", "Administración de usuarios del panel por el administrador", "Pedido del cliente: no depender del equipo para crear despachadores", "HU-36, USUARIO, AUDITORIA", "Aprobado e implementado"),
-        ("CC-18", "Cuenta obligatoria para pedir y rediseño del portal", "Seguridad: sin reservas de invitados; teléfono verificado una vez al crear la cuenta", "HU-37 a HU-49, RN-06, VIAJE, CUENTA_PASAJERO", "HU-37 a 44 implementadas; HU-45 a 49 en la versión 1.1"),
+        ("CC-18", "Cuenta obligatoria para pedir y rediseño del portal", "Seguridad: sin reservas de invitados; teléfono verificado una vez al crear la cuenta", "HU-37 a HU-49, RN-06, VIAJE, CUENTA_PASAJERO", "HU-37 a 45 implementadas; HU-46 a 49 en la versión 1.1"),
+        ("CC-19", "Chat interno por WebSocket entre pasajero, central y conductor; verificación por correo; avisos por Web Push y correo; se retira Twilio", "Eliminar el costo y la dependencia de WhatsApp Business ahora que todos los usuarios tienen cuenta", "HU-20, 21, 24, 30; RN-06, RN-09; CONVERSACION, MENSAJE_CHAT", "Aprobado para la versión 1.1 (diseño)"),
+        ("CC-20", "Unificación visual del panel y la app con el sistema del portal", "Consistencia entre los tres clientes", "Panel y app", "Aprobado para la versión 1.1"),
+        ("CC-21", "Apariencia por empresa (logo, nombre y colores)", "Cada empresa cliente muestra su marca", "Portal (tokens de HU-37)", "Aprobado para la versión 1.1"),
     ]
     r.table("cambios", "Cambios respecto de la primera entrega", ["Código", "Cambio", "Motivo", "Elementos afectados", "Estado"], rows,
             [1.2, 4.8, 4.8, 3.4, 2.4], font=8)
@@ -79,7 +88,7 @@ def intro(r):
         ("Factibilidad económica", "Incorporar el modelo de precios del equipo y el costo del soporte", "Modelo vigente: licencia perpetua de uso y plan de servicio mensual por tamaño de flota, con soporte Plus opcional (CC-13)", "3.1, Anexo J"),
         ("Factibilidad económica", "Calcular el punto de equilibrio de FlotaÁgil con sus costos (AWS, Twilio, AeroAPI)", "Costos separados en fijos y variables; margen de contribución por plan; equilibrio operativo y recuperación de la inversión", "3.1, Anexo J"),
         ("Modelo de datos", "El modelo no soporta la cuadratura (P3.2) ni los indicadores por turno: HISTORIAL_ESTADO solo registra viajes y CONDUCTOR.estado se sobrescribe", "Nuevas entidades TURNO (conductor, vehículo, inicio y término) y CIERRE_CAJA (turno, monto rendido, diferencia, responsable y fecha); historia HU-31 (CC-12)", "4.1, 4.4, Anexo F"),
-        ("Modelo de datos", "Actualizar el diagrama lógico y el diccionario", "Figura {F:er} regenerada con 22 entidades; diccionario con TURNO, CIERRE_CAJA y ALERTA_VUELO", "4.4, Anexo F"),
+        ("Modelo de datos", "Actualizar el diagrama lógico y el diccionario", f"Figura {{F:er}} regenerada con {ENTIDADES} entidades; diccionario con TURNO, CIERRE_CAJA y ALERTA_VUELO", "4.4, Anexo F"),
         ("KPI", "KPI-08: numerador y denominador de poblaciones distintas", "KPI-08 mide solo reservas confirmadas; las solicitudes que expiran sin confirmar pasan a un indicador auxiliar con su propia población", "5.1"),
         ("KPI", "KPI-07: agrupar la suma de rechazos y expiraciones antes de dividir", "Fórmula con la suma entre paréntesis y denominador definido (asignaciones resueltas)", "5.1"),
         ("KPI", "KPI-05: definir qué ocurre si el monto rendido es cero", "Fórmula por tramos con los casos límite definidos; denominador en el monto registrado", "5.1"),
@@ -99,25 +108,29 @@ def intro(r):
         "qué; los datos corregidos reemplazan a los anteriores en todo el documento.")
     r.table("correc", "Correcciones respecto de la versión anterior", ["Tema", "Antes", "Ahora", "Respaldo"], [
         ("Estructura", "Capítulos de formulación y de desarrollo por sprint dentro del cuerpo del informe", "El cuerpo sigue la plantilla de la ES2; la formulación está en el Informe 1 corregido y el desarrollo por sprint en el Anexo P", "Anexos O y P"),
-        ("Avance real", "Sprint 0 y prueba de concepto H-3 detallados; Sprints 1 y 2 sin documentar (EF2)", "Sprints 0 a 3 terminados y Sprint 4 en curso (178 SP construidos) con evidencias, pruebas y defectos", "Capítulo VII"),
+        ("Avance real", "Sprint 0 y prueba de concepto H-3 detallados; Sprints 1 y 2 sin documentar (EF2)", "Sprints 0 a 3 terminados y Sprint 4 en curso, con 258 SP construidos e integrados, evidencias, pruebas y defectos", "Capítulo VII"),
+        ("Convenios y pedido del pasajero", "Convenio con link y contraseña compartida; pedido del pasajero sin cuenta", "Convenio con cuenta propia aprobada por el administrador (CC-16) y pedido solo con cuenta (CC-18); BPMN P1 y P1.1, casos de uso CU-06, CU-12 y CU-13 y reglas RN-06 a RN-09 actualizados", "4.1, 4.2, Anexos E y O"),
+        ("Privacidad del pasajero", "La cuenta del pasajero no se podía eliminar y las posiciones GPS viejas no se borraban", "Eliminación de la cuenta con anonimización (HU-45, DC-50) y purga diaria de las posiciones de más de 30 días (DC-48)", "Anexos D y P"),
+        ("Repositorio", "Organización de GitHub con la cuenta de un integrante restringida", "Repositorio en la organización Flotaagil-CL con su historial, issues y tablero; integración continua en verde (DC-49)", "Anexo P"),
         ("Duración de la sesión (JWT)", "Acceso de 30 min y refresco de 8 h (conductores 12 h)", "Acceso de 15 min, refresco de 12 h y tope de sesión de 12 h; refresco del panel en cookie httpOnly y de la app en el almacén cifrado de Android", "4.5, 4.7"),
         ("Largo de los estados (Anexo F)", "VARCHAR(20)", "VARCHAR(22): PENDIENTE_CONFIRMACION tiene 22 caracteres (DC-09)", "Anexos D y F"),
-        ("Diccionario de datos", "Modelo del diseño", "Incorpora las 47 decisiones de cambio DC-01 a DC-47 de la construcción y las entidades de CC-12 y CC-18", "Anexos D y F"),
-        ("Mensajes fuera de 24 h", "No se explicitaba", "Los avisos que inicia la empresa fuera de la ventana de 24 h requieren plantillas aprobadas por Meta (riesgo R-12, pendiente PR-11)", "3.1, 7.5"),
+        ("Diccionario de datos", "Modelo del diseño", f"Incorpora las {DC_TOTAL} decisiones de cambio DC-01 a DC-{DC_MAX} de la construcción y las entidades de CC-12 y CC-18", "Anexos D y F"),
+        ("Mensajes fuera de 24 h", "No se explicitaba", "Los avisos que inicia la empresa fuera de la ventana de 24 h requieren plantillas aprobadas por Meta (riesgo R-12, pendiente PR-11); CC-19 elimina esta dependencia en la versión 1.1", "3.1, 7.5"),
         ("Tareas en segundo plano", "Diseño con Celery", "Celery implementado: WhatsApp, vuelos y expiraciones con reintento exponencial; reemplaza al servicio temporal de expiración", "7.4"),
         ("GPS con la app cerrada (CC-11)", "Propuesto", "Aprobado: no se exige registrar con la app cerrada; se mitiga en el panel y con la guía del teléfono", "Anexo M"),
         ("Vuelos de salida", "Implícitos en HU-26", "Pospuestos fuera del MVP (PR-08): VUELO registra solo llegadas (DC-06)", "Anexo D"),
         ("Modelo comercial", "Suscripción mensual (Plan Básico de $189.000)", "Licencia perpetua de uso más plan de servicio mensual en tres tramos, con soporte Plus opcional (CC-13)", "3.1"),
+        ("Evaluación económica", "Beneficio mensual y punto de equilibrio, sin evaluación en el tiempo", "Flujo de caja a tres años con VAN, TIR y PRI para el cliente y para FlotaÁgil, sensibilidad a 8 %, 12 % y 15 % y escenario con CC-19 (sin Twilio)", "2.1, Anexo J"),
         ("Chat del panel", "Mensaje entrante visible en menos de 3 s", "Visible en 15 s o menos: el panel revisa los mensajes por tiempo (decisión de HU-30)", "5.2, Anexo G"),
     ], [3.0, 3.9, 6.6, 2.1], font=7.8)
 
 
 def requerimientos(r):
     r.H3("Requerimientos y reglas de negocio vigentes")
-    r.P("Los requerimientos funcionales se expresan como historias de usuario (HU). La {T:hu} resume las 25 HU vigentes por épica; el Anexo A "
+    r.P("Los requerimientos funcionales se expresan como historias de usuario (HU). La {T:hu} resume las HU vigentes por épica; el Anexo A "
         "contiene cada historia con sus criterios de aceptación. Su origen es el levantamiento de la sección 2.3 (entrevistas EV-01 y EV-02, grupo focal "
-        "EV-03, observación EV-04 y acta EV-07), salvo HU-26 a HU-30, que nacen de los cambios CC-02 y CC-03, y HU-31 y HU-32, que nacen de las "
-        "observaciones de la EF2 (CC-12 y CC-15) y se incorporan al Sprint 4.")
+        "EV-03, observación EV-04 y acta EV-07), salvo HU-26 a HU-30, que nacen de los cambios CC-02 y CC-03; HU-31 y HU-32, que nacen de las "
+        "observaciones de la EF2 (CC-12 y CC-15); y HU-33 a HU-49, que nacen de los cambios CC-16 a CC-18 pedidos por el cliente en la semana 14.")
     by_epic = {}
     for h in HU:
         by_epic.setdefault(h[1], []).append(h)
@@ -127,9 +140,16 @@ def requerimientos(r):
                      ", ".join(sorted({h[4] for h in hs}, key=["Alta", "Media", "Baja"].index))))
     rows.append(("Total de los cuatro sprints", f"{len(HU)} historias; {len(RETIRADAS)} retiradas (HU-07, 08, 09, 22, 23)", str(sum(h[5] for h in HU)), "—"))
     rows.append(("Incorporadas al Sprint 4 tras la EF2", "HU-31 (cierre de caja por turno) y HU-32 (reserva de contingencia)", str(sum(h[5] for h in NUEVAS)), "Alta, Media"))
+    from data_hu_cc import HU_CC
+    s4 = [x for x in HU_CC if "Sprint 4" in x[7]]
+    v11 = [x for x in HU_CC if "1.1" in x[7] and "Sprint 4" not in x[7]]
+    rows.append(("Incorporadas al Sprint 4 por CC-16 a CC-18", f"{s4[0][0]} a {s4[-1][0]}: sesión única, convenios con cuenta, usuarios del panel, portal con cuenta y perfil", str(sum(int(x[4]) for x in s4)), "—"))
+    rows.append(("Planificadas para la versión 1.1 (CC-18)", f"{v11[0][0]} a {v11[-1][0]}: registro del convenio, pedir para el equipo, personas frecuentes y estados del sistema", str(sum(int(x[4]) for x in v11)), "—"))
     r.table("hu", "Historias de usuario vigentes por épica", ["Épica", "Historias", "SP", "Prioridades"], rows, [3.2, 9.0, 1.4, 3.0], font=8.5)
 
-    r.P("Siguiendo a Sommerville (2016), cada requerimiento no funcional se expresa con una condición verificable. Se actualizan y se asocian a la característica de calidad de ISO/IEC 25010:2023 que protegen ({T:rnf}).")
+    r.P("Siguiendo a Sommerville (2016), cada requerimiento no funcional se expresa con una condición verificable. Se actualizan y se asocian a la característica de calidad de ISO/IEC 25010:2023 que protegen ({T:rnf}). "
+        "En esta tabla y en la de reglas de negocio, la columna «Estado» compara cada requerimiento con la formulación entregada en la primera "
+        "evaluación formativa: «Vigente» no cambió, «Modificado» cambió su condición y «Nuevo» no existía.")
     rnf = [
         ("RNF-01", "Disponibilidad mensual ≥ 99,0 % en régimen 24/7, sin contar el mantenimiento programado", "Fiabilidad · disponibilidad", "Monitoreo UptimeRobot cada 5 min; informe mensual", "Modificado"),
         ("RNF-02", "Latencia de posición GPS p95 < 5 s entre emisión y despliegue en el mapa", "Eficiencia · comportamiento temporal", "CP-12 con 50 conductores simulados", "Vigente"),
@@ -148,24 +168,24 @@ def requerimientos(r):
     r.table("rnf", "Requerimientos no funcionales vigentes", ["ID", "Requerimiento", "Característica ISO/IEC 25010", "Verificación", "Estado"], rnf,
             [1.4, 6.4, 3.4, 3.6, 1.8], font=8)
 
-    r.P("Las reglas de negocio condicionan el diseño con independencia de la interfaz ({T:rn}). RN-01 a RN-05, RN-08 y RN-10 a RN-14 no cambian; "
-        "RN-19 y RN-20 se agregan con las historias originadas en la EF2.")
+    r.P("Las reglas de negocio condicionan el diseño con independencia de la interfaz ({T:rn}). RN-01 a RN-05 y RN-10 a RN-14 no cambian; "
+        "RN-06 a RN-09 se ajustan a las cuentas de CC-16 y CC-18, y RN-19 y RN-20 se agregan con las historias originadas en la EF2.")
     rn = [
         ("RN-01", "Solo se asigna a conductores en estado Disponible.", "HU-04, HU-13", "Vigente"),
         ("RN-02", "Ninguna asignación ni ajuste de recogida ocurre sin confirmación del despachador.", "HU-04, HU-27", "Ampliada"),
         ("RN-03", "Un conductor tiene a lo más un viaje en ejecución.", "HU-15, HU-16", "Vigente"),
         ("RN-04", "Sin respuesta en 60 s, la reserva vuelve a SOLICITADO.", "HU-15", "Vigente"),
         ("RN-05", "Con más de un vehículo, el conductor declara cuál usará antes de quedar Disponible.", "HU-13", "Vigente"),
-        ("RN-06", "Una reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min.", "HU-20", "Modificada"),
-        ("RN-07", "Las reservas por link de convenio vigente omiten la verificación del teléfono.", "HU-25", "Modificada"),
-        ("RN-08", "Desactivar un convenio invalida su link sin afectar el historial.", "HU-11, HU-25", "Vigente"),
-        ("RN-09", "El pasajero cancela por WhatsApp solo sin conductor asignado; después, a través del despachador.", "HU-21", "Modificada"),
+        ("RN-06", "El teléfono del pasajero se verifica por WhatsApp una sola vez, al activar su cuenta; el mensaje de activación vence a los 15 min y admite hasta 3 envíos por número cada 15 min.", "HU-20, HU-35, HU-41", "Modificada (CC-18)"),
+        ("RN-07", "Las reservas de un convenio aprobado, hechas con la cuenta de la empresa, omiten la verificación del teléfono.", "HU-25, HU-34", "Modificada (CC-16)"),
+        ("RN-08", "Desactivar un convenio corta al instante el acceso de su cuenta sin afectar el historial.", "HU-11, HU-34", "Modificada (CC-16)"),
+        ("RN-09", "El pasajero cancela por WhatsApp o desde su cuenta solo sin conductor asignado; después, a través del despachador.", "HU-21, HU-44", "Modificada"),
         ("RN-10", "Ningún viaje se finaliza sin método de pago y monto.", "HU-16", "Vigente"),
         ("RN-11", "El cierre o anulación forzada exige motivo y queda en auditoría.", "HU-05", "Vigente"),
         ("RN-12", "Todo cambio de contraseña o estado de convenio genera auditoría inmutable.", "HU-12", "Vigente"),
         ("RN-13", "Un usuario solo accede a registros de su empresa.", "Transversal", "Vigente"),
         ("RN-14", "La calificación es opcional y no condiciona el cierre.", "HU-24", "Vigente"),
-        ("RN-15", "Retención: viajes 24 meses; mensajes 12 meses; posiciones GPS 30 días; registros de eventos 90 días.", "Transversal", "Modificada"),
+        ("RN-15", "Retención: viajes 24 meses; mensajes 12 meses; posiciones GPS 30 días, borradas por una tarea diaria; registros de eventos 90 días. Al eliminar una cuenta, sus datos personales se anonimizan y se conservan los registros del servicio.", "Transversal, HU-45", "Modificada"),
         ("RN-16", "Para recogidas en el aeropuerto se propone al primer conductor de la fila virtual (orden de ingreso a la geocerca).", "HU-29", "Nueva"),
         ("RN-17", "La nueva hora de recogida es ETA + margen (20 min nacional, 35 min internacional, configurable).", "HU-27", "Nueva"),
         ("RN-18", "La ubicación del conductor se registra solo en turno y tras su consentimiento informado.", "HU-13", "Nueva"),
@@ -183,7 +203,7 @@ def requerimientos(r):
         ("Tolerancia fuera de la geocerca (RN-16)", "10 minutos", "EV-08", "Parámetro; se revisa tras la marcha blanca"),
         ("Tiempo de espera por no presentación", "15 minutos en EN_ZONA", "EV-08", "Parámetro configurable"),
         ("Polígono de la geocerca del aeropuerto", "Zona de estacionamiento autorizada del operador", "EV-08", "GeoJSON versionado en el repositorio"),
-        ("Expiración de una solicitud sin confirmar (RN-06)", "15 minutos", "EV-08", "Parámetro configurable"),
+        ("Vigencia del mensaje de activación de la cuenta (RN-06)", "15 minutos", "EV-08", "Parámetro configurable"),
         ("Anticipación mínima de una solicitud del portal", "30 minutos", "DC-10 (PO)", "Parámetro configurable"),
         ("Precisión mínima para marcar la llegada por geocerca", "50 metros", "DC-16 (PO)", "Parámetro configurable"),
         ("Vigencia de la encuesta de calificación", "24 horas desde el fin del viaje", "DC-19 (PO)", "Parámetro configurable"),
@@ -245,7 +265,7 @@ def tecnologias(r):
     ]
     r.table("m_app", "Matriz ponderada: aplicación del conductor", ["Criterio (peso)", "Capacitor", "Kotlin nativo", "React Native", "Flutter", "PWA"],
             rows, [4.2, 3.0, 2.1, 2.3, 1.9, 3.1], font=8)
-    r.P("Se mantiene **Capacitor**. Su riesgo es el comportamiento del GPS en segundo plano en distintos fabricantes Android (R-01), mitigado con la "
+    r.P("Se mantiene **Capacitor**, que empaqueta la misma aplicación web como app nativa con acceso a las funciones del teléfono (Griffith, 2017). Su riesgo es el comportamiento del GPS en segundo plano en distintos fabricantes Android (R-01), mitigado con la "
         "prueba de concepto del hito H-3 y, si falla, transmisión en primer plano con aviso al conductor. La PWA se descarta porque deja de enviar "
         "posiciones al minimizarse, lo que invalida la sugerencia por distancia y la fila virtual.")
 
@@ -354,6 +374,11 @@ def tecnologias(r):
     ]
     r.table("costos", "Costos iniciales y recurrentes", ["Tipo", "Ítem", "Monto (CLP)", "Observación"], costos, [2.6, 6.6, 2.6, 4.8], font=8,
             source="Elaboración propia con tarifas de Amazon Web Services (2026a), Twilio (2026a), Meta Platforms (2025), UptimeRobot (2026) y Google (2026), consultadas en octubre de 2026.")
+    r.P("**Diferencia con el presupuesto del Informe 1.** La formulación valorizó la inversión en $14.498.000 antes de definir el proveedor "
+        "cloud y las tarifas de los servicios. Con AWS ya elegido (CC-07) y las cuotas de prueba de cada servicio conocidas, bajan la "
+        "infraestructura del proyecto ($400.000 → $100.000), las licencias y API ($150.000 → $60.000) y el dominio ($30.000 → $10.000, porque "
+        "el certificado TLS es gratuito), y con ellos los imprevistos ($1.318.000 → $1.277.000). La diferencia de $451.000 explica la cifra de "
+        "$14.047.000 que usa esta factibilidad; el personal y el equipamiento no cambian.")
     r.P("**Planes gratuitos y sus límites.** Sentry Developer admite un usuario y 5.000 errores mensuales (alertas a un correo compartido); GitHub "
         "Free incluye 2.000 minutos de Actions al mes para repositorios privados; Google Maps tiene una cuota mensual gratuita por producto; AeroAPI "
         "un crédito mensual de USD 5 suficiente para pruebas; UptimeRobot Free monitorea cada 5 minutos y se usa durante el proyecto, pasando al plan "
@@ -362,8 +387,10 @@ def tecnologias(r):
     r.P("**Modelo comercial (CC-13).** FlotaÁgil no se vende como código ni como desarrollo a medida. El cliente adquiere una **licencia perpetua "
         "de uso, no exclusiva e intransferible**: puede usar el sistema de forma indefinida, pero el código y la propiedad intelectual siguen "
         "siendo del equipo (Ley N° 17.336), lo que permite licenciar el mismo producto a otras flotas. La operación se cobra aparte, en un **plan "
-        "de servicio mensual** que incluye el alojamiento, la mantención, los respaldos, el soporte según el SLA y el consumo de WhatsApp y de "
-        "vuelos hasta el tope del plan ({T:planes}). El plan lo determina el mayor entre el número de vehículos y el de reservas mensuales.")
+        "de servicio mensual** que incluye el alojamiento, la mantención, los respaldos, el soporte según el SLA y el consumo de los servicios "
+        "externos hasta el tope del plan ({T:planes}). Hoy ese consumo es WhatsApp vía Twilio y la API de vuelos; con CC-19 los planes ya no "
+        "incluyen WhatsApp, porque los avisos pasan a la notificación del navegador y al correo, y mantienen su precio. El plan lo determina el "
+        "mayor entre el número de vehículos y el de reservas mensuales.")
     r.table("planes", "Licencia y planes de servicio por tamaño de flota", ["Concepto", "Inicial", "Estándar", "Avanzado"], [
         ("Tamaño de la flota", "Hasta 10 vehículos", "11 a 30 vehículos", "31 a 50 vehículos"),
         ("Reservas incluidas al mes", "Hasta 350", "Hasta 1.000", "Hasta 1.800"),
@@ -440,18 +467,38 @@ def tecnologias(r):
         "más ocho meses de operación (500.000 + 8 × 35.350 = $782.800).",
         "**Recuperación de la inversión valorizada:** recuperar los $14.047.000, que en su mayoría son horas propias del equipo, exige crecer. "
         "Con una cartera de 11 clientes (3 Inicial, 4 Estándar y 4 Avanzado) se obtienen $4.000.000 en licencias y $438.650 mensuales "
-        "(549.800 de contribución menos 111.150 de costos fijos), es decir, $14.527.600 en 24 meses. Si la cartera se completa de forma gradual "
-        "durante el primer año, la recuperación se desplaza hacia el mes 30.",
+        "(549.800 de contribución menos 111.150 de costos fijos). Como la cartera se forma de manera gradual, la recuperación se evalúa con "
+        "flujo de caja descontado más abajo ({T:van_res}).",
         "**Soporte Plus:** cada contratación agrega $49.000 mensuales sin costo variable, porque usa la misma guardia del equipo.",
-        "**Palanca de costo:** el 78 % del costo variable es WhatsApp enviado a través de Twilio. Migrar a la Cloud API directa de Meta, prevista en el "
-        "adaptador de mensajería, bajaría el costo variable de ≈ $88 a ≈ $32 por reserva y elevaría el resultado con el cliente actual de "
-        "$35.350 a unos $119.000 mensuales. Se deja como mejora posterior porque exige la verificación de negocio de cada empresa en Meta.",
+        "**Palanca de costo:** el 78 % del costo variable es WhatsApp enviado a través de Twilio. Es el costo que retira CC-19.",
     ])
-    r.P("**Conclusión.** Para el cliente la solución es económicamente factible: en el escenario meta recupera la licencia en poco más de un mes "
-        "y, aun con un margen de 20 % y sin mejora de caja, el plan se paga con los viajes recuperados. Para FlotaÁgil la operación es sostenible "
-        "desde el primer cliente y no depende de vender el código; el riesgo económico es el margen estrecho mientras la mensajería pase por un "
-        "intermediario, por lo que el consumo por reserva se revisa cada mes (R-04) y la migración a la Cloud API queda como primera mejora de "
-        "negocio. La coherencia de estas hipótesis con las metas de los KPI se muestra en la sección 5.1.")
+    r.P("**Escenario con CC-19 (retiro total de Twilio).** CC-19, aprobada para la versión 1.1, reemplaza los mensajes de WhatsApp por el chat "
+        "interno, pasa la verificación de la cuenta al correo y envía los avisos por notificación del navegador (Web Push, sin costo) y por "
+        "Amazon SES (USD 0,10 por cada 1.000 correos, ≈ $1.000 al mes con unos diez correos por reserva). El costo de Twilio desaparece por "
+        "completo y el costo variable queda casi solo en la API de vuelos ({T:cc19_ahorro}). Supera además a la migración a la Cloud API "
+        "directa de Meta (≈ $32 por reserva, Anexo J), que deja de ser necesaria.")
+    r.table("cc19_ahorro", "Ahorro de CC-19 con el cliente actual (1.512 reservas al mes)", ["Concepto", "Operación actual", "Con CC-19", "Diferencia"], [
+        ("WhatsApp vía Twilio", "$104.000", "$0", "−$104.000"),
+        ("API de vuelos", "$28.500", "$28.500", "$0"),
+        ("Correo (Amazon SES) y Web Push", "$0", "≈ $1.000", "+$1.000"),
+        ("**Costo variable mensual**", "**$132.500**", "**$29.500**", "**−$103.000**"),
+        ("Costo variable por reserva", "≈ $88", "≈ $20", "−$68"),
+        ("Costos fijos de plataforma", "$31.150", "$31.150", "$0"),
+        ("**Operación mensual del cliente actual**", "**$163.650**", "**≈ $60.650**", "**−63 %**"),
+        ("Ahorro anual", "—", "—", "**≈ $1.236.000**"),
+        ("Resultado mensual de FlotaÁgil con el plan Avanzado ($199.000)", "$35.350", "$138.350", "+$103.000"),
+        ("Margen del plan Avanzado sobre su precio", "≈ 18 %", "≈ 70 %", "+52 puntos"),
+        ("Margen de cada reserva sobre el tope ($120)", "$32", "$100", "+$68"),
+    ], [7.2, 3.0, 3.0, 3.4], font=8, source="Elaboración propia con las tarifas de la {T:costos} y de Amazon Web Services (2026a).")
+    r.P("Para el cliente nada cambia en precio: el plan cuesta lo mismo y deja de depender de que el pasajero use WhatsApp. El ahorro queda en "
+        "FlotaÁgil, que con el mismo cliente pasa de cubrir apenas sus costos a obtener cerca de 70 % de margen sobre el plan.")
+    van_eval(r)
+    r.P("**Conclusión.** Para el cliente la solución es económicamente factible: en el escenario meta recupera la licencia en poco más de un mes, "
+        "con un VAN a tres años cercano a $12 millones, y aun en el escenario prudente el VAN es positivo y la licencia se recupera antes de un "
+        "año. Para FlotaÁgil, el proyecto es **viable condicionado a CC-19 y a alcanzar 11 clientes**: la operación se sostiene desde el primer "
+        "cliente, pero con la mensajería vía Twilio la inversión valorizada no se recupera en tres años; con CC-19, aun pagando su desarrollo, "
+        "el VAN es positivo hasta una tasa de 15 % y la inversión se recupera en unos dos años y medio, siempre que la cartera llegue a la meta. "
+        "Por eso CC-19 es la primera prioridad de la versión 1.1, y la cartera y el consumo por reserva se revisan periódicamente (R-04). La coherencia de estas hipótesis con las metas de los KPI se muestra en la sección 5.1.")
 
     r.H3("Factibilidad implementativa")
     r.P("**Condiciones organizacionales.** El administrador patrocina el proyecto y validó el backlog; el despachador y tres conductores ya "
@@ -513,3 +560,59 @@ def tecnologias(r):
         "suscriptores (panel o conductor) por WebSocket (Fette y Melnikov, 2011). Las tareas que dependen de terceros (WhatsApp, vuelos) corren en Celery para no bloquear la API, con "
         "reintentos. Twilio devuelve las respuestas del pasajero por un webhook que entra por Nginx. Todo se empaqueta en contenedores Docker que "
         "se construyen y prueban en GitHub Actions y se despliegan con Docker Compose en la instancia EC2.")
+
+
+def van_eval(r):
+    """Evaluación a tres años con VAN, TIR y PRI (2.1.9). Cifras de data_van.py."""
+    import data_van as dv
+    r.P("**Evaluación a tres años: VAN, TIR y PRI.** Para medir la factibilidad en el tiempo se proyectó el flujo de caja anual desde dos "
+        "miradas, la del cliente actual y la de FlotaÁgil como negocio. Supuestos: horizonte de tres años; tasa de descuento de 12 % anual, con "
+        "sensibilidad a 8 % y 15 %; flujos al cierre de cada año y año 0 = puesta en marcha; precios, consumos y costos fijos de esta sección, "
+        "sin IVA. El cliente paga la licencia en el año 0 y recibe el beneficio neto de la {T:benef} cada año. FlotaÁgil invierte los "
+        "$14.047.000 valorizados en el año 0, cobra una licencia por cada cliente que se incorpora y obtiene el resultado de operar su "
+        "cartera, que crece de 1 a 4 y a 11 clientes (año 2: el cliente actual, un Avanzado, un Estándar y un Inicial; año 3: 4 Avanzado, "
+        "4 Estándar y 3 Inicial). **Por qué 1 → 4 → 11:** el primer año se dedica a estabilizar el producto con el cliente actual, que luego "
+        "sirve de caso de referencia ante otros operadores de taxi turismo y de traslados al aeropuerto, y 11 es la cartera con la que el "
+        "punto anterior recupera la inversión valorizada; es una meta comercial, no una demanda validada. El escenario con CC-19 es una "
+        f"**proyección de la versión 1.1**: suma en el año 1 su desarrollo, estimado en {dv.CC19_HORAS} horas a la tarifa del presupuesto "
+        f"({dv.pesos(dv.TARIFA_HORA)} por hora, más 10 % de imprevistos), es decir, {dv.pesos(dv.CC19_COSTO)}, y desde ese año opera sin Twilio. "
+        "El detalle año a año y la estimación por componente están en el Anexo J.")
+    r.table("van_res", "Indicadores de la evaluación a tres años", ["Evaluación", "VAN 8 %", "VAN 12 %", "VAN 15 %", "TIR", "PRI"],
+            dv.indicadores(), [5.6, 2.1, 2.1, 2.1, 2.3, 2.4], font=7.6,
+            source="Elaboración propia. VAN = Σ flujo ÷ (1 + tasa)^año; TIR = tasa con VAN cero; PRI sin descontar, interpolado dentro del año.")
+    r.P("La TIR del cliente en el escenario meta no es significativa: la licencia de $500.000 es mínima frente a un beneficio de $5.190.000 "
+        "al año, y la tasa que anula el VAN supera el 1.000 %, una cifra sin lectura económica útil. Para el cliente, los indicadores que "
+        "importan son el VAN y el PRI.")
+    fa, fc = dv.flujos_flotaagil("actual"), dv.flujos_flotaagil("cc19")
+    r.table("van_flujo", "Flujo de caja anual de FlotaÁgil", ["Escenario", "Año 0", "Año 1", "Año 2", "Año 3", "VAN 12 %"], [
+        (dv.ESCENARIOS["actual"], *[dv.pesos(x) for x in fa], dv.pesos(dv.van(fa))),
+        (dv.ESCENARIOS["cc19"], *[dv.pesos(x) for x in fc], dv.pesos(dv.van(fc))),
+        ("Clientes activos", "1", "1", "4", "11", "—"),
+    ], [4.6, 2.5, 2.1, 2.1, 2.4, 2.3], font=7.8,
+        source=f"Elaboración propia. Año 0: inversión valorizada más la licencia del cliente actual. Año 1 con CC-19: incluye su desarrollo ({dv.pesos(dv.CC19_COSTO)}).")
+    inc = dv.van(fc) - dv.van(fa)
+    v4 = dv.van_con_cartera("cc19", ["A", "A", "E", "I"])
+    v9 = dv.van_con_cartera("cc19", ["A"] * 3 + ["E"] * 3 + ["I"] * 3)
+    v10 = dv.van_con_cartera("cc19", ["A"] * 4 + ["E"] * 3 + ["I"] * 3)
+    da, dc = dv.flujos_flotaagil("actual", dv.INV_DESEMBOLSO), dv.flujos_flotaagil("cc19", dv.INV_DESEMBOLSO)
+    r.bullets([
+        "**Cliente:** la inversión es pequeña frente al beneficio. En el escenario meta la licencia se recupera en "
+        f"{dv.periodo(dv.pri(dv.flujos_cliente('meta')))}; en el prudente, con margen de 20 % y sin mejora de caja, el VAN sigue positivo "
+        f"({dv.pesos(dv.van(dv.flujos_cliente('prudente')))}), la TIR es {dv.tir_texto(dv.flujos_cliente('prudente'))} y la recuperación toma "
+        f"{dv.periodo(dv.pri(dv.flujos_cliente('prudente')))}. CC-19 no cambia esta mirada, porque el precio del plan es el mismo.",
+        f"**FlotaÁgil con la operación actual:** el VAN es negativo con las tres tasas ({dv.pesos(dv.van(fa))} al 12 %) y la TIR es "
+        f"{dv.pct(dv.tir(fa))}. A los tres años el flujo acumulado es {dv.pesos(sum(fa))}: el margen de $35.350 a $66.500 por cliente que deja "
+        "Twilio no alcanza a devolver las horas invertidas mientras la cartera se forma.",
+        f"**FlotaÁgil con CC-19 (proyección v1.1):** aun pagando su desarrollo, el VAN es {dv.pesos(dv.van(fc))} al 12 % y se mantiene "
+        f"positivo al 15 % ({dv.pesos(dv.van(fc, 0.15))}); la TIR es {dv.pct(dv.tir(fc))}, sobre las tres tasas evaluadas, y la inversión se "
+        f"recupera en {dv.periodo(dv.pri(fc))} ({dv.periodo(dv.pri(fc, dv.TASA))} con flujos descontados). Frente a seguir con Twilio, CC-19 "
+        f"aporta {dv.pesos(inc)} de VAN neto de su costo.",
+        "**Sensibilidad a la cartera:** el resultado depende de llegar a la meta. Con CC-19, si en el año 3 la cartera se queda en 4 clientes "
+        f"el VAN es {dv.pesos(v4)}; con 9 clientes es {dv.pesos(v9)} y recién con 10 pasa a positivo ({dv.pesos(v10)}). Por eso la cartera "
+        "se sigue cada trimestre junto con el consumo por reserva (R-04).",
+        "**Si solo se mira el desembolso:** con los $847.000 que efectivamente se gastan (equipamiento, nube, licencias, dominio e imprevistos), "
+        f"el VAN es positivo en ambos escenarios ({dv.pesos(dv.van(da))} y {dv.pesos(dv.van(dc))} al 12 %). La diferencia con la evaluación "
+        "valorizada es el costo de oportunidad de las horas del equipo.",
+        "**Límites del cálculo:** no se valoriza el tiempo del equipo en soporte y guardia, por lo que el resultado operativo es lo que queda "
+        "para remunerarlo, y no se incluyen impuestos. El costo de CC-19 es una estimación previa a su planificación detallada.",
+    ])

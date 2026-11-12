@@ -172,7 +172,7 @@ def formulacion(r):
     r.bullets([
         "**Ciclo de vida y metodología:** ciclo iterativo e incremental con Scrum. Las metodologías ágiles permiten adaptarse a cambios de "
         "requerimientos mediante entregas continuas (Pressman y Maxim, 2020); Schwaber y Sutherland (2020) definen roles, eventos y artefactos; la "
-        "dirección del proyecto se apoya en el PMI (2021).",
+        "dirección del proyecto se apoya en la guía PMBOK (Project Management Institute [PMI], 2021).",
         "**Ingeniería de requerimientos:** la calidad del producto depende de la precisión del levantamiento (Sommerville, 2016), lo que justifica "
         "varios instrumentos complementarios y la trazabilidad explícita entre necesidades e historias.",
         "**Arquitectura de software:** los atributos de calidad guían las decisiones de arquitectura desde la formulación (Bass et al., 2021); "
@@ -357,17 +357,17 @@ def riesgos(r, heading=True, estado=True):
         ("R-04", "Costo de mensajería mayor a lo presupuestado", "3", "3", "9", "Mitigar: WhatsApp en vez de SMS y límites de envío", "Bajó con CC-01"),
         ("R-05", "Baja adopción de la app por los conductores", "3", "4", "12", "Mitigar: grupo focal, UAT y capacitación", "Abierto: se evalúa en la UAT"),
         ("R-06", "Cambio en las condiciones de Google Maps", "2", "4", "8", "Aceptar: mapa base alternativo sin clave", "Mitigado: el panel funciona sin clave de Google"),
-        ("R-07", "Filtración de la contraseña de un convenio", "3", "3", "9", "Transferir y mitigar: rotación y desactivación inmediata", "Mitigado: contraseña generada y rotable, bloqueo tras 5 intentos y auditoría (HU-11, HU-25)"),
-        ("R-08", "Ampliación no controlada del alcance", "3", "4", "12", "Evitar: acta y control de cambios", "Controlado: 15 CC y 30 DC registrados"),
+        ("R-07", "Filtración de la contraseña de un convenio", "3", "3", "9", "Transferir y mitigar: rotación y desactivación inmediata", "Reducido: desde CC-16 cada convenio entra con su propia cuenta, sin contraseña compartida; bloqueo tras 5 intentos y auditoría (HU-34)"),
+        ("R-08", "Ampliación no controlada del alcance", "3", "4", "12", "Evitar: acta y control de cambios", "Controlado: 21 CC y 50 DC registrados; CC-19 a CC-21 diferidos a la versión 1.1"),
         ("R-09", "Pérdida de disponibilidad durante la UAT", "2", "4", "8", "Mitigar: respaldos cada 6 h y restauración probada", "Abierto: simulacro en la semana 15 (CP-30)"),
         ("R-10", "Indisponibilidad de un integrante", "3", "4", "12", "Mitigar: documentación y revisión cruzada", "Mitigado: documentación por historia en el repositorio"),
         ("R-11", "Evidencia del levantamiento insuficiente", "2", "3", "6", "Mitigar: repositorio de evidencias fechadas", "Mitigado"),
-        ("R-12", "Mensajes de WhatsApp fuera de la ventana de 24 h sin plantilla aprobada", "3", "4", "12", "Mitigar: plantillas aprobadas por Meta antes de producción", "Abierto: ver 7.7 y 9.1"),
+        ("R-12", "Mensajes de WhatsApp fuera de la ventana de 24 h sin plantilla aprobada", "3", "4", "12", "Mitigar: plantillas aprobadas por Meta antes de producción", "Abierto: ver 7.7 y 9.1; desaparece con CC-19 (versión 1.1), que retira WhatsApp"),
         ("R-13", "La API de vuelos falla o cambia de precio", "2", "4", "8", "Mitigar: reintentos y vuelo «sin verificar» que no bloquea la reserva", "Mitigado en el diseño implementado"),
         ("R-14", "Google Play rechaza la ubicación en segundo plano", "3", "3", "9", "Mitigar: distribución directa de la APK mientras se tramita", "Abierto"),
         ("R-15", "Restricción de la cuenta de GitHub de un integrante por detección automática de spam", "2", "3", "6", "Mitigar: solicitud de revisión; el otro integrante abre los PR; respaldo del repositorio", "Materializado: el repositorio se migró con su historial completo a una nueva organización de GitHub (Flotaagil-CL), donde la integración continua vuelve a ejecutarse"),
         ("R-17", "El margen neto real por viaje es distinto del supuesto (25 %)", "3", "3", "9", "Mitigar: sensibilidad de 15 % a 30 % en la factibilidad; validar con el cliente antes de la UAT", "Abierto: supuesto declarado (3.1)"),
-        ("R-18", "La fusión de los pull requests o el despliegue en AWS se retrasan y comprimen la UAT", "3", "4", "12", "Mitigar: fusión como primera tarea de lo que resta del Sprint 4; plan en horas con holgura", "Abierto (9.1)"),
+        ("R-18", "El despliegue en AWS o las credenciales de los servicios externos se retrasan y comprimen la UAT", "3", "4", "12", "Mitigar: despliegue como primera tarea de la semana 15; plan en horas con holgura", "Abierto (9.1); la fusión, que era la otra causa, ya se completó"),
         ("R-16", "Consumo de batería de la app del conductor", "3", "3", "9", "Mitigar: GPS cada 30 s en turno en vez de 1 Hz", "Mitigado en la app base; medir en teléfono real"),
         ("R-19", "Reclamo o fiscalización por el tratamiento de la ubicación de los conductores", "2", "4", "8", "Mitigar: GPS solo en turno, consentimiento, cláusula en el Reglamento Interno, purga a 30 días y acceso por rol", "Mitigado en el diseño implementado (RN-15, RN-18)"),
         ("R-20", "Cambio normativo del transporte de pasajeros (reglamento de la Ley 21.553 u otra exigencia del MTT)", "2", "3", "6", "Aceptar y monitorear: revisión semestral de la normativa; datos de conductor y vehículo ya registrados", "Abierto: reglamento sin publicar al corte"),

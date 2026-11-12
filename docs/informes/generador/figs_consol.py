@@ -22,16 +22,16 @@ box(ax, 6.5, 4.1, 3.6, 1.7, "SISTEMA FLOTAÁGIL\n\nPlataforma SaaS de gestión\n
 hum = [(1.9, 6.6, "Administrador\nFlota, convenios, configuración\ny reportes", "administra", (0, 0.15)),
        (1.9, 4.1, "Despachador\nReservas, despacho, fila virtual\ny chat con el pasajero", "opera", (0, 0.2)),
        (1.9, 1.6, "Conductor\nApp: turno, viajes, estados,\nubicación y cobro", "usa app móvil", (0, 0.15)),
-       (11.1, 6.6, "Pasajero particular\nPortal web y WhatsApp:\nsolicita, confirma, califica", "solicita / responde", (-0.35, 0.0)),
-       (11.1, 4.1, "Supervisor de convenio\nReserva por link\na nombre de su empresa", "reserva vía link", (0, 0.2))]
+       (11.1, 6.6, "Pasajero particular\nPortal con cuenta y WhatsApp:\npide, sigue, cancela, califica", "pide / responde", (-0.35, 0.0)),
+       (11.1, 4.1, "Supervisor de convenio\nCuenta de la empresa cliente:\nse registra y reserva", "reserva con cuenta", (0, 0.2))]
 for x, y, t, lab, off in hum:
     box(ax, x, y, 3.3, 1.3, t, fs=9.2)
     a = (x + 1.65, y) if x < 6 else (x - 1.65, y)
     b = (4.7, 4.1 + (y - 4.1) * 0.35) if x < 6 else (8.3, 4.1 + (y - 4.1) * 0.35)
     arrow(ax, a, b, lab, off=off, both=True)
-box(ax, 11.1, 1.6, 3.3, 1.5, "Servicios externos\nWhatsApp Business API (Twilio)\nFlightAware AeroAPI (vuelos)\nMapas (Google Maps / OpenStreetMap)", fc="#FCE9D2", ec=ORANGE, fs=9)
+box(ax, 11.1, 1.6, 3.3, 1.5, "Servicios externos\nWhatsApp Business API (Twilio)\nFlightAware AeroAPI (vuelos)\nMapas y correo (Amazon SES)", fc="#FCE9D2", ec=ORANGE, fs=9)
 arrow(ax, (8.3, 3.5), (9.45, 2.1), "consume APIs /\nrecibe webhooks", color=ORANGE, both=True, off=(0.25, 0.25))
-ax.text(6.5, 0.25, "Cinco actores humanos y tres servicios externos. Tarifas, facturación tributaria y mantenimiento de la flota quedan fuera de la frontera.",
+ax.text(6.5, 0.25, "Cinco actores humanos y los servicios externos de mensajería, vuelos, mapas y correo. Tarifas, facturación tributaria y mantenimiento de la flota quedan fuera de la frontera.",
         ha="center", fontsize=9, color=GREY, style="italic")
 fig.savefig("fig/contexto.png", dpi=170, bbox_inches="tight"); plt.close(fig)
 

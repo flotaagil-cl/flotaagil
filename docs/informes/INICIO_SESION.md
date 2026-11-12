@@ -10,6 +10,7 @@ Pegar o adjuntar este archivo al iniciar. Así no hace falta releer conversacion
 - `docs/informes/PENDIENTES_REVISION.md` correcciones pendientes por prioridad
 - `docs/estado-para-informe.md` qué se construyó por HU (fuente para el Anexo P y la trazabilidad)
 - `docs/informes/datos/datos.json` cifras oficiales (correr `extraer_datos.py` primero)
+- `docs/informes/generador/data_van.py` flujo de caja, VAN, TIR y PRI de 2.1.9 y el Anexo J
 - `CLAUDE.md` reglas del proyecto; `docs/diccionario-cambios.md` CC y DC; `docs/backlog/backlog.json` backlog
 
 **Reglas de los informes:**

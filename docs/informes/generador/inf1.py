@@ -189,7 +189,7 @@ def problema(r):
     r.P("La solución opera dentro de un rubro regulado. La {T:normativa} resume las normas que rigen a la organización, qué exigen y cómo "
         "condicionan el diseño. El sistema **no reemplaza** las obligaciones de la empresa ante la autoridad (inscripciones, revisiones, "
         "permisos), pero sí debe registrar los datos que esas obligaciones requieren y no inducir incumplimientos.")
-    r.landscape_on()
+
     r.table("normativa", "Marco normativo aplicable y su efecto en el diseño", ["Norma", "Qué regula", "Exigencia relevante para el caso", "Efecto en FlotaÁgil"], [
         ("Ley N° 18.696 (1988), art. 3", "Faculta al Ministerio de Transportes y Telecomunicaciones (MTT) para regular el transporte público de pasajeros",
          "Los servicios de taxi, incluido el taxi turismo, se prestan bajo las condiciones que fije el MTT por reglamento",
@@ -209,15 +209,15 @@ def problema(r):
         ("Ley N° 21.553 (2023), empresas de aplicación de transporte (EAT)", "Plataformas que intermedian entre pasajeros y conductores; registro de EAT y de conductores",
          "Se aplica a quien conecta pasajeros con conductores de terceros; su reglamento no se había publicado al cierre de este informe y la ley rige 30 días después de esa publicación",
          "FlotaÁgil es una herramienta interna de una empresa con flota propia o registrada, no una EAT; si en el futuro abriera el servicio a conductores independientes, debería evaluarse su inscripción"),
-        ("Ley N° 19.628, modificada por la Ley N° 21.719 (vigente desde el 1 de diciembre de 2026)", "Tratamiento de datos personales; crea la Agencia de Protección de Datos Personales",
+        ("Ley N° 19.628, modificada por la Ley N° 21.719 (entra en vigencia el 1 de diciembre de 2026)", "Tratamiento de datos personales; crea la Agencia de Protección de Datos Personales",
          "Licitud, finalidad, proporcionalidad, información al titular, seguridad, derechos de acceso, rectificación, supresión, oposición y portabilidad",
          "Aviso de privacidad aceptado al crear la cuenta, con fecha y versión; retención limitada (RN-15); eliminación de la cuenta; acceso por rol y empresa (RN-13)"),
         ("Código del Trabajo, arts. 5 y 154, y Dictamen DT Ord. N° 148 (2022)", "Medidas de control del empleador y respeto de los derechos fundamentales",
          "La geolocalización de trabajadores debe estar en el Reglamento Interno, ser general, idónea y proporcional, y no transformarse en vigilancia permanente",
          "GPS solo en turno y con consentimiento (RN-18); cláusula tipo para el Reglamento Interno del cliente; sin seguimiento fuera de la jornada"),
-    ], [4.4, 4.6, 6.2, 7.6], font=7.6,
-        source="Elaboración propia con base en Biblioteca del Congreso Nacional de Chile (1988, 1992, 1999, 2009, 2023, 2024) y Dirección del Trabajo (2022).")
-    r.landscape_off()
+    ], [3.2, 3.35, 4.5, 5.55], font=7.2,
+        source="Elaboración propia con base en Biblioteca del Congreso Nacional de Chile (1986, 1988, 1992, 1999, 2009, 2023, 2024) y Dirección del Trabajo (2022).")
+
     r.P("**Privacidad del seguimiento GPS de los conductores.** Es el tratamiento de datos más sensible del proyecto, porque registra dónde "
         "está una persona mientras trabaja. Se aborda con seis decisiones, detalladas en la sección 7.6.5: 1) **finalidad** declarada y "
         "limitada (despacho, seguridad del pasajero, fila del aeropuerto e indicadores de operación), sin uso para sanciones automáticas ni para "
@@ -279,7 +279,7 @@ def marco(r):
     r.bullets([
         "**Ciclo de vida y metodología:** ciclo iterativo e incremental con Scrum. Las metodologías ágiles permiten adaptarse a cambios de "
         "requerimientos mediante entregas continuas (Pressman y Maxim, 2020); Schwaber y Sutherland (2020) definen roles, eventos y artefactos; la "
-        "dirección del proyecto se apoya en el PMI (2021).",
+        "dirección del proyecto se apoya en la guía PMBOK (Project Management Institute [PMI], 2021).",
         "**Ingeniería de requerimientos:** la calidad del producto depende de la precisión del levantamiento (Sommerville, 2016), lo que justifica "
         "varios instrumentos complementarios y la trazabilidad explícita entre necesidades e historias. ISO/IEC 25010 (ISO, 2023) organiza los "
         "requerimientos no funcionales por característica de calidad.",
@@ -323,7 +323,7 @@ def marco(r):
         "**registrar** la operación a **apoyar las decisiones** con los datos que la propia operación genera. Se definen cinco capacidades "
         "({T:difer}); las cuatro primeras forman parte del producto mínimo viable y la quinta es su evolución natural, porque usa los datos que "
         "el MVP empieza a acumular.")
-    r.landscape_on()
+
     r.table("difer", "Capacidades diferenciadoras de FlotaÁgil", ["Capacidad", "Qué hace", "Datos y técnica", "Decisión que mejora", "Alcance"], [
         ("1. Detección anticipada de atrasos de vuelos y ajuste de la recogida",
          "Monitorea el vuelo de cada recogida en el aeropuerto y, cuando cambia su hora estimada de llegada, propone la nueva hora de recogida y alerta las cancelaciones y desvíos. Lema para el pasajero: «Seguimos tu vuelo por ti: no necesitas avisarnos si se atrasa»",
@@ -350,8 +350,8 @@ def marco(r):
          "Historial de viajes por día y hora más las llegadas programadas de vuelos al aeropuerto; promedio móvil estacional como primera versión, evaluable contra lo real",
          "Cuántos conductores programar y cuándo: reduce el tiempo muerto (meta ≤ 28 %)",
          "Evolución posterior al MVP: requiere al menos tres meses de datos del sistema"),
-    ], [4.0, 5.6, 6.2, 4.6, 2.4], font=7.6)
-    r.landscape_off()
+    ], [2.9, 4.1, 4.5, 3.35, 1.75], font=7.0)
+
     r.P("**Por qué es más que digitalizar.** En el proceso actual el despachador se entera de un atraso cuando el pasajero llama, elige al "
         "conductor según a quién logra contactar y conoce el resultado del día solo al cuadrar la caja. Con FlotaÁgil el sistema **anticipa** "
         "(el vuelo se atrasó y la recogida ya tiene una propuesta), **recomienda** (estos son los tres mejores conductores y por qué), **alerta** "
@@ -518,9 +518,19 @@ def metodologia(r):
     r.H2("Metodología de desarrollo")
     r.P("Se aplica **Scrum** (Schwaber y Sutherland, 2020) con sprints de dos semanas, seleccionado por su capacidad de adaptarse a "
         "requerimientos cambiantes mediante entregas incrementales validadas por el cliente (Pressman y Maxim, 2020). Se compararon Scrum, "
-        "Kanban, XP y cascada con una matriz ponderada (estabilidad de requerimientos, participación del cliente, tamaño del equipo, "
-        "visibilidad del avance y exigencias académicas); Scrum obtuvo el mayor puntaje (4,65 de 5, detalle en el Informe 2). Se complementa con "
-        "prácticas de XP: integración continua y revisión de código por pull request.")
+        "Kanban, XP y cascada con una matriz ponderada de cinco criterios, con notas de 1 a 5; Scrum obtuvo el mayor puntaje, 4,65 de 5 "
+        "({T:m_met1}). Se complementa con prácticas de XP: integración continua y revisión de código por pull request.")
+    r.table("m_met1", "Matriz ponderada para elegir la metodología", ["Criterio (peso)", "Scrum", "Kanban", "XP", "Cascada"], [
+        ("Requerimientos que pueden cambiar (25 %)", "5", "4", "4", "1"),
+        ("Participación del cliente (20 %)", "5", "3", "4", "2"),
+        ("Equipo pequeño (20 %)", "4", "5", "4", "3"),
+        ("Plazos con hitos académicos fijos (20 %)", "5", "3", "4", "4"),
+        ("Gestión del riesgo técnico (15 %)", "4", "3", "5", "2"),
+        ("**Puntaje ponderado**", "**4,65**", "**3,65**", "**4,15**", "**2,35**"),
+    ], [6.0, 2.4, 2.4, 2.4, 2.4], font=8.2, source="Elaboración propia. Puntaje = suma de nota × peso.")
+    r.P("Scrum queda primero porque es el único que combina una revisión con el cliente cada dos semanas con entregas fijas que calzan con las "
+        "evaluaciones de la asignatura. XP obtiene el mejor puntaje en riesgo técnico por sus prácticas de ingeniería, que se adoptan dentro de "
+        "Scrum; Kanban se descarta por no tener iteraciones con fecha, y cascada por su rigidez ante cambios.")
     r.P("Scrum requiere separar a quien prioriza y aprueba de quien construye. Por eso el rol de **Product Owner** lo asume **Juan Pérez**, que "
         "representa al cliente, y no un integrante del equipo de desarrollo ({T:roles1}).")
     r.table("roles1", "Aplicación de Scrum en el proyecto", ["Elemento", "Responsable / cadencia", "Responsabilidad / artefacto"], [
@@ -603,6 +613,10 @@ def metodologia(r):
         ("Imprevistos (10 %)", "Tipo de cambio, consumo de API sobre lo proyectado y requerimientos emergentes", "$1.318.000"),
         ("**Total**", "", "**$14.498.000**"),
     ], [3.6, 10.0, 3.0], font=8.5)
+    r.P("Este presupuesto se valorizó antes de elegir el proveedor cloud y de conocer las cuotas de prueba de cada servicio. En el Informe 2, con "
+        "AWS ya definido, bajan la infraestructura del proyecto (a $100.000), las licencias y API (a $60.000), el dominio (a $10.000, con "
+        "certificado TLS gratuito) y los imprevistos (a $1.277.000): la inversión valorizada queda en **$14.047.000**, $451.000 menos, sin "
+        "cambios en el personal ni en el equipamiento.")
 
     r.H2("Matriz de riesgos")
     sec0.riesgos(r, heading=False, estado=False)
@@ -629,7 +643,8 @@ def arquitectura(r):
         "responsabilidades se especifican en el Informe 2.")
     r.H2("Diagrama de despliegue e infraestructura")
     r.P("Se define **un solo proveedor, Amazon Web Services**, en la región us-east-1 (Virginia del Norte), elegido por costo y experiencia del "
-        "equipo; la latencia desde Santiago (≈ 130 ms) es irrelevante frente a la meta de 5 s del GPS. Los recursos son los mismos en todos los "
+        "equipo, con tarifas por hora publicadas (Amazon Web Services, 2026a) y un acuerdo de nivel de servicio de EC2 que respalda la meta de "
+        "disponibilidad (Amazon Web Services, 2026b); la latencia desde Santiago (≈ 130 ms) es irrelevante frente a la meta de 5 s del GPS. Los recursos son los mismos en todos los "
         "documentos del proyecto ({T:recursos}).")
     r.figure("fig/infraestructura.png", "infra1", "Infraestructura de despliegue en AWS", width_cm=16.6)
     r.table("recursos", "Recursos de infraestructura", ["Recurso", "Configuración", "Uso"], [
@@ -682,7 +697,10 @@ def arquitectura(r):
 
     r.H2("Matriz de trazabilidad")
     r.P("La matriz vincula cada historia con su objetivo, regla, proceso BPMN, caso de uso, componente, entidades y casos de prueba "
-        "({T:traz}). Así, cada objetivo específico puede seguirse hasta el código y la prueba que lo demuestran.")
+        "({T:traz}). Así, cada objetivo específico puede seguirse hasta el código y la prueba que lo demuestran. Dos columnas remiten al diseño "
+        "detallado del Informe 2: los casos de prueba (CP-xx), documentados según ISO/IEC/IEEE 29119-3 (International Organization for "
+        "Standardization, 2021) en su plan de pruebas, y los subprocesos P1.1, P2.1 y P3.2, que detallan una tarea de los procesos P1, P2 y P3 "
+        "de la sección 5.1.")
     _run_annex_segment(r, 'AH(r, "Anexo I. Matriz de trazabilidad")', "# ---------------- H", skip_head=True, landscape=True)
 
 
@@ -725,6 +743,7 @@ def conclusiones(r):
 
 def referencias(r):
     extra = [
+        "Biblioteca del Congreso Nacional de Chile. (1986). *Ley N° 18.490 que establece el seguro obligatorio de accidentes personales causados por circulación de vehículos motorizados*. https://www.bcn.cl/leychile/navegar?idNorma=29893",
         "Biblioteca del Congreso Nacional de Chile. (1988). *Ley N° 18.696 que modifica el artículo 6° de la Ley N° 18.502, autoriza importación de vehículos que señala y establece normas sobre transporte de pasajeros*. https://www.bcn.cl/leychile/navegar?idLey=18696",
         "Biblioteca del Congreso Nacional de Chile. (2009). *Decreto con Fuerza de Ley N° 1 que fija el texto refundido, coordinado y sistematizado de la Ley de Tránsito*. https://www.bcn.cl/leychile/navegar?idNorma=1007469",
     ]

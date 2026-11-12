@@ -24,7 +24,7 @@ TIT = {
  "HU-20": "Verificación del pasajero por WhatsApp",
  "HU-21": "Avisos de estado y cancelación por WhatsApp",
  "HU-24": "Calificación del servicio (1 a 5)",
- "HU-25": "Acceso de convenio con link protegido",
+ "HU-25": "Acceso de convenio con cuenta propia",
  "HU-26": "Registrar número de vuelo",
  "HU-27": "Monitoreo de vuelo y ajuste de recogida",
  "HU-28": "Alertas de demora, cancelación o desvío",

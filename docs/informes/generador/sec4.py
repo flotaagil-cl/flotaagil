@@ -1,3 +1,4 @@
+from datos import PRUEBAS, PRUEBAS_DETALLE, DC_TOTAL
 from data_backlog import HU, SPRINTS, RESP
 
 
@@ -186,7 +187,7 @@ def implementacion(r):
     ci = [
         ("Código fuente (backend, web, app, infra)", "Repositorio flotaagil-cl/flotaagil (migrado con su historial completo); tags SemVer (v1.0.0)", "GitHub", "Carlos (backend, infra) · Renato (web, app)"),
         ("Dependencias", "requirements.lock, package-lock.json con versiones fijas", "Repositorio", "Ambos; Dependabot"),
-        ("Imágenes Docker", "ghcr.io/flotaagil/*: etiqueta = versión + SHA del commit", "GitHub Container Registry", "Carlos"),
+        ("Imágenes Docker", "ghcr.io/flotaagil-cl/*: etiqueta = versión + SHA del commit", "GitHub Container Registry", "Carlos"),
         ("Infraestructura", "Inventario y runbook versionados en /infra; IDs de recursos AWS", "Repositorio + AWS", "Carlos"),
         ("Esquema de base de datos", "Migraciones Django numeradas", "Repositorio", "Carlos"),
         ("Datos maestros y geocerca", "CSV de carga inicial y polígono GeoJSON versionados", "Repositorio (sin datos personales) / S3", "Carlos"),
@@ -199,9 +200,9 @@ def implementacion(r):
     r.P("**Relaciones:** cada release del repositorio fija la combinación de imágenes, migraciones, versión mínima de la APK y plantillas que "
         "funcionan juntas, registrada en las notas de la release. **Líneas base:** v0.1 a v0.4 (una por sprint, que se etiquetan al fusionar "
         "su pull request) y v1.0.0 (producción, aprobada en la UAT). **Actualización:** todo cambio entra por pull "
-        "request con CI en verde y la lista de chequeo de revisión (DC-47: mientras opere un solo integrante, la aprobación obligatoria se reemplaza por esa lista y se repone al volver el equipo completo); la fusión es *squash* a main y la release se etiqueta (configurado y probado en el "
+        "request con CI en verde y la lista de chequeo de revisión (DC-47: el ruleset exige el pull request, el check de CI y la fusión *squash*; la revisión cruzada se mantiene como acuerdo de trabajo con esa lista y no como una aprobación obligatoria de GitHub); la fusión es *squash* a main y la release se etiqueta (configurado y probado en el "
         "Sprint 0, Anexo N). **Control de acceso:** "
-        "organización de GitHub con 2FA obligatoria, reglas de rama que impiden *push* directo a main, secret scanning con push protection; SSM e "
+        "organización de GitHub con 2FA obligatoria, un ruleset sin excepciones que impide *push* directo a main, secret scanning con push protection; SSM e "
         "IAM con mínimo privilegio. **Reconstrucción de una configuración conocida:** checkout del tag, imágenes del registro con esa etiqueta, "
         "parámetros SSM de esa versión y el respaldo correspondiente (PO-02).")
     r.H3("Gestión de cambios")
@@ -222,15 +223,17 @@ def implementacion(r):
     ]
     r.table("cam", "Procedimiento de gestión de cambios", ["Paso", "Responsable", "Criterio o registro"], cam, [3.4, 5.6, 7.6], font=8)
     r.P("Los cambios de emergencia se implementan primero y se documentan y aprueban en las 24 horas siguientes. Los cambios CC-01 a CC-11 de la segunda "
-        "entrega, los cambios CC-12 a CC-15, originados en la EF2, y los cambios CC-16 a CC-18 de la semana 14 siguieron este procedimiento y su registro está en el Anexo D.")
+        "entrega, los cambios CC-12 a CC-15, originados en la EF2, los cambios CC-16 a CC-18 de la semana 14 y CC-19 a CC-21, aprobados para la versión 1.1, siguieron este procedimiento y su registro está en el Anexo D.")
     r.P("**Ejemplo de aplicación (CC-18, cuenta obligatoria para pedir).** 1) El cliente pidió dejar de recibir reservas de invitados por "
-        "seguridad. 2) El análisis mostró impacto en alcance (HU-19, HU-20, RN-06 y el formulario público), en datos (CUENTA_PASAJERO) y en "
+        "seguridad. 2) El análisis mostró impacto en alcance (HU-19, HU-20, RN-06 y el formulario sin cuenta), en datos (CUENTA_PASAJERO) y en "
         "riesgos (baja el de reservas falsas). 3) El PO lo aprobó con la condición de no comprometer la UAT. 4) Se programaron HU-37 a HU-44 "
-        "en el Sprint 4 y HU-45 a HU-49 en la versión 1.1. 5) Cada historia se construyó en su rama con pruebas. 6) Se registraron las "
-        "decisiones DC-41 a DC-46 en el diccionario. 7) a 9) La liberación sigue el procedimiento normal en la fusión del Sprint 4. "
-        "**Cambio de configuración del repositorio:** ante la restricción de la cuenta de GitHub de un integrante (R-15), el repositorio se migró "
-        "a una organización nueva con su historial, ramas y etiquetas; se verificó que los commits coincidieran y que la integración continua "
-        "volviera a ejecutarse, y el cambio se registra como decisión de proceso.")
+        "en el Sprint 4, HU-45 se adelantó por privacidad y HU-46 a HU-49 quedaron en la versión 1.1. 5) Cada historia se construyó en su rama "
+        "con pruebas. 6) Se registraron las decisiones DC-41 a DC-46 y DC-50 en el diccionario. 7) y 8) Las ramas se integraron a main con la "
+        "integración continua en verde; la liberación a producción sigue el procedimiento normal en la semana 15. 9) El cierre se registra al "
+        "aceptar el Sprint 4. **Cambio de configuración del repositorio (DC-49):** ante la restricción de la cuenta de GitHub de un integrante "
+        "(R-15), el repositorio se migró a la organización Flotaagil-CL con su historial, ramas, etiquetas, issues y tablero; se verificó que "
+        "los commits coincidieran y que la integración continua volviera a ejecutarse. Al hacerlo aparecieron dos fallas que no se veían desde "
+        "el 27 de octubre (un aviso de Bandit y una variable de las pruebas que dependía del entorno), que se corrigieron con su propio pull request.")
     r.H3("Gestión de incidentes")
     r.P("**Canal de reporte:** WhatsApp de soporte o correo para usuarios; alertas automáticas de monitoreo. Todo incidente se registra como *issue* "
         "con la etiqueta «incidente» y la plantilla del Anexo L: identificador, fecha y hora de detección, quién reporta, servicio y componente "
@@ -266,12 +269,12 @@ def cronograma(r):
     r.P("**Lectura del avance.** Los Sprints 1, 2 y 3 se ejecutaron en las semanas de la línea base y completaron su alcance. La Carta Gantt "
         "de la EF2 todavía mostraba los Sprints 1 y 2 como planificados, porque no se había actualizado con el avance, y el informe de esa "
         "entrega detallaba solo el Sprint 0 y la prueba de concepto H-3. Esta versión corrige ambas cosas: el Gantt refleja lo ejecutado y el "
-        "capítulo VII documenta cada sprint con sus historias, pruebas y defectos. El **Sprint 4** está en curso (semanas 14 y 15) y va "
-        "adelantado: sus siete historias están construidas, porque reutilizan componentes de los sprints anteriores, y el tiempo restante se "
-        "destina a las correcciones de la EF2, a la fusión y a preparar la puesta en marcha. Los hitos se cumplieron en su semana (H-1 en la 5, "
-        "H-2 y H-3 en la 7, H-4 en la 11), salvo la prueba de la PoC H-3 en un teléfono real, que queda para la semana 14.")
+        "capítulo VII documenta cada sprint con sus historias, pruebas y defectos. El **Sprint 4** está en curso (semanas 14 y 15): sus siete "
+        "historias, las dos de la EF2 (HU-31 y HU-32) y las trece de los cambios del cliente (HU-33 a HU-45) están construidas e integradas en "
+        "la rama principal, y lo que resta del sprint se destina a preparar la puesta en marcha. Los hitos se cumplieron en su semana (H-1 en la 5, "
+        "H-2 y H-3 en la 7, H-4 en la 11), salvo la prueba de la PoC H-3 en un teléfono real, que pasa a la semana 15.")
     rows = []
-    REAL = {"S1": "Terminado", "S2": "Terminado", "S3": "Terminado", "S4": "En curso: historias construidas y en revisión; se suman HU-31 y HU-32 (EF2) y HU-33 a HU-44 (CC-16 a CC-18)"}
+    REAL = {"S1": "Terminado", "S2": "Terminado", "S3": "Terminado", "S4": "En curso: historias construidas e integradas; se suman HU-31 y HU-32 (EF2) y HU-33 a HU-45 (CC-16 a CC-18)"}
     for s, (sem, obj) in SPRINTS.items():
         hs = [h for h in HU if h[6] == s]
         ren = [h[0] for h in hs if RESP.get(h[0]) == "Renato"]
@@ -287,11 +290,11 @@ def cronograma(r):
         ("Fase 1 · Análisis y formulación (s1–5)", "E-01, E-02, E-03 · H-1", "Terminada; formulación entregada el 09/09/2026", "—"),
         ("Fase 2 · Diseño (s6–7)", "E-04, E-05, E-06 · H-2", "Terminada en la semana 7; E-06 reemplazado por pantallas funcionales", "Ajustada durante los sprints con CC-01 a CC-11 y tras la EF2 con CC-12 a CC-15"),
         ("Ecosistema de desarrollo (Sprint 0, s6–7)", "No planificado como tarea", "Terminado en la semana 7: organización y repositorio, protección de main, CI, Dependabot, secret scanning, 2FA y tablero (Anexo N)", "Actividad incorporada"),
-        ("PoC de GPS en segundo plano (s7)", "Informe técnico · H-3", "Hecha en la semana 7: suspensión del WebView detectada y corregida (Anexo M)", "Falta la prueba en teléfono real (semana 14)"),
+        ("PoC de GPS en segundo plano (s7)", "Informe técnico · H-3", "Hecha en la semana 7: suspensión del WebView detectada y corregida (Anexo M)", "Falta la prueba en teléfono real (semana 15)"),
         ("Sprint 1 (s8–9)", "45 SP", "**Terminado** en la semana 9: HU-03, 10, 13, 17, 19, 20, 26 (45 SP), más la base del backend, del panel y de la app", "Entraron HU-17 y HU-26; salió HU-01"),
         ("Sprint 2 (s10–11)", "45 SP", "**Terminado** en la semana 11: HU-02, 14, 15, 16, 21, 24 (45 SP), más estado en vivo, DC-20, Celery y adaptador de Google Maps", "Se adelantó Celery, previsto para operación"),
         ("Sprint 3 (s12–13)", "44 SP (HU-04, 11, 12, 25)", "**Terminado** en la semana 13: HU-04, 11, 27, 28, 29 (42 SP)", "Entraron HU-27, 28 y 29; HU-12 y HU-25 pasaron al Sprint 4"),
-        ("Sprint 4 (s14–15)", "45 SP (HU-05 a 09, 21 a 24)", "**En curso:** HU-01, 05, 06, 12, 18, 25, 30 (46 SP) construidas y en revisión; se suman y están construidas HU-31 y HU-32 (8 SP, EF2) y HU-33 a HU-44 (67 SP, CC-16 a CC-18); HU-45 a HU-49 (21 SP) pasan a la versión 1.1", "Reportes fusionados; entró HU-30; salieron HU-22 y HU-23; entran HU-31 y HU-32"),
+        ("Sprint 4 (s14–15)", "45 SP (HU-05 a 09, 21 a 24)", "**En curso:** HU-01, 05, 06, 12, 18, 25, 30 (46 SP), HU-31 y HU-32 (8 SP, EF2) y HU-33 a HU-45 (72 SP, CC-16 a CC-18) construidas e integradas en main; HU-46 a HU-49 (16 SP) pasan a la versión 1.1", "Reportes fusionados; entró HU-30; salieron HU-22 y HU-23; entran HU-31 a HU-45"),
         ("Puesta en marcha (s15)", "Dentro de la semana 16", "Planificada: despliegue en AWS, pruebas de carga, seguridad y recuperación en staging, carga de datos y capacitación", "Se adelanta de la semana 16 a la 15"),
         ("Fase 5 · UAT y producción (s16)", "E-11, E-12, E-13 · H-6", "Replanificada: capacitación e inicio de la marcha blanca en la semana 15; UAT y corte en la 16", "Se descarga la semana 16 (ver más abajo)"),
     ]
@@ -300,57 +303,73 @@ def cronograma(r):
         ("Sprint 1", "45 SP", "45 SP", "7 de 7", "0 %", "Base del backend, panel y app del conductor"),
         ("Sprint 2", "45 SP", "45 SP", "6 de 6", "0 %", "Estado en vivo, DC-20, tiempo límite de la app, Celery, adaptador de Google Maps"),
         ("Sprint 3", "42 SP", "42 SP", "5 de 5", "0 %", "Vuelo nacional o internacional por código ICAO (DC-22)"),
-        ("Sprint 4 (en curso)", "46 SP + 8 SP (EF2)", "46 SP construidos", "7 de 9", "—", "Señal de los vehículos, declaración del supervisor, navegación por dirección"),
-        ("**Acumulado**", "**186 SP**", "**178 SP construidos (96 %)**", "**25 de 27**", "**0 % en los sprints cerrados**", "Todas en «En revisión»; fusión pendiente"),
+        ("Sprint 4 (en curso)", "46 SP + 8 SP (EF2) + 72 SP (CC-16 a CC-18)", "126 SP construidos e integrados", "22 de 22", "—", "Señal de los vehículos, navegación por dirección, CP-14, migración del repositorio (DC-49)"),
+        ("**Acumulado**", "**258 SP**", "**258 SP construidos (100 %)**", "**40 de 40**", "**0 %**", "Todas integradas en main; HU-46 a HU-49 (16 SP) en la versión 1.1"),
     ], [2.2, 2.2, 3.0, 2.0, 2.4, 4.8], font=8)
     r.P("**Sobre la velocidad.** Los Sprints 1 a 3 completaron 45, 45 y 42 SP, en línea con la velocidad de 45 SP por sprint estimada en la "
-        "formulación (R-02 no se materializó). «Terminado» significa construido, probado y con evidencia; la DoD se completa con la aprobación "
-        "del pull request, que sigue pendiente por la restricción de la cuenta de GitHub (R-15) y es hoy el cuello de botella del flujo. Como "
-        "lo que resta combina desarrollo, despliegue y capacitación, se planifica en **horas** ({T:carga}).")
-    r.P("**Cambios absorbidos en la semana 14.** El cliente pidió en esta semana tres cambios (CC-16 a CC-18): un inicio de sesión único, "
-        "convenios con cuenta propia y aprobación, administración de usuarios del panel y pedir siempre con cuenta, con el rediseño del portal. "
-        "Se aprobaron con una condición del Product Owner: **no mover la UAT ni la semana 16**. Por eso se dividieron: HU-33 a HU-44 entraron al "
-        "Sprint 4 porque reutilizan piezas ya construidas (el inicio de sesión y la renovación segura de la sesión, la verificación por WhatsApp de "
-        "HU-20, los componentes del panel y el sistema visual) y se construyeron en ramas propias con sus pruebas; HU-45 a HU-49 (perfil y "
-        "eliminación de la cuenta, convenios por equipo, personas frecuentes y estados del sistema) quedan para la versión 1.1, después de la "
-        "UAT. Esta velocidad no se usa para proyectar los sprints siguientes: el plan de las semanas 15 y 16 se controla en horas y no suma "
-        "historias nuevas.")
+        "formulación (R-02 no se materializó). «Terminado» significa construido, probado, con evidencia e integrado en la rama principal con la "
+        "integración continua en verde. La integración, que estuvo detenida por la restricción de la cuenta de GitHub de un integrante (R-15), "
+        "se resolvió en la semana 14 al migrar el repositorio a la organización Flotaagil-CL (DC-49): las ramas ya revisadas entraron a main con "
+        "los mismos commits y sus issues se cerraron. Como lo que resta combina despliegue, pruebas y capacitación, se planifica en **horas** "
+        "({T:carga}).")
+    r.P("**Cambios absorbidos en la semana 14 y velocidad del Sprint 4.** El cliente pidió en esta semana tres cambios (CC-16 a CC-18): un "
+        "inicio de sesión único, convenios con cuenta propia y aprobación, administración de usuarios del panel y pedir siempre con cuenta, con "
+        "el rediseño del portal. Se aprobaron con una condición del Product Owner: **no mover la UAT ni la semana 16**. Por eso se dividieron: "
+        "HU-33 a HU-44 entraron al Sprint 4, HU-45 (perfil y eliminación de la cuenta) se adelantó porque responde al derecho de supresión de la "
+        "Ley N° 21.719, y HU-46 a HU-49 quedan para la versión 1.1, después de la UAT. Con ello el Sprint 4 suma 126 SP, casi el triple de "
+        "la velocidad de los sprints anteriores, y esa cifra necesita una explicación:")
+    r.bullets([
+        "**Los story points miden complejidad relativa, no horas.** Las historias de los cambios se estimaron con la misma escala, como si "
+        "partieran de cero, antes de saber cuánto se podía reutilizar.",
+        "**Reutilización alta.** HU-33 a HU-36 se apoyan en piezas ya construidas: el inicio de sesión y la renovación segura de la sesión, la "
+        "contraseña temporal (DC-14), la auditoría y la verificación por WhatsApp de HU-20. HU-38 a HU-44 son, en su mayor parte, pantallas del "
+        "portal sobre servicios que ya existían, y se construyeron después del sistema visual (HU-37), de modo que cada pantalla nueva fue "
+        "composición de componentes probados. HU-40 consistió sobre todo en retirar el pedido sin cuenta.",
+        "**Sin deuda acumulada.** Las 25 historias anteriores ya estaban construidas y probadas, por lo que el sprint no tuvo que absorber "
+        "correcciones de arrastre.",
+    ])
+    r.P("Por eso esta velocidad **no se usa para proyectar**: las semanas 15 y 16 se controlan en horas y no suman historias nuevas, y la "
+        "versión 1.1 se planificará con la velocidad media de los Sprints 1 a 3 (44 SP). Los cambios futuros se estimarán por comparación con "
+        "historias ya construidas que reutilicen lo mismo, tema que se lleva a la retrospectiva del Sprint 4.")
 
     r.H3("Plan de las semanas 14 a 16 y carga de la semana 16")
     r.P("La versión anterior concentraba en la semana 16 la capacitación, la marcha blanca, la corrección de errores y la UAT. El académico guía "
-        "observó que esa carga no era creíble en una sola semana. Como las historias del Sprint 4 ya están construidas, el resto de ese sprint "
-        "deja capacidad libre y el trabajo se redistribuyó entre las semanas 14, 15 y 16 ({T:carga}). La capacidad es de 50 horas por semana "
-        "(dos integrantes a 25 h).")
+        "observó que esa carga no era creíble en una sola semana. El trabajo se redistribuyó entre las semanas 14, 15 y 16 ({T:carga}). La semana "
+        "14 se usó para construir e integrar las historias del Sprint 4; lo que quedó pendiente de ella (credenciales de los servicios externos "
+        "y prueba en teléfono real) pasa a la 15. La capacidad es de 50 horas por semana (dos integrantes a 25 h).")
     r.table("carga", "Plan y carga de trabajo de las semanas 14 a 16", ["Semana", "Actividades", "Horas estimadas", "Capacidad", "Resultado esperado"], [
-        ("14 (9 al 15/11) · Sprint 4", "Entrega de la ES2 (4 h) · fusión de los cuatro PR con CI (6 h) · HU-31: TURNO y CIERRE_CAJA (9 h) · HU-32: reserva de contingencia (5 h) · CP-14 con simultaneidad (3 h) · credenciales de Twilio, vuelos y mapas (6 h) · guía de prueba en teléfono real (8 h) · corrección de hallazgos (6 h)", "47 h", "50 h", "main con los cuatro sprints; H-3 cerrada; CP-14, CP-36 y CP-37 ejecutados"),
-        ("15 (16 al 22/11) · cierre del Sprint 4", "Revisión del Sprint 4 con el PO y el cliente (2 h) · infraestructura en AWS, producción y staging (8 h) · despliegue v1.0.0 y humo (4 h) · carga, estrés, seguridad y restauración en staging (10 h) · corrección de defectos (8 h) · carga de datos maestros (3 h) · capacitación de administrador, despachadores y conductores (6 h) · manuales y guía rápida (6 h) · inicio de la marcha blanca (2 h)", "49 h", "50 h", "Sprint 4 cerrado; CP-28 a CP-31 y CP-34 ejecutados; usuarios capacitados; SLA revisado; H-5"),
-        ("16 (23 al 29/11)", "Acompañamiento de la marcha blanca, tres días (12 h) · usabilidad y consumo en teléfono (4 h) · UAT por rol, dos sesiones (6 h) · reserva para corregir lo que encuentren la marcha blanca y la UAT (16 h) · corte, acta y cierre documental (6 h)", "44 h", "50 h", "Acta de UAT firmada; corte; H-6"),
+        ("14 (9 al 15/11) · Sprint 4", "HU-31 y HU-32 (EF2) · HU-33 a HU-45 (CC-16 a CC-18) · CP-14 con simultaneidad real · migración del repositorio e integración en main con CI en verde · entrega de la ES2", "Ejecutada", "50 h", "main con las 40 historias; CP-14 y CP-36 a CP-45 ejecutados"),
+        ("15 (16 al 22/11) · cierre del Sprint 4", "Revisión del Sprint 4 con el PO y el cliente (2 h) · credenciales de Twilio, vuelos y mapas (4 h) · guía de prueba en teléfono real (6 h) · infraestructura en AWS, producción y staging (8 h) · despliegue v1.0.0 y humo (4 h) · carga, estrés, seguridad y restauración en staging (8 h) · corrección de defectos (6 h) · carga de datos maestros (3 h) · capacitación de administrador, despachadores y conductores (6 h) · inicio de la marcha blanca (2 h)", "49 h", "50 h", "Sprint 4 cerrado; H-3 cerrada; CP-28 a CP-31 y CP-34 ejecutados; usuarios capacitados; H-5"),
+        ("16 (23 al 29/11)", "Acompañamiento de la marcha blanca, tres días (12 h) · usabilidad y consumo en teléfono (4 h) · manuales y guía rápida (6 h) · UAT por rol, dos sesiones (6 h) · reserva para corregir lo que encuentren la marcha blanca y la UAT (12 h) · corte, acta y cierre documental (6 h)", "46 h", "50 h", "Acta de UAT firmada; corte; H-6"),
     ], [2.2, 8.6, 1.6, 1.4, 2.8], font=7.6)
     r.P("**Por qué la semana 16 ahora es factible.** 1) La capacitación, el despliegue y las pruebas no funcionales ya no están en ella: pasaron "
-        "a la semana 15. 2) La corrección de errores finales tiene dos momentos y no uno: 8 horas en la semana 15, para lo que encuentren las "
-        "pruebas en staging, y una reserva de 16 horas en la 16, para lo que encuentren la marcha blanca y la UAT. 3) La marcha blanca empieza "
-        "el último día de la semana 15, con lo que acumula cuatro días de operación real antes de la UAT. 4) La semana 16 queda en 44 de 50 "
-        "horas, con 6 de holgura. 5) Si un defecto crítico no cabe en la reserva, la UAT se firma con el alcance aprobado y la corrección entra "
+        "a la semana 15. 2) La corrección de errores finales tiene dos momentos y no uno: 6 horas en la semana 15, para lo que encuentren las "
+        "pruebas en staging, y una reserva de 12 horas en la 16, para lo que encuentren la marcha blanca y la UAT. 3) La marcha blanca empieza "
+        "el último día de la semana 15, con lo que acumula cuatro días de operación real antes de la UAT. 4) La semana 16 queda en 46 de 50 "
+        "horas, con 4 de holgura. 5) Si un defecto crítico no cabe en la reserva, la UAT se firma con el alcance aprobado y la corrección entra "
         "como primera versión de mantención (v1.0.1) bajo el procedimiento de cambios de 8.3; el corte no se hace con defectos críticos o altos "
         "abiertos. **Condición externa:** la aprobación de las plantillas de WhatsApp por Meta (R-12) no depende del equipo; si no llega antes de "
         "la marcha blanca, esta se hace con el sandbox y los avisos fuera de la ventana de 24 horas quedan fuera de la UAT, declarados en el acta.")
-    r.P("**Dependencias revisadas.** La fusión de los pull requests precede a HU-31 y HU-32, que se construyen sobre main; HU-31 depende de "
-        "HU-18 (turno) y de HU-06 (liquidación); el despliegue depende de la fusión; las pruebas de carga dependen del staging; y la UAT depende "
-        "de la capacitación. **Revisiones y validación:** revisión del académico guía en la EF2 (semana 12) y en la ES2 (semana 14), revisión "
+    r.P("**Dependencias revisadas.** Las del Sprint 4 ya se resolvieron: HU-31 dependía de HU-18 (turno) y de HU-06 (liquidación), HU-34 y "
+        "HU-35 del inicio de sesión único (HU-33), y las pantallas del portal (HU-38 a HU-45) del sistema visual (HU-37). Quedan: la marcha "
+        "blanca depende de las credenciales de los servicios externos y del despliegue; las pruebas de carga dependen del staging; y la UAT "
+        "depende de la capacitación. **Revisiones y validación:** revisión del académico guía en la EF2 (semana 12) y en la ES2 (semana 14), revisión "
         "del Sprint 4 con el Product Owner y el cliente en la semana 15, y aceptación del cliente en la UAT. Fecha de actualización del "
         "cronograma: semana 14.")
     r.P("**Causas e impacto de los ajustes.** En **alcance**, los cambios CC-01 a CC-05 agregaron 31 SP de aeropuerto y chat, compensados con 32 SP "
-        "de fusiones, eliminaciones y reestimaciones (de 179 a 178 SP); las observaciones de la EF2 agregan 8 SP (HU-31 y HU-32), con lo que el "
-        "backlog llega a 186 SP, que se absorben en el Sprint 4. En **fechas**, se mantienen las 16 semanas y los hitos; solo la prueba de la "
-        "PoC H-3 en un teléfono real se desplaza a la semana 14, y la capacitación se adelanta a la 15. En **recursos**, se suman la cuenta de Twilio, la API de vuelos y unas horas de staging, cubiertas por el "
-        "presupuesto. En **calidad**, se agregan los casos CP-07 a CP-11, CP-16, CP-17, CP-19 a CP-21, CP-27, CP-36 y CP-37, y se rediseña CP-14.")
+        "de fusiones, eliminaciones y reestimaciones (de 179 a 178 SP); las observaciones de la EF2 agregan 8 SP (HU-31 y HU-32) y los cambios "
+        "del cliente de la semana 14 agregan 72 SP al Sprint 4 (HU-33 a HU-45) y 16 SP a la versión 1.1 (HU-46 a HU-49), con lo que lo "
+        "construido llega a 258 SP. En **fechas**, se mantienen las 16 semanas y los hitos; solo la prueba de la PoC H-3 en un teléfono real se "
+        "desplaza a la semana 15, y la capacitación se adelanta a la 15. En **recursos**, se suman la cuenta de Twilio, la API de vuelos y unas horas de staging, cubiertas por el "
+        "presupuesto. En **calidad**, se agregan los casos CP-07 a CP-11, CP-16, CP-17, CP-19 a CP-21, CP-27 y CP-36 a CP-45, y se rediseña CP-14.")
     r.P("**Medidas correctivas ante retrasos.** El control pasa de story points a horas: al cierre de cada semana se compara lo ejecutado con la "
-        "{T:carga}. Si la semana 14 no termina con los pull requests fusionados, se priorizan en este orden: 1) fusión y despliegue, que "
-        "condicionan todo lo demás; 2) HU-31, que cierra la observación de mayor peso; 3) HU-32, cuyo procedimiento puede operar de forma "
-        "provisoria ingresando los viajes como reservas normales con una nota; 4) las pruebas de usabilidad, que pueden hacerse durante la "
-        "marcha blanca. **Factibilidad:** el plan es factible porque lo que resta suma 140 horas frente a 150 de capacidad, las 25 historias del "
-        "backlog validado ya están construidas y lo nuevo es acotado (8 SP). **Relación con los objetivos:** los cuatro sprints entregaron los "
-        "procesos P1, P2 y P3 (OE-02 y OE-03); el cierre del Sprint 4 completa P3.2 y la continuidad; y las semanas 15 y 16 validan la solución (OE-04).")
+        "{T:carga}, como control del cronograma frente a su línea base (Project Management Institute [PMI], 2021). Si la semana 15 se atrasa, se prioriza en este orden: 1) despliegue y prueba de humo, que condicionan todo lo demás; 2) "
+        "credenciales de los servicios externos y prueba en teléfono real, que cierran R-12 y R-01; 3) pruebas de carga y de restauración en "
+        "staging; 4) las pruebas de usabilidad, que pueden hacerse durante la marcha blanca. **Factibilidad:** el plan es factible porque lo que "
+        "resta suma 95 horas frente a 100 de capacidad, todas las historias del alcance están construidas e integradas y no se suman historias "
+        "nuevas antes de la UAT (CC-19 a CC-21 van a la versión 1.1). **Relación con los objetivos:** los cuatro sprints entregaron los procesos "
+        "P1, P2 y P3 (OE-02 y OE-03); el Sprint 4 completó P3.2, la continuidad y la creación de cuentas (P1.1); y las semanas 15 y 16 validan "
+        "la solución (OE-04).")
     r.P("**Seguimiento de riesgos.** La matriz completa, con el estado de cada riesgo a la fecha de corte, está en la {T:riesgos_full}. Los "
         "riesgos con exposición ≥ 12 se revisan cada semana; los que más preocupan para el cierre son R-12 (plantillas de Meta), porque "
         "condiciona la UAT y no depende del equipo, y R-01 (GPS en un teléfono real), porque todavía no se ha probado en la calle.")
@@ -359,9 +378,10 @@ def cronograma(r):
 def conclusiones(r):
     r.H1("Conclusiones")
     r.P("El proyecto transformó un problema operativo medido (12,1 % de reservas perdidas, 8 min 40 s por asignación y $34.500 diarios de "
-        "descuadre) en un producto que funciona de punta a punta. Al corte de la semana 14 están construidas y probadas las 25 historias del "
-        "backlog validado, las dos originadas en la EF2 y las doce de los cambios CC-16 a CC-18, con los Sprints 1 a 3 terminados y el Sprint 4 en curso: un pasajero con cuenta pide un viaje desde el portal, un convenio lo hace con su propia cuenta o lo registra el despachador; se confirma "
-        "por WhatsApp; el vuelo se valida y se monitorea; el despachador asigna con una sugerencia, que en el aeropuerto es el primero de la "
+        "descuadre) en un producto que funciona de punta a punta. Al corte de la semana 14 están construidas, probadas e integradas las 25 "
+        "historias del backlog validado, las dos originadas en la EF2 y las trece de los cambios CC-16 a CC-18, con los Sprints 1 a 3 terminados "
+        "y el Sprint 4 en curso: un pasajero con cuenta pide un viaje desde el portal, un convenio lo hace con su propia cuenta o lo registra el "
+        "despachador; el teléfono del pasajero se verifica por WhatsApp una sola vez, al activar su cuenta; el vuelo se valida y se monitorea; el despachador asigna con una sugerencia, que en el aeropuerto es el primero de la "
         "fila virtual; el conductor acepta en 60 segundos; la llegada se marca por geocerca; el pago queda registrado al finalizar; y el "
         "administrador dispone de reportes, auditoría e indicadores. Las tres causas raíz del diagnóstico —sin fuente única de datos, sin "
         "trazabilidad de la flota y sin registro del cobro— tienen una respuesta construida.")
@@ -375,26 +395,30 @@ def conclusiones(r):
         "cliente actual obtiene unos $432.500 netos al mes y recupera la licencia en poco más de un mes; el plan se paga con solo recuperar 67 "
         "de las 183 reservas que hoy pierde. El cambio a una licencia perpetua de uso más un plan de servicio mensual resuelve además un "
         "problema de fondo del modelo anterior: permite vender el producto a varias flotas sin ceder el código. Para FlotaÁgil la operación se "
-        "sostiene desde el primer cliente ($35.350 mensuales), con un margen estrecho mientras la mensajería pase por un intermediario.")
+        "sostiene desde el primer cliente ($35.350 mensuales), con un margen estrecho mientras la mensajería pase por un intermediario; el chat "
+        "interno aprobado para la versión 1.1 (CC-19) retira ese intermediario y eleva el resultado a cerca de $138.000 mensuales.")
     r.P("La arquitectura elegida (Django con PostGIS, Channels y Celery; React en el panel, el portal y la app con Capacitor) permitió "
-        "completar el alcance de los cuatro sprints y absorber tres cambios del cliente en la última semana sin mover la UAT, y la separación por empresa definida desde el inicio se verificó en cada historia. Las 47 "
+        "completar el alcance de los cuatro sprints y absorber tres cambios del cliente en la última semana sin mover la UAT, y la separación por "
+        f"empresa definida desde el inicio se verificó en cada historia. Las {DC_TOTAL} "
         "decisiones de cambio registradas muestran que el diseño necesitó precisiones, no rediseños. La calidad se trató como parte de cada "
-        "historia: las 2.075 pruebas automáticas al corte (1.221 de backend, 765 de web y 89 de la app) y las pruebas manuales contra el backend real encontraron 13 "
+        f"historia: las {PRUEBAS} pruebas automáticas al corte ({PRUEBAS_DETALLE}) y las pruebas manuales contra el backend real encontraron 13 "
         "defectos antes de que llegaran a un usuario.")
     r.P("Se distingue con claridad lo demostrado de lo esperado. Está demostrado el funcionamiento con datos sintéticos, servicios externos "
         "simulados, un emulador Android y un ambiente local. **No está demostrado todavía** con WhatsApp real (cuenta, número y plantillas "
         "aprobadas por Meta), con la API de vuelos y Google Maps con claves reales, con el GPS de un teléfono en la calle, ni bajo carga en "
-        "AWS; y las historias siguen en revisión, sin fusionar, a la espera de que la integración continua del repositorio migrado quede en verde. Los beneficios, los KPI y los SLA son **proyectados** hasta la marcha blanca, y el margen por viaje es un supuesto que "
-        "debe confirmar el cliente. En el cronograma, los hitos se cumplieron en su semana, salvo la prueba de la PoC en un teléfono real.")
+        "AWS. Los beneficios, los KPI y los SLA son **proyectados** hasta la marcha blanca, y el margen por viaje es un supuesto que "
+        "debe confirmar el cliente. En el cronograma, los hitos se cumplieron en su semana, salvo la prueba de la PoC en un teléfono real. "
+        "La privacidad, en cambio, ya no es solo diseño: la cuenta del pasajero se puede eliminar con anonimización y las posiciones GPS de "
+        "más de 30 días se borran todos los días.")
     r.P("Como aprendizaje, el foco aeropuerto mostró que una conversación más con el cliente puede cambiar el producto más que cualquier "
         "decisión técnica, y la EF2, que la coherencia entre artefactos no es un asunto de forma: un indicador que el modelo de datos no puede "
         "calcular es un indicador que no existe. También se confirmó que registrar las decisiones y la evidencia de cada historia en el "
         "repositorio hace que el avance sea verificable, y que conviene despejar el riesgo técnico mayor antes de construir.")
-    r.P("Los próximos pasos son cerrar el Sprint 4: fusionar los pull requests con la integración continua en verde y ejecutar CP-14 contra la base real; tramitar las plantillas de Meta "
-        "y las claves de los servicios externos; ejecutar la guía de prueba en un teléfono real; desplegar en AWS y ejecutar las pruebas de "
-        "carga, seguridad y recuperación; capacitar a los usuarios; y cerrar con la marcha blanca y la UAT de la semana 16. Quedan como líneas "
-        "de evolución, en este orden: la migración de la mensajería a la Cloud API de Meta, que es una mejora de código (un adaptador nuevo) y "
-        "de negocio (baja el costo variable de ≈ $88 a ≈ $32 por reserva); las historias HU-45 a HU-49 de la versión 1.1; la predicción de demanda por franja horaria con el historial de viajes y las llegadas de vuelos programadas; roles y permisos más "
+    r.P("Los próximos pasos son cerrar el Sprint 4: tramitar las claves de los servicios externos y las plantillas de Meta que la marcha "
+        "blanca todavía necesita; ejecutar la guía de prueba en un teléfono real; desplegar en AWS y ejecutar las pruebas de carga, seguridad y "
+        "recuperación; capacitar a los usuarios; y cerrar con la marcha blanca y la UAT de la semana 16. Quedan como líneas de evolución, en "
+        "este orden: la versión 1.1, con el chat interno que reemplaza a WhatsApp y baja el costo variable de ≈ $88 a ≈ $20 por reserva "
+        "(CC-19), la unificación visual y la apariencia por empresa (CC-20 y CC-21) y las historias HU-46 a HU-49; la predicción de demanda por franja horaria con el historial de viajes y las llegadas de vuelos programadas; roles y permisos más "
         "finos; el aviso por push con la app cerrada; el portal en inglés para turistas; la operación multiempresa completa y la alta "
         "disponibilidad; y la integración de pagos electrónicos con emisión de documentos tributarios.")
 

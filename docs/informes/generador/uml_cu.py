@@ -23,7 +23,7 @@ def usecase(code, name, x, y):
     uc[code] = (x, y)
 
 L, Rx = 34, 58
-usecase("CU-05", "Administrar conductores\ny vehículos", L, 100)
+usecase("CU-05", "Administrar flota\ny usuarios", L, 100)
 usecase("CU-06", "Administrar\nconvenios", L, 92)
 usecase("CU-07", "Consultar\nauditoría", L, 84)
 usecase("CU-08", "Generar reportes\ny cerrar caja", L, 76)
@@ -39,7 +39,7 @@ usecase("CU-10", "Aceptar o rechazar\nviaje asignado", Rx, 92)
 usecase("CU-11", "Ejecutar viaje y\nregistrar cobro", Rx, 84)
 usecase("CU-16", "Gestionar fila virtual\ndel aeropuerto", Rx, 76)
 usecase("CU-12", "Solicitar\nviaje", Rx, 62)
-usecase("CU-13", "Verificar teléfono\npor WhatsApp", Rx, 52)
+usecase("CU-13", "Crear y activar\ncuenta", Rx, 52)
 usecase("CU-14", "Recibir avisos,\ncancelar y calificar", Rx, 40)
 
 
@@ -86,7 +86,7 @@ for c in ["CU-02", "CU-01", "CU-03", "CU-04", "CU-17", "CU-15"]:
 for c in ["CU-09", "CU-10", "CU-11", "CU-16"]:
     assoc((con[0], con[1] + 1.3), c, -1.8)
 assoc((sup[0], sup[1] + 1.3), "CU-12", -1.8)
-for c in ["CU-12", "CU-14"]:
+for c in ["CU-12", "CU-13", "CU-14"]:
     assoc((pas[0], pas[1] + 1.3), c, -1.8)
 assoc((gm[0] + 7.5, gm[1]), "CU-02")
 assoc((fl[0] + 7.5, fl[1]), "CU-15")
@@ -105,10 +105,8 @@ def dep(c_from, c_to, label, lpos):
             bbox=dict(fc="white", ec="none", pad=0.2), zorder=5)
 
 
-dep("CU-13", "CU-12", "«extend»\n[solicitud sin convenio]", (Rx - 7.5, 57))
 dep("CU-16", "CU-03", "«extend»\n[recogida en aeropuerto]", (51.5, 67.0))
 
-ax.text(46, 18.5, "CU-16 extiende CU-03 en el punto «propuesta de candidato»; "
-        "CU-13 extiende CU-12 cuando la\nsolicitud no proviene de un convenio. Los actores «sistema» son servicios externos que participan como actores secundarios.", ha="center", va="top", fontsize=FS - 1.4,
+ax.text(46, 18.5, "CU-16 extiende CU-03 en el punto «propuesta de candidato». Para solicitar un viaje (CU-12) se requiere una cuenta\nactiva (CU-13) o un convenio aprobado (CU-06). Los actores «sistema» son servicios externos que participan como actores secundarios.", ha="center", va="top", fontsize=FS - 1.4,
         wrap=True, color="#33415c")
 fig.savefig("fig/uml_cu.png", dpi=220, facecolor="white", bbox_inches="tight", pad_inches=0.1)

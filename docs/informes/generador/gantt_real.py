@@ -17,7 +17,8 @@ rows = [  # nombre, plan (a,b) o None, real (a,b) o None, estado, nota
     ("Sprint 2 · Tiempo real y conductor (45 SP)", (10, 11), (10, 11), "done", "45 de 45 SP"),
     ("Sprint 3 · Despacho y aeropuerto (42 SP)", (12, 13), (12, 13), "done", "42 de 42 SP"),
     ("Sprint 4 · Control y cierre (46 SP)", (14, 15), (14, 14), "wip", "En curso · 46 SP construidos"),
-    ("  Correcciones de la EF2 (HU-31, HU-32, CP-14)", None, (14, 15), "proy", "8 SP · CC-12 y CC-15"),
+    ("  Correcciones de la EF2 (HU-31, HU-32, CP-14)", None, (14, 14), "done", "8 SP · CC-12 y CC-15"),
+    ("  Cambios del cliente (HU-33 a HU-45)", None, (14, 14), "done", "72 SP · CC-16 a CC-18"),
     ("Documentación: Informe 2 (EF2 y ES2)", (8, 14), (8, 14), "done", "EF2 s12 · ES2 s14"),
     ("Despliegue en AWS, carga, seguridad y recuperación", None, (15, 15), "proy", "CP-28 a CP-31"),
     ("Capacitación y marcha blanca", (16, 16), (15, 16), "proy", "Adelantada a la s15"),
@@ -26,7 +27,7 @@ rows = [  # nombre, plan (a,b) o None, real (a,b) o None, estado, nota
 miles = [("H-1", 5, 0), ("H-2\nH-3", 7, 0), ("H-4", 11, 0), ("EF2", 12, 1), ("ES2", 14, 1), ("H-5", 15, 0), ("H-6", 16, 0)]
 W = 16
 n = len(rows)
-fig, ax = plt.subplots(figsize=(10.8, 5.9))
+fig, ax = plt.subplots(figsize=(10.8, 6.3))
 ax.axvspan(13, 14, color="#fdf1dc", zorder=0)
 for i, (name, plan, real, st, note) in enumerate(rows):
     y = n - i

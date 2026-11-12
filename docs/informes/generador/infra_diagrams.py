@@ -57,7 +57,7 @@ d.zone(2, 2, 30, 80, "Usuarios (red local / móvil)", "client")
 pc = d.box(17, 66, 24, 9, "PC de la central", "Navegador · banda ancha\n(red local del cliente)")
 cel = d.box(17, 47, 24, 9, "Smartphones de conductores", "App Android (Capacitor)\n4G/5G · GPS")
 pax = d.box(17, 28, 24, 9, "Smartphone del pasajero", "Portal web (navegador) y WhatsApp\n(vía red de Meta) · 4G/5G o Wi-Fi")
-sup = d.box(17, 11, 24, 8, "PC del supervisor", "Navegador (link de convenio)")
+sup = d.box(17, 11, 24, 8, "PC del supervisor", "Navegador (cuenta de convenio)")
 
 d.zone(38, 2, 44, 80, "AWS us-east-1 (nube pública)", "aws")
 r53 = d.box(60, 74, 22, 6, "Route 53", "DNS app.flotaagil.cl")
