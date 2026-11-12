@@ -453,11 +453,18 @@ def anexos(r):
         "tope se cobra a $120, con $32 de margen. El precio de la licencia cubre además el costo de la puesta en marcha: unas 12 horas "
         "(configuración 3 h, carga de datos 3 h y capacitación 6 h), que al valor hora del presupuesto ($1.500.000 ÷ 108 h ≈ $13.900) son "
         "≈ $167.000, menos que la licencia más baja ($200.000).")
-    r.table("j_cartera", "Resultado de FlotaÁgil según la cartera de clientes", ["Cartera", "Licencias (único)", "Contribución mensual", "Costos fijos mensuales", "Resultado mensual", "Acumulado a 24 meses", "Inversión recuperada"], [
-        ("1 Avanzado (cliente actual)", "$500.000", "$66.500", "$31.150", "$35.350", "$1.348.400", "9,6 %"),
-        ("1 Avanzado + 2 Estándar + 2 Inicial", "$1.600.000", "$222.500", "$63.150", "$159.350", "$5.424.400", "38,6 %"),
-        ("4 Avanzado + 4 Estándar + 3 Inicial", "$4.000.000", "$549.800", "$111.150", "$438.650", "$14.527.600", "103,4 %"),
-    ], [4.2, 2.0, 2.2, 2.2, 2.0, 2.2, 1.8], font=7.8,
+    import data_van as dv
+    filas_cart = []
+    for nombre, lista in (("1 Avanzado (cliente actual)", ["A"]),
+                          ("Año 1: 2 Avanzado + 1 Estándar + 1 Inicial", dv.CARTERA[1]),
+                          ("Año 2: 3 Avanzado + 2 Estándar + 2 Inicial", dv.CARTERA[2]),
+                          ("Año 3: 4 Avanzado + 3 Estándar + 3 Inicial", dv.CARTERA[3])):
+        lic, contrib, fijos, res = dv.resumen_cartera(lista)
+        acum = lic + 24 * res
+        filas_cart.append((nombre, dv.pesos(lic), dv.pesos(contrib), dv.pesos(fijos), dv.pesos(res), dv.pesos(acum),
+                           f"{acum / dv.INV_VALORIZADA * 100:.1f} %".replace(".", ",")))
+    r.table("j_cartera", "Resultado de FlotaÁgil según la cartera de clientes", ["Cartera", "Licencias (único)", "Contribución mensual", "Costos fijos mensuales", "Resultado mensual", "Acumulado a 24 meses", "Inversión recuperada"],
+            filas_cart, [4.2, 2.0, 2.2, 2.2, 2.0, 2.2, 1.8], font=7.8,
             source="Elaboración propia. Clientes con el volumen de ejemplo de la Tabla {T:equil}; acumulado = licencias + 24 × resultado mensual, con toda la cartera activa desde el primer mes; inversión valorizada de $14.047.000.")
     r.table("j_flotas", "Beneficio mensual del cliente según el tamaño de su flota", ["Flota y plan", "Reservas al mes", "Reservas recuperadas (7,1 %)", "Margen neto (25 %)", "Caja recuperada (30 %)", "Plan", "Beneficio neto", "Licencia recuperada en", "Pesimista: margen de 20 %, sin caja"], [
         ("10 vehículos · Inicial", "350", "25", "$75.000", "$72.000", "$59.000", "$88.000", "2,3 meses", "$60.000 − $59.000 = $1.000"),
@@ -473,8 +480,9 @@ def anexos(r):
     r.P("**J.5 Flujo de caja proyectado a tres años.** Respaldo de la {T:van_res}. Tasa de descuento de 12 % anual; flujos al cierre de cada "
         "año; año 0 = puesta en marcha. Consumo por cliente con la operación actual: $132.500 (Avanzado, volumen del cliente actual), "
         "$79.200 (Estándar, 900 reservas) y $30.800 (Inicial, 350 reservas); con CC-19: $29.500, $18.000 y $7.000 (≈ $20 por reserva). "
-        "Costos fijos: $31.150 al mes más $8.000 por cada cliente adicional. Cartera activa: año 1, el cliente actual; año 2, 1 + 1 Avanzado, "
-        "1 Estándar y 1 Inicial; año 3, 4 Avanzado, 4 Estándar y 3 Inicial. Cada cliente nuevo paga su licencia el año en que se incorpora. "
+        "Costos fijos: $31.150 al mes más $8.000 por cada cliente adicional. Cartera activa: tres clientes nuevos por año, uno de cada plan; "
+        "año 1, el cliente actual más 1 Avanzado, 1 Estándar y 1 Inicial (4); año 2, 7; año 3, 4 Avanzado, 3 Estándar y 3 Inicial (10). Cada "
+        "cliente nuevo paga su licencia el año en que se incorpora. "
         "El escenario con CC-19 es una proyección de la versión 1.1 e incluye su desarrollo como inversión del año 1 ({T:j_cc19}).")
     r.table("j_cc19", "Estimación del desarrollo de CC-19 (proyección v1.1)", ["Componente", "Horas"],
             [(t, str(h)) for t, h in dv.CC19_TAREAS] + [
@@ -501,8 +509,8 @@ def anexos(r):
                    "La TIR del escenario meta no es significativa porque la inversión inicial es mínima frente al beneficio anual.")
     da, dc = dv.flujos_flotaagil("actual", dv.INV_DESEMBOLSO), dv.flujos_flotaagil("cc19", dv.INV_DESEMBOLSO)
     r.P("**Evaluación sobre el desembolso.** Si en el año 0 se considera solo el desembolso de $847.000 ($770.000 más 10 % de imprevistos), "
-        f"el VAN al 12 % es {dv.pesos(dv.van(da))} con la operación actual (TIR {dv.pct(dv.tir(da))}) y {dv.pesos(dv.van(dc))} con CC-19 "
-        f"(TIR {dv.pct(dv.tir(dc))}). La evaluación principal usa la inversión valorizada porque las horas del equipo tienen un costo de "
+        f"el VAN al 12 % es {dv.pesos(dv.van(da))} con la operación actual y {dv.pesos(dv.van(dc))} con CC-19; la TIR no es significativa "
+        "con una inversión inicial tan baja. La evaluación principal usa la inversión valorizada porque las horas del equipo tienen un costo de "
         "oportunidad, aunque no sean un gasto.")
 
     # ---------------- I
