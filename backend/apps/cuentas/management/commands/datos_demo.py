@@ -95,6 +95,8 @@ class Command(BaseCommand):
                         conductores.append(usuario)
                 perfiles = demo_flota.cargar(empresa, numero, conductores)
                 viajes_creados += demo_reservas.cargar(empresa, numero, perfiles, faker, password)
+                # También en una base cargada antes de HU-34, que ya tiene viajes y no pasa por cargar().
+                demo_reservas.asegurar_convenio(empresa, numero, password)
 
         self.stdout.write(
             self.style.SUCCESS(

@@ -1,12 +1,10 @@
 {
-  "generado": "2026-11-12T07:43:45",
+  "generado": "2026-11-12T08:44:12",
   "hu_total": 44,
   "sp_total": 274,
-  "dc_total": 48,
-  "dc_max": 49,
-  "dc_faltantes": [
-    48
-  ],
+  "dc_total": 50,
+  "dc_max": 50,
+  "dc_faltantes": [],
   "cc_max": 18,
   "entidades": 23,
   "entidades_lista": [
@@ -37,22 +35,22 @@
   "pruebas": {
     "_ayuda": "Actualizar cada vez que se corren las suites completas (CLAUDE.md, «Informes y evidencias»). 'pruebas' = casos ejecutados en verde; 'cobertura' = % de líneas.",
     "fecha": "2026-11-12",
-    "rama": "main (29a19e3)",
+    "rama": "feat/HU-45-perfil (sobre main 7daa015)",
     "backend": {
-      "pruebas": 1221,
+      "pruebas": 1255,
       "cobertura": 97.9,
-      "comando": "pytest -q"
+      "comando": "pytest --cov"
     },
     "web": {
-      "pruebas": 765,
-      "cobertura": null,
-      "comando": "npm test (web)"
+      "pruebas": 772,
+      "cobertura": 95.7,
+      "comando": "vitest run --coverage (web)"
     },
     "app": {
       "pruebas": 89,
-      "cobertura": null,
-      "comando": "npm test (app)"
+      "cobertura": 97.6,
+      "comando": "vitest run --coverage (app)"
     }
   },
-  "pruebas_total": 2075
+  "pruebas_total": 2116
 }

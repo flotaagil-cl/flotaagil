@@ -37,8 +37,11 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
-def enmascarar_telefono(telefono: str) -> str:
-    """El log no guarda el número completo (dato personal): +56900009001 → +569******01."""
+def enmascarar_telefono(telefono: str | None) -> str:
+    """El log no guarda el número completo (dato personal): +56900009001 → +569******01. Sin número (cuenta
+    eliminada, DC-50), «sin teléfono»."""
+    if not telefono:
+        return "sin teléfono"
     return telefono[:4] + "*" * max(len(telefono) - 6, 0) + telefono[-2:]
 
 

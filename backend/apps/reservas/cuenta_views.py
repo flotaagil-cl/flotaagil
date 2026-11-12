@@ -13,7 +13,7 @@ from apps.portal.serializers import SolicitudRespuestaSerializer, SolicitudSeria
 
 from . import cuentas_pasajero as cuentas
 from .models import EstadoViaje, Viaje
-from .serializers import HistorialSerializer
+from .serializers import HistorialSerializer, PasajeroEntradaSerializer
 
 SOLO_PASAJERO = [con_roles(Rol.PASAJERO)]
 
@@ -24,6 +24,49 @@ class MiCuentaSerializer(serializers.Serializer):
     telefono = serializers.CharField()
     empresa = serializers.CharField(source="empresa.razon_social")
     empresa_slug = serializers.CharField(source="empresa.slug")
+    # HU-45: datos de «Mi perfil».
+    telefono_pendiente = serializers.SerializerMethodField(
+        help_text="WhatsApp nuevo por confirmar (DC-50), o null si no hay o ya venció."
+    )
+    pasajero_desde = serializers.DateTimeField(source="confirmada_en")
+    password_cambiada_en = serializers.SerializerMethodField(
+        help_text="Último cambio o recuperación de la contraseña registrado en la auditoría, o null."
+    )
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_telefono_pendiente(self, cuenta):
+        return cuentas.telefono_pendiente_vigente(cuenta)
+
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
+    def get_password_cambiada_en(self, cuenta):
+        from apps.auditoria.models import Auditoria, Entidad
+
+        ultima = (
+            Auditoria.objects.filter(
+                entidad=Entidad.USUARIO,
+                entidad_id=cuenta.usuario_id,
+                accion__in=["CAMBIAR_PASSWORD", "RECUPERAR_PASSWORD"],
+            )
+            .order_by("-creado_en")
+            .values_list("creado_en", flat=True)
+            .first()
+        )
+        return ultima
+
+
+class PerfilEntradaSerializer(serializers.Serializer):
+    """HU-45: el correo es el usuario de ingreso y no se cambia aquí."""
+
+    nombre = serializers.CharField(max_length=80, required=False)
+    telefono = serializers.CharField(
+        max_length=24, required=False, help_text="WhatsApp en formato E.164; uno nuevo se vuelve a confirmar."
+    )
+
+    def validate_nombre(self, valor):
+        return PasajeroEntradaSerializer().validate_nombre(valor)
+
+    def validate_telefono(self, valor):
+        return PasajeroEntradaSerializer().validate_telefono(valor)
 
 
 class MiReservaSerializer(serializers.ModelSerializer):
@@ -116,9 +159,30 @@ class MiCuentaView(APIView):
 
     @extend_schema(
         tags=["mi-cuenta"],
+        summary="Editar mi perfil",
+        request=PerfilEntradaSerializer,
+        responses={
+            200: MiCuentaSerializer,
+            409: OpenApiResponse(description="`telefono_en_uso` o `cuenta_sin_confirmar`"),
+            429: OpenApiResponse(description="`limite_reenvio`"),
+        },
+        description="El nombre cambia al tiro. Un WhatsApp nuevo queda pendiente hasta que responda "
+        "«CONFIRMAR CUENTA»; mientras tanto la cuenta sigue con el número anterior (HU-45, DC-50).",
+    )
+    def patch(self, request):
+        entrada = PerfilEntradaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        cuenta = cuentas.actualizar_perfil(request.user, entrada.validated_data)
+        cuenta.refresh_from_db()
+        return Response(MiCuentaSerializer(cuenta).data)
+
+    @extend_schema(
+        tags=["mi-cuenta"],
         summary="Eliminar mi cuenta",
-        responses={204: None},
-        description="Borra la credencial y el correo; las reservas y el pasajero quedan como de invitado.",
+        responses={204: None, 409: OpenApiResponse(description="`viaje_activo`")},
+        description="Anonimiza la cuenta (HU-45, DC-50): usuario inactivo y sin clave, pasajero «Pasajero "
+        "eliminado» sin teléfono y mensajes sin contenido. Viajes, pagos, historial y auditoría se "
+        "conservan.",
     )
     def delete(self, request):
         cuentas.eliminar(request.user)

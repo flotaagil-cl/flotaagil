@@ -5,7 +5,11 @@
   al PASAJERO de ese teléfono en la empresa: recién ahí ve sus reservas, también las de invitado.
 - Con la cuenta activa, sus reservas no se verifican otra vez; se mantiene el límite por teléfono del portal.
 - Cancela solo sin conductor asignado (RN-09).
-- Eliminar la cuenta borra la credencial y el correo; el pasajero y sus reservas quedan como de invitado.
+- HU-45 (DC-50): el pasajero edita su nombre y su WhatsApp; el número nuevo queda pendiente hasta que
+  responda «CONFIRMAR CUENTA» y, si no responde a tiempo, el cambio se descarta. Eliminar la cuenta la
+  anonimiza: el USUARIO queda inactivo, sin clave ni sesiones y con un correo no utilizable; la fila
+  CUENTA_PASAJERO se borra (no queda nada que guardar en ella); el PASAJERO pasa a «Pasajero eliminado» con
+  teléfono NULL y sus mensajes quedan sin contenido. Los viajes, pagos, historial y auditoría se conservan.
 """
 
 from datetime import timedelta
@@ -31,6 +35,7 @@ from .models import (
     Canal,
     CuentaPasajero,
     EstadoViaje,
+    MensajeWhatsapp,
     OrigenCancelacion,
     Pasajero,
     Viaje,
@@ -38,6 +43,17 @@ from .models import (
 
 PALABRA_CONFIRMAR = "confirmar cuenta"
 CANCELABLES = (EstadoViaje.PENDIENTE_CONFIRMACION, EstadoViaje.SOLICITADO)  # RN-09: sin conductor asignado
+# HU-45: con un viaje en uno de estos estados la cuenta no se puede eliminar hasta que termine o se cancele.
+VIAJE_ACTIVO = (
+    EstadoViaje.SOLICITADO,
+    EstadoViaje.ASIGNADO,
+    EstadoViaje.ACEPTADO,
+    EstadoViaje.EN_CAMINO,
+    EstadoViaje.EN_ZONA,
+    EstadoViaje.PASAJERO_A_BORDO,
+)
+CUERPO_ELIMINADO = "[eliminado]"
+MOTIVO_ELIMINAR = "Cuenta eliminada por el titular"
 
 
 class SinCuentaActiva(APIException):
@@ -72,6 +88,43 @@ def vence_en(cuenta: CuentaPasajero):
     """El mensaje de activación vale `expiracion_verificacion_min` desde el último envío (HU-41)."""
     desde = cuenta.reenviada_en or cuenta.creada_en
     return desde + timedelta(minutes=cuenta.empresa.configuracion.expiracion_verificacion_min)
+
+
+class TelefonoEnUso(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "telefono_en_uso"
+    default_detail = "Ese WhatsApp ya está asociado a otra cuenta de esta empresa."
+
+
+class ViajeActivo(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "viaje_activo"
+    default_detail = "Tienes un viaje en curso. Podrás eliminar tu cuenta cuando termine o lo canceles."
+
+
+def texto_cambio_telefono(cuenta: CuentaPasajero) -> str:
+    return (
+        f"Hola {cuenta.nombre}, pediste usar este número en tu cuenta de {cuenta.empresa.razon_social}. Para "
+        f"confirmarlo responde CONFIRMAR CUENTA. Si no fuiste tú, ignora este mensaje."
+    )
+
+
+def telefono_pendiente_vigente(cuenta: CuentaPasajero, ahora=None) -> str | None:
+    """HU-45: el WhatsApp nuevo por confirmar, o None si no hay o ya venció (el cambio se descarta)."""
+    if not cuenta.telefono_pendiente or cuenta.telefono_pendiente_en is None:
+        return None
+    vence = cuenta.telefono_pendiente_en + timedelta(
+        minutes=cuenta.empresa.configuracion.expiracion_verificacion_min
+    )
+    return cuenta.telefono_pendiente if vence > (ahora or timezone.now()) else None
+
+
+def _telefono_de_otra_cuenta(cuenta: CuentaPasajero, telefono: str) -> bool:
+    return (
+        CuentaPasajero.objects.filter(empresa=cuenta.empresa, telefono=telefono, confirmada_en__isnull=False)
+        .exclude(pk=cuenta.pk)
+        .exists()
+    )
 
 
 class CredencialesPendientes(APIException):
@@ -189,6 +242,16 @@ def confirmar_por_whatsapp(telefono: str, texto: str) -> str | None:
             .filter(telefono=telefono, confirmada_en__isnull=True)
         )
         vigentes = [c for c in cuentas if vence_en(c) > ahora]
+        cambios = [
+            c
+            for c in CuentaPasajero.objects.select_for_update(of=("self",))
+            .select_related("empresa__configuracion", "usuario", "pasajero")
+            .filter(telefono_pendiente=telefono, confirmada_en__isnull=False)
+            if telefono_pendiente_vigente(c, ahora)
+        ]
+        confirmados = [c for c in cambios if _aplicar_telefono_nuevo(c, ahora)]
+        if confirmados and not vigentes:
+            return "telefono_confirmado"
         if not vigentes:
             return "cuenta_no_vigente"
         for cuenta in vigentes:
@@ -210,6 +273,86 @@ def confirmar_por_whatsapp(telefono: str, texto: str) -> str | None:
                 accion="CONFIRMAR_CUENTA",
             )
     return "cuenta_confirmada"
+
+
+def _aplicar_telefono_nuevo(cuenta: CuentaPasajero, ahora) -> bool:
+    """HU-45: el WhatsApp nuevo respondió. La cuenta y su PASAJERO pasan al número nuevo. Si ese número ya
+    era de un invitado de la empresa (por ejemplo, el que se creó para enviar la confirmación), es la misma
+    persona: sus viajes y mensajes pasan al PASAJERO de la cuenta y el invitado se borra."""
+    nuevo = cuenta.telefono_pendiente
+    cuenta.telefono_pendiente, cuenta.telefono_pendiente_en = None, None
+    if _telefono_de_otra_cuenta(cuenta, nuevo):
+        cuenta.save(update_fields=["telefono_pendiente", "telefono_pendiente_en"])
+        return False
+    propio = cuenta.pasajero
+    otro = (
+        Pasajero.objects.select_for_update()
+        .filter(empresa=cuenta.empresa, telefono=nuevo)
+        .exclude(pk=propio.pk)
+        .first()
+    )
+    if otro is not None:
+        Viaje.objects.filter(pasajero=otro).update(pasajero=propio)
+        MensajeWhatsapp.objects.filter(pasajero=otro).update(pasajero=propio)
+        otro.delete()
+    Pasajero.objects.filter(pk=propio.pk).update(telefono=nuevo, verificado_en=ahora)
+    cuenta.telefono = nuevo
+    cuenta.save(update_fields=["telefono", "telefono_pendiente", "telefono_pendiente_en"])
+    auditoria.registrar(
+        usuario=cuenta.usuario,
+        entidad=Entidad.USUARIO,
+        entidad_id=cuenta.usuario_id,
+        accion="CONFIRMAR_TELEFONO",
+    )
+    return True
+
+
+@transaction.atomic
+def actualizar_perfil(usuario, datos: dict) -> CuentaPasajero:
+    """HU-45: el nombre cambia al tiro (cuenta, PASAJERO y USUARIO); un WhatsApp nuevo queda pendiente y se le
+    envía «CONFIRMAR CUENTA». Volver a escribir el número actual descarta el cambio pendiente."""
+    from apps.cuentas.credenciales import dentro_del_limite
+
+    cuenta = cuenta_activa(usuario)
+    cuenta = (
+        CuentaPasajero.objects.select_for_update(of=("self",))
+        .select_related("empresa__configuracion", "pasajero")
+        .get(pk=cuenta.pk)
+    )
+    cambios = []
+    nombre = datos.get("nombre")
+    if nombre is not None and nombre != cuenta.nombre:
+        cuenta.nombre = nombre
+        cuenta.save(update_fields=["nombre"])
+        Pasajero.objects.filter(pk=cuenta.pasajero_id).update(nombre=nombre)
+        Usuario.objects.filter(pk=usuario.pk).update(nombre=nombre)
+        cambios.append("nombre")
+    telefono = datos.get("telefono")
+    if telefono == cuenta.telefono and cuenta.telefono_pendiente:
+        cuenta.telefono_pendiente, cuenta.telefono_pendiente_en = None, None
+        cuenta.save(update_fields=["telefono_pendiente", "telefono_pendiente_en"])
+        cambios.append("telefono_pendiente_descartado")
+    elif telefono and telefono != cuenta.telefono:
+        if _telefono_de_otra_cuenta(cuenta, telefono):
+            raise TelefonoEnUso()
+        if not dentro_del_limite(f"cambio_telefono:{cuenta.pk}", settings.ACTIVACION_MAX_REENVIOS):
+            raise LimiteReenvios()
+        cuenta.telefono_pendiente, cuenta.telefono_pendiente_en = telefono, timezone.now()
+        cuenta.save(update_fields=["telefono_pendiente", "telefono_pendiente_en"])
+        # MENSAJE_WHATSAPP necesita un PASAJERO: el del número nuevo se crea como invitado si no existía.
+        destino = reservas.obtener_pasajero(cuenta.empresa, nombre=cuenta.nombre, telefono=telefono)
+        tareas.al_confirmar(tareas.enviar_respuesta, destino.pk, None, texto_cambio_telefono(cuenta))
+        cambios.append("telefono_pendiente")
+    if cambios:
+        # Solo qué cambió: el nombre o el número anteriores son datos personales y la auditoría se conserva.
+        auditoria.registrar(
+            usuario=usuario,
+            entidad=Entidad.USUARIO,
+            entidad_id=usuario.pk,
+            accion="EDITAR_PERFIL",
+            datos_previos={"campos": cambios},
+        )
+    return cuenta
 
 
 def privacidad_vigente(cuenta: CuentaPasajero) -> bool:
@@ -342,15 +485,34 @@ def cancelar(cuenta: CuentaPasajero, viaje_id: int, *, usuario, motivo: str | No
 
 @transaction.atomic
 def eliminar(usuario) -> None:
-    """Borra la credencial y el correo; el PASAJERO y sus reservas quedan como de invitado."""
+    """HU-45 (DC-50): anonimiza la cuenta del titular. Con un viaje activo responde 409 (`viaje_activo`).
+
+    - USUARIO: inactivo, correo `eliminado-<id>@invalid`, clave inutilizable y sesiones revocadas.
+    - CUENTA_PASAJERO: se borra; lo único que guardaba eran datos personales (nombre, teléfono, fechas).
+    - PASAJERO: «Pasajero eliminado» y teléfono NULL.
+    - MENSAJE_WHATSAPP: sin contenido; quedan fecha, tipo y estado.
+    - VIAJE, PAGO_VIAJE, HISTORIAL_ESTADO y AUDITORIA se conservan; la auditoría registra la eliminación.
+    """
     usuario = Usuario.objects.select_for_update().get(pk=usuario.pk)
+    cuenta = CuentaPasajero.objects.select_for_update().filter(usuario=usuario).first()
+    pasajero_id = cuenta.pasajero_id if cuenta else None
+    if pasajero_id and Viaje.objects.filter(pasajero_id=pasajero_id, estado__in=VIAJE_ACTIVO).exists():
+        raise ViajeActivo()
     CuentaPasajero.objects.filter(usuario=usuario).delete()
     usuario.set_unusable_password()
-    usuario.email = f"eliminada-{usuario.pk}@cuentas.invalid"
+    usuario.email = f"eliminado-{usuario.pk}@invalid"
     usuario.nombre = "Cuenta eliminada"
     usuario.activo = False
     usuario.save(update_fields=["password", "email", "nombre", "activo"])
     credenciales.revocar_sesiones(usuario)
+    if pasajero_id:
+        Pasajero.objects.filter(pk=pasajero_id).update(nombre=Pasajero.NOMBRE_ELIMINADO, telefono=None)
+        MensajeWhatsapp.objects.filter(pasajero_id=pasajero_id).update(cuerpo=CUERPO_ELIMINADO)
     auditoria.registrar(
-        usuario=usuario, entidad=Entidad.USUARIO, entidad_id=usuario.pk, accion="ELIMINAR_CUENTA"
+        usuario=usuario,
+        entidad=Entidad.USUARIO,
+        entidad_id=usuario.pk,
+        accion="ELIMINAR_CUENTA",
+        motivo=MOTIVO_ELIMINAR,
+        datos_previos={"pasajero_id": pasajero_id} if pasajero_id else None,
     )

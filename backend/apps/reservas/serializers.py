@@ -20,7 +20,9 @@ class UbicacionSerializer(serializers.Serializer):
 class PasajeroResumenSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     nombre = serializers.CharField()
-    telefono = serializers.CharField()
+    telefono = serializers.CharField(
+        allow_null=True, help_text="Null si el pasajero eliminó su cuenta (DC-50)."
+    )
 
 
 class ConductorResumenSerializer(serializers.Serializer):

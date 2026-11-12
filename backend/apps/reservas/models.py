@@ -10,11 +10,18 @@ from apps.comun.validadores import validar_no_vacio, validar_telefono_e164
 
 
 class Pasajero(models.Model):
-    """El pasajero no tiene cuenta; se identifica por su WhatsApp, único dentro de cada empresa."""
+    """El pasajero no tiene cuenta; se identifica por su WhatsApp, único dentro de cada empresa.
+
+    DC-50 (HU-45): al eliminar su cuenta queda anonimizado, con `telefono` NULL y el nombre
+    «Pasajero eliminado».
+    La unicidad por empresa sigue valiendo para los teléfonos no nulos (PostgreSQL no compara NULL).
+    """
+
+    NOMBRE_ELIMINADO = "Pasajero eliminado"
 
     empresa = models.ForeignKey("cuentas.Empresa", on_delete=models.PROTECT, related_name="pasajeros")
     nombre = models.CharField(max_length=80, validators=[validar_no_vacio])
-    telefono = models.CharField(max_length=16, validators=[validar_telefono_e164])
+    telefono = models.CharField(max_length=16, null=True, blank=True, validators=[validar_telefono_e164])
     verificado_en = models.DateTimeField(null=True, blank=True)
     opt_in_en = models.DateTimeField(null=True, blank=True)
     # DC-11: evidencia de la aceptación del aviso de privacidad en el portal (HU-19).
@@ -414,6 +421,12 @@ class CuentaPasajero(models.Model):
     privacidad_aceptada_en = models.DateTimeField(null=True, blank=True)
     # HU-41 (DC-45): último reenvío del WhatsApp de activación; la vigencia corre desde ahí.
     reenviada_en = models.DateTimeField(null=True, blank=True)
+    # HU-45 (DC-50): WhatsApp nuevo por confirmar. La cuenta sigue con `telefono` hasta que el nuevo responda
+    # «CONFIRMAR CUENTA» dentro de `expiracion_verificacion_min`; si no, el cambio se descarta.
+    telefono_pendiente = models.CharField(
+        max_length=16, null=True, blank=True, validators=[validar_telefono_e164]
+    )
+    telefono_pendiente_en = models.DateTimeField(null=True, blank=True)
     privacidad_version = models.CharField(max_length=20, null=True, blank=True)
     creada_en = models.DateTimeField(db_default=Now(), editable=False)
 

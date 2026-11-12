@@ -27,6 +27,31 @@ class TestDatosDemo:
         assert Usuario.objects.count() == 14  # HU-34: una cuenta de convenio por empresa
         assert list(Usuario.objects.order_by("email").values_list("nombre", flat=True)) == nombres
 
+    def test_base_anterior_a_hu34_recibe_la_cuenta_del_convenio(self, settings):
+        """Una base con viajes y el convenio demo sin cuenta: se le asigna una, sin duplicar el convenio."""
+        from apps.convenios.models import Convenio, EstadoConvenio
+
+        settings.DEBUG = True
+        call_command("datos_demo", password="clave-demo-123")
+        cuenta = Usuario.objects.get(email="convenio@transportes-andes.example")
+        convenio = Convenio.objects.get(usuario=cuenta)
+        Convenio.objects.filter(pk=convenio.pk).update(usuario=None)
+        cuenta.delete()
+        antes = Convenio.objects.count()
+        call_command("datos_demo", password="clave-demo-123")
+        convenio.refresh_from_db()
+        assert Convenio.objects.count() == antes
+        assert (convenio.usuario.email, convenio.estado) == (
+            "convenio@transportes-andes.example",
+            EstadoConvenio.APROBADO,
+        )
+        assert convenio.usuario.check_password("clave-demo-123")
+        call_command("datos_demo", password="otra-clave-456")
+        assert Convenio.objects.count() == antes
+        # Una cuenta que ya existe no cambia de clave.
+        encargada = Usuario.objects.get(email="convenio@transportes-andes.example")
+        assert encargada.check_password("clave-demo-123")
+
     def test_carga_flota_y_viajes_en_todos_los_estados(self, settings):
         from apps.aeropuerto.models import Vuelo
         from apps.auditoria.models import Auditoria

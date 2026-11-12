@@ -20,7 +20,6 @@ from apps.reservas.models import (
     CuentaPasajero,
     EstadoViaje,
     HistorialEstado,
-    Pasajero,
     Viaje,
 )
 from apps.reservas.tests.fabricas import ConductorFactory, PasajeroFactory, ViajeFactory
@@ -285,19 +284,23 @@ class TestRecuperacion:
 
 @pytest.mark.django_db
 class TestEliminar:
-    def test_quedan_como_invitado(self, activa, empresa):
+    def test_anonimiza_y_conserva_las_reservas(self, activa, empresa):
+        # HU-45 (DC-50): con la reserva en curso no se puede eliminar; terminada, sí.
         activa.post(
             reverse("mi-cuenta-solicitudes"),
             TestReservas().solicitud(),
             format="json",
         )
         pasajero = CuentaPasajero.objects.get().pasajero
+        assert activa.delete(reverse("mi-cuenta")).status_code == 409
+        Viaje.objects.filter(pasajero=pasajero).update(estado=E.FINALIZADO)
         assert activa.delete(reverse("mi-cuenta")).status_code == 204
         assert not CuentaPasajero.objects.exists()
         usuario = Usuario.objects.get(rol=Rol.PASAJERO)
         assert (usuario.has_usable_password(), usuario.activo) == (False, False)
         assert "paula" not in usuario.email
-        assert Pasajero.objects.filter(pk=pasajero.pk).exists()
+        pasajero.refresh_from_db()
+        assert (pasajero.nombre, pasajero.telefono) == ("Pasajero eliminado", None)
         assert Viaje.objects.filter(pasajero=pasajero).count() == 1
         assert entrar()[1].status_code == 401
         assert Auditoria.objects.filter(accion="ELIMINAR_CUENTA").exists()

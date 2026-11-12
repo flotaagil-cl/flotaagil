@@ -78,30 +78,40 @@ VIAJES = {
 TARIFAS = [12000, 18500, 25000, 32000, 9800]
 
 
-def _convenio(empresa, numero_empresa: int, password: str) -> Convenio:
-    cuerpo = str(96000000 + numero_empresa)
-    convenio = Convenio.objects.filter(empresa=empresa).first()
-    if convenio is None:
-        # HU-34: convenio aprobado con la cuenta de su encargado (rol CONVENIO).
+def asegurar_convenio(empresa, numero_empresa: int, password: str) -> Convenio:
+    """HU-34: convenio aprobado con la cuenta de su encargado (rol CONVENIO). Idempotente: si la cuenta
+    `convenio@<slug>.example` ya tiene su convenio, no toca nada (tampoco su clave). Una base cargada antes de
+    HU-34 tiene el convenio demo sin cuenta: se le asigna una en vez de crear otro."""
+    email = f"convenio@{empresa.slug}.example"
+    existente = Convenio.objects.filter(empresa=empresa, usuario__email=email).first()
+    if existente is not None:
+        return existente
+    usuario = Usuario.objects.filter(email=email).first()
+    if usuario is None:
         usuario = Usuario(
-            empresa=empresa,
-            email=f"convenio@{empresa.slug}.example",
-            nombre=f"Encargada Demo {numero_empresa + 1}",
-            rol=Rol.CONVENIO,
+            empresa=empresa, email=email, nombre=f"Encargada Demo {numero_empresa + 1}", rol=Rol.CONVENIO
         )
         usuario.set_password(password)
         usuario.save()
-        convenio = Convenio.objects.create(
-            empresa=empresa,
-            cliente_nombre=f"Minera Demo {numero_empresa + 1} S.A.",
-            cliente_rut=f"{cuerpo}-{digito_verificador(cuerpo)}",
-            direccion="Av. Apoquindo 3000, Las Condes",
-            encargado_nombre=usuario.nombre,
-            encargado_telefono=f"+5690002{numero_empresa}001",
-            estado=EstadoConvenio.APROBADO,
-            usuario=usuario,
-        )
-    return convenio
+    sin_cuenta = Convenio.objects.filter(
+        empresa=empresa, usuario__isnull=True, estado=EstadoConvenio.APROBADO
+    ).first()
+    if sin_cuenta is not None:
+        sin_cuenta.usuario = usuario
+        sin_cuenta.encargado_nombre = sin_cuenta.encargado_nombre or usuario.nombre
+        sin_cuenta.save(update_fields=["usuario", "encargado_nombre"])
+        return sin_cuenta
+    cuerpo = str(96000000 + numero_empresa)
+    return Convenio.objects.create(
+        empresa=empresa,
+        cliente_nombre=f"Minera Demo {numero_empresa + 1} S.A.",
+        cliente_rut=f"{cuerpo}-{digito_verificador(cuerpo)}",
+        direccion="Av. Apoquindo 3000, Las Condes",
+        encargado_nombre=usuario.nombre,
+        encargado_telefono=f"+5690002{numero_empresa}001",
+        estado=EstadoConvenio.APROBADO,
+        usuario=usuario,
+    )
 
 
 def cargar(empresa, numero_empresa: int, conductores, faker, password: str) -> int:
@@ -109,7 +119,7 @@ def cargar(empresa, numero_empresa: int, conductores, faker, password: str) -> i
     if Viaje.objects.filter(empresa=empresa).exists():
         return 0
     despachador = empresa.usuarios.get(rol=Rol.DESPACHADOR)
-    convenio = _convenio(empresa, numero_empresa, password)
+    convenio = asegurar_convenio(empresa, numero_empresa, password)
     pasajeros = [
         {"nombre": faker.name(), "telefono": f"+5690001{numero_empresa}{i:03d}"} for i in range(1, 9)
     ]

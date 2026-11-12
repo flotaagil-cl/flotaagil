@@ -135,7 +135,7 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
               <dt>Nombre</dt>
               <dd>{viaje.pasajero.nombre}</dd>
               <dt>Teléfono</dt>
-              <dd>{viaje.pasajero.telefono}</dd>
+              <dd>{viaje.pasajero.telefono ?? 'Sin teléfono'}</dd>
               <dt>Canal</dt>
               <dd>{CANALES[viaje.canal]}</dd>
               <dd className={campos.ayuda}>El pasajero, su teléfono y el canal no se pueden cambiar al editar.</dd>

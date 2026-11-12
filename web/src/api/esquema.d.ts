@@ -991,12 +991,16 @@ export interface paths {
         post?: never;
         /**
          * Eliminar mi cuenta
-         * @description Borra la credencial y el correo; las reservas y el pasajero quedan como de invitado.
+         * @description Anonimiza la cuenta (HU-45, DC-50): usuario inactivo y sin clave, pasajero «Pasajero eliminado» sin teléfono y mensajes sin contenido. Viajes, pagos, historial y auditoría se conservan.
          */
         delete: operations["mi_cuenta_destroy"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Editar mi perfil
+         * @description El nombre cambia al tiro. Un WhatsApp nuevo queda pendiente hasta que responda «CONFIRMAR CUENTA»; mientras tanto la cuenta sigue con el número anterior (HU-45, DC-50).
+         */
+        patch: operations["mi_cuenta_partial_update"];
         trace?: never;
     };
     "/api/mi-cuenta/privacidad/": {
@@ -2286,6 +2290,15 @@ export interface components {
             telefono: string;
             empresa: string;
             empresa_slug: string;
+            /** @description WhatsApp nuevo por confirmar (DC-50), o null si no hay o ya venció. */
+            readonly telefono_pendiente: string | null;
+            /** Format: date-time */
+            pasajero_desde: string;
+            /**
+             * Format: date-time
+             * @description Último cambio o recuperación de la contraseña registrado en la auditoría, o null.
+             */
+            readonly password_cambiada_en: string | null;
         };
         MiReserva: {
             readonly id: number;
@@ -2514,7 +2527,8 @@ export interface components {
         PasajeroResumen: {
             id: number;
             nombre: string;
-            telefono: string;
+            /** @description Null si el pasajero eliminó su cuenta (DC-50). */
+            telefono: string | null;
         };
         /** @description Historial para el pasajero: solo el estado y la hora (sin quién lo cambió). */
         Paso: {
@@ -2546,6 +2560,12 @@ export interface components {
             direccion?: string | null;
             encargado_nombre?: string | null;
             encargado_telefono?: (string) | null;
+        };
+        /** @description HU-45: el correo es el usuario de ingreso y no se cambia aquí. */
+        PatchedPerfilEntradaRequest: {
+            nombre?: string;
+            /** @description WhatsApp en formato E.164; uno nuevo se vuelve a confirmar. */
+            telefono?: string;
         };
         PatchedUsuarioPanelEditarRequest: {
             nombre?: string;
@@ -4788,6 +4808,52 @@ export interface operations {
         responses: {
             /** @description No response body */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `viaje_activo` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mi_cuenta_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPerfilEntradaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPerfilEntradaRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPerfilEntradaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MiCuenta"];
+                };
+            };
+            /** @description `telefono_en_uso` o `cuenta_sin_confirmar` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `limite_reenvio` */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
