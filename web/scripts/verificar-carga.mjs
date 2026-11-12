@@ -58,7 +58,7 @@ export const DIFERIDOS = [
   'src/cuentas-web/Recuperar.tsx',
   'src/caja/Caja.tsx',
   'src/cuentas-web/MiConvenio.tsx',
-  'src/cuentas-web/MisReservas.tsx',
+  'src/perfil/MiPerfil.tsx',
   'src/reservas/paginas/Contingencia.tsx',
   'src/usuarios/Usuarios.tsx',
   'src/pedido/Pedir.tsx',

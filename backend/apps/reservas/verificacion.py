@@ -68,6 +68,8 @@ RESPUESTAS = {
     "cuenta_confirmada": "¡Listo! Tu cuenta quedó activa. Ya puedes iniciar sesión y ver tus reservas.",
     "cuenta_no_vigente": "No encontramos una cuenta pendiente para este número, o el plazo venció. "
     "Créala de nuevo.",
+    # HU-45: el WhatsApp nuevo de una cuenta quedó confirmado.
+    "telefono_confirmado": "¡Listo! Desde ahora te escribiremos a este número.",
 }
 
 
@@ -178,7 +180,11 @@ def procesar_entrante(datos: dict) -> str:
 
     resultado_cuenta = confirmar_por_whatsapp(telefono, texto)
     if resultado_cuenta is not None:
-        tareas.encolar(tareas.enviar_respuesta, pasajero.pk, None, RESPUESTAS[resultado_cuenta])
+        # HU-45: al confirmar un número nuevo, el invitado de ese número pudo fusionarse con la cuenta.
+        destino = pasajero
+        if not Pasajero.objects.filter(pk=pasajero.pk).exists():
+            destino = Pasajero.objects.filter(telefono=telefono).order_by("pk").first() or pasajero
+        tareas.encolar(tareas.enviar_respuesta, destino.pk, None, RESPUESTAS[resultado_cuenta])
         return resultado_cuenta
 
     if a_calificar:

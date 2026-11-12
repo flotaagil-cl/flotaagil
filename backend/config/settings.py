@@ -4,6 +4,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -158,6 +159,12 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.aeropuerto.tareas.revisar_fila",
         "schedule": timedelta(seconds=60),
         "options": {"expires": 60},
+    },
+    # RN-15 (DC-48): una vez al día, de madrugada (hora de Chile), se borran las posiciones de más de 30 días.
+    "purgar-posiciones-rn15": {
+        "task": "apps.flota.tareas.purgar_posiciones_gps",
+        "schedule": crontab(hour=3, minute=17),
+        "options": {"expires": 3600},
     },
     "expirar-asignaciones-rn04": {
         "task": "apps.reservas.tareas.expirar_asignaciones",

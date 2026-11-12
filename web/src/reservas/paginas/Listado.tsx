@@ -299,7 +299,7 @@ export function Listado() {
                     </Celda>
                     <Celda titulo="Pasajero">
                       {viaje.pasajero.nombre}
-                      <span className={estilos.secundario}>{viaje.pasajero.telefono}</span>
+                      <span className={estilos.secundario}>{viaje.pasajero.telefono ?? 'Sin teléfono'}</span>
                     </Celda>
                     <Celda titulo="Trayecto" ancho>
                       {viaje.origen.direccion}

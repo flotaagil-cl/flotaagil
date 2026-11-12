@@ -50,7 +50,8 @@ export const VALORES_NUEVA: ValoresReserva = {
 
 export function valoresDeViaje(viaje: ViajeDetalle): ValoresReserva {
   return {
-    pasajero: { nombre: viaje.pasajero.nombre, telefono: viaje.pasajero.telefono },
+    // DC-50: el pasajero de una cuenta eliminada no tiene teléfono.
+    pasajero: { nombre: viaje.pasajero.nombre, telefono: viaje.pasajero.telefono ?? '' },
     canal: viaje.canal === 'WHATSAPP' ? 'WHATSAPP' : 'TELEFONO',
     sentido: viaje.sentido ?? 'URBANO',
     origen_dir: viaje.origen.direccion,

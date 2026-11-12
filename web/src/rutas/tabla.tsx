@@ -10,7 +10,7 @@
  * reservas ni del portal.
  */
 
-import type { RouteObject } from 'react-router';
+import { Navigate, type RouteObject } from 'react-router';
 import type { Rol } from '../api/auth';
 import { Cargando } from '../componentes/Cargando';
 import { ErrorDeRuta } from '../componentes/ErrorDeRuta';
@@ -144,11 +144,6 @@ export const pantallasDelPanel: RouteObject[] = [
     handle: { titulo: 'Mi convenio', menu: true, roles: ROLES_CONVENIO } satisfies Manejo,
   },
   {
-    path: 'mis-reservas',
-    lazy: async () => ({ Component: (await import('../cuentas-web/MisReservas')).MisReservas }),
-    handle: { titulo: 'Mis reservas', menu: true, roles: ROLES_PASAJERO } satisfies Manejo,
-  },
-  {
     path: 'usuarios',
     lazy: async () => ({ Component: (await import('../usuarios/Usuarios')).Usuarios }),
     handle: { titulo: 'Usuarios', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
@@ -199,6 +194,10 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
             { path: '/mis-viajes', lazy: async () => ({ Component: (await import('../viajes/MisViajes')).MisViajes }) },
             // HU-43: el viaje del pasajero con su estado, conductor y vuelo.
             { path: '/mis-viajes/:id', lazy: async () => ({ Component: (await import('../viajes/TuViaje')).TuViaje }) },
+            // HU-45: datos, contraseña y eliminar la cuenta.
+            { path: '/mi-perfil', lazy: async () => ({ Component: (await import('../perfil/MiPerfil')).MiPerfil }) },
+            // La pantalla «Mis reservas» de HU-35 era una lista de viajes: la reemplaza «Mis viajes» (HU-44).
+            { path: '/mis-reservas', element: <Navigate to="/mis-viajes" replace /> },
             // HU-39: inicio y pedido del pasajero con el marco del portal (fuera del marco del panel).
             { path: '/pedir/:tipo?', lazy: async () => ({ Component: (await import('../pedido/Pedir')).Pedir }) },
             {

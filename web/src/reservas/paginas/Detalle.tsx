@@ -121,7 +121,7 @@ function DetalleDe({ id }: { id: number }) {
           <div>
             <dt>Pasajero</dt>
             <dd>
-              {viaje.pasajero.nombre} · {viaje.pasajero.telefono}
+              {viaje.pasajero.nombre} · {viaje.pasajero.telefono ?? 'Sin teléfono'}
             </dd>
           </div>
           <div>

@@ -1,6 +1,6 @@
 /** HU-33: un solo inicio de sesión web; cada rol llega a su vista. */
 
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
@@ -75,10 +75,10 @@ describe('destino por rol', () => {
 
 describe('marco por rol', () => {
   it('el pasajero solo ve su menú, sin alertas de vuelo ni pantallas del panel', async () => {
-    const { servidor } = montarPanel('/mis-reservas', { email: 'pasajero@andes.example' });
-    const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
-    expect(within(menu).getAllByRole('link').map((l) => l.textContent)).toEqual(['Mis reservas']);
-    expect(screen.getByText(/Pablo Pasajero · Pasajero/)).toBeInTheDocument();
+    // Desde HU-45 el pasajero no tiene pantallas con el marco del panel: «/» lo lleva a pedir (HU-39).
+    const { servidor, router } = montarPanel('/', { email: 'pasajero@andes.example' });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
+    expect(screen.queryByRole('navigation', { name: 'Menú principal' })).not.toBeInTheDocument();
     expect(servidor.urls.some((u) => u.includes('/api/alertas/'))).toBe(false);
   });
 

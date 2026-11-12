@@ -3,7 +3,9 @@
 // Uso:  npm run capturas -- HU-31 HU-36     (sin argumentos: todas las HU de PANTALLAS)
 //
 // Necesita el web en CAPTURAS_URL (por defecto http://localhost:5173), el backend con `datos_demo`
-// y la clave de los usuarios demo en DATOS_DEMO_PASSWORD. La clave no se imprime ni se guarda.
+// y la clave de los usuarios demo en DATOS_DEMO_PASSWORD. Las pantallas del pasajero entran con
+// CAPTURAS_PASAJERO_EMAIL y CAPTURAS_PASAJERO_PASSWORD: una cuenta sintética con clave temporal, que se
+// invalida al terminar. Las claves no se imprimen ni se guardan.
 // Usa el Edge instalado (CAPTURAS_CANAL=chrome para Chrome): no descarga navegadores.
 // Guarda docs/evidencias/HU-xx/<nombre>-390.png y <nombre>-1440.png. Solo datos sintéticos: no capturar
 // pantallas que muestren una contraseña temporal sin invalidarla después.
@@ -24,8 +26,9 @@ const ANCHOS = [
 ];
 
 /**
- * Pantallas por HU. `sesion`: alias del usuario demo (admin, despacho) o null sin sesión.
+ * Pantallas por HU. `sesion`: alias del usuario demo (admin, despacho, convenio), 'pasajero' o null sin sesión.
  * `destino`: ruta a la que debe llegar (por defecto, la misma `ruta`); si termina en otra, la captura falla.
+ * `accion`: lo que se hace en la página antes de capturar (abrir un diálogo, por ejemplo).
  */
 const PANTALLAS = {
   'HU-31': [{ nombre: 'panel-caja', ruta: '/caja', sesion: 'admin' }],
@@ -37,31 +40,54 @@ const PANTALLAS = {
   'HU-34': [
     { nombre: 'portal-registro-empresa', ruta: `${PORTAL}/registro-empresa`, sesion: null },
     { nombre: 'panel-convenios', ruta: '/convenios', sesion: 'admin' },
+    { nombre: 'mi-convenio', ruta: '/mi-convenio', sesion: 'convenio' },
   ],
   'HU-35': [{ nombre: 'portal-crear-cuenta', ruta: `${PORTAL}/cuenta`, sesion: null }],
   'HU-36': [{ nombre: 'panel-usuarios', ruta: '/usuarios', sesion: 'admin' }],
   // La raíz del portal lleva a «Ingresar» desde CC-18; el marco y los tokens se ven en la página de privacidad.
   'HU-37': [{ nombre: 'portal-marco-privacidad', ruta: `${PORTAL}/privacidad`, sesion: null }],
   'HU-40': [{ nombre: 'pedir-sin-sesion', ruta: '/pedir', sesion: null, destino: /\/(login|solicitar\/[^/]+\/ingresar)/ }],
+  'HU-45': [
+    { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
+    {
+      nombre: 'eliminar-cuenta',
+      ruta: '/mi-perfil',
+      sesion: 'pasajero',
+      accion: async (pagina) => {
+        await pagina.getByRole('button', { name: /Eliminar mi cuenta/ }).click();
+        await pagina.getByRole('dialog', { name: '¿Eliminar tu cuenta?' }).waitFor();
+      },
+    },
+  ],
 };
 
-const correo = (alias) => `${alias}@${EMPRESA}.example`;
-
-async function iniciarSesion(pagina, alias) {
+/** Correo y clave de cada sesión: los usuarios demo comparten DATOS_DEMO_PASSWORD; el pasajero tiene la suya. */
+function credenciales(alias) {
+  if (alias === 'pasajero') {
+    const email = process.env.CAPTURAS_PASAJERO_EMAIL;
+    const clave = process.env.CAPTURAS_PASAJERO_PASSWORD;
+    if (!email || !clave) throw new Error('Faltan CAPTURAS_PASAJERO_EMAIL y CAPTURAS_PASAJERO_PASSWORD.');
+    return { email, clave };
+  }
   const clave = process.env.DATOS_DEMO_PASSWORD;
   if (!clave) throw new Error('Falta DATOS_DEMO_PASSWORD para las pantallas con sesión.');
+  return { email: `${alias}@${EMPRESA}.example`, clave };
+}
+
+async function iniciarSesion(pagina, alias) {
+  const { email, clave } = credenciales(alias);
   await pagina.goto(`${URL_BASE}/login`);
-  await pagina.getByLabel('Correo').fill(correo(alias));
+  await pagina.getByLabel('Correo').fill(email);
   await pagina.getByLabel('Contraseña').fill(clave);
   await pagina.getByRole('button', { name: 'Ingresar' }).click();
   try {
     await pagina.waitForURL((url) => url.pathname !== '/login', { timeout: 15000 });
   } catch {
     const aviso = (await pagina.getByRole('alert').first().textContent().catch(() => '')) || 'sin aviso';
-    throw new Error(`No se pudo iniciar sesión como ${correo(alias)}: ${aviso.trim()}`);
+    throw new Error(`No se pudo iniciar sesión como ${email}: ${aviso.trim()}`);
   }
   if (new URL(pagina.url()).pathname === '/primer-ingreso') {
-    throw new Error(`${correo(alias)} pide primer ingreso: corre datos_demo de nuevo.`);
+    throw new Error(`${email} pide primer ingreso: corre datos_demo de nuevo.`);
   }
 }
 
@@ -98,6 +124,7 @@ async function main() {
           const pagina = await ctx.newPage();
           await pagina.goto(`${URL_BASE}${pantalla.ruta}`);
           await pagina.waitForLoadState('networkidle');
+          if (pantalla.accion) await pantalla.accion(pagina);
           const titulo = (await pagina.locator('h1').first().textContent({ timeout: 10000 }).catch(() => '')) ?? '';
           const archivo = join(EVIDENCIAS, hu, `${pantalla.nombre}-${sufijo}.png`);
           if (llegoA(pagina, pantalla)) {

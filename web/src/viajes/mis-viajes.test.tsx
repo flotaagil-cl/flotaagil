@@ -75,12 +75,12 @@ describe('HU-44 · mis viajes', () => {
     expect(within(screen.getByRole('main')).getByRole('link', { name: 'Pedir traslado' })).toHaveAttribute('href', '/pedir');
   });
 
-  it('el menú de la cuenta lleva a «Mis viajes» y a «Mi cuenta»', async () => {
+  it('el menú de la cuenta lleva a «Mis viajes» y a «Mi perfil»', async () => {
     montar('/mis-viajes');
     await userEvent.click(await screen.findByRole('button', { name: /menú de la cuenta/ }));
     const menu = screen.getByRole('dialog', { name: 'Tu cuenta' });
     expect(within(menu).getByRole('link', { name: 'Mis viajes' })).toHaveAttribute('href', '/mis-viajes');
-    expect(within(menu).getByRole('link', { name: 'Mi cuenta' })).toHaveAttribute('href', '/mis-reservas');
+    expect(within(menu).getByRole('link', { name: 'Mi perfil' })).toHaveAttribute('href', '/mi-perfil');
   });
 
   it('otros roles van a su vista', async () => {

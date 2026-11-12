@@ -1,0 +1,153 @@
+/* HU-45: «Mi perfil» (docs/diseno/portal/web/19-mi-perfil.png y movil/19-mi-perfil.png). Solo tokens. */
+
+.pagina {
+  display: grid;
+  gap: 20px;
+  width: min(100% - 32px, 1000px);
+  margin: 0 auto;
+  padding: 36px 0 48px;
+}
+
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.resumen {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatarGrande {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--grad-boton);
+  color: var(--sobre-acento);
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.resumenTexto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.nombre {
+  margin: 0;
+  color: var(--texto);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.desde {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.tituloSeccion {
+  margin: 0 0 12px;
+  color: var(--texto);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.acciones {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.acciones li + li {
+  border-top: 1px solid var(--borde);
+}
+
+.accion {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: var(--toque);
+  padding: 14px 0;
+  border: 0;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.accion:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.accionTexto {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.accionTitulo {
+  font-weight: 600;
+}
+
+.accionDetalle {
+  color: var(--texto-suave);
+  font-size: 13px;
+}
+
+.peligro,
+.peligro .accionDetalle {
+  color: var(--peligro);
+}
+
+.explicacion {
+  color: var(--texto-base);
+  font-size: 14px;
+}
+
+.explicacion ul {
+  margin: 4px 0 12px;
+  padding-left: 20px;
+}
+
+.explicacionTitulo {
+  margin: 0;
+  color: var(--texto);
+  font-weight: 700;
+}
+
+/* Escritorio: la tarjeta del resumen a la izquierda, como en el diseño. */
+@media (min-width: 900px) {
+  .pagina {
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .resumen {
+    flex-direction: column;
+    padding: 28px 20px;
+    text-align: center;
+  }
+
+  .resumenTexto {
+    align-items: center;
+  }
+
+  .avatarGrande {
+    width: 88px;
+    height: 88px;
+    font-size: 30px;
+  }
+}

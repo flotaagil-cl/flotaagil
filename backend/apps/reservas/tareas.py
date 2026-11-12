@@ -53,6 +53,14 @@ def _enviar(tarea, envio) -> None:
         raise tarea.retry(exc=error, countdown=ESPERA_ENVIO_S * 2**tarea.request.retries) from error
 
 
+def _con_telefono(pasajero) -> bool:
+    """HU-45 (DC-50): el pasajero de una cuenta eliminada queda sin teléfono y no se le escribe."""
+    if pasajero.telefono:
+        return True
+    logger.info("WhatsApp no enviado: el pasajero %s no tiene teléfono (cuenta eliminada).", pasajero.pk)
+    return False
+
+
 def _viaje_para_mensaje(viaje_id: int) -> Viaje | None:
     return (
         Viaje.objects.select_related("pasajero", "empresa", "conductor__usuario", "vehiculo")
@@ -64,14 +72,14 @@ def _viaje_para_mensaje(viaje_id: int) -> Viaje | None:
 @shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
 def enviar_verificacion(self, viaje_id: int, expira_en: str) -> None:
     viaje = _viaje_para_mensaje(viaje_id)
-    if viaje is not None:
+    if viaje is not None and _con_telefono(viaje.pasajero):
         _enviar(self, lambda n: n.solicitar_verificacion(viaje, datetime.fromisoformat(expira_en)))
 
 
 @shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
 def enviar_aviso(self, viaje_id: int, tipo: str) -> None:
     viaje = _viaje_para_mensaje(viaje_id)
-    if viaje is not None:
+    if viaje is not None and _con_telefono(viaje.pasajero):
         _enviar(self, lambda n: n.avisar(viaje, tipo))
 
 
@@ -79,7 +87,7 @@ def enviar_aviso(self, viaje_id: int, tipo: str) -> None:
 def enviar_respuesta(self, pasajero_id: int, viaje_id: int | None, texto: str) -> None:
     pasajero = Pasajero.objects.filter(pk=pasajero_id).first()
     viaje = _viaje_para_mensaje(viaje_id) if viaje_id else None
-    if pasajero is not None:
+    if pasajero is not None and _con_telefono(pasajero):
         _enviar(self, lambda n: n.responder(pasajero, viaje, texto))
 
 
@@ -91,7 +99,9 @@ def enviar_chat(self, mensaje_id: int) -> None:
         .filter(pk=mensaje_id, proveedor_sid__isnull=True, estado_entrega=EstadoEntrega.QUEUED)
         .first()
     )
-    if mensaje is not None:
+    if mensaje is not None and not _con_telefono(mensaje.pasajero):
+        MensajeWhatsapp.objects.filter(pk=mensaje.pk).update(estado_entrega=EstadoEntrega.FAILED)
+    elif mensaje is not None:
         _enviar(self, lambda n: n.enviar_mensaje(mensaje))
 
 

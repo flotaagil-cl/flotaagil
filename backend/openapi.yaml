@@ -1530,10 +1530,43 @@ paths:
           description: ''
         '409':
           description: '`cuenta_sin_confirmar`'
+    patch:
+      operationId: mi_cuenta_partial_update
+      description: El nombre cambia al tiro. Un WhatsApp nuevo queda pendiente hasta
+        que responda «CONFIRMAR CUENTA»; mientras tanto la cuenta sigue con el número
+        anterior (HU-45, DC-50).
+      summary: Editar mi perfil
+      tags:
+      - mi-cuenta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPerfilEntradaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPerfilEntradaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPerfilEntradaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MiCuenta'
+          description: ''
+        '409':
+          description: '`telefono_en_uso` o `cuenta_sin_confirmar`'
+        '429':
+          description: '`limite_reenvio`'
     delete:
       operationId: mi_cuenta_destroy
-      description: Borra la credencial y el correo; las reservas y el pasajero quedan
-        como de invitado.
+      description: 'Anonimiza la cuenta (HU-45, DC-50): usuario inactivo y sin clave,
+        pasajero «Pasajero eliminado» sin teléfono y mensajes sin contenido. Viajes,
+        pagos, historial y auditoría se conservan.'
       summary: Eliminar mi cuenta
       tags:
       - mi-cuenta
@@ -1542,6 +1575,8 @@ paths:
       responses:
         '204':
           description: No response body
+        '409':
+          description: '`viaje_activo`'
   /api/mi-cuenta/privacidad/:
     post:
       operationId: mi_cuenta_privacidad_create
@@ -4350,12 +4385,31 @@ components:
           type: string
         empresa_slug:
           type: string
+        telefono_pendiente:
+          type: string
+          nullable: true
+          readOnly: true
+          description: WhatsApp nuevo por confirmar (DC-50), o null si no hay o ya
+            venció.
+        pasajero_desde:
+          type: string
+          format: date-time
+        password_cambiada_en:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: Último cambio o recuperación de la contraseña registrado en
+            la auditoría, o null.
       required:
       - email
       - empresa
       - empresa_slug
       - nombre
+      - pasajero_desde
+      - password_cambiada_en
       - telefono
+      - telefono_pendiente
     MiReserva:
       type: object
       properties:
@@ -4752,6 +4806,8 @@ components:
           type: string
         telefono:
           type: string
+          nullable: true
+          description: Null si el pasajero eliminó su cuenta (DC-50).
       required:
       - id
       - nombre
@@ -4834,6 +4890,19 @@ components:
             pattern: ^\+[1-9]\d{7,14}$
           - type: string
             maxLength: 0
+    PatchedPerfilEntradaRequest:
+      type: object
+      description: 'HU-45: el correo es el usuario de ingreso y no se cambia aquí.'
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        telefono:
+          type: string
+          minLength: 1
+          description: WhatsApp en formato E.164; uno nuevo se vuelve a confirmar.
+          maxLength: 24
     PatchedUsuarioPanelEditarRequest:
       type: object
       properties:

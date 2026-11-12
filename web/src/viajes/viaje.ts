@@ -18,8 +18,8 @@ export const ENLACES_PASAJERO = [
   { a: '/mis-viajes', texto: 'Mis viajes' },
 ];
 
-/** Solo en el menú de la cuenta: datos y eliminar la cuenta (pantalla anterior, hasta «Mi perfil» de HU-45). */
-export const CUENTA_PASAJERO = [{ a: '/mis-reservas', texto: 'Mi cuenta' }];
+/** Solo en el menú de la cuenta: datos, contraseña y eliminar la cuenta (HU-45). */
+export const CUENTA_PASAJERO = [{ a: '/mi-perfil', texto: 'Mi perfil' }];
 
 export const INSIGNIA: Record<EstadoViaje, { texto: string; tono: TonoInsignia }> = {
   PENDIENTE_CONFIRMACION: { texto: 'Por confirmar', tono: 'revision' },
