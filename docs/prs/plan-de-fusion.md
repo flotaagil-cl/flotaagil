@@ -16,7 +16,28 @@ Al cambiar de repositorio (DC-49), `main` avanzó por *fast-forward* de `5e39c7f
 
 Ramas intermedias del PR 5, también contenidas en `main`: `fix/decisiones-fase1` `01c790a`, `feat/HU-41-recuperacion` `5d0ce1d`, `feat/HU-42-revisa-pedido` `9e07aa3` y `feat/HU-43-tu-viaje` `bcfc929`.
 
-Después, por PR con *squash* y el check `ci` en verde: #59 `4a53aeb` (pruebas sin depender del `.env` y sin `assert` en `conftest.py`), #60 `e62b38d` (reintentos de apt) y #58 `bb13c8c` (prueba del CI). Las ramas fuera de la cadena siguen pendientes de decisión.
+Después, por PR con *squash* y el check `ci` en verde: #59 `4a53aeb` (pruebas sin depender del `.env` y sin `assert` en `conftest.py`), #60 `e62b38d` (reintentos de apt) y #58 `bb13c8c` (prueba del CI). Las ramas fuera de la cadena ya se resolvieron (ver «Ramas fuera de la cadena»).
+
+### HU-31 a HU-44 (12-11-2026)
+
+Se verificó con `git merge-base --is-ancestor` que las 14 ramas están contenidas completas en `main`: no queda diferencia que fusionar ni PR que abrir. Sus issues se cerraron con un comentario que cita la punta de la rama, y las tarjetas pasaron a «Hecho» por la automatización del tablero. Los RFC de CC-12, CC-15, CC-16, CC-17 y CC-18 (#33, #34, #35, #41, #43) siguen abiertos, pendientes de decisión. `feat/HU-45-perfil` lleva 2 commits por delante de `main` (purga de posiciones GPS, DC-48) y se integra con HU-45.
+
+| HU | Issue | Rama | Punta |
+|---|---|---|---|
+| HU-31 | #36 | `feat/HU-31-turnos-caja` | `2d339e3` |
+| HU-32 | #37 | `feat/HU-32-contingencia` | `ff5526b` |
+| HU-33 | #38 | `feat/HU-33-login-unico` | `6fdc39c` |
+| HU-34 | #39 | `feat/HU-34-autoregistro-convenios` | `b4148db` |
+| HU-35 | #40 | `feat/HU-35-cuenta-pasajero` | `0251e0d` |
+| HU-36 | #42 | `feat/HU-36-usuarios-panel` | `dc7a466` |
+| HU-37 | #44 | `feat/HU-37-sistema-visual` | `1fd427b` |
+| HU-38 | #45 | `feat/HU-38-ingresar` | `2a0f6ca` |
+| HU-39 | #46 | `feat/HU-39-pedido` | `1dd365c` |
+| HU-40 | #47 | `feat/HU-40-cuenta-obligatoria` | `87b9515` |
+| HU-41 | #48 | `feat/HU-41-recuperacion` | `5d0ce1d` |
+| HU-42 | #49 | `feat/HU-42-revisa-pedido` | `9e07aa3` |
+| HU-43 | #50 | `feat/HU-43-tu-viaje` | `bcfc929` |
+| HU-44 | #51 | `feat/HU-44-mis-viajes` | `0f9e723` |
 
 | PR | Sprint | Rama de origen | Rama base | Issues que cierra |
 |---|---|---|---|---|
@@ -91,6 +112,8 @@ Cuatro ramas salieron de `main` en el Sprint 0 y no están en ninguna de las cin
 | 7 | `docs/agregar-carlos` | CODEOWNERS con `@ceal2013` en `backend/` e `infra/`; la línea de Carlos en `CLAUDE.md` | Por abrir | — |
 | 8 | `docs/flujo-tablero` | La regla del flujo del tablero en `CLAUDE.md` (Closes en el PR que termina la HU, Refs en los parciales) | Por abrir | — |
 | 9 | `docs/backlog-sprint1` | Criterios detallados de HU-03 y HU-19, avance de HU-26 y `docs/backlog/pendientes.md`, `llevar-a-github.sh` | Por abrir | — |
+
+**Estado (12-11-2026):** `chore/sprint0-script` no se fusionó (#32 cerrado con comentario); `docs/flujo-tablero` entró adaptada en el PR #62; `docs/agregar-carlos` y `docs/backlog-sprint1` quedan como ramas históricas, sin fusionar ni borrar.
 
 **Cuándo:** después del PR 5, una por una, en este orden. Son solo documentación y no cambian el comportamiento.
 
