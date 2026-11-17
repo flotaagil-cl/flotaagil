@@ -28,6 +28,9 @@ class Empresa(models.Model):
         max_length=12, choices=Plan.choices, default=Plan.ESTANDAR, db_default=Plan.ESTANDAR
     )
     activa = models.BooleanField(default=True, db_default=True)
+    # DC-51 (CC-22): módulo pagado con las cuentas de pasajero y convenio. Independiente del plan; solo lo
+    # cambia el superusuario de la plataforma.
+    modulo_cuentas = models.BooleanField(default=False, db_default=False)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

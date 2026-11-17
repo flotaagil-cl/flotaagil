@@ -5,6 +5,7 @@ export const MENSAJES = {
   cuenta_bloqueada: 'Tu cuenta está bloqueada temporalmente por intentos fallidos. Intenta más tarde.',
   cuenta_deshabilitada: 'Tu cuenta está deshabilitada. Contacta al administrador de tu empresa.',
   rol_no_permitido: 'Esta cuenta es de conductor: ingresa desde la app del conductor.',
+  modulo_no_disponible: 'El acceso con cuenta no está disponible para esta empresa.',
   origen_no_permitido: 'No se pudo validar el origen de la página. Recarga e intenta de nuevo.',
   throttled: 'Demasiados intentos. Espera un momento e intenta de nuevo.',
   sesion_terminada: 'Tu sesión terminó. Inicia sesión de nuevo.',

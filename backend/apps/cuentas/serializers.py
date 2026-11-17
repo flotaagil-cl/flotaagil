@@ -16,7 +16,7 @@ class LoginSerializer(serializers.Serializer):
 class EmpresaResumenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
-        fields = ["id", "razon_social", "slug"]
+        fields = ["id", "razon_social", "slug", "modulo_cuentas"]
 
 
 class UsuarioSesionSerializer(serializers.ModelSerializer):

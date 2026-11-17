@@ -26,10 +26,14 @@ class ConfiguracionEmpresaInline(admin.StackedInline):
 
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
-    list_display = ["razon_social", "rut", "slug", "plan", "activa"]
-    list_filter = ["plan", "activa"]
+    list_display = ["razon_social", "rut", "slug", "plan", "modulo_cuentas", "activa"]
+    list_filter = ["plan", "modulo_cuentas", "activa"]
     search_fields = ["razon_social", "rut", "slug"]
     inlines = [ConfiguracionEmpresaInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        # DC-51: el módulo de cuentas es un servicio pagado; solo lo cambia el superusuario.
+        return [] if request.user.is_superuser else ["modulo_cuentas"]
 
 
 @admin.register(Usuario)

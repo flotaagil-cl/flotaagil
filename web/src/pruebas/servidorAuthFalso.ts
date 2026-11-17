@@ -20,7 +20,7 @@ interface UsuarioFalso extends Usuario {
   bloqueado?: boolean;
 }
 
-const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes' };
+const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes', modulo_cuentas: true };
 
 export const USUARIOS: UsuarioFalso[] = [
   { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },

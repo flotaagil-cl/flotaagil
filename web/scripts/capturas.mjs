@@ -47,6 +47,11 @@ const PANTALLAS = {
   // La raíz del portal lleva a «Ingresar» desde CC-18; el marco y los tokens se ven en la página de privacidad.
   'HU-37': [{ nombre: 'portal-marco-privacidad', ruta: `${PORTAL}/privacidad`, sesion: null }],
   'HU-40': [{ nombre: 'pedir-sin-sesion', ruta: '/pedir', sesion: null, destino: /\/(login|solicitar\/[^/]+\/ingresar)/ }],
+  // HU-50 (CC-22): taxi-pacifico no tiene el módulo de cuentas; transportes-andes sí.
+  'HU-50': [
+    { nombre: 'portal-sin-modulo-cuenta', ruta: '/solicitar/taxi-pacifico/cuenta', sesion: null },
+    { nombre: 'panel-inicio-sin-modulo', ruta: '/', sesion: 'admin@taxi-pacifico.example' },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
@@ -71,7 +76,8 @@ function credenciales(alias) {
   }
   const clave = process.env.DATOS_DEMO_PASSWORD;
   if (!clave) throw new Error('Falta DATOS_DEMO_PASSWORD para las pantallas con sesión.');
-  return { email: `${alias}@${EMPRESA}.example`, clave };
+  // Un alias con @ es el correo completo (por ejemplo, un usuario de la empresa sin el módulo de cuentas).
+  return { email: alias.includes('@') ? alias : `${alias}@${EMPRESA}.example`, clave };
 }
 
 async function iniciarSesion(pagina, alias) {

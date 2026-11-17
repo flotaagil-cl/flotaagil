@@ -1,6 +1,7 @@
 """Portal público del pasajero (HU-19). Sin autenticación: se protege con throttling por IP,
 límite por teléfono y un campo trampa."""
 
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import serializers, status
@@ -35,6 +36,14 @@ class PortalPorHora(AnonRateThrottle):
 
 def _empresa(slug: str) -> Empresa:
     return get_object_or_404(Empresa.objects.select_related("configuracion"), slug=slug, activa=True)
+
+
+def _empresa_con_modulo(slug: str) -> Empresa:
+    """DC-51 (CC-22): crear cuenta y registrar empresa existen solo con el módulo de cuentas."""
+    empresa = _empresa(slug)
+    if not empresa.modulo_cuentas:
+        raise Http404("No disponible para esta empresa.")
+    return empresa
 
 
 class _VistaPortal(APIView):
@@ -101,7 +110,7 @@ class RegistroEmpresaView(_VistaPortal):
         },
     )
     def post(self, request, slug):
-        empresa = _empresa(slug)
+        empresa = _empresa_con_modulo(slug)
         entrada = RegistroConvenioSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         if not entrada.validated_data.get("sitio_web"):
@@ -138,7 +147,7 @@ class CrearCuentaView(_VistaPortal):
         },
     )
     def post(self, request, slug):
-        empresa = _empresa(slug)
+        empresa = _empresa_con_modulo(slug)
         entrada = CrearCuentaSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         if not entrada.validated_data.get("sitio_web"):
@@ -194,9 +203,10 @@ class EstadoActivacionView(_VistaActivacion):
         description="HU-41: con el correo y la contraseña del alta; la consulta «Activa tu cuenta».",
     )
     def post(self, request, slug):
+        empresa = _empresa_con_modulo(slug)
         entrada = ActivacionSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        estado = cuentas_pasajero.estado_activacion(_empresa(slug), **entrada.validated_data)
+        estado = cuentas_pasajero.estado_activacion(empresa, **entrada.validated_data)
         return Response({**estado, "telefono": enmascarar(estado["telefono"])})
 
 
@@ -214,7 +224,8 @@ class ReenviarActivacionView(_VistaActivacion):
         description="HU-41 (DC-45): la vigencia del mensaje corre desde este envío.",
     )
     def post(self, request, slug):
+        empresa = _empresa_con_modulo(slug)
         entrada = ReenviarActivacionSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        cuenta = cuentas_pasajero.reenviar_activacion(_empresa(slug), **entrada.validated_data)
+        cuenta = cuentas_pasajero.reenviar_activacion(empresa, **entrada.validated_data)
         return Response({"activa": False, "telefono": enmascarar(cuenta.telefono)})

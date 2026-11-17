@@ -29,6 +29,7 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
         fields = [
             "razon_social",
             "slug",
+            "modulo_cuentas",  # DC-51: con el módulo, portal con cuenta; sin él, formularios públicos
             "anticipacion_minima_min",
             "expiracion_verificacion_min",
             "margen_nacional_min",

@@ -6,7 +6,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.comun.permisos import con_roles
+from apps.comun.permisos import ConModuloCuentas, con_roles
 from apps.cuentas.models import Rol
 from apps.portal.serializers import SolicitudConvenioSerializer, SolicitudRespuestaSerializer
 from apps.reservas.models import Viaje
@@ -14,7 +14,7 @@ from apps.reservas.models import Viaje
 from . import cuenta
 from .models import Convenio
 
-SOLO_CONVENIO = [con_roles(Rol.CONVENIO)]
+SOLO_CONVENIO = [con_roles(Rol.CONVENIO), ConModuloCuentas]  # DC-51
 
 
 class MiConvenioSerializer(serializers.ModelSerializer):
