@@ -1,19 +1,19 @@
 {
   "_ayuda": "Actualizar cada vez que se corren las suites completas (CLAUDE.md, «Informes y evidencias»). 'pruebas' = casos ejecutados en verde; 'cobertura' = % de líneas.",
-  "fecha": "2026-11-12",
-  "rama": "feat/HU-45-perfil (sobre main 7daa015)",
+  "fecha": "2026-11-17",
+  "rama": "main (CC-22 y CC-20, HU-50 a HU-59)",
   "backend": {
-    "pruebas": 1255,
+    "pruebas": 1313,
     "cobertura": 97.9,
     "comando": "pytest --cov"
   },
   "web": {
-    "pruebas": 772,
-    "cobertura": 95.7,
+    "pruebas": 798,
+    "cobertura": 95.6,
     "comando": "vitest run --coverage (web)"
   },
   "app": {
-    "pruebas": 89,
+    "pruebas": 91,
     "cobertura": 97.6,
     "comando": "vitest run --coverage (app)"
   }
