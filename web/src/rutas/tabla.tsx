@@ -21,6 +21,8 @@ export interface Manejo {
   menu?: boolean;
   /** Roles que pueden verla; sin roles, cualquiera con sesión del panel. */
   roles?: Rol[];
+  /** HU-56 (CC-22): solo en el menú de las empresas con el módulo de cuentas (WhatsApp con el pasajero). */
+  conModulo?: boolean;
 }
 
 export const ROLES_PANEL: Rol[] = ['ADMINISTRADOR', 'DESPACHADOR'];
@@ -123,7 +125,7 @@ export const pantallasDelPanel: RouteObject[] = [
   },
   {
     path: 'conversaciones',
-    handle: { titulo: 'Conversaciones', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Conversaciones', menu: true, roles: ROLES_PANEL, conModulo: true } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversaciones')).Conversaciones }) },
       {
@@ -228,6 +230,11 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           lazy: async () => ({ Component: (await import('../portal/paginas/SolicitudConvenio')).SolicitudConvenio }),
           handle: { soloSinModulo: true },
         },
+        // HU-56 (CC-22): encuesta de satisfacción desde el correo.
+        {
+          path: 'encuesta/:token',
+          lazy: async () => ({ Component: (await import('../portal/paginas/Encuesta')).Encuesta }),
+        },
         // HU-54 (CC-22): el contacto del convenio autoriza o rechaza la reserva.
         {
           path: 'autorizar/:token',
@@ -282,12 +289,12 @@ export interface EntradaMenu {
 }
 
 /** Menú generado desde la tabla, filtrado por rol: solo muestra pantallas que existen. */
-export function entradasDeMenu(rutas: RouteObject[], rol: Rol, base = ''): EntradaMenu[] {
+export function entradasDeMenu(rutas: RouteObject[], rol: Rol, base = '', conModulo = true): EntradaMenu[] {
   return rutas.flatMap((ruta) => {
     const camino = ruta.path ? `${base.replace(/\/$/, '')}/${ruta.path.replace(/^\//, '')}` : base || '/';
     const manejo = ruta.handle as Manejo | undefined;
-    const propia =
-      manejo?.menu && (!manejo.roles || manejo.roles.includes(rol)) ? [{ ruta: camino, titulo: manejo.titulo }] : [];
-    return [...propia, ...entradasDeMenu(ruta.children ?? [], rol, camino)];
+    const visible = manejo?.menu && (!manejo.roles || manejo.roles.includes(rol)) && (conModulo || !manejo.conModulo);
+    const propia = visible ? [{ ruta: camino, titulo: manejo.titulo }] : [];
+    return [...propia, ...entradasDeMenu(ruta.children ?? [], rol, camino, conModulo)];
   });
 }

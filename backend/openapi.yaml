@@ -1928,6 +1928,45 @@ paths:
           description: '`cuenta_activa`'
         '429':
           description: '`limite_reenvio` (3 cada 15 min por cuenta) o límite por IP'
+  /api/portal/{slug}/encuesta/:
+    post:
+      operationId: portal_encuesta_create
+      description: 'HU-56 (CC-22): misma CALIFICACION de HU-24; opcional (RN-14) y
+        una sola vez.'
+      summary: Calificar el viaje desde el correo de la encuesta (1 a 5)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncuestaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EncuestaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EncuestaRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalificacionRegistrada'
+          description: ''
+        '400':
+          description: '`enlace_invalido` (alterado, vencido a los 7 días o sin viaje)'
+        '409':
+          description: '`ya_calificado`'
   /api/portal/{slug}/registro-empresa/:
     post:
       operationId: portal_registro_empresa_create
@@ -3503,6 +3542,13 @@ components:
     BlankEnum:
       enum:
       - ''
+    CalificacionRegistrada:
+      type: object
+      properties:
+        puntaje:
+          type: integer
+      required:
+      - puntaje
     CambiarPasswordRequest:
       type: object
       properties:
@@ -4207,6 +4253,20 @@ components:
       - id
       - razon_social
       - slug
+    EncuestaRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        puntaje:
+          type: integer
+          maximum: 5
+          minimum: 1
+      required:
+      - puntaje
+      - token
     Error:
       type: object
       properties:
@@ -5205,6 +5265,10 @@ components:
           type: string
           minLength: 1
           maxLength: 60
+        color:
+          type: string
+          nullable: true
+          maxLength: 30
         anio:
           type: integer
           maximum: 32767
@@ -6534,6 +6598,10 @@ components:
         marca_modelo:
           type: string
           maxLength: 60
+        color:
+          type: string
+          nullable: true
+          maxLength: 30
         anio:
           type: integer
           maximum: 32767
@@ -6587,6 +6655,10 @@ components:
           type: string
           minLength: 1
           maxLength: 60
+        color:
+          type: string
+          nullable: true
+          maxLength: 30
         anio:
           type: integer
           maximum: 32767

@@ -60,6 +60,7 @@ Agregados y desvíos de la implementación respecto de [`diccionario-datos.md`](
 | DC-54 | 2026-11-17 | Agregado (CC-22) | CONVENIO | `contacto_correo` VARCHAR(254) NULL, `viajes_estimados_mes` SMALLINT NULL y `correos_autorizados` JSONB (lista; una entrada `@dominio.cl` autoriza todo el dominio) | HU-53, HU-54. Solicitud pública: convenio EN_REVISION sin usuario | Aprobado (CC-22) |
 | DC-55 | 2026-11-17 | Precisión de uso (CC-22) | CONVENIO, CALIFICACION, MENSAJE_WHATSAPP | El despachador también ve, aprueba y rechaza convenios. Sin el módulo no sale WhatsApp: los avisos (recibida, confirmada, conductor asignado, cancelación) y la encuesta van por correo; la encuesta por correo crea la misma CALIFICACION de HU-24 | HU-53, HU-56 | Aprobado (CC-22) |
 | DC-56 | 2026-11-17 | Decisiones de implementación (CC-22) | — | Antispam: 5 envíos por IP y 3 por correo por hora, más un campo trampa. Enlaces firmados con `TimestampSigner`, de un solo uso porque solo valen mientras el viaje sigue en PENDIENTE_CONFIRMACION; vencen con el plazo. Encuesta por correo vigente 7 días. «Sin confirmar» no se cancela sola nunca. El panel muestra el módulo en Inicio, sin editarlo | Valores no fijados en la especificación | Propuesta (validar con Renato) |
+| DC-57 | 2026-11-17 | Agregado (CC-22) | VEHICULO | `color` VARCHAR(30) NULL, opcional en el formulario del vehículo | HU-56: el correo «conductor asignado» pide nombre, patente, modelo y color; el modelo no tenía color | Propuesta (validar con Renato) |
 
 ## DC-01 · EMPRESA.slug
 

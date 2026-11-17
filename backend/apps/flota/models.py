@@ -24,6 +24,8 @@ class Vehiculo(models.Model):
     empresa = models.ForeignKey("cuentas.Empresa", on_delete=models.PROTECT, related_name="vehiculos")
     patente = models.CharField(max_length=8, unique=True, validators=[validar_patente])
     marca_modelo = models.CharField(max_length=60, validators=[validar_no_vacio])
+    # DC-57 (HU-56): el correo «conductor asignado» lo incluye para que el pasajero reconozca el auto.
+    color = models.CharField(max_length=30, null=True, blank=True)
     anio = models.PositiveSmallIntegerField(validators=[validar_anio_vehiculo])
     capacidad = models.PositiveSmallIntegerField(
         default=4, db_default=4, validators=[MinValueValidator(1), MaxValueValidator(7)]

@@ -33,6 +33,7 @@ function datosDe(vehiculo: TipoVehiculo): DatosVehiculo {
   return {
     patente: vehiculo.patente,
     marca_modelo: vehiculo.marca_modelo,
+    color: vehiculo.color ?? null,
     anio: vehiculo.anio,
     capacidad: vehiculo.capacidad ?? 4,
   };
@@ -106,7 +107,7 @@ function Ficha({ vehiculo }: { vehiculo: TipoVehiculo }) {
       <FormularioVehiculo
         key={JSON.stringify(antes)}
         modo="editar"
-        iniciales={{ ...antes, anio: String(antes.anio), capacidad: String(antes.capacidad) }}
+        iniciales={{ ...antes, color: antes.color ?? '', anio: String(antes.anio), capacidad: String(antes.capacidad) }}
         volverA="/vehiculos"
         enviar={async (datos) => {
           setAviso(null);

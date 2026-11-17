@@ -277,3 +277,7 @@ class ReservaConfirmadaSerializer(serializers.Serializer):
     recogida_en = serializers.DateTimeField()
     origen_dir = serializers.CharField()
     destino_dir = serializers.CharField()
+
+
+class EncuestaSerializer(TokenSerializer):
+    puntaje = serializers.IntegerField(min_value=1, max_value=5)

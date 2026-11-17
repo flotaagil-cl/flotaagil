@@ -12,6 +12,7 @@ urlpatterns = [
     path("<slug:slug>/reservas/", views.ReservaPublicaView.as_view(), name="portal-reserva-publica"),
     # HU-53 (CC-22): solicitud pública de convenio.
     path("<slug:slug>/convenio/", views.SolicitudConvenioView.as_view(), name="portal-solicitud-convenio"),
+    path("<slug:slug>/encuesta/", views.EncuestaView.as_view(), name="portal-encuesta"),
     path(
         "<slug:slug>/reservas/autorizar/",
         views.AutorizarReservaView.as_view(),

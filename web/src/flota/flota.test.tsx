@@ -104,7 +104,7 @@ describe('vehículos', () => {
     expect(await screen.findByRole('heading', { name: /Vehículo GHJK20/ })).toBeInTheDocument();
     expect(screen.getByText('Vehículo registrado.')).toBeInTheDocument();
     expect(cuerpos(flota, 'POST /api/vehiculos/')).toEqual([
-      { patente: 'GHJK20', marca_modelo: 'Kia Rio', anio: ANIO, capacidad: 4 },
+      { patente: 'GHJK20', marca_modelo: 'Kia Rio', color: null, anio: ANIO, capacidad: 4 },
     ]);
     expect(router.state.location.pathname).toMatch(/^\/vehiculos\/\d+$/);
   });

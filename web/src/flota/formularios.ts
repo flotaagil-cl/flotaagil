@@ -52,6 +52,12 @@ export function esquemaVehiculo(anioActual: number) {
       .transform((v) => v.trim().replace(/\s+/g, ' '))
       .refine((v) => v.length > 0, { error: 'Indica la marca y el modelo.' })
       .refine((v) => v.length <= 60, { error: 'Máximo 60 caracteres.' }),
+    // DC-57 (HU-56): opcional; va en el correo «conductor asignado».
+    color: z
+      .string()
+      .optional()
+      .transform((v) => (v ?? '').trim() || null)
+      .refine((v) => v === null || v.length <= 30, { error: 'Máximo 30 caracteres.' }),
     anio: entero('Indica el año con números.').refine((a) => a >= minimo && a <= anioActual + 1, {
       error: `El vehículo debe ser del año ${minimo} o posterior (antigüedad máxima de ${ANTIGUEDAD_MAXIMA} años).`,
     }),
@@ -64,7 +70,7 @@ export function esquemaVehiculo(anioActual: number) {
 export type ValoresVehiculo = z.input<ReturnType<typeof esquemaVehiculo>>;
 export type DatosVehiculo = z.output<ReturnType<typeof esquemaVehiculo>>;
 
-export const VEHICULO_VACIO: ValoresVehiculo = { patente: '', marca_modelo: '', anio: '', capacidad: '4' };
+export const VEHICULO_VACIO: ValoresVehiculo = { patente: '', marca_modelo: '', color: '', anio: '', capacidad: '4' };
 
 export function cuerpoCrearVehiculo(datos: DatosVehiculo): VehiculoCrear {
   return datos;

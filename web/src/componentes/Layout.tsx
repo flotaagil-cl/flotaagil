@@ -35,7 +35,7 @@ export function Layout() {
     .filter((r) => r !== undefined)
     .at(-1);
   const permitido = !roles || roles.includes(usuario.rol);
-  const menu = entradasDeMenu(rutas, usuario.rol);
+  const menu = entradasDeMenu(rutas, usuario.rol, '', usuario.empresa.modulo_cuentas);
 
   async function cerrarSesion() {
     await sesion.logout();

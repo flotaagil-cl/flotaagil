@@ -1194,6 +1194,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/{slug}/encuesta/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calificar el viaje desde el correo de la encuesta (1 a 5)
+         * @description HU-56 (CC-22): misma CALIFICACION de HU-24; opcional (RN-14) y una sola vez.
+         */
+        post: operations["portal_encuesta_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/registro-empresa/": {
         parameters: {
             query?: never;
@@ -1928,6 +1948,9 @@ export interface components {
         };
         /** @enum {unknown} */
         BlankEnum: "";
+        CalificacionRegistrada: {
+            puntaje: number;
+        };
         CambiarPasswordRequest: {
             password_actual: string;
             password_nueva: string;
@@ -2207,6 +2230,10 @@ export interface components {
             razon_social: string;
             slug: string;
             modulo_cuentas?: boolean;
+        };
+        EncuestaRequest: {
+            token: string;
+            puntaje: number;
         };
         Error: {
             detail: string;
@@ -2700,6 +2727,7 @@ export interface components {
         /** @description La patente no se edita: otra patente es otro vehículo. */
         PatchedVehiculoEditarRequest: {
             marca_modelo?: string;
+            color?: string | null;
             anio?: number;
             capacidad?: number;
             activo?: boolean;
@@ -3247,6 +3275,7 @@ export interface components {
             readonly id: number;
             patente: string;
             marca_modelo: string;
+            color?: string | null;
             anio: number;
             capacidad?: number;
             activo?: boolean;
@@ -3264,6 +3293,7 @@ export interface components {
             /** @description Se normaliza: sin guiones, puntos ni espacios y en mayúsculas. */
             patente: string;
             marca_modelo: string;
+            color?: string | null;
             anio: number;
             capacidad?: number;
         };
@@ -5437,6 +5467,47 @@ export interface operations {
             };
             /** @description `limite_reenvio` (3 cada 15 min por cuenta) o límite por IP */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_encuesta_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EncuestaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EncuestaRequest"];
+                "multipart/form-data": components["schemas"]["EncuestaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalificacionRegistrada"];
+                };
+            };
+            /** @description `enlace_invalido` (alterado, vencido a los 7 días o sin viaje) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `ya_calificado` */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

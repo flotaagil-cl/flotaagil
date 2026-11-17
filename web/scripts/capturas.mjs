@@ -140,6 +140,11 @@ const PANTALLAS = {
       destino: /^\/reservas\/\d+$/,
     },
   ],
+  // HU-56 (CC-22): encuesta del correo (antes de responder) y el color del vehículo para el aviso de conductor.
+  'HU-56': [
+    { nombre: 'encuesta-correo', ruta: '/solicitar/taxi-pacifico/encuesta/enlace-de-ejemplo', sesion: null, destino: /\/encuesta\// },
+    { nombre: 'panel-vehiculo-color', ruta: '/vehiculos/nuevo', sesion: 'admin@taxi-pacifico.example' },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
