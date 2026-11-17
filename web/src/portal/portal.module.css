@@ -61,13 +61,16 @@
   padding: var(--espacio-4);
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: var(--radio);
+  /* CC-20 (HU-58): radios, degradé y borde de campo del sistema visual (tokens del tema, con respaldo). */
+  border-radius: var(--radio-tarjeta, var(--radio));
 }
 
 .tarjeta h1,
 .formulario h1 {
   margin: 0;
-  font-size: 1.375rem;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.4px;
 }
 
 .tarjeta h2 {
@@ -292,16 +295,17 @@
   justify-content: center;
   min-height: 48px;
   padding: 0 var(--espacio-4);
-  border-radius: var(--radio);
+  border-radius: var(--radio-boton, var(--radio));
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
 }
 
 .botonPrincipal {
+  min-height: var(--alto-boton, 48px);
   border: 0;
-  background: var(--acento);
+  background: var(--grad-boton, var(--acento));
   color: var(--sobre-acento);
 }
 
@@ -316,7 +320,7 @@
 
 .botonSecundario {
   align-self: flex-start;
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-campo, var(--borde));
   background: var(--superficie);
   color: var(--texto);
 }
@@ -325,8 +329,8 @@
 
 .destacado {
   padding: var(--espacio-3);
-  background: var(--acento-suave);
-  border-radius: var(--radio);
+  background: var(--grad-destacado, var(--acento-suave));
+  border-radius: var(--radio-tarjeta, var(--radio));
 }
 
 .resumen {
