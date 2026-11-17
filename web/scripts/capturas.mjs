@@ -166,6 +166,21 @@ const PANTALLAS = {
     { nombre: 'portal-privacidad', ruta: '/solicitar/transportes-andes/privacidad', sesion: null },
     { nombre: 'mi-convenio', ruta: '/mi-convenio', sesion: 'convenio' },
   ],
+  // HU-59 (CC-20): la app del conductor. Se corre con CAPTURAS_URL apuntando al servidor de la app (npx vite en app/).
+  'HU-59': [
+    { nombre: 'app-ingresar', ruta: '/', sesion: null },
+    {
+      nombre: 'app-inicio',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByLabel('Correo').fill('conductor1@transportes-andes.example');
+        await pagina.getByLabel('Contraseña').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+        await pagina.getByRole('button', { name: 'Ingresar' }).click();
+        await pagina.getByRole('heading', { name: /Hola|ubicación|Consentimiento|contraseña/i }).first().waitFor();
+      },
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
