@@ -62,7 +62,7 @@ class ConvenioViewSet(
     )
     permission_classes = [con_roles(Rol.ADMINISTRADOR)]
     # DC-55 (CC-22): el despachador también ve, aprueba y rechaza; el resto sigue siendo del administrador.
-    ACCIONES_DEL_DESPACHO = frozenset({"list", "retrieve", "aprobar", "rechazar", "auditoria"})
+    ACCIONES_DEL_DESPACHO = frozenset({"list", "retrieve", "aprobar", "rechazar"})
 
     def get_permissions(self):
         if self.action in self.ACCIONES_DEL_DESPACHO:

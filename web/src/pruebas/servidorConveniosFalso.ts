@@ -24,6 +24,9 @@ export function convenioDePrueba(cambios: Partial<ConvenioDetalle> = {}): Conven
     revisado_por: null,
     revisado_en: null,
     creado_en: '2026-07-15T12:00:00Z',
+    contacto_correo: null,
+    viajes_estimados_mes: null,
+    correos_autorizados: [],
     ...cambios,
   };
 }
@@ -84,7 +87,13 @@ export class ServidorConveniosFalso {
       return { estado: 201, cuerpo: { password_temporal: this.password, vence_en: '2026-07-18T12:00:00Z' } };
     }
     const cambios: Record<string, Partial<ConvenioDetalle>> = {
-      'aprobar/': { estado: 'APROBADO', activo: true, revisado_por: 'Ana Admin', revisado_en: '2026-07-15T12:00:00Z' },
+      'aprobar/': {
+        estado: 'APROBADO',
+        activo: true,
+        revisado_por: 'Ana Admin',
+        revisado_en: '2026-07-15T12:00:00Z',
+        ...(Array.isArray(cuerpo?.correos_autorizados) ? { correos_autorizados: cuerpo.correos_autorizados as string[] } : {}),
+      },
       'rechazar/': { estado: 'RECHAZADO', activo: false, motivo_rechazo: String(cuerpo?.motivo ?? '') },
       'desactivar/': { estado: 'INACTIVO', activo: false },
       'activar/': { estado: 'APROBADO', activo: true },

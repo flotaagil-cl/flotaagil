@@ -1114,6 +1114,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/{slug}/convenio/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Solicitud pública de convenio (empresas sin el módulo de cuentas)
+         * @description HU-53 (CC-22): crea el convenio EN_REVISION sin cuenta; lo revisan el administrador o el despachador y el resultado llega al correo de contacto.
+         */
+        post: operations["portal_convenio_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/cuenta/": {
         parameters: {
             query?: never;
@@ -1871,6 +1891,10 @@ export interface components {
             readonly atendida_en: string | null;
             readonly atendida_por: string | null;
         };
+        AprobacionRequest: {
+            /** @description HU-53: ajusta los correos autorizados al aprobar (correos exactos o «@dominio.cl») */
+            correos_autorizados?: string[];
+        };
         AsignarRequest: {
             /** @description Conductor Disponible de la empresa (RN-01, RN-03) */
             conductor: number;
@@ -2059,6 +2083,11 @@ export interface components {
             readonly revisado_en: string | null;
             /** Format: date-time */
             readonly creado_en: string;
+            /** Format: email */
+            readonly contacto_correo: string | null;
+            readonly viajes_estimados_mes: number | null;
+            /** @description DC-54: correos exactos o «@dominio.cl» */
+            readonly correos_autorizados: string[];
         };
         ConvenioResumen: {
             id: number;
@@ -2624,6 +2653,9 @@ export interface components {
             direccion?: string | null;
             encargado_nombre?: string | null;
             encargado_telefono?: (string) | null;
+            /** Format: email */
+            contacto_correo?: string | null;
+            correos_autorizados?: string[];
         };
         /** @description HU-45: el correo es el usuario de ingreso y no se cambia aquí. */
         PatchedPerfilEntradaRequest: {
@@ -2916,6 +2948,24 @@ export interface components {
         SesionPanel: {
             access: string;
             usuario: components["schemas"]["UsuarioSesion"];
+        };
+        /** @description HU-53 (CC-22): solicitud pública de convenio, sin cuenta. */
+        SolicitudConvenioPublicaRequest: {
+            /** @description Razón social */
+            cliente_nombre: string;
+            cliente_rut: string;
+            direccion: string;
+            contacto_nombre: string;
+            /** Format: email */
+            contacto_correo: string;
+            contacto_telefono: string;
+            viajes_estimados_mes: number;
+            correos_autorizados?: string[];
+            /** @description Campo trampa: debe ir vacío */
+            sitio_web?: string;
+        };
+        SolicitudConvenioRecibida: {
+            mensaje: string;
         };
         /**
          * @description HU-34: la cuenta del convenio pide a nombre del pasajero y declara que este autorizó los avisos. La
@@ -4600,7 +4650,13 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["AprobacionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AprobacionRequest"];
+                "multipart/form-data": components["schemas"]["AprobacionRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5167,6 +5223,54 @@ export interface operations {
             };
             /** @description Empresa inexistente o inactiva */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_convenio_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SolicitudConvenioPublicaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SolicitudConvenioPublicaRequest"];
+                "multipart/form-data": components["schemas"]["SolicitudConvenioPublicaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolicitudConvenioRecibida"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empresa inexistente o con el módulo de cuentas */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `limite_ip` */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

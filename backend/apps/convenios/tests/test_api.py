@@ -282,7 +282,10 @@ class TestAdministracion:
     def test_solo_el_administrador_y_su_empresa(self, cliente, despachador, empresa, otra_empresa, api):
         assert api.get(detalle(ConvenioFactory(empresa=otra_empresa))).status_code == 404
         cliente.force_authenticate(despachador)
-        assert cliente.get(LISTA).status_code == 403
+        # DC-55 (CC-22): el despachador ve y revisa los convenios, pero no los desactiva.
+        assert cliente.get(LISTA).status_code == 200
+        convenio = ConvenioFactory(empresa=empresa)
+        assert cliente.post(f"{detalle(convenio)}desactivar/").status_code == 403
 
 
 @pytest.mark.django_db

@@ -21,6 +21,9 @@ class ConvenioSerializer(serializers.ModelSerializer):
 
 
 class ConvenioDetalleSerializer(ConvenioSerializer):
+    correos_autorizados = serializers.ListField(
+        child=serializers.CharField(), read_only=True, help_text="DC-54: correos exactos o «@dominio.cl»"
+    )
     encargado_email = serializers.EmailField(
         source="usuario.email", allow_null=True, default=None, read_only=True
     )

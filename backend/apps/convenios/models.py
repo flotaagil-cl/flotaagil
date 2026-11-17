@@ -59,12 +59,6 @@ class Convenio(models.Model):
     correos_autorizados = models.JSONField(default=list, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
-    def autoriza(self, correo: str) -> bool:
-        """HU-54: el correo está autorizado para pedir viajes con este convenio (exacto o por dominio)."""
-        correo = (correo or "").strip().lower()
-        dominio = "@" + correo.rpartition("@")[2]
-        return correo in self.correos_autorizados or dominio in self.correos_autorizados
-
     class Meta:
         db_table = "convenio"
         ordering = ["cliente_nombre"]
@@ -82,6 +76,12 @@ class Convenio(models.Model):
 
     def __str__(self):
         return self.cliente_nombre
+
+    def autoriza(self, correo: str) -> bool:
+        """HU-54: el correo está autorizado para pedir viajes con este convenio (exacto o por dominio)."""
+        correo = (correo or "").strip().lower()
+        dominio = "@" + correo.rpartition("@")[2]
+        return correo in self.correos_autorizados or dominio in self.correos_autorizados
 
     @property
     def activo(self) -> bool:

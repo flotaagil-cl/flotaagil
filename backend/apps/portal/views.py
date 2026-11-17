@@ -303,8 +303,8 @@ class SolicitudConvenioView(_VistaPortal):
             404: OpenApiResponse(description="Empresa inexistente o con el módulo de cuentas"),
             429: OpenApiResponse(description="`limite_ip`"),
         },
-        description="HU-53 (CC-22): crea el convenio EN_REVISION sin cuenta; lo revisan el administrador o el "
-        "despachador y el resultado llega al correo de contacto.",
+        description="HU-53 (CC-22): crea el convenio EN_REVISION sin cuenta; lo revisan el administrador o "
+        "el despachador y el resultado llega al correo de contacto.",
     )
     def post(self, request, slug):
         empresa = _empresa_sin_modulo(slug)

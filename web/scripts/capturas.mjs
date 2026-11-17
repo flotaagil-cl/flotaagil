@@ -92,6 +92,20 @@ const PANTALLAS = {
       destino: /^\/reservas\/\d+$/,
     },
   ],
+  // HU-53 (CC-22): solicitud pública de convenio y su revisión por el despachador. CAPTURAS_CONVENIO: una en revisión.
+  'HU-53': [
+    { nombre: 'portal-solicitud-convenio', ruta: '/solicitar/taxi-pacifico/convenio', sesion: null },
+    {
+      nombre: 'panel-aprobar-convenio',
+      ruta: () => `/convenios/${process.env.CAPTURAS_CONVENIO ?? '0'}`,
+      sesion: 'despacho@taxi-pacifico.example',
+      destino: /^\/convenios\/\d+$/,
+      accion: async (pagina) => {
+        await pagina.getByRole('button', { name: 'Aprobar' }).click();
+        await pagina.getByLabel(/Correos autorizados/).waitFor();
+      },
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

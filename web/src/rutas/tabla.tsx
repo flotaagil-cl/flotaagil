@@ -155,7 +155,8 @@ export const pantallasDelPanel: RouteObject[] = [
   },
   {
     path: 'convenios',
-    handle: { titulo: 'Convenios', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+    // DC-55 (CC-22): el despachador también revisa los convenios.
+    handle: { titulo: 'Convenios', menu: true, roles: ROLES_PANEL } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../convenios/paginas/Convenios')).Convenios }) },
       {
@@ -220,6 +221,12 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
         {
           path: 'privacidad',
           lazy: async () => ({ Component: (await import('../portal/paginas/Privacidad')).Privacidad }),
+        },
+        // HU-53 (CC-22): solicitud pública de convenio (solo sin el módulo de cuentas).
+        {
+          path: 'convenio',
+          lazy: async () => ({ Component: (await import('../portal/paginas/SolicitudConvenio')).SolicitudConvenio }),
+          handle: { soloSinModulo: true },
         },
         // HU-51 (CC-22): el enlace del correo que confirma la reserva pública.
         {

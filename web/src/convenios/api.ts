@@ -67,6 +67,20 @@ const RUTAS_ACCION = {
 } as const;
 
 /** HU-34: aprobar, desactivar (RN-08) o reactivar. Quedan en auditoría (RN-12). */
+/** HU-53 (CC-22): aprobar ajustando los correos autorizados (correos exactos o «@dominio.cl»). */
+export function useAprobarConvenio(id: number) {
+  const api = useApi();
+  const cliente = useQueryClient();
+  return useMutation({
+    mutationFn: (correos_autorizados: string[]) =>
+      resultado(api.POST('/api/convenios/{id}/aprobar/', { params: { path: { id } }, body: { correos_autorizados } })),
+    onSuccess: (convenio) => {
+      cliente.setQueryData(claves.detalle(id), convenio);
+      void cliente.invalidateQueries({ queryKey: claves.todo });
+    },
+  });
+}
+
 export function useAccionConvenio(id: number) {
   const api = useApi();
   const cliente = useQueryClient();

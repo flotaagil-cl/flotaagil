@@ -21,10 +21,21 @@ describe('permisos', () => {
     expect(within(menu).getByRole('link', { name: 'Convenios' })).toBeInTheDocument();
   });
 
-  it('el despachador no lo ve y por URL ve «sin permiso» sin consultar la API', async () => {
-    const { servidor } = montar('/convenios', 'despacho@andes.example');
-    expect(await screen.findByRole('heading', { name: /permiso/i })).toBeInTheDocument();
-    expect(servidor.urls.some((u) => u.includes('/api/convenios/'))).toBe(false);
+  it('el despachador revisa: aprueba con los correos autorizados, sin editar ni ver la auditoría (DC-55)', async () => {
+    const { convenios } = montar('/convenios/9', 'despacho@andes.example');
+    convenios.convenios = [
+      convenioDePrueba({ id: 9, estado: 'EN_REVISION', activo: false, tiene_cuenta: false, encargado_email: null, contacto_correo: 'ana@minera.example', viajes_estimados_mes: 40, correos_autorizados: ['@minera.example'] }),
+    ];
+    expect(await screen.findByText('ana@minera.example')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Aprobar' }));
+    const correos = screen.getByLabelText(/Correos autorizados/);
+    expect(correos).toHaveValue('@minera.example');
+    await userEvent.type(correos, '{Enter}pedro@otra.example');
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Aprobar' }));
+    expect(await screen.findByText(/Convenio aprobado/)).toBeInTheDocument();
+    expect(convenios.convenios[0].correos_autorizados).toEqual(['@minera.example', 'pedro@otra.example']);
+    expect(screen.queryByRole('button', { name: 'Desactivar convenio' })).not.toBeInTheDocument();
   });
 });
 
