@@ -54,7 +54,7 @@ docs/diseno/  referencias de diseño (portal, panel, app)  ambos
 - RN-03 Un conductor tiene a lo más un viaje en ejecución.
 - RN-04 Sin respuesta en 60 s la reserva vuelve a SOLICITADO.
 - RN-05 Con más de un vehículo, el conductor declara cuál usa antes de quedar Disponible.
-- RN-06 Reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min. Desde CC-18 (DC-41) en el portal solo se pide con cuenta: el teléfono se verifica una vez al activarla y las reservas nacen en SOLICITADO; RN-06 queda para las reservas anteriores. Desde CC-22 (DC-53) la reserva pública se confirma por correo hasta 24 h antes de la recogida (o 60 min); al vencer queda «Sin confirmar» y no se cancela sola.
+- RN-06 Reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min. Desde CC-18 (DC-41) en el portal solo se pide con cuenta: el teléfono se verifica una vez al activarla y las reservas nacen en SOLICITADO; RN-06 queda para las reservas anteriores. Desde CC-22 (DC-53) la reserva pública se confirma por correo hasta 24 h antes de la recogida (o 60 min); al vencer queda «Sin confirmar» y se cierra sola 2 h después de la recogida (origen NO_CONFIRMADA, DC-59).
 - RN-07 Reservas por link de convenio vigente omiten la verificación del teléfono.
 - RN-08 Desactivar un convenio invalida su link sin afectar el historial.
 - RN-09 El pasajero cancela por WhatsApp solo sin conductor asignado.
@@ -78,7 +78,7 @@ Los valores marcados como supuestos (márgenes, 10 min fuera de geocerca, 15 min
 
 ## Forma de trabajo
 
-- **Scrum**, sprints de 2 semanas, tablero en GitHub Projects «FlotaÁgil — Backlog». Backlog completo en `docs/backlog/backlog.json` (51 HU, 301 SP).
+- **Scrum**, sprints de 2 semanas, tablero en GitHub Projects «FlotaÁgil — Backlog». Backlog completo en `docs/backlog/backlog.json` (55 HU, 319 SP).
 - **Nunca push directo a `main`.** Todo entra por PR con el check `ci` en verde y fusión *squash* (historial lineal); el ruleset «Proteger main» no se modifica. Hoy no exige aprobaciones (DC-47): Renato integra con la lista de chequeo de `docs/prs/lista-de-chequeo.md`. Las ramas fusionadas no se borran (el informe cita sus hashes).
 - **Ramas:** `feat/HU-03-reservas`, `fix/HU-16-monto-pago`, `chore/…`, `docs/…`, `test/…`. Una rama por HU o tarea.
 - **Commits y título del PR:** Conventional Commits en español con scope del área: `feat(backend): crear modelo VIAJE`, `fix(app): …`. El PR referencia el issue: `Closes #12` si termina la HU, `Refs #12` si es parcial.

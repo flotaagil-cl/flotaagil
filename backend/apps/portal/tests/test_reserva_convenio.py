@@ -8,7 +8,7 @@ from django.urls import reverse
 
 from apps.convenios.models import Convenio, EstadoConvenio
 from apps.cuentas.tests.fabricas import EmpresaFactory
-from apps.reservas.models import EstadoViaje, Viaje
+from apps.reservas.models import EstadoViaje, HistorialEstado, OrigenCancelacion, Viaje
 
 from .test_reserva_publica import reservar
 
@@ -84,6 +84,10 @@ class TestReservaConvenio:
             assert decidir(cliente, base, token, "autorizar").status_code == 200
         viaje.refresh_from_db()
         assert viaje.estado == E.SOLICITADO
+        # DC-59 (HU-60): quien autoriza no es un PASAJERO.
+        assert viaje.autorizado_por_correo == "contacto@minera.example" and viaje.autorizado_en is not None
+        paso = HistorialEstado.objects.get(viaje=viaje, estado_nuevo=E.SOLICITADO)
+        assert paso.actor == "SISTEMA"
         assert decidir(cliente, base, token, "rechazar").status_code == 409
 
     def test_el_contacto_rechaza_y_se_avisa_al_solicitante(
@@ -95,7 +99,7 @@ class TestReservaConvenio:
         with django_capture_on_commit_callbacks(execute=True):
             assert decidir(cliente, base, token_de_autorizacion(), "rechazar").status_code == 200
         viaje = Viaje.objects.get()
-        assert viaje.estado == E.CANCELADO
+        assert (viaje.estado, viaje.origen_cancelacion) == (E.CANCELADO, OrigenCancelacion.CONVENIO)
         assert mail.outbox[-1].to == ["x@gmail.example"]
         assert "no autorizó" in mail.outbox[-1].body
 
@@ -131,3 +135,24 @@ class TestReservaConvenio:
             cliente, base, django_capture_on_commit_callbacks, correo="x@gmail.example", **EMPRESA_CLIENTE
         )
         assert decidir(cliente, base, token_de_autorizacion(), "quizas").status_code == 400
+
+
+@pytest.mark.django_db
+def test_correos_autorizados_tienen_mas_margen(cliente, base, convenio, django_capture_on_commit_callbacks):
+    # DC-59: 30 por hora para los correos autorizados de un convenio aprobado (5 para el resto).
+    base.configuracion.reserva_publica_max_correo_hora = 1
+    base.configuracion.reserva_publica_max_convenio_hora = 2
+    base.configuracion.save()
+    for _ in range(2):
+        r = reservar(
+            cliente,
+            base,
+            django_capture_on_commit_callbacks,
+            correo="paula@minera.example",
+            **EMPRESA_CLIENTE,
+        )
+        assert r.status_code == 201
+    r = reservar(
+        cliente, base, django_capture_on_commit_callbacks, correo="paula@minera.example", **EMPRESA_CLIENTE
+    )
+    assert r.status_code == 429

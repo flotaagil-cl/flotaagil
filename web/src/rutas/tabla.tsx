@@ -224,6 +224,11 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           path: 'privacidad',
           lazy: async () => ({ Component: (await import('../portal/paginas/Privacidad')).Privacidad }),
         },
+        // HU-60: «Reservar sin cuenta» en las empresas con el módulo (sin él, la reserva pública es la portada).
+        {
+          path: 'reservar',
+          lazy: async () => ({ Component: (await import('../portal/paginas/ReservaPublica')).ReservaPublica }),
+        },
         // HU-53 (CC-22): solicitud pública de convenio (solo sin el módulo de cuentas).
         {
           path: 'convenio',

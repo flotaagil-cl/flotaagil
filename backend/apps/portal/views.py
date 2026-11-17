@@ -251,7 +251,8 @@ class ReenviarActivacionView(_VistaActivacion):
 
 
 class ReservaPublicaView(_VistaPortal):
-    throttle_classes = [PortalPorMinuto, ReservaPublicaPorHora]
+    # DC-59: el límite por hora es por empresa (ConfiguracionEmpresa) y lo aplica el servicio.
+    throttle_classes = [PortalPorMinuto]
 
     @extend_schema(
         tags=["portal"],
@@ -267,7 +268,8 @@ class ReservaPublicaView(_VistaPortal):
         "para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos).",
     )
     def post(self, request, slug):
-        empresa = _empresa_sin_modulo(slug)
+        # HU-60: también con el módulo de cuentas, como «Reservar sin cuenta».
+        empresa = _empresa(slug)
         entrada = ReservaPublicaSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         datos = entrada.validated_data
@@ -277,7 +279,7 @@ class ReservaPublicaView(_VistaPortal):
             falsa = {"id": 0, "estado": "PENDIENTE_CONFIRMACION", "mensaje": mensaje}
             falsa |= {"recogida_en": datos.get("recogida_en") or ahora, "confirmar_hasta": ahora}
             return Response(ReservaPublicaRespuestaSerializer(falsa).data, status=status.HTTP_201_CREATED)
-        viaje = publico.crear(empresa, datos)
+        viaje = publico.crear(empresa, datos, ip=PortalPorMinuto().get_ident(request))
         if viaje.confirma_convenio:
             mensaje = "Tu correo no está autorizado en el convenio: le pedimos a la empresa que la autorice."
         return Response(

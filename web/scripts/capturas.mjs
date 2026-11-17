@@ -180,6 +180,35 @@ const PANTALLAS = {
         await pagina.getByRole('heading', { name: /Hola|ubicación|Consentimiento|contraseña/i }).first().waitFor();
       },
     },
+    // Con datos preparados para conductor1 (asignación pendiente o viaje en curso), ver la nota de HU-59.
+    {
+      nombre: 'app-viaje-asignado',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('heading', { name: 'Nuevo viaje asignado' }).waitFor();
+      },
+    },
+    {
+      nombre: 'app-viaje-en-curso',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByText(/Navegar/).first().waitFor();
+      },
+    },
+    {
+      nombre: 'app-mi-turno',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('button', { name: 'Mi turno' }).click();
+        await pagina.getByRole('heading', { name: 'Mi turno' }).waitFor();
+      },
+    },
   ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
@@ -194,6 +223,15 @@ const PANTALLAS = {
     },
   ],
 };
+
+/** HU-59: ingreso a la app del conductor con conductor1 (clave de los usuarios demo). */
+async function ingresarApp(pagina) {
+  // Las pantallas sin sesión comparten el contexto del ancho: si la app ya quedó con la sesión, no hay login.
+  if (!(await pagina.getByLabel('Correo').isVisible({ timeout: 3000 }).catch(() => false))) return;
+  await pagina.getByLabel('Correo').fill('conductor1@transportes-andes.example');
+  await pagina.getByLabel('Contraseña').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+  await pagina.getByRole('button', { name: 'Ingresar' }).click();
+}
 
 /** Correo y clave de cada sesión: los usuarios demo comparten DATOS_DEMO_PASSWORD; el pasajero tiene la suya. */
 function credenciales(alias) {
@@ -254,7 +292,9 @@ async function main() {
       };
       for (const hu of hus) {
         mkdirSync(join(EVIDENCIAS, hu), { recursive: true });
-        for (const pantalla of PANTALLAS[hu]) {
+        // CAPTURAS_SOLO=nombre1,nombre2 toma solo esas pantallas (cuando cada una necesita datos distintos).
+        const solo = process.env.CAPTURAS_SOLO?.split(',');
+        for (const pantalla of PANTALLAS[hu].filter((p) => !solo || solo.includes(p.nombre))) {
           const ctx = await contextoDe(pantalla.sesion);
           const pagina = await ctx.newPage();
           // La ruta puede depender del ancho (p. ej. un enlace de un solo uso por captura).

@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from apps.auditoria.models import Auditoria
 from apps.reservas import expiracion
-from apps.reservas.models import EstadoViaje, HistorialEstado, Viaje
+from apps.reservas.models import EstadoViaje, HistorialEstado, OrigenCancelacion, Viaje
 
 from .fabricas import ViajeFactory
 
@@ -86,3 +86,32 @@ def test_comando(empresa, capsys):
     pendiente(empresa, minutos_atras=16)
     call_command("expirar_pendientes")
     assert "Solicitudes sin confirmar: 1" in capsys.readouterr().out
+
+
+@pytest.mark.django_db
+class TestCierreNoConfirmadas:
+    """DC-59 (HU-60): una «Sin confirmar» se cierra 2 h después de la recogida, con origen NO_CONFIRMADA."""
+
+    def test_cierra_solo_pasadas_dos_horas_de_la_recogida(self, empresa):
+        ahora = timezone.now()
+        vieja = pendiente(empresa, confirmar_hasta=ahora - timedelta(days=1))
+        Viaje.objects.filter(pk=vieja.pk).update(recogida_en=ahora - timedelta(hours=2, minutes=1))
+        reciente = pendiente(empresa, confirmar_hasta=ahora - timedelta(days=1))
+        Viaje.objects.filter(pk=reciente.pk).update(recogida_en=ahora - timedelta(hours=1, minutes=59))
+        assert expiracion.cerrar_no_confirmadas(ahora) == 1
+        vieja.refresh_from_db()
+        reciente.refresh_from_db()
+        assert (vieja.estado, vieja.origen_cancelacion) == (E.CANCELADO, OrigenCancelacion.NO_CONFIRMADA)
+        assert vieja.motivo_cancelacion == expiracion.MOTIVO_NO_CONFIRMADA
+        assert reciente.estado == E.PENDIENTE_CONFIRMACION
+
+    def test_parametro_por_empresa_y_tarea(self, empresa):
+        empresa.configuracion.cierre_no_confirmada_horas = 5
+        empresa.configuracion.save()
+        viaje = pendiente(empresa, confirmar_hasta=timezone.now() - timedelta(days=1))
+        Viaje.objects.filter(pk=viaje.pk).update(recogida_en=timezone.now() - timedelta(hours=3))
+        from apps.reservas import tareas
+
+        tareas.expirar_solicitudes.delay()
+        viaje.refresh_from_db()
+        assert viaje.estado == E.PENDIENTE_CONFIRMACION

@@ -212,6 +212,9 @@ def _por_recogida(empresa_id: int, filtros: dict):
     return _filtrar(viajes, filtros)
 
 
+FUERA_DE_KPI_01 = (OrigenCancelacion.NO_CONFIRMADA, OrigenCancelacion.CONVENIO)
+
+
 def _tasa(cantidad: int, total: int) -> float:
     return round(100 * cantidad / total, 1) if total else 0.0
 
@@ -232,11 +235,16 @@ def cancelaciones(empresa_id: int, filtros: dict) -> tuple[list, dict]:
     ]
     sin_origen = canceladas.count(None)
     if sin_origen:
-        filas.append({"origen": "Sin origen", "cantidad": sin_origen, "tasa": _tasa(sin_origen, reservas)})
+        fila = {"origen": "Sin origen", "cantidad": sin_origen, "tasa": _tasa(sin_origen, reservas)}
+        filas.append(fila)
+    # KPI-01 (reservas perdidas), DC-59: las no confirmadas y las que rechazó el convenio nunca fueron
+    # reservas en firme; no cuentan ni como perdidas ni en la base.
+    fuera = sum(canceladas.count(o) for o in FUERA_DE_KPI_01)
+    perdidas, base = len(canceladas) - fuera, reservas - fuera
     return filas, {
-        "origen": f"Total, de {reservas} reservas",
-        "cantidad": len(canceladas),
-        "tasa": _tasa(len(canceladas), reservas),
+        "origen": f"Reservas perdidas (KPI-01), de {base} reservas",
+        "cantidad": perdidas,
+        "tasa": _tasa(perdidas, base),
     }
 
 

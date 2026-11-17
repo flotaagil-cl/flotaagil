@@ -58,6 +58,9 @@ export const ORIGENES_CANCELACION: Record<components['schemas']['OrigenCancelaci
   DESPACHADOR: 'Despachador',
   ADMINISTRADOR: 'Administrador',
   SUPERVISOR: 'Supervisor de convenio',
+  // DC-59 (HU-60).
+  NO_CONFIRMADA: 'No confirmada',
+  CONVENIO: 'Rechazada por el convenio',
   SISTEMA: 'Sistema',
 };
 

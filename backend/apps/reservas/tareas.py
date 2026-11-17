@@ -83,8 +83,10 @@ def enviar_aviso(self, viaje_id: int, tipo: str) -> None:
     viaje = _viaje_para_mensaje(viaje_id)
     if viaje is None:
         return
-    if not viaje.empresa.modulo_cuentas:
+    if not viaje.empresa.modulo_cuentas or viaje.contacto_correo:
         # HU-56 (CC-22, DC-55): sin el módulo de cuentas no sale ningún WhatsApp; los avisos van por correo.
+        # Con el módulo, la reserva pública («Reservar sin cuenta», HU-60) también avisa por correo: no
+        # autorizó WhatsApp.
         avisos_correo.enviar(viaje, tipo)
         return
     if tipo == avisos_correo.AVISO_CANCELACION:
@@ -151,9 +153,10 @@ def consultar_vuelo(self, vuelo_id: int) -> None:
 
 @shared_task(autoretry_for=(ErrorDeBase,), retry_backoff=True, retry_backoff_max=60, max_retries=3)
 def expirar_solicitudes() -> int:
-    """RN-06 (CC-22): cuenta las reservas «Sin confirmar»; ya no las cancela."""
-    from .expiracion import expirar_pendientes
+    """RN-06 (CC-22): cierra las «Sin confirmar» 2 h después de la recogida (DC-59); cuenta las que quedan."""
+    from .expiracion import cerrar_no_confirmadas, expirar_pendientes
 
+    cerrar_no_confirmadas()
     return expirar_pendientes()
 
 

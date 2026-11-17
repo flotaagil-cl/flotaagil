@@ -4877,6 +4877,8 @@ components:
       - ADMINISTRADOR
       - SUPERVISOR
       - SISTEMA
+      - NO_CONFIRMADA
+      - CONVENIO
       type: string
       description: |-
         * `PASAJERO` - Pasajero
@@ -4884,6 +4886,8 @@ components:
         * `ADMINISTRADOR` - Administrador
         * `SUPERVISOR` - Supervisor de convenio
         * `SISTEMA` - Sistema
+        * `NO_CONFIRMADA` - No confirmada
+        * `CONVENIO` - Rechazada por el convenio
     PaginatedAlertaVueloList:
       type: object
       required:

@@ -5,7 +5,9 @@ confirmar» (PENDIENTE_CONFIRMACION con el plazo vencido) y el despacho decide: 
 - Reserva pública (HU-51): el plazo es `confirmar_hasta` (24 h antes de la recogida, o 60 min).
 - Reservas anteriores sin `confirmar_hasta`: creación + `expiracion_verificacion_min` de su empresa.
 
-Celery beat (`apps.reservas.tareas.expirar_solicitudes`) solo cuenta las vencidas para el log.
+Celery beat (`apps.reservas.tareas.expirar_solicitudes`) cierra las que siguen «Sin confirmar» cuando ya
+pasaron `cierre_no_confirmada_horas` (2 h) desde la hora de recogida: CANCELADO con origen NO_CONFIRMADA
+(DC-59). Antes de eso nunca se cancelan solas.
 """
 
 from datetime import timedelta
@@ -13,7 +15,10 @@ from datetime import timedelta
 from django.db.models import DateTimeField, ExpressionWrapper, F, Q
 from django.utils import timezone
 
-from .models import EstadoViaje, Viaje
+from . import estados
+from .models import Actor, EstadoViaje, OrigenCancelacion, Viaje
+
+MOTIVO_NO_CONFIRMADA = "No confirmada: nadie la confirmó y pasó la hora de recogida."
 
 
 def vence_en(viaje: Viaje):
@@ -44,3 +49,28 @@ def sin_confirmar(queryset=None, ahora=None):
 def expirar_pendientes(ahora=None) -> int:
     """Desde CC-22 no cancela: devuelve cuántas reservas están «Sin confirmar» (para el log)."""
     return sin_confirmar(ahora=ahora).count()
+
+
+def cerrar_no_confirmadas(ahora=None) -> int:
+    """DC-59 (HU-60): cancela las «Sin confirmar» cuya recogida pasó hace `cierre_no_confirmada_horas`."""
+    ahora = ahora or timezone.now()
+    limite = ExpressionWrapper(
+        F("recogida_en") + F("empresa__configuracion__cierre_no_confirmada_horas") * timedelta(hours=1),
+        output_field=DateTimeField(),
+    )
+    vencidas = sin_confirmar(ahora=ahora).annotate(cierre=limite).filter(cierre__lte=ahora)
+    cerradas = 0
+    for viaje in vencidas.select_related("empresa__configuracion").iterator():
+        try:
+            estados.transicionar(
+                viaje,
+                EstadoViaje.CANCELADO,
+                desde=EstadoViaje.PENDIENTE_CONFIRMACION,
+                actor=Actor.SISTEMA,
+                motivo_cancelacion=MOTIVO_NO_CONFIRMADA,
+                origen_cancelacion=OrigenCancelacion.NO_CONFIRMADA,
+            )
+        except estados.TransicionInvalida:
+            continue  # alguien la confirmó o canceló entretanto
+        cerradas += 1
+    return cerradas
