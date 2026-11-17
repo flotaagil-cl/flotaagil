@@ -447,3 +447,19 @@ describe('HU-52 · sin confirmar (CC-22)', () => {
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Confirmar por teléfono' })).not.toBeInTheDocument());
   });
 });
+
+describe('HU-55 · contacto con el pasajero (CC-22)', () => {
+  it('ofrece Llamar y Abrir en WhatsApp con el teléfono del pasajero', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 55, pasajero: { id: 1, nombre: 'Pía Pasajera', telefono: '+56900000001' } }));
+    expect(screen.getByRole('link', { name: 'Llamar' })).toHaveAttribute('href', 'tel:+56900000001');
+    const whatsapp = screen.getByRole('link', { name: 'Abrir en WhatsApp' });
+    expect(whatsapp).toHaveAttribute('href', 'https://wa.me/56900000001');
+    expect(whatsapp).toHaveAttribute('target', '_blank');
+  });
+
+  it('sin teléfono (cuenta eliminada) no hay botones', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 56, pasajero: { id: 2, nombre: 'Pasajero eliminado', telefono: null } }));
+    expect(screen.getByText('Sin teléfono')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Llamar' })).not.toBeInTheDocument();
+  });
+});

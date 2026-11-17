@@ -55,6 +55,12 @@ class TestViajeActivo:
         assert datos["vuelo"] == "LA123"
         assert datos["estado"] == estado
 
+    def test_el_conductor_no_ve_el_telefono_del_pasajero(self, app, chofer):
+        # HU-55 (CC-22): todo contacto con el pasajero pasa por el despacho.
+        v = viaje(chofer, EstadoViaje.ACEPTADO)
+        cuerpo = app.get(URL).content.decode()
+        assert v.pasajero.telefono not in cuerpo and "telefono" not in cuerpo
+
     def test_con_el_pasajero_a_bordo_navega_al_destino(self, app, chofer):
         viaje(chofer, EstadoViaje.PASAJERO_A_BORDO)
         datos = app.get(URL).json()["viaje"]

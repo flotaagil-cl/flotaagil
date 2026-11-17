@@ -131,6 +131,15 @@ const PANTALLAS = {
     },
     { nombre: 'autorizar-reserva', ruta: '/solicitar/taxi-pacifico/autorizar/enlace-de-ejemplo', sesion: null, destino: /\/autorizar\// },
   ],
+  // HU-55 (CC-22): Llamar y Abrir en WhatsApp en el detalle de una reserva. CAPTURAS_VIAJE: una con teléfono.
+  'HU-55': [
+    {
+      nombre: 'panel-contacto-pasajero',
+      ruta: () => `/reservas/${process.env.CAPTURAS_VIAJE ?? '0'}`,
+      sesion: 'despacho',
+      destino: /^\/reservas\/\d+$/,
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
