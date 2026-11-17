@@ -4,7 +4,7 @@ from apps.reservas.expiracion import expirar_pendientes
 
 
 class Command(BaseCommand):
-    help = "Cancela las solicitudes vencidas (RN-06). Pasada manual: de costumbre, Celery beat."
+    help = "Cuenta las solicitudes «Sin confirmar» (RN-06, CC-22): ya no se cancelan solas."
 
     def handle(self, *args, **opciones):
-        self.stdout.write(f"Solicitudes vencidas canceladas: {expirar_pendientes()}")
+        self.stdout.write(f"Solicitudes sin confirmar: {expirar_pendientes()}")

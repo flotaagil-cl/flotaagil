@@ -199,14 +199,14 @@ class TestVueloSinVerificar:
 
 @pytest.mark.django_db
 class TestPeriodicas:
-    def test_rn06_expira_la_solicitud_vencida(self, empresa):
+    def test_rn06_cuenta_las_sin_confirmar_sin_cancelarlas(self, empresa):
+        # CC-22 (DC-53): la vencida queda «Sin confirmar»; el despacho decide.
         viaje = ViajeFactory(empresa=empresa, estado=E.PENDIENTE_CONFIRMACION)
         type(viaje).objects.filter(pk=viaje.pk).update(creado_en=timezone.now() - timedelta(minutes=16))
         HistorialEstado.objects.create(viaje=viaje, estado_nuevo=viaje.estado, actor=Actor.PASAJERO)
         assert tareas.expirar_solicitudes.delay().get() == 1
         viaje.refresh_from_db()
-        assert viaje.estado == E.CANCELADO
-        assert tareas.expirar_solicitudes.delay().get() == 0
+        assert viaje.estado == E.PENDIENTE_CONFIRMACION
 
     def test_rn04_tarea_de_asignaciones(self):
         assert tareas.expirar_asignaciones.delay().get() == 0

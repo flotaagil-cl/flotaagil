@@ -79,6 +79,7 @@ describe('menú e Inicio', () => {
     expect(atajos.map((a) => a.getAttribute('href'))).toEqual([
       `/reservas?fecha=${hoy()}`,
       '/reservas?estado=PENDIENTE_CONFIRMACION',
+      '/reservas?sin_confirmar=true&desde=', // CC-22 (HU-52)
       '/reservas?estado=SOLICITADO',
       '/reservas',
     ]);

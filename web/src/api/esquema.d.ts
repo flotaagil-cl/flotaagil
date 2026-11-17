@@ -1688,6 +1688,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/viajes/{id}/confirmar-telefono/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar por teléfono una reserva pendiente (CC-22)
+         * @description HU-52: para las reservas «Sin confirmar» (o pendientes) que el despacho confirma llamando al pasajero. Queda en el historial y en la auditoría.
+         */
+        post: operations["viajes_confirmar_telefono_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/viajes/{id}/descartar-recogida/": {
         parameters: {
             query?: never;
@@ -2240,6 +2260,8 @@ export interface components {
              * @description Hoy, en hora de Chile
              */
             fecha: string;
+            /** @description CC-22: reservas pendientes con el plazo vencido, de cualquier fecha (alerta del panel) */
+            sin_confirmar: number;
             reservas: components["schemas"]["IndicadoresReservas"];
             vehiculos: components["schemas"]["IndicadoresVehiculos"];
         };
@@ -3201,6 +3223,13 @@ export interface components {
             readonly creado_en: string;
             readonly editable: boolean;
             readonly cancelable: boolean;
+            /** Format: date-time */
+            confirmar_hasta?: string | null;
+            readonly sin_confirmar: boolean;
+            contacto_correo?: (string) | null;
+            empresa_cliente_razon_social?: string | null;
+            empresa_cliente_rut?: string | null;
+            empresa_cliente_contacto?: string | null;
         };
         ViajeActivo: {
             id: number;
@@ -3281,6 +3310,13 @@ export interface components {
             readonly creado_en: string;
             readonly editable: boolean;
             readonly cancelable: boolean;
+            /** Format: date-time */
+            confirmar_hasta?: string | null;
+            readonly sin_confirmar: boolean;
+            contacto_correo?: (string) | null;
+            empresa_cliente_razon_social?: string | null;
+            empresa_cliente_rut?: string | null;
+            empresa_cliente_contacto?: string | null;
             readonly historial: components["schemas"]["Historial"][];
             /** @description Puntaje del pasajero, de 1 a 5 (RN-14) */
             readonly calificacion: number | null;
@@ -5954,6 +5990,8 @@ export interface operations {
                  *     * `URBANO` - Urbano
                  */
                 sentido?: "DESDE_AEROPUERTO" | "HACIA_AEROPUERTO" | "URBANO";
+                /** @description CC-22: pendientes con el plazo para confirmar vencido */
+                sin_confirmar?: boolean;
             };
             header?: never;
             path?: never;
@@ -6169,6 +6207,8 @@ export interface operations {
                  *     * `URBANO` - Urbano
                  */
                 sentido?: "DESDE_AEROPUERTO" | "HACIA_AEROPUERTO" | "URBANO";
+                /** @description CC-22: pendientes con el plazo para confirmar vencido */
+                sin_confirmar?: boolean;
             };
             header?: never;
             path: {
@@ -6206,6 +6246,35 @@ export interface operations {
                 "multipart/form-data": components["schemas"]["DecidirRecogidaRequest"];
             };
         };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViajeDetalle"];
+                };
+            };
+            /** @description La reserva no admite la operación en su estado actual */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    viajes_confirmar_telefono_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este viaje. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             200: {
                 headers: {

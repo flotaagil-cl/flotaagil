@@ -77,6 +77,21 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-52 (CC-22): reservas «Sin confirmar» en el panel de taxi-pacifico. CAPTURAS_VIAJE: una pendiente vencida.
+  'HU-52': [
+    {
+      nombre: 'panel-sin-confirmar-listado',
+      ruta: '/reservas?sin_confirmar=true&desde=',
+      sesion: 'admin@taxi-pacifico.example',
+      destino: /^\/reservas$/,
+    },
+    {
+      nombre: 'panel-sin-confirmar-detalle',
+      ruta: () => `/reservas/${process.env.CAPTURAS_VIAJE ?? '0'}`,
+      sesion: 'admin@taxi-pacifico.example',
+      destino: /^\/reservas\/\d+$/,
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

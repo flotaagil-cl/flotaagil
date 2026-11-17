@@ -88,6 +88,7 @@ class ViajeSerializer(serializers.ModelSerializer):
     vehiculo = VehiculoResumenSerializer(allow_null=True)
     convenio = ConvenioResumenSerializer(allow_null=True)
     vuelo = serializers.SerializerMethodField()
+    sin_confirmar = serializers.SerializerMethodField()
     alerta_vuelo = serializers.SerializerMethodField(help_text="Alerta de vuelo sin atender (HU-28)")
     origen = serializers.SerializerMethodField()
     destino = serializers.SerializerMethodField()
@@ -121,7 +122,20 @@ class ViajeSerializer(serializers.ModelSerializer):
             "creado_en",
             "editable",
             "cancelable",
+            "confirmar_hasta",
+            "sin_confirmar",
+            "contacto_correo",
+            "empresa_cliente_razon_social",
+            "empresa_cliente_rut",
+            "empresa_cliente_contacto",
         ]
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_sin_confirmar(self, viaje) -> bool:
+        """CC-22 (DC-53): pendiente con el plazo vencido; el despacho la confirma o la cancela."""
+        from .expiracion import es_sin_confirmar
+
+        return es_sin_confirmar(viaje)
 
     @extend_schema_field(serializers.ChoiceField(choices=TipoAlertaVuelo.choices, allow_null=True))
     def get_alerta_vuelo(self, viaje):

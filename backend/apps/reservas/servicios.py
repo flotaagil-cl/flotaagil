@@ -246,6 +246,28 @@ def _liberar_conductor(conductor, viaje: Viaje) -> None:
     transaction.on_commit(lambda: avisar_viaje_actualizado(conductor_id, viaje_id))
 
 
+def confirmar_por_telefono(viaje: Viaje, *, usuario) -> Viaje:
+    """CC-22 (HU-52): el despacho confirma por teléfono una reserva pendiente (vencida o no). Queda en el
+    historial con su usuario y en la auditoría."""
+    if viaje.estado != EstadoViaje.PENDIENTE_CONFIRMACION:
+        raise ConflictoEstado("Solo se confirma por teléfono una reserva pendiente de confirmación.")
+    with transaction.atomic():
+        try:
+            viaje = estados.transicionar(
+                viaje,
+                EstadoViaje.SOLICITADO,
+                desde=EstadoViaje.PENDIENTE_CONFIRMACION,
+                actor=estados.actor_de(usuario),
+                usuario=usuario,
+            )
+        except estados.TransicionInvalida as error:
+            raise ConflictoEstado(str(error)) from error
+        auditoria.registrar(
+            usuario=usuario, entidad=Entidad.VIAJE, entidad_id=viaje.pk, accion="CONFIRMAR_POR_TELEFONO"
+        )
+    return viaje
+
+
 def cancelar_viaje(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
     """Cancelación desde el panel: exige motivo, registra el historial y la auditoría.
 

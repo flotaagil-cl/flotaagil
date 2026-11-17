@@ -1,89 +1,88 @@
-"""RN-06: expiración de las solicitudes del portal no confirmadas."""
+"""RN-06 con CC-22 (HU-52, DC-53): las solicitudes vencidas quedan «Sin confirmar» y no se cancelan. CP-49."""
 
 from datetime import timedelta
 
 import pytest
 from django.core.management import call_command
+from django.urls import reverse
 from django.utils import timezone
 
+from apps.auditoria.models import Auditoria
 from apps.reservas import expiracion
-from apps.reservas.models import Actor, EstadoViaje, HistorialEstado, Viaje
+from apps.reservas.models import EstadoViaje, HistorialEstado, Viaje
 
 from .fabricas import ViajeFactory
 
 E = EstadoViaje
 
 
-def pendiente(empresa, minutos_atras: float):
+def pendiente(empresa, minutos_atras: float = 0, confirmar_hasta=None):
     viaje = ViajeFactory(empresa=empresa, canal="WEB", estado=E.PENDIENTE_CONFIRMACION)
-    Viaje.objects.filter(pk=viaje.pk).update(creado_en=timezone.now() - timedelta(minutes=minutos_atras))
+    Viaje.objects.filter(pk=viaje.pk).update(
+        creado_en=timezone.now() - timedelta(minutes=minutos_atras), confirmar_hasta=confirmar_hasta
+    )
+    viaje.refresh_from_db()
     return viaje
 
 
 @pytest.mark.django_db
-class TestExpirarPendientes:
-    def test_cancela_solo_las_vencidas(self, empresa):
-        vencida = pendiente(empresa, 16)
-        vigente = pendiente(empresa, 10)
-        assert expiracion.expirar_pendientes() == 1
-        vencida.refresh_from_db()
-        vigente.refresh_from_db()
-        assert vencida.estado == E.CANCELADO
-        assert vencida.origen_cancelacion == "SISTEMA"
-        assert vencida.motivo_cancelacion == expiracion.MOTIVO
-        assert vigente.estado == E.PENDIENTE_CONFIRMACION
-        registro = HistorialEstado.objects.get(viaje=vencida)
-        assert (registro.estado_anterior, registro.actor, registro.usuario) == (
-            E.PENDIENTE_CONFIRMACION,
-            Actor.SISTEMA,
-            None,
+class TestSinConfirmar:
+    def test_no_se_cancelan_y_quedan_sin_confirmar(self, empresa):
+        ahora = timezone.now()
+        publica_vencida = pendiente(empresa, confirmar_hasta=ahora - timedelta(minutes=1))
+        publica_vigente = pendiente(empresa, confirmar_hasta=ahora + timedelta(hours=3))
+        anterior_vencida = pendiente(empresa, minutos_atras=16)  # 15 min por defecto (DC-02)
+        anterior_vigente = pendiente(empresa, minutos_atras=5)
+        assert set(expiracion.sin_confirmar()) == {publica_vencida, anterior_vencida}
+        assert expiracion.expirar_pendientes() == 2
+        assert not Viaje.objects.filter(estado=E.CANCELADO).exists()
+        assert expiracion.es_sin_confirmar(publica_vencida) and not expiracion.es_sin_confirmar(
+            publica_vigente
         )
+        assert not expiracion.es_sin_confirmar(anterior_vigente)
 
-    def test_plazo_configurable_por_empresa(self, empresa, otra_empresa):
-        config = otra_empresa.configuracion
-        config.expiracion_verificacion_min = 5
-        config.save()
-        a = pendiente(empresa, 8)  # plazo 15: vigente
-        b = pendiente(otra_empresa, 8)  # plazo 5: vencida
-        assert expiracion.expirar_pendientes() == 1
-        a.refresh_from_db()
-        b.refresh_from_db()
-        assert (a.estado, b.estado) == (E.PENDIENTE_CONFIRMACION, E.CANCELADO)
+    def test_plazo_anterior_configurable_por_empresa(self, empresa):
+        empresa.configuracion.expiracion_verificacion_min = 60
+        empresa.configuracion.save()
+        assert not expiracion.sin_confirmar().filter(pk=pendiente(empresa, minutos_atras=30).pk).exists()
 
-    def test_no_toca_otros_estados(self, empresa):
-        viaje = ViajeFactory(empresa=empresa, estado=E.SOLICITADO)
-        Viaje.objects.filter(pk=viaje.pk).update(creado_en=timezone.now() - timedelta(hours=2))
+    def test_otros_estados_no_cuentan(self, empresa):
+        ViajeFactory(empresa=empresa, estado=E.SOLICITADO)
         assert expiracion.expirar_pendientes() == 0
-        viaje.refresh_from_db()
-        assert viaje.estado == E.SOLICITADO
-
-    def test_es_idempotente(self, empresa):
-        pendiente(empresa, 20)
-        assert expiracion.expirar_pendientes() == 1
-        assert expiracion.expirar_pendientes() == 0
-        assert HistorialEstado.objects.count() == 1
-
-    def test_justo_en_el_limite_se_cancela(self, empresa):
-        viaje = pendiente(empresa, 0)
-        ahora = Viaje.objects.get(pk=viaje.pk).creado_en + timedelta(minutes=15)
-        assert expiracion.expirar_pendientes(ahora=ahora) == 1
-
-    def test_carrera_con_otra_confirmacion(self, empresa, monkeypatch):
-        viaje = pendiente(empresa, 20)
-        original = expiracion.estados.transicionar
-
-        def confirmada_entretanto(v, *args, **kwargs):
-            Viaje.objects.filter(pk=v.pk).update(estado=E.SOLICITADO)
-            return original(v, *args, **kwargs)
-
-        monkeypatch.setattr(expiracion.estados, "transicionar", confirmada_entretanto)
-        assert expiracion.expirar_pendientes() == 0
-        viaje.refresh_from_db()
-        assert viaje.estado == E.SOLICITADO
 
 
 @pytest.mark.django_db
+class TestPanel:
+    def test_filtro_indicador_y_marca(self, panel, despachador, empresa):
+        vencida = pendiente(empresa, confirmar_hasta=timezone.now() - timedelta(minutes=1))
+        pendiente(empresa, confirmar_hasta=timezone.now() + timedelta(hours=3))
+        panel.force_authenticate(despachador)
+        lista = panel.get(reverse("viaje-list"), {"sin_confirmar": "true"}).data["results"]
+        assert [v["id"] for v in lista] == [vencida.pk]
+        assert lista[0]["sin_confirmar"] is True
+        assert panel.get(reverse("indicadores")).data["sin_confirmar"] == 1
+
+    def test_confirmar_por_telefono_queda_auditado(self, panel, despachador, empresa):
+        viaje = pendiente(empresa, confirmar_hasta=timezone.now() - timedelta(minutes=1))
+        panel.force_authenticate(despachador)
+        respuesta = panel.post(reverse("viaje-confirmar-telefono", args=[viaje.pk]))
+        assert respuesta.status_code == 200, respuesta.data
+        assert respuesta.data["estado"] == E.SOLICITADO
+        assert HistorialEstado.objects.filter(
+            viaje=viaje, estado_nuevo=E.SOLICITADO, usuario=despachador
+        ).exists()
+        assert Auditoria.objects.filter(
+            accion="CONFIRMAR_POR_TELEFONO", entidad_id=viaje.pk, usuario=despachador
+        ).exists()
+        assert panel.post(reverse("viaje-confirmar-telefono", args=[viaje.pk])).status_code == 409
+
+    def test_conductor_no_confirma(self, panel, conductor, empresa):
+        viaje = pendiente(empresa, confirmar_hasta=timezone.now() - timedelta(minutes=1))
+        panel.force_authenticate(conductor)
+        assert panel.post(reverse("viaje-confirmar-telefono", args=[viaje.pk])).status_code == 403
+
+
 def test_comando(empresa, capsys):
-    pendiente(empresa, 30)
+    pendiente(empresa, minutos_atras=16)
     call_command("expirar_pendientes")
-    assert "canceladas: 1" in capsys.readouterr().out
+    assert "Solicitudes sin confirmar: 1" in capsys.readouterr().out

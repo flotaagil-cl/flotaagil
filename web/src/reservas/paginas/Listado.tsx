@@ -45,6 +45,7 @@ function chipsDe(f: Filtros, errores: { desde?: string; hasta?: string }): Chip[
   }
   if (f.sentido) chips.push({ clave: 'sentido', texto: SENTIDOS[f.sentido], quitar: { sentido: null } });
   if (f.canal) chips.push({ clave: 'canal', texto: `Canal: ${CANALES[f.canal]}`, quitar: { canal: null } });
+  if (f.sinConfirmar) chips.push({ clave: 'sin_confirmar', texto: 'Sin confirmar', quitar: { sinConfirmar: false } });
   if (f.q.trim()) chips.push({ clave: 'q', texto: `«${f.q.trim()}»`, quitar: { q: '' } });
   return chips;
 }
@@ -168,6 +169,10 @@ export function Listado() {
                 </option>
               ))}
             </select>
+          </label>
+          <label className={campos.campo}>
+            <input type="checkbox" checked={filtros.sinConfirmar} onChange={(evento) => aplicar({ sinConfirmar: evento.target.checked })} /> Solo sin
+            confirmar
           </label>
           <label className={campos.campo}>
             Día de recogida
@@ -313,7 +318,7 @@ export function Listado() {
                       </span>
                     </Celda>
                     <Celda titulo="Estado">
-                      <EstadoEtiqueta estado={viaje.estado ?? 'SOLICITADO'} />
+                      <EstadoEtiqueta estado={viaje.estado ?? 'SOLICITADO'} sinConfirmar={viaje.sin_confirmar} />
                       {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
                     </Celda>
                     <Celda titulo="Conductor">{viaje.conductor?.nombre ?? '—'}</Celda>

@@ -436,3 +436,14 @@ describe('esperando la respuesta del conductor (HU-15)', () => {
     vi.useRealTimers();
   });
 });
+
+describe('HU-52 · sin confirmar (CC-22)', () => {
+  it('avisa que venció el plazo y confirma por teléfono', async () => {
+    const viaje = viajeDePrueba({ id: 52, estado: 'PENDIENTE_CONFIRMACION', sin_confirmar: true, confirmar_hasta: '2026-11-01T12:00:00Z' });
+    await abrirDetalle(viaje);
+    expect(screen.getByRole('alert')).toHaveTextContent('Sin confirmar: el plazo para confirmar por correo venció');
+    expect(screen.getAllByText('Sin confirmar').length).toBeGreaterThan(0);
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar por teléfono' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Confirmar por teléfono' })).not.toBeInTheDocument());
+  });
+});

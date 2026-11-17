@@ -20,11 +20,19 @@ class ViajeFiltro(django_filters.FilterSet):
     q = django_filters.CharFilter(
         method="buscar", help_text="Pasajero, teléfono, dirección o número de vuelo"
     )
+    sin_confirmar = django_filters.BooleanFilter(
+        method="filtrar_sin_confirmar", help_text="CC-22: pendientes con el plazo para confirmar vencido"
+    )
     ordenar = django_filters.OrderingFilter(fields=["recogida_en", "creado_en"])
 
     class Meta:
         model = Viaje
         fields = []
+
+    def filtrar_sin_confirmar(self, queryset, nombre, valor):
+        from .expiracion import sin_confirmar
+
+        return sin_confirmar(queryset) if valor else queryset
 
     def buscar(self, queryset, nombre, valor):
         valor = valor.strip()

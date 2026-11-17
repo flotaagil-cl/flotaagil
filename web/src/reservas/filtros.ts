@@ -26,6 +26,8 @@ export interface Filtros {
   hasta: string | null;
   sentido: Sentido | null;
   canal: Canal | null;
+  /** CC-22 (HU-52): solo las pendientes con el plazo para confirmar vencido. */
+  sinConfirmar: boolean;
   q: string;
   ordenar: Orden | null;
   pagina: number;
@@ -40,6 +42,7 @@ export const SIN_FILTROS: Filtros = {
   hasta: null,
   sentido: null,
   canal: null,
+  sinConfirmar: false,
   q: '',
   ordenar: null,
   pagina: 1,
@@ -68,6 +71,7 @@ export function leerFiltros(parametros: URLSearchParams): Filtros {
     hasta: paredValida(parametros.get('hasta')),
     sentido: enLista(parametros.get('sentido'), SENTIDOS),
     canal: enLista(parametros.get('canal'), CANALES),
+    sinConfirmar: parametros.get('sin_confirmar') === 'true',
     q: parametros.get('q') ?? '',
     ordenar: enLista(parametros.get('ordenar'), ORDENES),
     pagina: Number.isInteger(pagina) && pagina > 1 ? pagina : 1,
@@ -85,6 +89,7 @@ export function escribirFiltros(f: Filtros): URLSearchParams {
   if (f.hasta) parametros.set('hasta', f.hasta);
   if (f.sentido) parametros.set('sentido', f.sentido);
   if (f.canal) parametros.set('canal', f.canal);
+  if (f.sinConfirmar) parametros.set('sin_confirmar', 'true');
   if (f.q) parametros.set('q', f.q);
   if (f.ordenar) parametros.set('ordenar', f.ordenar);
   if (f.pagina > 1) parametros.set('page', String(f.pagina));
@@ -123,6 +128,7 @@ export function consultaDeFiltros(f: Filtros, ahora: number = Date.now()): Consu
   }
   if (f.sentido) consulta.sentido = f.sentido;
   if (f.canal) consulta.canal = f.canal;
+  if (f.sinConfirmar) consulta.sin_confirmar = true;
   if (f.q.trim()) consulta.q = f.q.trim();
   if (f.ordenar) consulta.ordenar = [f.ordenar];
   if (f.pagina > 1) consulta.page = f.pagina;
@@ -132,6 +138,6 @@ export function consultaDeFiltros(f: Filtros, ahora: number = Date.now()): Consu
 /** Hay algún filtro (además del orden y la página): decide el mensaje del listado vacío. */
 export function hayFiltros(f: Filtros): boolean {
   return Boolean(
-    f.estado.length || f.fecha || f.desde || f.hasta || f.sentido || f.canal || f.q.trim() || f.desdeHoy,
+    f.estado.length || f.fecha || f.desde || f.hasta || f.sentido || f.canal || f.sinConfirmar || f.q.trim() || f.desdeHoy,
   );
 }

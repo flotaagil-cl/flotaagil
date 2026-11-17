@@ -54,7 +54,7 @@ docs/diseno/  referencias de diseño (portal, panel, app)  ambos
 - RN-03 Un conductor tiene a lo más un viaje en ejecución.
 - RN-04 Sin respuesta en 60 s la reserva vuelve a SOLICITADO.
 - RN-05 Con más de un vehículo, el conductor declara cuál usa antes de quedar Disponible.
-- RN-06 Reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min. Desde CC-18 (DC-41) en el portal solo se pide con cuenta: el teléfono se verifica una vez al activarla y las reservas nacen en SOLICITADO; RN-06 queda para las reservas anteriores.
+- RN-06 Reserva del portal no se confirma hasta que el pasajero responda por WhatsApp; expira a los 15 min. Desde CC-18 (DC-41) en el portal solo se pide con cuenta: el teléfono se verifica una vez al activarla y las reservas nacen en SOLICITADO; RN-06 queda para las reservas anteriores. Desde CC-22 (DC-53) la reserva pública se confirma por correo hasta 24 h antes de la recogida (o 60 min); al vencer queda «Sin confirmar» y no se cancela sola.
 - RN-07 Reservas por link de convenio vigente omiten la verificación del teléfono.
 - RN-08 Desactivar un convenio invalida su link sin afectar el historial.
 - RN-09 El pasajero cancela por WhatsApp solo sin conductor asignado.
