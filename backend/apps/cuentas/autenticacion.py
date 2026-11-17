@@ -92,6 +92,11 @@ def autenticar(email: str, password: str, roles_permitidos: frozenset[str]) -> U
         raise AuthenticationFailed("La cuenta está deshabilitada.", code="cuenta_deshabilitada")
     if usuario.rol not in roles_permitidos:
         raise PermissionDenied("Este acceso no corresponde a tu rol.", code="rol_no_permitido")
+    if usuario.rol in (Rol.PASAJERO, Rol.CONVENIO) and not usuario.empresa.modulo_cuentas:
+        # DC-51 (CC-22): sin el módulo de cuentas, los clientes finales usan los formularios públicos.
+        raise PermissionDenied(
+            "El acceso con cuenta no está disponible para esta empresa.", code="modulo_no_disponible"
+        )
     vence = usuario.password_temporal_vence
     if usuario.debe_cambiar_password and vence is not None and vence <= timezone.now():
         # DC-14: la temporal no se usó a tiempo; el administrador debe generar otra.

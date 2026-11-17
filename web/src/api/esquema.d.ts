@@ -2071,6 +2071,7 @@ export interface components {
         EmpresaPublica: {
             razon_social: string;
             slug: string;
+            modulo_cuentas?: boolean;
             anticipacion_minima_min: number;
             expiracion_verificacion_min: number;
             /** @description Minutos que se suman a la llegada del vuelo cuando no se indica la recogida (RN-17). */
@@ -2086,6 +2087,7 @@ export interface components {
             readonly id: number;
             razon_social: string;
             slug: string;
+            modulo_cuentas?: boolean;
         };
         Error: {
             detail: string;

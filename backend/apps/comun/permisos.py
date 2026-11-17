@@ -18,6 +18,19 @@ def con_roles(*roles: str) -> type[TieneRol]:
     return type(f"TieneRol_{'_'.join(roles)}", (TieneRol,), {"roles": frozenset(roles)})
 
 
+class ConModuloCuentas(BasePermission):
+    """DC-51 (CC-22): las cuentas de pasajero y convenio solo existen si la empresa tiene el módulo.
+    Sin él, sus endpoints responden 404, como si no existieran."""
+
+    def has_permission(self, request, view):
+        usuario = request.user
+        if usuario and usuario.is_authenticated and not usuario.empresa.modulo_cuentas:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound("No disponible para esta empresa.", code="modulo_no_disponible")
+        return True
+
+
 class AisladoPorEmpresaMixin:
     """RN-13: el queryset se limita a la empresa del usuario y los registros nuevos se asignan a ella.
 

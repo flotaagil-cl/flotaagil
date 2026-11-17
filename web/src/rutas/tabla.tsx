@@ -224,18 +224,19 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
         {
           path: 'registro-empresa',
           lazy: async () => ({ Component: (await import('../portal/paginas/RegistroEmpresa')).RegistroEmpresa }),
+          handle: { requiereModulo: true }, // DC-51: solo con el módulo de cuentas
         },
         {
           path: 'cuenta',
           lazy: async () => ({ Component: (await import('../portal/paginas/CrearCuenta')).CrearCuenta }),
           // HU-38: en el celular el título va en la banda con el degradé, sin la barra.
-          handle: { barraMovil: 'oculta', completa: true },
+          handle: { barraMovil: 'oculta', completa: true, requiereModulo: true },
         },
         {
           // HU-41: volver a activar la cuenta (reenviar el mensaje o corregir el número).
           path: 'activar',
           lazy: async () => ({ Component: (await import('../portal/paginas/Activar')).Activar }),
-          handle: { barraMovil: 'oculta', completa: true },
+          handle: { barraMovil: 'oculta', completa: true, requiereModulo: true },
         },
       ],
     },

@@ -29,12 +29,14 @@ EMPRESAS = [
         "razon_social": "Transportes Andes Demo SpA",
         "slug": "transportes-andes",
         "plan": Plan.AVANZADO,
+        "modulo_cuentas": True,  # DC-51: con el módulo de cuentas (portal con cuenta)
     },
     {
         "cuerpo_rut": "76000002",
         "razon_social": "Taxi Turismo Pacífico Demo Ltda.",
         "slug": "taxi-pacifico",
         "plan": Plan.ESTANDAR,
+        "modulo_cuentas": False,  # DC-51: sin el módulo (formularios públicos)
     },
 ]
 
@@ -78,6 +80,9 @@ class Command(BaseCommand):
                         "plan": datos["plan"],
                     },
                 )
+                if empresa.modulo_cuentas != datos["modulo_cuentas"]:
+                    empresa.modulo_cuentas = datos["modulo_cuentas"]
+                    empresa.save(update_fields=["modulo_cuentas"])
                 Geocerca.objects.get_or_create(
                     empresa=empresa, nombre=NOMBRE_ZONA_SCL, defaults={"poligono": poligono_scl()}
                 )

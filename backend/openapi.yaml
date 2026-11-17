@@ -3893,6 +3893,8 @@ components:
           type: string
           pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
           maxLength: 50
+        modulo_cuentas:
+          type: boolean
         anticipacion_minima_min:
           type: integer
         expiracion_verificacion_min:
@@ -3936,6 +3938,8 @@ components:
           type: string
           pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
           maxLength: 50
+        modulo_cuentas:
+          type: boolean
       required:
       - id
       - razon_social

@@ -45,6 +45,7 @@ class TestEmpresaPublica:
         assert respuesta.data == {
             "razon_social": empresa.razon_social,
             "slug": empresa.slug,
+            "modulo_cuentas": True,
             "anticipacion_minima_min": 30,
             "expiracion_verificacion_min": 15,
             "margen_nacional_min": 20,

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, Navigate, useParams } from 'react-router';
 import { resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
 import { Boton } from '../diseno/Boton';
@@ -38,6 +38,8 @@ export function IngresarPortal() {
   }, [marca]);
 
   if (bloqueo) return bloqueo;
+  // DC-51 (CC-22): sin el módulo de cuentas no hay ingreso para el pasajero.
+  if (empresa.data && !empresa.data.modulo_cuentas) return <Navigate to={`/solicitar/${slug}`} replace />;
 
   const registro = empresa.data ? { a: `/solicitar/${slug}/registro-empresa`, texto: '¿Eres empresa? Registra tu convenio' } : undefined;
 

@@ -7,7 +7,7 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.comun.permisos import con_roles
+from apps.comun.permisos import ConModuloCuentas, con_roles
 from apps.cuentas.models import Rol
 from apps.portal.serializers import SolicitudRespuestaSerializer, SolicitudSerializer
 
@@ -15,7 +15,7 @@ from . import cuentas_pasajero as cuentas
 from .models import EstadoViaje, Viaje
 from .serializers import HistorialSerializer, PasajeroEntradaSerializer
 
-SOLO_PASAJERO = [con_roles(Rol.PASAJERO)]
+SOLO_PASAJERO = [con_roles(Rol.PASAJERO), ConModuloCuentas]  # DC-51
 
 
 class MiCuentaSerializer(serializers.Serializer):

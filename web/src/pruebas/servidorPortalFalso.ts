@@ -13,6 +13,7 @@ export const AHORA_PORTAL = Date.parse('2026-10-30T15:00:00Z'); // vie 30-10-202
 export const EMPRESA_PORTAL: EmpresaPublica = {
   razon_social: 'Transportes Andes Demo SpA',
   slug: 'transportes-andes',
+  modulo_cuentas: true,
   anticipacion_minima_min: 30,
   expiracion_verificacion_min: 15,
   margen_nacional_min: 20,

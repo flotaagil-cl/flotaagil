@@ -19,6 +19,11 @@ export function Inicio() {
       <h1>Inicio</h1>
       <p>Hola, {estado.usuario.nombre}.</p>
       <p>Panel de {estado.usuario.empresa.razon_social}.</p>
+      {/* DC-51 (CC-22): el módulo lo activa FlotaÁgil; aquí solo se informa. */}
+      <p>
+        Módulo de cuentas de pasajeros y convenios:{' '}
+        <strong>{estado.usuario.empresa.modulo_cuentas ? 'activo' : 'no contratado (formularios públicos)'}</strong>.
+      </p>
       <Indicadores />
       <ul className={estilos.atajos} aria-label="Atajos a las reservas">
         {atajos.map((atajo) => (

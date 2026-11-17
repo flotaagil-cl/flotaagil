@@ -20,6 +20,8 @@ class EmpresaFactory(factory.django.DjangoModelFactory):
     rut = factory.Sequence(_rut)
     razon_social = factory.Sequence(lambda n: f"Empresa de prueba {n} SpA")
     slug = factory.Sequence(lambda n: f"empresa-prueba-{n}")
+    # Las pruebas anteriores a CC-22 cubren empresas con cuentas; las de la base pasan modulo_cuentas=False.
+    modulo_cuentas = True
 
 
 class UsuarioFactory(factory.django.DjangoModelFactory):
