@@ -160,6 +160,12 @@ const PANTALLAS = {
     { nombre: 'panel-caja', ruta: '/caja', sesion: 'admin' },
     { nombre: 'panel-convenios', ruta: '/convenios', sesion: 'admin' },
   ],
+  // HU-58 (CC-20): portal restante con el sistema visual (antes con CAPTURAS_PREFIJO=antes-).
+  'HU-58': [
+    { nombre: 'portal-registro-empresa', ruta: '/solicitar/transportes-andes/registro-empresa', sesion: null },
+    { nombre: 'portal-privacidad', ruta: '/solicitar/transportes-andes/privacidad', sesion: null },
+    { nombre: 'mi-convenio', ruta: '/mi-convenio', sesion: 'convenio' },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
