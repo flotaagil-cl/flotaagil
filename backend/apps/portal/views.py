@@ -25,6 +25,7 @@ from .serializers import (
     AutorizacionSerializer,
     CrearCuentaSerializer,
     EmpresaPublicaSerializer,
+    EncuestaSerializer,
     ReservaConfirmadaSerializer,
     ReservaPublicaRespuestaSerializer,
     ReservaPublicaSerializer,
@@ -343,6 +344,31 @@ class AutorizarReservaView(_VistaPortal):
         datos = entrada.validated_data
         viaje = publico.autorizar(empresa, datos["token"], datos["decision"])
         return Response(ReservaConfirmadaSerializer(viaje).data)
+
+
+class EncuestaView(_VistaPortal):
+    throttle_classes = [PortalPorMinuto, PortalPorHora]
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Calificar el viaje desde el correo de la encuesta (1 a 5)",
+        request=EncuestaSerializer,
+        responses={
+            201: inline_serializer("CalificacionRegistrada", {"puntaje": serializers.IntegerField()}),
+            400: OpenApiResponse(
+                description="`enlace_invalido` (alterado, vencido a los 7 días o sin viaje)"
+            ),
+            409: OpenApiResponse(description="`ya_calificado`"),
+        },
+        description="HU-56 (CC-22): misma CALIFICACION de HU-24; opcional (RN-14) y una sola vez.",
+    )
+    def post(self, request, slug):
+        empresa = _empresa(slug)
+        entrada = EncuestaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+        calificacion = publico.calificar(empresa, datos["token"], datos["puntaje"])
+        return Response({"puntaje": calificacion.puntaje}, status=status.HTTP_201_CREATED)
 
 
 class ConfirmarReservaView(_VistaPortal):

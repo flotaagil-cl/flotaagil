@@ -36,7 +36,7 @@ class VehiculoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehiculo
-        fields = ["id", "patente", "marca_modelo", "anio", "capacidad", "activo", "conductores"]
+        fields = ["id", "patente", "marca_modelo", "color", "anio", "capacidad", "activo", "conductores"]
 
     @staticmethod
     @extend_schema_field(ConductorResumenSerializer(many=True))
@@ -54,7 +54,7 @@ class VehiculoCrearSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehiculo
-        fields = ["patente", "marca_modelo", "anio", "capacidad"]
+        fields = ["patente", "marca_modelo", "color", "anio", "capacidad"]
 
     def validate_patente(self, valor):
         # El campo declarado reemplaza al del modelo: el formato se valida después de normalizar.
@@ -70,7 +70,7 @@ class VehiculoEditarSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehiculo
-        fields = ["marca_modelo", "anio", "capacidad", "activo"]
+        fields = ["marca_modelo", "color", "anio", "capacidad", "activo"]
 
     def validate_marca_modelo(self, valor):
         return " ".join(valor.split())

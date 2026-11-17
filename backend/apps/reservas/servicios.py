@@ -265,6 +265,11 @@ def confirmar_por_telefono(viaje: Viaje, *, usuario) -> Viaje:
         auditoria.registrar(
             usuario=usuario, entidad=Entidad.VIAJE, entidad_id=viaje.pk, accion="CONFIRMAR_POR_TELEFONO"
         )
+        from apps.integraciones.notificaciones import AVISO_CONFIRMACION
+
+        from . import avisos
+
+        avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21 / HU-56
     return viaje
 
 
@@ -299,6 +304,9 @@ def cancelar_viaje(viaje: Viaje, *, motivo: str, usuario) -> Viaje:
         )
         if conductor is not None:
             _liberar_conductor(conductor, viaje)
+        from . import avisos, avisos_correo
+
+        avisos.programar(viaje.pk, avisos_correo.AVISO_CANCELACION)  # HU-56: solo por correo, sin el módulo
     return viaje
 
 

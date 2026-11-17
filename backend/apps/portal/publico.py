@@ -15,7 +15,8 @@ from rest_framework.exceptions import APIException, Throttled
 
 from apps.convenios.models import Convenio, EstadoConvenio
 from apps.cuentas.tareas import al_confirmar_correo
-from apps.reservas import estados
+from apps.integraciones.notificaciones import AVISO_CONFIRMACION
+from apps.reservas import avisos, estados
 from apps.reservas import servicios as reservas
 from apps.reservas.models import Actor, Canal, EstadoViaje, OrigenCancelacion, Pasajero, Viaje
 
@@ -182,11 +183,13 @@ def confirmar(empresa, token: str) -> Viaje:
     if viaje.confirmar_hasta and viaje.confirmar_hasta < timezone.now():
         raise EnlaceVencido()
     try:
-        return estados.transicionar(
+        viaje = estados.transicionar(
             viaje, EstadoViaje.SOLICITADO, desde=EstadoViaje.PENDIENTE_CONFIRMACION, actor=Actor.PASAJERO
         )
     except estados.TransicionInvalida as error:  # otro clic simultáneo ya la confirmó
         raise EnlaceUsado() from error
+    avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-56
+    return viaje
 
 
 def _pedir_autorizacion(viaje: Viaje) -> None:
@@ -221,9 +224,11 @@ def autorizar(empresa, token: str, decision: str) -> Viaje:
         raise EnlaceVencido()
     try:
         if decision == "autorizar":
-            return estados.transicionar(
+            viaje = estados.transicionar(
                 viaje, EstadoViaje.SOLICITADO, desde=EstadoViaje.PENDIENTE_CONFIRMACION, actor=Actor.PASAJERO
             )
+            avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-56
+            return viaje
         viaje = estados.transicionar(
             viaje,
             EstadoViaje.CANCELADO,
@@ -241,3 +246,27 @@ def autorizar(empresa, token: str, decision: str) -> Viaje:
         f"N.º {viaje.pk}, así que quedó cancelada. Si la necesitas igual, puedes pedirla como particular.",
     )
     return viaje
+
+
+class YaCalificado(APIException):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "ya_calificado"
+    default_detail = "Este viaje ya tiene tu calificación. ¡Gracias!"
+
+
+def calificar(empresa, token: str, puntaje: int):
+    """HU-56: la encuesta por correo crea la misma CALIFICACION de HU-24 (RN-14: opcional). Vale una vez."""
+    from apps.reservas.avisos_correo import viaje_de_encuesta
+    from apps.reservas.models import Calificacion
+
+    try:
+        pk = viaje_de_encuesta(token)
+    except (signing.BadSignature, ValueError) as error:
+        raise EnlaceInvalido() from error
+    viaje = Viaje.objects.filter(pk=pk, empresa=empresa, estado=EstadoViaje.FINALIZADO).first()
+    if viaje is None:
+        raise EnlaceInvalido()
+    calificacion, creada = Calificacion.objects.get_or_create(viaje=viaje, defaults={"puntaje": puntaje})
+    if not creada:
+        raise YaCalificado()
+    return calificacion

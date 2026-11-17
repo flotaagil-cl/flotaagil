@@ -52,7 +52,7 @@ describe('esquemas', () => {
   });
 
   it('cuerpos de edición: solo lo que cambió', () => {
-    const vehiculo = { patente: 'BCDF10', marca_modelo: 'Kia Rio', anio: 2020, capacidad: 4 };
+    const vehiculo = { patente: 'BCDF10', marca_modelo: 'Kia Rio', color: null, anio: 2020, capacidad: 4 };
     expect(cuerpoEditarVehiculo({ ...vehiculo, anio: 2021, marca_modelo: 'Kia Soluto' }, vehiculo)).toEqual({
       anio: 2021,
       marca_modelo: 'Kia Soluto',

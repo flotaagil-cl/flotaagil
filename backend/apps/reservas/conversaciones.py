@@ -106,6 +106,14 @@ def _datos(pasajero) -> dict:
 
 
 def registrar_y_enviar(pasajero, texto: str, *, usuario, viaje_id) -> MensajeWhatsapp:
+    if not pasajero.empresa.modulo_cuentas:
+        # HU-56 (CC-22): sin el módulo de cuentas no se escribe al pasajero por WhatsApp desde el panel.
+        from rest_framework.exceptions import PermissionDenied
+
+        raise PermissionDenied(
+            "Sin el módulo de cuentas, el contacto con el pasajero es por teléfono o tu WhatsApp.",
+            code="whatsapp_no_disponible",
+        )
     with transaction.atomic():
         mensaje = MensajeWhatsapp.objects.create(
             pasajero=pasajero,

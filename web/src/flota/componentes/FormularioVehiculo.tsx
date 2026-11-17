@@ -10,7 +10,7 @@ import { hoy } from '../../hora/hora';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 import { esquemaVehiculo, type DatosVehiculo, type ValoresVehiculo } from '../formularios';
 
-const CAMPOS = ['patente', 'marca_modelo', 'anio', 'capacidad'] as const;
+const CAMPOS = ['patente', 'marca_modelo', 'color', 'anio', 'capacidad'] as const;
 
 interface Props {
   modo: 'crear' | 'editar';
@@ -64,6 +64,9 @@ export function FormularioVehiculo({ modo, iniciales, volverA, enviar }: Props) 
         </Campo>
         <Campo etiqueta="Marca y modelo" error={errors.marca_modelo?.message}>
           {(control) => <input {...control} {...register('marca_modelo')} maxLength={60} />}
+        </Campo>
+        <Campo etiqueta="Color" error={errors.color?.message} ayuda="Opcional. Lo ve el pasajero en el correo «conductor asignado».">
+          {(control) => <input {...control} {...register('color')} maxLength={30} />}
         </Campo>
         <Campo etiqueta="Año" error={errors.anio?.message}>
           {(control) => <input {...control} {...register('anio')} inputMode="numeric" maxLength={4} />}
