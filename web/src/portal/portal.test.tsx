@@ -463,9 +463,9 @@ describe('errores del envío', () => {
 });
 
 describe('HU-40 · cuenta obligatoria', () => {
-  it('la dirección del portal ya no muestra un formulario: lleva al ingreso de la empresa', async () => {
-    const { router } = montarPortal('/solicitar/transportes-andes');
-    await waitFor(() => expect(router.state.location.pathname).toBe('/solicitar/transportes-andes/ingresar'));
+  it('con el módulo, la dirección del portal ofrece ingresar (y reservar sin cuenta, HU-60)', async () => {
+    montarPortal('/solicitar/transportes-andes');
+    expect(await screen.findByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
   });
 });
 

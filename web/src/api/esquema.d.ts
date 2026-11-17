@@ -2516,9 +2516,11 @@ export interface components {
          *     * `ADMINISTRADOR` - Administrador
          *     * `SUPERVISOR` - Supervisor de convenio
          *     * `SISTEMA` - Sistema
+         *     * `NO_CONFIRMADA` - No confirmada
+         *     * `CONVENIO` - Rechazada por el convenio
          * @enum {string}
          */
-        OrigenCancelacionEnum: "PASAJERO" | "DESPACHADOR" | "ADMINISTRADOR" | "SUPERVISOR" | "SISTEMA";
+        OrigenCancelacionEnum: "PASAJERO" | "DESPACHADOR" | "ADMINISTRADOR" | "SUPERVISOR" | "SISTEMA" | "NO_CONFIRMADA" | "CONVENIO";
         PaginatedAlertaVueloList: {
             /** @example 123 */
             count: number;

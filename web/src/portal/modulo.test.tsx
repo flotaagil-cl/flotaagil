@@ -21,4 +21,16 @@ describe('HU-50 · módulo de cuentas en el portal', () => {
     montar('/solicitar/transportes-andes/cuenta', true);
     expect(await screen.findByRole('heading', { name: /crea tu cuenta/i })).toBeInTheDocument();
   });
+
+  it('con el módulo, la portada ofrece «Ingresar» y «Reservar sin cuenta» (HU-60)', async () => {
+    montar('/solicitar/transportes-andes', true);
+    expect(await screen.findByRole('heading', { name: 'Pide tu traslado' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
+    expect(screen.getByRole('link', { name: 'Reservar sin cuenta' })).toHaveAttribute('href', '/solicitar/transportes-andes/reservar');
+  });
+
+  it('«Reservar sin cuenta» muestra el formulario público', async () => {
+    montar('/solicitar/transportes-andes/reservar', true);
+    expect(await screen.findByRole('heading', { name: '¿A dónde te llevamos?' })).toBeInTheDocument();
+  });
 });

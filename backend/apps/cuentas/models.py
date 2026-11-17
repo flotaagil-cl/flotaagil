@@ -106,6 +106,11 @@ class ConfiguracionEmpresa(models.Model):
     # recogida, o este plazo corto si al enviar falta menos.
     confirmacion_antes_horas = _minutos(24, minimo=1)
     confirmacion_plazo_corto_min = _minutos(60, minimo=1)
+    # DC-59 (HU-60): antispam de los formularios públicos, por hora, y cierre de las «Sin confirmar».
+    reserva_publica_max_ip_hora = _minutos(20, minimo=1)
+    reserva_publica_max_correo_hora = _minutos(5, minimo=1)
+    reserva_publica_max_convenio_hora = _minutos(30, minimo=1)
+    cierre_no_confirmada_horas = _minutos(2, minimo=1)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)

@@ -89,7 +89,8 @@ class TestAvisosPorCorreo:
 
     def test_con_el_modulo_sigue_por_whatsapp_y_sin_aviso_de_cancelacion(self, twilio, db):
         con_modulo = EmpresaFactory(modulo_cuentas=True)
-        viaje = ViajeFactory(empresa=con_modulo, estado=E.SOLICITADO, contacto_correo="x@correo.example")
+        # Sin correo de contacto: reserva con cuenta o del panel.
+        viaje = ViajeFactory(empresa=con_modulo, estado=E.SOLICITADO)
         tareas.enviar_aviso.delay(viaje.pk, AVISO_CONFIRMACION)
         tareas.enviar_aviso.delay(viaje.pk, avisos_correo.AVISO_CANCELACION)
         assert len(twilio.enviados) == 1 and not mail.outbox

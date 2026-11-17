@@ -55,6 +55,7 @@ export const DIFERIDOS = [
   'src/portal/paginas/SolicitudConvenio.tsx',
   'src/portal/paginas/AutorizarReserva.tsx',
   'src/portal/paginas/Encuesta.tsx',
+  'src/portal/paginas/ReservaPublica.tsx',
   'src/portal/paginas/Privacidad.tsx',
   'src/portal/paginas/RegistroEmpresa.tsx',
   'src/portal/paginas/CrearCuenta.tsx',

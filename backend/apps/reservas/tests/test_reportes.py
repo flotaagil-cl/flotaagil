@@ -183,6 +183,19 @@ class TestCancelaciones:
         assert (datos["totales"]["cantidad"], datos["totales"]["tasa"]) == (3, 37.5)
         assert "8 reservas" in datos["totales"]["origen"]
 
+    def test_kpi01_excluye_no_confirmadas_y_rechazadas_por_el_convenio(self, api, empresa):
+        # DC-59 (HU-60): se listan por origen, pero no son reservas perdidas ni cuentan en la base.
+        cancelada(empresa, OrigenCancelacion.PASAJERO)
+        cancelada(empresa, OrigenCancelacion.NO_CONFIRMADA)
+        cancelada(empresa, OrigenCancelacion.CONVENIO)
+        for _ in range(3):
+            ViajeFactory(empresa=empresa, recogida_en=timezone.now())
+        datos = pedir(api, "cancelaciones")
+        filas = {f["origen"]: f["cantidad"] for f in datos["filas"]}
+        assert (filas["No confirmada"], filas["Rechazada por el convenio"]) == (1, 1)
+        assert (datos["totales"]["cantidad"], datos["totales"]["tasa"]) == (1, 25.0)
+        assert "KPI-01" in datos["totales"]["origen"] and "4 reservas" in datos["totales"]["origen"]
+
     def test_sin_reservas_no_divide_por_cero(self, api):
         assert pedir(api, "cancelaciones")["totales"]["tasa"] == 0.0
 

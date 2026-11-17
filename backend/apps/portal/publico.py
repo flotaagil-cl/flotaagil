@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core import signing
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
@@ -75,12 +76,36 @@ def enlace(empresa, ruta: str, token: str) -> str:
     return f"{settings.WEB_URL_BASE}/solicitar/{empresa.slug}/{ruta}/{token}"
 
 
-def _verificar_limite_correo(empresa, correo: str) -> None:
+class LimiteIP(Throttled):
+    default_code = "limite_ip"
+    default_detail = (
+        "Se enviaron demasiadas solicitudes desde esta conexión. Espera un rato e intenta de nuevo."
+    )
+
+
+def _verificar_limite_ip(empresa, ip: str | None) -> None:
+    """DC-59: envíos por IP y por hora, con el parámetro de la empresa (contador en la caché)."""
+    if not ip:
+        return
+    clave = f"reserva_publica:ip:{empresa.pk}:{ip}"
+    cache.add(clave, 0, timeout=3600)
+    if cache.incr(clave) > empresa.configuracion.reserva_publica_max_ip_hora:
+        raise LimiteIP(wait=3600)
+
+
+def _verificar_limite_correo(empresa, correo: str, datos: dict) -> None:
+    """DC-59: envíos por correo y por hora; los autorizados de un convenio aprobado tienen más margen."""
+    config = empresa.configuracion
+    maximo = config.reserva_publica_max_correo_hora
+    if datos.get("es_empresa"):
+        convenio = _convenio_aprobado(empresa, datos.get("empresa_rut") or "")
+        if convenio is not None and convenio.autoriza(correo):
+            maximo = config.reserva_publica_max_convenio_hora
     desde = timezone.now() - timedelta(hours=1)
     recientes = Viaje.objects.filter(
         empresa=empresa, contacto_correo__iexact=correo, creado_en__gte=desde
     ).count()
-    if recientes >= settings.RESERVA_PUBLICA_MAX_POR_CORREO:
+    if recientes >= maximo:
         raise LimiteCorreo(wait=3600)
 
 
@@ -97,16 +122,18 @@ def texto_solicitud(viaje: Viaje, url: str) -> str:
         # HU-51 (punto 4 de CC-22): la empresa sin convenio se cobra como particular.
         texto += (
             "\n\n¿Tu empresa viaja seguido? Solicita un convenio y obtén beneficios:\n"
-            f"{settings.WEB_URL_BASE}/solicitar/{viaje.empresa.slug}/convenio"
+            f"{settings.WEB_URL_BASE}/solicitar/{viaje.empresa.slug}/"
+            f"{'registro-empresa' if viaje.empresa.modulo_cuentas else 'convenio'}"
         )
     return texto
 
 
-def crear(empresa, datos: dict) -> Viaje:
+def crear(empresa, datos: dict, ip: str | None = None) -> Viaje:
     """Crea la reserva pendiente y envía el correo con el enlace de confirmación."""
     correo = datos["correo"].strip().lower()
     validar_capacidad(empresa, datos.get("pasajeros", 1))  # DC-43
-    _verificar_limite_correo(empresa, correo)
+    _verificar_limite_ip(empresa, ip)
+    _verificar_limite_correo(empresa, correo, datos)
     vuelo, recogida = vuelo_y_recogida(empresa, datos)
     ahora = timezone.now()
     with transaction.atomic():
@@ -222,20 +249,26 @@ def autorizar(empresa, token: str, decision: str) -> Viaje:
         raise EnlaceUsado()
     if viaje.confirmar_hasta and viaje.confirmar_hasta < timezone.now():
         raise EnlaceVencido()
+    # DC-59 (HU-60): quien decide por el convenio no es un PASAJERO: el historial queda con actor SISTEMA y la
+    # autorización guarda el correo del contacto y la hora; el rechazo usa el origen CONVENIO.
     try:
         if decision == "autorizar":
             viaje = estados.transicionar(
-                viaje, EstadoViaje.SOLICITADO, desde=EstadoViaje.PENDIENTE_CONFIRMACION, actor=Actor.PASAJERO
+                viaje, EstadoViaje.SOLICITADO, desde=EstadoViaje.PENDIENTE_CONFIRMACION, actor=Actor.SISTEMA
+            )
+            Viaje.objects.filter(pk=viaje.pk).update(
+                autorizado_por_correo=_contacto(viaje.convenio), autorizado_en=timezone.now()
             )
             avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-56
+            viaje.refresh_from_db()
             return viaje
         viaje = estados.transicionar(
             viaje,
             EstadoViaje.CANCELADO,
             desde=EstadoViaje.PENDIENTE_CONFIRMACION,
-            actor=Actor.PASAJERO,
+            actor=Actor.SISTEMA,
             motivo_cancelacion=f"No autorizada por el convenio de {viaje.convenio.cliente_nombre}.",
-            origen_cancelacion=OrigenCancelacion.SUPERVISOR,
+            origen_cancelacion=OrigenCancelacion.CONVENIO,
         )
     except estados.TransicionInvalida as error:
         raise EnlaceUsado() from error

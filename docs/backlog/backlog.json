@@ -1132,6 +1132,28 @@
       "casos_prueba": [],
       "epica": "Sistema visual",
       "label_epica": null
+    },
+    {
+      "id": "HU-60",
+      "titulo": "Ajustes de CC-22 validados",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como empresa, quiero los ajustes validados de CC-22 en el antispam, el cierre de las no confirmadas, la autorización del convenio, el KPI-01 y la reserva sin cuenta con el módulo.",
+      "criterios": "Antispam 20/5/30 por hora como parámetros. «Sin confirmar» se cierra 2 h después de la recogida (NO_CONFIRMADA). Autorización del convenio con autorizado_por_correo y autorizado_en; rechazo con origen CONVENIO. KPI-01 los excluye. Con el módulo, Ingresar o Reservar sin cuenta. Celery con recarga en desarrollo.",
+      "prioridad": "Alta",
+      "sp": 5,
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "reglas": [
+        "RN-06"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-54",
+        "HU-56"
+      ],
+      "estado_cambio": "Nueva (CC-22, DC-59)"
     }
   ],
   "tareas": [

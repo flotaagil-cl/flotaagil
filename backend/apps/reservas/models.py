@@ -86,6 +86,10 @@ class OrigenCancelacion(models.TextChoices):
     ADMINISTRADOR = "ADMINISTRADOR", "Administrador"
     SUPERVISOR = "SUPERVISOR", "Supervisor de convenio"
     SISTEMA = "SISTEMA", "Sistema"
+    # DC-59 (HU-60): la reserva pública que nadie confirmó (se cierra 2 h después de la recogida) y la que el
+    # contacto del convenio rechazó. KPI-01 (reservas perdidas) no las cuenta.
+    NO_CONFIRMADA = "NO_CONFIRMADA", "No confirmada"
+    CONVENIO = "CONVENIO", "Rechazada por el convenio"
 
 
 class Viaje(models.Model):
@@ -154,6 +158,9 @@ class Viaje(models.Model):
     confirmar_hasta = models.DateTimeField(null=True, blank=True)
     # DC-52 (HU-54): la confirma el contacto del convenio (el correo que reservó no está autorizado).
     confirma_convenio = models.BooleanField(default=False, db_default=False)
+    # DC-59 (HU-60): quién autorizó por el convenio y cuándo (no es un PASAJERO).
+    autorizado_por_correo = models.EmailField(max_length=254, null=True, blank=True)
+    autorizado_en = models.DateTimeField(null=True, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

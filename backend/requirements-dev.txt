@@ -5,3 +5,4 @@ pytest-cov==7.1.0
 factory-boy==3.3.3
 ruff==0.17.0
 bandit==1.9.4
+watchdog[watchmedo]==6.0.0  # HU-60: worker y beat de Celery se recargan solos en desarrollo

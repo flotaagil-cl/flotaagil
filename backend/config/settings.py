@@ -120,8 +120,8 @@ REST_FRAMEWORK = {
         # pasajeros comparten IP (wifi, NAT); el control principal es el límite por teléfono.
         "portal_minuto": env("THROTTLE_PORTAL_MINUTO", default="20/min"),
         "portal_hora": env("THROTTLE_PORTAL_HORA", default="200/hour"),
-        # DC-56 (CC-22): formularios públicos de reserva y de convenio, por IP.
-        "reserva_publica": env("THROTTLE_RESERVA_PUBLICA", default="5/hour"),
+        # DC-59 (HU-60): solicitud pública de convenio, por IP (la reserva usa los parámetros de la empresa).
+        "reserva_publica": env("THROTTLE_RESERVA_PUBLICA", default="20/hour"),
     },
     # Proxies delante de Django (Nginx en producción = 1) para obtener la IP real del cliente.
     "NUM_PROXIES": int(env("DJANGO_NUM_PROXIES", default=""))
@@ -186,8 +186,6 @@ CACHES = {
 
 # Portal (HU-19): máximo de solicitudes por teléfono y empresa en la ventana (alineado con RN-06).
 PORTAL_MAX_SOLICITUDES_POR_TELEFONO = env.int("PORTAL_MAX_SOLICITUDES_POR_TELEFONO", default=3)
-# DC-56 (CC-22): reservas públicas por correo en una hora.
-RESERVA_PUBLICA_MAX_POR_CORREO = env.int("RESERVA_PUBLICA_MAX_POR_CORREO", default=3)
 PORTAL_VENTANA_TELEFONO = timedelta(minutes=env.int("PORTAL_VENTANA_TELEFONO_MIN", default=15))
 
 # Geocodificador (DC-05): sin clave se usa el de desarrollo (determinístico, sin servicios externos).

@@ -118,8 +118,10 @@ class TestReservaPublica:
         assert respuesta.status_code == 201
         assert not Viaje.objects.exists() and not mail.outbox
 
-    def test_limite_por_correo(self, cliente, base, django_capture_on_commit_callbacks, settings):
-        settings.RESERVA_PUBLICA_MAX_POR_CORREO = 2
+    def test_limite_por_correo(self, cliente, base, django_capture_on_commit_callbacks):
+        # DC-59 (HU-60): parámetro de la empresa (5 por hora por defecto).
+        base.configuracion.reserva_publica_max_correo_hora = 2
+        base.configuracion.save()
         for i in range(2):
             assert (
                 reservar(
@@ -131,9 +133,31 @@ class TestReservaPublica:
         assert respuesta.status_code == 429
         assert respuesta.data["code"] == "limite_correo"
 
-    def test_con_el_modulo_de_cuentas_no_existe(self, cliente, django_capture_on_commit_callbacks):
+    def test_limite_por_ip(self, cliente, base, django_capture_on_commit_callbacks):
+        base.configuracion.reserva_publica_max_ip_hora = 2
+        base.configuracion.save()
+        for i in range(2):
+            correo = f"p{i}@correo.example"
+            assert (
+                reservar(cliente, base, django_capture_on_commit_callbacks, correo=correo).status_code == 201
+            )
+        respuesta = reservar(cliente, base, django_capture_on_commit_callbacks, correo="p9@correo.example")
+        assert (respuesta.status_code, respuesta.data["code"]) == (429, "limite_ip")
+
+    def test_valores_por_defecto(self, base):
+        config = base.configuracion
+        assert (
+            config.reserva_publica_max_ip_hora,
+            config.reserva_publica_max_correo_hora,
+            config.reserva_publica_max_convenio_hora,
+            config.cierre_no_confirmada_horas,
+        ) == (20, 5, 30, 2)
+
+    def test_con_el_modulo_tambien_se_reserva_sin_cuenta(self, cliente, django_capture_on_commit_callbacks):
+        # HU-60: «Reservar sin cuenta» también en las empresas con el módulo; los avisos van por correo.
         con_modulo = EmpresaFactory(modulo_cuentas=True)
-        assert reservar(cliente, con_modulo, django_capture_on_commit_callbacks).status_code == 404
+        assert reservar(cliente, con_modulo, django_capture_on_commit_callbacks).status_code == 201
+        assert f"/solicitar/{con_modulo.slug}/confirmar/" in mail.outbox[-1].body
 
 
 @pytest.mark.django_db
