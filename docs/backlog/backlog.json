@@ -918,6 +918,163 @@
         "HU-37"
       ],
       "estado_cambio": "Nueva (rediseño del portal)"
+    },
+    {
+      "id": "HU-50",
+      "titulo": "Módulo de cuentas por empresa",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como plataforma, quiero activar las cuentas de pasajero y convenio por empresa, para venderlas como módulo pagado.",
+      "criterios": "Campo `modulo_cuentas` (falso por defecto) que solo cambia el superusuario; el panel lo muestra sin editar. Sin el módulo, ingresar, crear cuenta, registro de empresa y Mi convenio muestran «no disponible» y sus endpoints responden 404. datos_demo: transportes-andes con módulo y taxi-pacifico sin él.",
+      "sp": 3,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-46"
+      ],
+      "depende_de": [],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-51",
+      "titulo": "Formulario público de reserva",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero, quiero pedir un traslado sin crear cuenta y confirmarlo por correo.",
+      "criterios": "Datos del viaje, nombre, correo, teléfono y aviso de privacidad con versión. «¿Es una empresa?» pide razón social, RUT y contacto. Honeypot y límites por IP y correo. El viaje nace en PENDIENTE_CONFIRMACION y se envía un enlace firmado de un solo uso; al abrirlo pasa a SOLICITADO y se muestra «Reserva confirmada».",
+      "sp": 5,
+      "reglas": [
+        "RN-06"
+      ],
+      "casos_prueba": [
+        "CP-47",
+        "CP-48"
+      ],
+      "depende_de": [
+        "HU-50"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-52",
+      "titulo": "Plazo de confirmación y reservas sin confirmar",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como despachador, quiero ver las reservas que no se confirmaron a tiempo y confirmarlas por teléfono.",
+      "criterios": "Plazo: hasta 24 h antes de la recogida o 60 min si falta menos de un día (parámetros por empresa). Al vencer queda «Sin confirmar» con alerta en el panel; el despacho confirma por teléfono (auditado), cancela o la deja. Reemplaza la expiración de 15 min.",
+      "sp": 3,
+      "reglas": [
+        "RN-06",
+        "RN-11"
+      ],
+      "casos_prueba": [
+        "CP-49"
+      ],
+      "depende_de": [
+        "HU-51"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-53",
+      "titulo": "Solicitud pública de convenio",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como empresa cliente, quiero solicitar un convenio sin cuenta, y como despacho, aprobarlo o rechazarlo.",
+      "criterios": "Formulario con razón social, RUT, dirección, contacto, correo, teléfono, viajes al mes y correos autorizados (lista o dominio). Crea el convenio EN_REVISION sin usuario. Administrador y despachador aprueban (editando los correos) o rechazan con motivo; la empresa recibe el resultado por correo.",
+      "sp": 5,
+      "reglas": [
+        "RN-08",
+        "RN-12"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-50"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-54",
+      "titulo": "Reserva con el RUT de un convenio",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como empresa con convenio, quiero que las reservas de mis correos autorizados se asocien al convenio y autorizar las demás.",
+      "criterios": "Correo autorizado (exacto o dominio): el viaje se asocia al convenio. No autorizado: el enlace va al contacto del convenio con Autorizar o Rechazar; si rechaza se cancela y se avisa al solicitante; si no responde queda «Sin confirmar». Pago CONVENIO solo con convenio.",
+      "sp": 5,
+      "reglas": [
+        "RN-07",
+        "RN-10"
+      ],
+      "casos_prueba": [
+        "CP-50",
+        "CP-51"
+      ],
+      "depende_de": [
+        "HU-51",
+        "HU-53"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-55",
+      "titulo": "Contacto con el pasajero desde el panel",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como despachador, quiero llamar o escribir al pasajero desde mi teléfono con un toque.",
+      "criterios": "Botones «Llamar» (tel:) y «Abrir en WhatsApp» (wa.me) junto al teléfono. FlotaÁgil no envía nada. El conductor nunca ve el teléfono del pasajero.",
+      "sp": 1,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-56",
+      "titulo": "Avisos y encuesta por correo",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero de una empresa sin el módulo, quiero recibir los avisos de mi viaje por correo.",
+      "criterios": "Correos: solicitud recibida, confirmada, conductor asignado (nombre, patente, modelo y color), cancelación y encuesta con enlace que registra la calificación de HU-24. Sin «en camino» ni «en zona» y sin WhatsApp para estas empresas.",
+      "sp": 5,
+      "reglas": [
+        "RN-14"
+      ],
+      "casos_prueba": [
+        "CP-52"
+      ],
+      "depende_de": [
+        "HU-51"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-22)"
     }
   ],
   "tareas": [
