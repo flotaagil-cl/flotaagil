@@ -2028,6 +2028,47 @@ paths:
           description: Empresa inexistente o con el módulo de cuentas
         '429':
           description: '`limite_ip` o `limite_correo`'
+  /api/portal/{slug}/reservas/autorizar/:
+    post:
+      operationId: portal_reservas_autorizar_create
+      description: 'HU-54 (CC-22): autorizar la deja SOLICITADO; rechazar la cancela
+        y avisa al solicitante.'
+      summary: El contacto del convenio autoriza o rechaza una reserva pública
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutorizacionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AutorizacionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AutorizacionRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaConfirmada'
+          description: ''
+        '400':
+          description: '`enlace_invalido` o decisión inválida'
+        '409':
+          description: '`enlace_usado`'
+        '410':
+          description: '`enlace_vencido`'
   /api/portal/{slug}/reservas/confirmar/:
     post:
       operationId: portal_reservas_confirmar_create
@@ -3447,6 +3488,18 @@ components:
           type: integer
       required:
       - vehiculo
+    AutorizacionRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+      required:
+      - decision
+      - token
     BlankEnum:
       enum:
       - ''
@@ -4077,6 +4130,14 @@ components:
             no la aplica.'
       required:
       - recogida_propuesta
+    DecisionEnum:
+      enum:
+      - autorizar
+      - rechazar
+      type: string
+      description: |-
+        * `autorizar` - autorizar
+        * `rechazar` - rechazar
     DireccionMensajeEnum:
       enum:
       - ENTRANTE
@@ -5682,6 +5743,10 @@ components:
         confirmar_hasta:
           type: string
           format: date-time
+        confirma_convenio:
+          type: boolean
+          default: false
+          description: 'HU-54: la confirma el contacto del convenio, no el pasajero'
         mensaje:
           type: string
       required:

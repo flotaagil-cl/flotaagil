@@ -257,11 +257,18 @@ class ReservaPublicaRespuestaSerializer(serializers.Serializer):
     estado = serializers.CharField()
     recogida_en = serializers.DateTimeField()
     confirmar_hasta = serializers.DateTimeField()
+    confirma_convenio = serializers.BooleanField(
+        default=False, help_text="HU-54: la confirma el contacto del convenio, no el pasajero"
+    )
     mensaje = serializers.CharField()
 
 
 class TokenSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200)
+
+
+class AutorizacionSerializer(TokenSerializer):
+    decision = serializers.ChoiceField(choices=["autorizar", "rechazar"])
 
 
 class ReservaConfirmadaSerializer(serializers.Serializer):

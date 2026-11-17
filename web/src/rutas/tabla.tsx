@@ -228,6 +228,11 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           lazy: async () => ({ Component: (await import('../portal/paginas/SolicitudConvenio')).SolicitudConvenio }),
           handle: { soloSinModulo: true },
         },
+        // HU-54 (CC-22): el contacto del convenio autoriza o rechaza la reserva.
+        {
+          path: 'autorizar/:token',
+          lazy: async () => ({ Component: (await import('../portal/paginas/AutorizarReserva')).AutorizarReserva }),
+        },
         // HU-51 (CC-22): el enlace del correo que confirma la reserva pública.
         {
           path: 'confirmar/:token',

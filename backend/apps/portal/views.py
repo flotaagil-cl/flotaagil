@@ -22,6 +22,7 @@ from apps.reservas import cuentas_pasajero
 
 from . import publico, servicios
 from .serializers import (
+    AutorizacionSerializer,
     CrearCuentaSerializer,
     EmpresaPublicaSerializer,
     ReservaConfirmadaSerializer,
@@ -276,6 +277,8 @@ class ReservaPublicaView(_VistaPortal):
             falsa |= {"recogida_en": datos.get("recogida_en") or ahora, "confirmar_hasta": ahora}
             return Response(ReservaPublicaRespuestaSerializer(falsa).data, status=status.HTTP_201_CREATED)
         viaje = publico.crear(empresa, datos)
+        if viaje.confirma_convenio:
+            mensaje = "Tu correo no está autorizado en el convenio: le pedimos a la empresa que la autorice."
         return Response(
             ReservaPublicaRespuestaSerializer(
                 {
@@ -283,6 +286,7 @@ class ReservaPublicaView(_VistaPortal):
                     "estado": viaje.estado,
                     "recogida_en": viaje.recogida_en,
                     "confirmar_hasta": viaje.confirmar_hasta,
+                    "confirma_convenio": viaje.confirma_convenio,
                     "mensaje": mensaje,
                 }
             ).data,
@@ -314,6 +318,31 @@ class SolicitudConvenioView(_VistaPortal):
             convenios.solicitar_publico(empresa, entrada.validated_data)
         mensaje = "Recibimos tu solicitud. Te avisaremos por correo cuando se revise."
         return Response({"mensaje": mensaje}, status=status.HTTP_201_CREATED)
+
+
+class AutorizarReservaView(_VistaPortal):
+    throttle_classes = [PortalPorMinuto, PortalPorHora]
+
+    @extend_schema(
+        tags=["portal"],
+        summary="El contacto del convenio autoriza o rechaza una reserva pública",
+        request=AutorizacionSerializer,
+        responses={
+            200: ReservaConfirmadaSerializer,
+            400: OpenApiResponse(description="`enlace_invalido` o decisión inválida"),
+            409: OpenApiResponse(description="`enlace_usado`"),
+            410: OpenApiResponse(description="`enlace_vencido`"),
+        },
+        description="HU-54 (CC-22): autorizar la deja SOLICITADO; rechazar la cancela y avisa al "
+        "solicitante.",
+    )
+    def post(self, request, slug):
+        empresa = _empresa(slug)
+        entrada = AutorizacionSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+        viaje = publico.autorizar(empresa, datos["token"], datos["decision"])
+        return Response(ReservaConfirmadaSerializer(viaje).data)
 
 
 class ConfirmarReservaView(_VistaPortal):
