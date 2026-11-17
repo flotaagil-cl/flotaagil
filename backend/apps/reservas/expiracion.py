@@ -23,9 +23,10 @@ def expirar_pendientes(ahora=None) -> int:
     """Cancela las solicitudes vencidas. Devuelve cuántas canceló."""
     ahora = ahora or timezone.now()
     canceladas = 0
-    pendientes = Viaje.objects.filter(estado=EstadoViaje.PENDIENTE_CONFIRMACION).select_related(
-        "empresa__configuracion"
-    )
+    # CC-22 (DC-53): la reserva pública no se cancela al vencer su plazo (queda «Sin confirmar», HU-52).
+    pendientes = Viaje.objects.filter(
+        estado=EstadoViaje.PENDIENTE_CONFIRMACION, confirmar_hasta__isnull=True
+    ).select_related("empresa__configuracion")
     for viaje in pendientes.iterator():
         if vence_en(viaje) > ahora:
             continue

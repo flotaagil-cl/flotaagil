@@ -51,6 +51,7 @@ export const DIFERIDOS = [
   'src/flota/paginas/ImportarConductores.tsx',
   'src/portal/LayoutPortal.tsx',
   'src/portal/paginas/IrAlIngreso.tsx',
+  'src/portal/paginas/ConfirmarReserva.tsx',
   'src/portal/paginas/Privacidad.tsx',
   'src/portal/paginas/RegistroEmpresa.tsx',
   'src/portal/paginas/CrearCuenta.tsx',

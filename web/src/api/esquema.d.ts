@@ -1195,6 +1195,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/{slug}/reservas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reserva pública sin cuenta (empresas sin el módulo de cuentas)
+         * @description HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía por correo el enlace para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos).
+         */
+        post: operations["portal_reservas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{slug}/reservas/confirmar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar la reserva pública con el enlace del correo
+         * @description HU-51: el enlace firmado vale una sola vez y hasta `confirmar_hasta`. La página lo envía por POST para que los revisores de enlaces del correo no confirmen solos.
+         */
+        post: operations["portal_reservas_confirmar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reportes/{tipo}/": {
         parameters: {
             query?: never;
@@ -2699,6 +2739,14 @@ export interface components {
             next: string | null;
             previous: string | null;
         };
+        ReservaConfirmada: {
+            id: number;
+            estado: string;
+            /** Format: date-time */
+            recogida_en: string;
+            origen_dir: string;
+            destino_dir: string;
+        };
         /** @description HU-32 (DC-33): viaje anotado durante una caída, con sus horas reales. */
         ReservaContingenciaRequest: {
             /** @description Folio de la hoja de contingencia; único en la empresa */
@@ -2736,6 +2784,54 @@ export interface components {
             destino_dir: string;
             /** Format: date-time */
             recogida_en: string;
+        };
+        /** @description HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55). */
+        ReservaPublicaRequest: {
+            nombre: string;
+            /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
+            telefono: string;
+            origen_dir: string;
+            destino_dir: string;
+            /**
+             * Format: date-time
+             * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
+             */
+            recogida_en?: string | null;
+            /**
+             * @description Si no viene: DESDE_AEROPUERTO cuando hay vuelo, URBANO si no.
+             *
+             *     * `DESDE_AEROPUERTO` - Desde el aeropuerto
+             *     * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+             *     * `URBANO` - Urbano
+             */
+            sentido?: components["schemas"]["SentidoEnum"];
+            /** @description Solo para viajes desde el aeropuerto. */
+            vuelo?: components["schemas"]["VueloLlegadaRequest"];
+            /** @description Solo para viajes al aeropuerto (HU-39). */
+            vuelo_salida?: components["schemas"]["VueloSalidaRequest"];
+            /** @description HU-39: recogida ahora + la anticipación mínima (DC-10); ignora `recogida_en`. */
+            lo_antes_posible?: boolean;
+            /** @description Titular más acompañantes; no supera la capacidad de la flota (DC-43). */
+            pasajeros?: number;
+            maletas?: number;
+            acepta_privacidad: boolean;
+            sitio_web?: string;
+            /** Format: email */
+            correo: string;
+            /** @default false */
+            es_empresa: boolean;
+            empresa_razon_social?: string;
+            empresa_rut?: string;
+            empresa_contacto?: string;
+        };
+        ReservaPublicaRespuesta: {
+            id: number;
+            estado: string;
+            /** Format: date-time */
+            recogida_en: string;
+            /** Format: date-time */
+            confirmar_hasta: string;
+            mensaje: string;
         };
         ReservaVinculada: {
             id: number;
@@ -2906,6 +3002,9 @@ export interface components {
          * @enum {string}
          */
         TipoVueloEnum: "NACIONAL" | "INTERNACIONAL";
+        TokenRequest: {
+            token: string;
+        };
         Tokens: {
             access: string;
             refresh: string;
@@ -5216,6 +5315,102 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
+            };
+        };
+    };
+    portal_reservas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReservaPublicaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReservaPublicaRequest"];
+                "multipart/form-data": components["schemas"]["ReservaPublicaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReservaPublicaRespuesta"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empresa inexistente o con el módulo de cuentas */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `limite_ip` o `limite_correo` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_reservas_confirmar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TokenRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TokenRequest"];
+                "multipart/form-data": components["schemas"]["TokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReservaConfirmada"];
+                };
+            };
+            /** @description `enlace_invalido` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `enlace_usado` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `enlace_vencido`: queda «Sin confirmar» (HU-52) */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

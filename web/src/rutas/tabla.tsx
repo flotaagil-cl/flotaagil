@@ -221,6 +221,11 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           path: 'privacidad',
           lazy: async () => ({ Component: (await import('../portal/paginas/Privacidad')).Privacidad }),
         },
+        // HU-51 (CC-22): el enlace del correo que confirma la reserva pública.
+        {
+          path: 'confirmar/:token',
+          lazy: async () => ({ Component: (await import('../portal/paginas/ConfirmarReserva')).ConfirmarReserva }),
+        },
         {
           path: 'registro-empresa',
           lazy: async () => ({ Component: (await import('../portal/paginas/RegistroEmpresa')).RegistroEmpresa }),
