@@ -10,6 +10,8 @@ urlpatterns = [
     path("<slug:slug>/cuenta/", views.CrearCuentaView.as_view(), name="portal-crear-cuenta"),
     # HU-51 (CC-22): reserva pública y su confirmación por correo.
     path("<slug:slug>/reservas/", views.ReservaPublicaView.as_view(), name="portal-reserva-publica"),
+    # HU-53 (CC-22): solicitud pública de convenio.
+    path("<slug:slug>/convenio/", views.SolicitudConvenioView.as_view(), name="portal-solicitud-convenio"),
     path(
         "<slug:slug>/reservas/confirmar/",
         views.ConfirmarReservaView.as_view(),

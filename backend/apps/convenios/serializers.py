@@ -1,3 +1,5 @@
+import re
+
 from rest_framework import serializers
 
 from apps.comun.validadores import normalizar_rut, validar_rut
@@ -37,6 +39,10 @@ class ConvenioDetalleSerializer(ConvenioSerializer):
             "revisado_por",
             "revisado_en",
             "creado_en",
+            # DC-54 (CC-22): solicitud pública.
+            "contacto_correo",
+            "viajes_estimados_mes",
+            "correos_autorizados",
         ]
         read_only_fields = fields
 
@@ -76,8 +82,70 @@ class _DatosConvenio(serializers.Serializer):
         return _rut(valor)
 
 
+CORREO_O_DOMINIO = re.compile(r"^(@|[^@\s]+@)[a-z0-9-]+(\.[a-z0-9-]+)+$", re.IGNORECASE)
+
+
+def _correos(valores):
+    """DC-54: cada entrada es un correo exacto o «@dominio.cl»."""
+    malos = [v for v in valores if not CORREO_O_DOMINIO.match((v or "").strip())]
+    if malos:
+        raise serializers.ValidationError(f"No es un correo ni un dominio (@empresa.cl): {', '.join(malos)}")
+    return [v.strip().lower() for v in valores]
+
+
 class ConvenioEditarSerializer(_DatosConvenio):
-    pass
+    contacto_correo = serializers.EmailField(max_length=254, required=False, allow_null=True)
+    correos_autorizados = serializers.ListField(
+        child=serializers.CharField(max_length=254), required=False, max_length=50
+    )
+
+    def validate_correos_autorizados(self, valor):
+        return _correos(valor)
+
+
+class AprobacionSerializer(serializers.Serializer):
+    correos_autorizados = serializers.ListField(
+        child=serializers.CharField(max_length=254),
+        required=False,
+        max_length=50,
+        help_text="HU-53: ajusta los correos autorizados al aprobar (correos exactos o «@dominio.cl»)",
+    )
+
+    def validate_correos_autorizados(self, valor):
+        return _correos(valor)
+
+
+class SolicitudConvenioPublicaSerializer(serializers.Serializer):
+    """HU-53 (CC-22): solicitud pública de convenio, sin cuenta."""
+
+    cliente_nombre = serializers.CharField(max_length=120, help_text="Razón social")
+    cliente_rut = serializers.CharField(max_length=14)
+    direccion = serializers.CharField(max_length=200)
+    contacto_nombre = serializers.CharField(max_length=80)
+    contacto_correo = serializers.EmailField(max_length=254)
+    contacto_telefono = serializers.RegexField(TELEFONO, max_length=16)
+    viajes_estimados_mes = serializers.IntegerField(min_value=1, max_value=10000)
+    correos_autorizados = serializers.ListField(
+        child=serializers.CharField(max_length=254), required=False, max_length=50
+    )
+    sitio_web = serializers.CharField(
+        required=False, allow_blank=True, help_text="Campo trampa: debe ir vacío"
+    )
+
+    def validate_cliente_nombre(self, valor):
+        return _texto(valor)
+
+    def validate_direccion(self, valor):
+        return _texto(valor)
+
+    def validate_contacto_nombre(self, valor):
+        return _texto(valor)
+
+    def validate_cliente_rut(self, valor):
+        return _rut(valor)
+
+    def validate_correos_autorizados(self, valor):
+        return _correos(valor)
 
 
 class RechazoSerializer(serializers.Serializer):

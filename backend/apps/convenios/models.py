@@ -52,7 +52,18 @@ class Convenio(models.Model):
     usuario = models.OneToOneField(
         "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="convenio"
     )
+    # DC-54 (CC-22): solicitud pública sin cuenta. Una entrada «@dominio.cl» de `correos_autorizados` autoriza
+    # todo el dominio; las demás son correos exactos (en minúsculas).
+    contacto_correo = models.EmailField(max_length=254, null=True, blank=True)
+    viajes_estimados_mes = models.PositiveSmallIntegerField(null=True, blank=True)
+    correos_autorizados = models.JSONField(default=list, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
+
+    def autoriza(self, correo: str) -> bool:
+        """HU-54: el correo está autorizado para pedir viajes con este convenio (exacto o por dominio)."""
+        correo = (correo or "").strip().lower()
+        dominio = "@" + correo.rpartition("@")[2]
+        return correo in self.correos_autorizados or dominio in self.correos_autorizados
 
     class Meta:
         db_table = "convenio"

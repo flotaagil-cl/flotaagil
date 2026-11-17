@@ -13,6 +13,7 @@ from apps.flota.serializers import PasswordTemporalSerializer
 from . import servicios
 from .models import Convenio, EstadoConvenio
 from .serializers import (
+    AprobacionSerializer,
     ConvenioDetalleSerializer,
     ConvenioEditarSerializer,
     ConvenioSerializer,
@@ -60,6 +61,14 @@ class ConvenioViewSet(
         .order_by("cliente_nombre", "id")
     )
     permission_classes = [con_roles(Rol.ADMINISTRADOR)]
+    # DC-55 (CC-22): el despachador también ve, aprueba y rechaza; el resto sigue siendo del administrador.
+    ACCIONES_DEL_DESPACHO = frozenset({"list", "retrieve", "aprobar", "rechazar", "auditoria"})
+
+    def get_permissions(self):
+        if self.action in self.ACCIONES_DEL_DESPACHO:
+            return [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)()]
+        return super().get_permissions()
+
     filterset_class = ConvenioFiltro
     http_method_names = ["get", "post", "patch", "head", "options"]
 
@@ -91,13 +100,17 @@ class ConvenioViewSet(
     @extend_schema(
         summary="Aprobar un convenio en revisión",
         tags=["convenios"],
-        request=None,
+        request=AprobacionSerializer,
         responses={200: ConvenioDetalleSerializer, 409: CONFLICTO},
         description="Queda en auditoría y se avisa al encargado por correo.",
     )
     @action(detail=True, methods=["post"])
     def aprobar(self, request, pk=None):
-        return self._accion(servicios.aprobar)
+        entrada = AprobacionSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        return self._accion(
+            servicios.aprobar, correos_autorizados=entrada.validated_data.get("correos_autorizados")
+        )
 
     @extend_schema(
         summary="Rechazar un convenio en revisión",

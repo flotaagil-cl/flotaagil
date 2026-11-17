@@ -4,7 +4,7 @@ límite por teléfono y un campo trampa."""
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema, inline_serializer
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -14,7 +14,7 @@ from rest_framework.views import APIView
 from apps.comun.excepciones import error_con_codigo
 from apps.comun.validadores import normalizar_telefono, validar_telefono_e164
 from apps.convenios import servicios as convenios
-from apps.convenios.serializers import RegistroConvenioSerializer
+from apps.convenios.serializers import RegistroConvenioSerializer, SolicitudConvenioPublicaSerializer
 from apps.cuentas.models import Empresa
 from apps.cuentas.serializers import ErrorSerializer
 from apps.integraciones.notificaciones import enmascarar_telefono as enmascarar
@@ -288,6 +288,32 @@ class ReservaPublicaView(_VistaPortal):
             ).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class SolicitudConvenioView(_VistaPortal):
+    throttle_classes = [PortalPorMinuto, ReservaPublicaPorHora]
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Solicitud pública de convenio (empresas sin el módulo de cuentas)",
+        request=SolicitudConvenioPublicaSerializer,
+        responses={
+            201: inline_serializer("SolicitudConvenioRecibida", {"mensaje": serializers.CharField()}),
+            400: OpenApiResponse(description="Datos inválidos"),
+            404: OpenApiResponse(description="Empresa inexistente o con el módulo de cuentas"),
+            429: OpenApiResponse(description="`limite_ip`"),
+        },
+        description="HU-53 (CC-22): crea el convenio EN_REVISION sin cuenta; lo revisan el administrador o el "
+        "despachador y el resultado llega al correo de contacto.",
+    )
+    def post(self, request, slug):
+        empresa = _empresa_sin_modulo(slug)
+        entrada = SolicitudConvenioPublicaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        if not entrada.validated_data.get("sitio_web"):  # campo trampa: se responde igual, sin crear nada
+            convenios.solicitar_publico(empresa, entrada.validated_data)
+        mensaje = "Recibimos tu solicitud. Te avisaremos por correo cuando se revise."
+        return Response({"mensaje": mensaje}, status=status.HTTP_201_CREATED)
 
 
 class ConfirmarReservaView(_VistaPortal):
