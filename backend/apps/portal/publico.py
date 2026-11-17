@@ -13,14 +13,16 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, Throttled
 
+from apps.convenios.models import Convenio, EstadoConvenio
 from apps.cuentas.tareas import al_confirmar_correo
 from apps.reservas import estados
 from apps.reservas import servicios as reservas
-from apps.reservas.models import Actor, Canal, EstadoViaje, Pasajero, Viaje
+from apps.reservas.models import Actor, Canal, EstadoViaje, OrigenCancelacion, Pasajero, Viaje
 
 from .servicios import validar_capacidad, vuelo_y_recogida
 
 SAL_CONFIRMAR = "reserva-publica-confirmar"
+SAL_AUTORIZAR = "reserva-publica-autorizar"  # HU-54: el contacto del convenio autoriza o rechaza
 
 
 class LimiteCorreo(Throttled):
@@ -133,6 +135,14 @@ def crear(empresa, datos: dict) -> Viaje:
             viaje.empresa_cliente_rut = datos["empresa_rut"]
             viaje.empresa_cliente_contacto = datos["empresa_contacto"]
             campos += ["empresa_cliente_razon_social", "empresa_cliente_rut", "empresa_cliente_contacto"]
+            # HU-54: el RUT de un convenio aprobado. Correo autorizado: el viaje es del convenio. Si no, el
+            # contacto del convenio decide (autoriza o rechaza); sin contacto, se cobra como particular.
+            convenio = _convenio_aprobado(empresa, datos["empresa_rut"])
+            if convenio is not None and (convenio.autoriza(correo) or _contacto(convenio)):
+                # Un viaje con convenio va por el canal CONVENIO (restricción `viaje_convenio_segun_canal`).
+                viaje.convenio, viaje.canal = convenio, Canal.CONVENIO
+                viaje.confirma_convenio = not convenio.autoriza(correo)
+                campos += ["convenio", "canal", "confirma_convenio"]
         viaje.save(update_fields=campos)
         # Ley 21.719: evidencia de la aceptación del aviso de privacidad (la versión queda en el viaje).
         Pasajero.objects.filter(pk=viaje.pasajero_id).update(privacidad_aceptada_en=ahora)
@@ -140,7 +150,22 @@ def crear(empresa, datos: dict) -> Viaje:
     return viaje
 
 
+def _convenio_aprobado(empresa, rut: str) -> Convenio | None:
+    return (
+        Convenio.objects.select_related("usuario")
+        .filter(empresa=empresa, cliente_rut=rut, estado=EstadoConvenio.APROBADO)
+        .first()
+    )
+
+
+def _contacto(convenio: Convenio) -> str | None:
+    return convenio.contacto_correo or (convenio.usuario.email if convenio.usuario_id else None)
+
+
 def avisar_solicitud(viaje: Viaje) -> None:
+    if viaje.confirma_convenio:
+        _pedir_autorizacion(viaje)
+        return
     url = enlace(viaje.empresa, "confirmar", token_de(viaje))
     al_confirmar_correo(
         viaje.contacto_correo,
@@ -162,3 +187,57 @@ def confirmar(empresa, token: str) -> Viaje:
         )
     except estados.TransicionInvalida as error:  # otro clic simultáneo ya la confirmó
         raise EnlaceUsado() from error
+
+
+def _pedir_autorizacion(viaje: Viaje) -> None:
+    """HU-54: el correo que reservó no está autorizado; se avisa al pasajero y el enlace va al contacto."""
+    convenio = viaje.convenio
+    cuando = f"{timezone.localtime(viaje.recogida_en):%d-%m-%Y %H:%M}"
+    al_confirmar_correo(
+        viaje.contacto_correo,
+        f"Tu reserva N.º {viaje.pk} espera la autorización de {convenio.cliente_nombre}",
+        f"Hola {viaje.pasajero.nombre}:\n\nRecibimos tu solicitud N.º {viaje.pk} ({viaje.origen_dir} → "
+        f"{viaje.destino_dir}, {cuando}). Como tu correo no está autorizado en el convenio de "
+        f"{convenio.cliente_nombre}, le pedimos a la empresa que la autorice. Te avisaremos por correo.",
+    )
+    url = enlace(viaje.empresa, "autorizar", token_de(viaje, SAL_AUTORIZAR))
+    al_confirmar_correo(
+        _contacto(convenio),
+        f"Autoriza la reserva N.º {viaje.pk} · {viaje.empresa.razon_social}",
+        f"Hola {convenio.encargado_nombre or ''}:\n\n{viaje.pasajero.nombre} ({viaje.contacto_correo}) "
+        f"pidió un traslado con el RUT de {convenio.cliente_nombre}: {viaje.origen_dir} → "
+        f"{viaje.destino_dir}, {cuando}.\n\n"
+        f"Para autorizarlo o rechazarlo, abre este enlace antes del "
+        f"{timezone.localtime(viaje.confirmar_hasta):%d-%m-%Y %H:%M}:\n{url}\n",
+    )
+
+
+def autorizar(empresa, token: str, decision: str) -> Viaje:
+    """HU-54: el contacto del convenio autoriza (SOLICITADO) o rechaza (CANCELADO y aviso al solicitante)."""
+    viaje = viaje_del_token(empresa, token, SAL_AUTORIZAR)
+    if viaje.estado != EstadoViaje.PENDIENTE_CONFIRMACION or not viaje.confirma_convenio:
+        raise EnlaceUsado()
+    if viaje.confirmar_hasta and viaje.confirmar_hasta < timezone.now():
+        raise EnlaceVencido()
+    try:
+        if decision == "autorizar":
+            return estados.transicionar(
+                viaje, EstadoViaje.SOLICITADO, desde=EstadoViaje.PENDIENTE_CONFIRMACION, actor=Actor.PASAJERO
+            )
+        viaje = estados.transicionar(
+            viaje,
+            EstadoViaje.CANCELADO,
+            desde=EstadoViaje.PENDIENTE_CONFIRMACION,
+            actor=Actor.PASAJERO,
+            motivo_cancelacion=f"No autorizada por el convenio de {viaje.convenio.cliente_nombre}.",
+            origen_cancelacion=OrigenCancelacion.SUPERVISOR,
+        )
+    except estados.TransicionInvalida as error:
+        raise EnlaceUsado() from error
+    al_confirmar_correo(
+        viaje.contacto_correo,
+        f"Tu reserva N.º {viaje.pk} no fue autorizada",
+        f"Hola {viaje.pasajero.nombre}:\n\n{viaje.convenio.cliente_nombre} no autorizó tu reserva "
+        f"N.º {viaje.pk}, así que quedó cancelada. Si la necesitas igual, puedes pedirla como particular.",
+    )
+    return viaje

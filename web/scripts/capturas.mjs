@@ -106,6 +106,31 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-54 (CC-22): reserva con el RUT de un convenio aprobado (Constructora Sintetica, 76123456-0) desde un correo no
+  // autorizado, y la página donde el contacto del convenio decide.
+  'HU-54': [
+    {
+      nombre: 'reserva-espera-autorizacion',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByLabel('Origen').fill('Av. Vitacura 2939, Las Condes');
+        await pagina.getByLabel('Destino').fill('Plaza de Armas, Santiago');
+        await pagina.getByRole('button', { name: 'Pedir mi traslado' }).click();
+        await pagina.getByLabel('Nombre y apellido').fill('Pablo Sintético');
+        await pagina.getByLabel('Correo', { exact: true }).fill(`pablo.${Date.now()}@correo.example`);
+        await pagina.getByLabel('Teléfono de contacto').fill('+56900009801');
+        await pagina.getByRole('checkbox', { name: '¿Es una empresa?' }).check();
+        await pagina.getByLabel('Razón social').fill('Constructora Sintetica Ltda.');
+        await pagina.getByLabel('RUT de la empresa').fill('76123456-0');
+        await pagina.getByLabel('Persona de contacto').fill('Carla Contacto');
+        await pagina.getByRole('checkbox', { name: /aviso de privacidad/ }).check();
+        await pagina.getByRole('button', { name: 'Enviar solicitud' }).click();
+        await pagina.getByRole('heading', { name: /espera la autorización/ }).waitFor();
+      },
+    },
+    { nombre: 'autorizar-reserva', ruta: '/solicitar/taxi-pacifico/autorizar/enlace-de-ejemplo', sesion: null, destino: /\/autorizar\// },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

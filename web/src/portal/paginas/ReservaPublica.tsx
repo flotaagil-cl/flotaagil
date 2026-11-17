@@ -106,6 +106,20 @@ export function ReservaPublica() {
 
   const cambiar = <K extends keyof Contacto>(campo: K, valor: Contacto[K]) => setContacto((c) => ({ ...c, [campo]: valor }));
 
+  if (etapa.fase === 'enviada' && etapa.respuesta.confirma_convenio) {
+    // HU-54: el correo no está autorizado en el convenio de su empresa; decide el contacto del convenio.
+    return (
+      <section className={e.paginaAngosta} aria-labelledby="titulo-enviada">
+        <h1 id="titulo-enviada" className={e.tituloPagina}>
+          Tu reserva espera la autorización de tu empresa
+        </h1>
+        <p className={e.subtituloPagina}>
+          Tu correo no está autorizado en el convenio: le pedimos al contacto de tu empresa que la autorice. Te avisaremos a <strong>{etapa.correo}</strong>.
+        </p>
+      </section>
+    );
+  }
+
   if (etapa.fase === 'enviada') {
     return (
       <section className={e.paginaAngosta} aria-labelledby="titulo-enviada">

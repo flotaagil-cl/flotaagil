@@ -1235,6 +1235,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/portal/{slug}/reservas/autorizar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * El contacto del convenio autoriza o rechaza una reserva pública
+         * @description HU-54 (CC-22): autorizar la deja SOLICITADO; rechazar la cancela y avisa al solicitante.
+         */
+        post: operations["portal_reservas_autorizar_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/portal/{slug}/reservas/confirmar/": {
         parameters: {
             query?: never;
@@ -1902,6 +1922,10 @@ export interface components {
         AsociarVehiculoRequest: {
             vehiculo: number;
         };
+        AutorizacionRequest: {
+            token: string;
+            decision: components["schemas"]["DecisionEnum"];
+        };
         /** @enum {unknown} */
         BlankEnum: "";
         CambiarPasswordRequest: {
@@ -2151,6 +2175,12 @@ export interface components {
              */
             recogida_propuesta: string;
         };
+        /**
+         * @description * `autorizar` - autorizar
+         *     * `rechazar` - rechazar
+         * @enum {string}
+         */
+        DecisionEnum: "autorizar" | "rechazar";
         /**
          * @description * `ENTRANTE` - Entrante
          *     * `SALIENTE` - Saliente
@@ -2885,6 +2915,11 @@ export interface components {
             recogida_en: string;
             /** Format: date-time */
             confirmar_hasta: string;
+            /**
+             * @description HU-54: la confirma el contacto del convenio, no el pasajero
+             * @default false
+             */
+            confirma_convenio: boolean;
             mensaje: string;
         };
         ReservaVinculada: {
@@ -5499,6 +5534,54 @@ export interface operations {
             };
             /** @description `limite_ip` o `limite_correo` */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_reservas_autorizar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AutorizacionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AutorizacionRequest"];
+                "multipart/form-data": components["schemas"]["AutorizacionRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReservaConfirmada"];
+                };
+            };
+            /** @description `enlace_invalido` o decisión inválida */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `enlace_usado` */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `enlace_vencido` */
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };
