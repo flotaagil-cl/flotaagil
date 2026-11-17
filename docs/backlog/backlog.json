@@ -1154,6 +1154,171 @@
         "HU-56"
       ],
       "estado_cambio": "Nueva (CC-22, DC-59)"
+    },
+    {
+      "id": "HU-61",
+      "titulo": "Chat de trabajo: central ↔ conductor",
+      "historia": "Como despachador y conductor, quiero un chat en tiempo real entre la central y cada conductor.",
+      "criterios": "Hilo por conductor creado solo y siempre activo; lo atienden administrador y despachadores y cada mensaje muestra su autor; el conductor lo ve como «Central». Solo texto (máx. 1.000) y respuestas rápidas en la app; aviso no bloqueante con viaje en curso. Tiempo real, leído, no leídos e historial paginado. Misma empresa.",
+      "sp": 8,
+      "reglas": [
+        "RN-13",
+        "RN-15"
+      ],
+      "casos_prueba": [],
+      "depende_de": [],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-62",
+      "titulo": "Directos y grupos del personal",
+      "historia": "Como integrante del personal, quiero mensajes directos y grupos, y que nadie lea lo que no le corresponde.",
+      "criterios": "Directos uno a uno entre cualquier par del personal. Grupos con nombre e integrantes; solo quien lo creó o el administrador lo borra; el administrador gestiona cualquier grupo. El administrador no lee directos ni grupos ajenos: modera solo con metadatos. Borrados y moderación auditados.",
+      "sp": 5,
+      "reglas": [],
+      "casos_prueba": [
+        "CP-53"
+      ],
+      "depende_de": [
+        "HU-61"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-63",
+      "titulo": "Avisos del chat y llegada al despacho",
+      "historia": "Como despachador, quiero enterarme de los mensajes y de la llegada de un conductor sin mirar la pantalla.",
+      "criterios": "Panel: contador en el menú, sonido y notificación del navegador. App: aviso con sonido. La geocerca que pasa a EN_ZONA alerta al despacho con sonido.",
+      "sp": 3,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-61"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-64",
+      "titulo": "Activación por correo y teléfono sin verificación",
+      "historia": "Como pasajero, quiero activar mi cuenta con un enlace de correo.",
+      "criterios": "Enlace de 24 h en vez de WhatsApp. El teléfono queda como dato de contacto sin verificación; la migración conserva el vigente.",
+      "sp": 3,
+      "reglas": [],
+      "casos_prueba": [
+        "CP-56"
+      ],
+      "depende_de": [],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-65",
+      "titulo": "Estados del viaje para el pasajero",
+      "historia": "Como pasajero con cuenta, quiero saber al instante cuándo tengo conductor, cuándo llegó y si se canceló.",
+      "criterios": "Portal en vivo por WebSocket; Web Push con aceptación; correo para asignado, llegó y cancelado si no aceptó Web Push y marcó la casilla de avisos.",
+      "sp": 5,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-64"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-66",
+      "titulo": "Chat con el pasajero, soporte y emergencia",
+      "historia": "Como pasajero, quiero escribirle a mi conductor y a la central, y llamar si es urgente.",
+      "criterios": "Chat conductor ↔ pasajero de ACEPTADO a FINALIZADO (después solo lectura; el conductor ve solo el nombre). La central lo lee en solo lectura y cada lectura se audita. Soporte del pasajero con la central. Botones tel: y wa.me con números de ConfiguracionEmpresa.",
+      "sp": 5,
+      "reglas": [],
+      "casos_prueba": [
+        "CP-54",
+        "CP-55"
+      ],
+      "depende_de": [
+        "HU-61"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-67",
+      "titulo": "Retiro completo de Twilio",
+      "historia": "Como empresa, quiero dejar de depender de Twilio sin perder el historial.",
+      "criterios": "Se eliminan webhooks, cliente, plantillas, verificación y parámetros de WhatsApp, variables y dependencia. Conversaciones se reemplaza por el chat; el historial queda en solo lectura. datos_demo conserva mensajes históricos sintéticos. Ningún envío por WhatsApp.",
+      "sp": 5,
+      "reglas": [],
+      "casos_prueba": [
+        "CP-57"
+      ],
+      "depende_de": [
+        "HU-61",
+        "HU-64",
+        "HU-65"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
+    },
+    {
+      "id": "HU-68",
+      "titulo": "Retención del chat",
+      "historia": "Como empresa, quiero que los mensajes del chat se borren a los 12 meses.",
+      "criterios": "Tarea diaria de purga (RN-15) de mensajes del chat y de grupos borrados.",
+      "sp": 1,
+      "reglas": [
+        "RN-13",
+        "RN-15"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-61"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-19)",
+      "epica": "Comunicación",
+      "label_epica": null
     }
   ],
   "tareas": [
