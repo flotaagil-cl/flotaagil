@@ -145,6 +145,21 @@ const PANTALLAS = {
     { nombre: 'encuesta-correo', ruta: '/solicitar/taxi-pacifico/encuesta/enlace-de-ejemplo', sesion: null, destino: /\/encuesta\// },
     { nombre: 'panel-vehiculo-color', ruta: '/vehiculos/nuevo', sesion: 'admin@taxi-pacifico.example' },
   ],
+  // HU-57 (CC-20): el panel con el sistema visual del portal. Se corre con CAPTURAS_PREFIJO=antes- sobre main.
+  'HU-57': [
+    { nombre: 'panel-inicio', ruta: '/', sesion: 'admin' },
+    { nombre: 'panel-reservas', ruta: '/reservas', sesion: 'admin' },
+    { nombre: 'panel-reserva', ruta: '/reservas/5', sesion: 'admin' },
+    { nombre: 'panel-nueva-reserva', ruta: '/reservas/nueva', sesion: 'despacho' },
+    { nombre: 'panel-mapa', ruta: '/mapa', sesion: 'despacho' },
+    { nombre: 'panel-vehiculos', ruta: '/vehiculos', sesion: 'admin' },
+    { nombre: 'panel-conductores', ruta: '/conductores', sesion: 'admin' },
+    { nombre: 'panel-conversaciones', ruta: '/conversaciones', sesion: 'despacho' },
+    { nombre: 'panel-reportes', ruta: '/reportes', sesion: 'admin' },
+    { nombre: 'panel-usuarios', ruta: '/usuarios', sesion: 'admin' },
+    { nombre: 'panel-caja', ruta: '/caja', sesion: 'admin' },
+    { nombre: 'panel-convenios', ruta: '/convenios', sesion: 'admin' },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
@@ -227,7 +242,8 @@ async function main() {
           await pagina.waitForLoadState('networkidle');
           if (pantalla.accion) await pantalla.accion(pagina);
           const titulo = (await pagina.locator('h1').first().textContent({ timeout: 10000 }).catch(() => '')) ?? '';
-          const archivo = join(EVIDENCIAS, hu, `${pantalla.nombre}-${sufijo}.png`);
+          // CAPTURAS_PREFIJO (p. ej. «antes-») separa las capturas del antes y el después (CC-20).
+          const archivo = join(EVIDENCIAS, hu, `${process.env.CAPTURAS_PREFIJO ?? ''}${pantalla.nombre}-${sufijo}.png`);
           if (llegoA(pagina, pantalla)) {
             await pagina.screenshot({ path: archivo, fullPage: true });
             console.log(`ok   ${hu} ${pantalla.nombre}-${sufijo} · ${new URL(pagina.url()).pathname} · «${titulo.trim()}»`);

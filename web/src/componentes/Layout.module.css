@@ -18,8 +18,15 @@
 }
 
 .marca {
-  font-weight: 700;
-  color: var(--acento);
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radio-boton, var(--radio));
+  background: var(--grad-boton, var(--acento));
+  color: var(--sobre-acento);
+  font-weight: 800;
+  letter-spacing: -0.2px;
 }
 
 .empresa {
@@ -39,7 +46,8 @@
 .botonMenu {
   min-height: var(--toque);
   padding: 0 var(--espacio-3);
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-campo, var(--borde));
+  font-weight: 600;
   border-radius: var(--radio);
   background: transparent;
   color: var(--texto);
@@ -74,10 +82,24 @@
   text-decoration: none;
 }
 
+.menu a {
+  font-weight: 600;
+}
+
+.menu a:hover {
+  background: var(--suave, var(--acento-suave));
+}
+
 .menu a[aria-current='page'] {
   background: var(--acento-suave);
-  color: var(--acento);
-  font-weight: 600;
+  box-shadow: inset 4px 0 0 var(--acento);
+  color: var(--color-primario-900, var(--acento));
+  font-weight: 700;
+}
+
+.contenido h1 {
+  font-weight: 800;
+  letter-spacing: -0.4px;
 }
 
 .contenido {
@@ -105,4 +127,10 @@
     border-bottom: 0;
     border-right: 1px solid var(--borde);
   }
+}
+
+/* CC-20: enlaces de texto con el color del tema (los botones con clase propia no cambian). */
+.contenido a:not([class]) {
+  color: var(--color-primario-700, var(--acento));
+  font-weight: 600;
 }

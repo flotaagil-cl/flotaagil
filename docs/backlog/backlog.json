@@ -1075,6 +1075,63 @@
       "responsable": "Renato",
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-22)"
+    },
+    {
+      "id": "HU-57",
+      "titulo": "Panel con el sistema visual: base y navegación",
+      "historia": "Como despachador, quiero que el panel tenga el mismo sistema visual del portal, para trabajar con una interfaz clara y consistente.",
+      "criterios": "Tema común de tokens para portal y panel. Layout, navegación, botones, tarjetas, tablas y formularios del panel con los tokens y la tipografía del portal. Contraste AA y foco visible. Sin cambios de comportamiento.",
+      "sp": 5,
+      "depende_de": [
+        "HU-37"
+      ],
+      "prioridad": "Media",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-20)",
+      "reglas": [],
+      "casos_prueba": [],
+      "epica": "Sistema visual",
+      "label_epica": null
+    },
+    {
+      "id": "HU-58",
+      "titulo": "Portal restante con el sistema visual",
+      "historia": "Como empresa cliente, quiero que el registro, la privacidad y Mi convenio se vean como el resto del portal.",
+      "criterios": "Registro de empresa, Privacidad, Mi convenio y FormularioSolicitud con los componentes de web/src/diseno. Sin cambios de comportamiento.",
+      "sp": 3,
+      "depende_de": [
+        "HU-37"
+      ],
+      "prioridad": "Media",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-20)",
+      "reglas": [],
+      "casos_prueba": [],
+      "epica": "Sistema visual",
+      "label_epica": null
+    },
+    {
+      "id": "HU-59",
+      "titulo": "App del conductor con el sistema visual",
+      "historia": "Como conductor, quiero una app con botones grandes y el mismo sistema visual, para usarla con una mano.",
+      "criterios": "Tokens del portal en la app desde una copia generada y verificada. Login, cambio de clave, consentimiento, inicio y turno, viaje asignado, en curso, avance y Mi turno con objetivos táctiles de 44 px o más. Contraste AA. Sin cambios de comportamiento.",
+      "sp": 5,
+      "depende_de": [
+        "HU-37"
+      ],
+      "prioridad": "Media",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-20)",
+      "reglas": [],
+      "casos_prueba": [],
+      "epica": "Sistema visual",
+      "label_epica": null
     }
   ],
   "tareas": [
