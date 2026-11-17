@@ -600,3 +600,21 @@
   user-select: all;
   overflow-wrap: anywhere;
 }
+
+/* HU-55 (CC-22): Llamar y Abrir en WhatsApp junto al teléfono del pasajero. */
+.contacto {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.enlaceContacto {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 2px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  text-decoration: none;
+}

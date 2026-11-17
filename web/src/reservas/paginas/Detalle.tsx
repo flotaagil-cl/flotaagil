@@ -8,6 +8,7 @@ import { useConfirmarPorTelefono, useViaje, type ViajeDetalle } from '../api';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { DialogoCancelar } from '../componentes/DialogoCancelar';
 import { DialogoForzar } from '../componentes/DialogoForzar';
+import { ContactoPasajero } from '../componentes/ContactoPasajero';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { PropuestaRecogida } from '../componentes/PropuestaRecogida';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
@@ -129,7 +130,7 @@ function DetalleDe({ id }: { id: number }) {
           <div>
             <dt>Pasajero</dt>
             <dd>
-              {viaje.pasajero.nombre} · {viaje.pasajero.telefono ?? 'Sin teléfono'}
+              {viaje.pasajero.nombre} · <ContactoPasajero telefono={viaje.pasajero.telefono} />
             </dd>
           </div>
           <div>
