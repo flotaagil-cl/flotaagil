@@ -33,7 +33,9 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
   const empresa = useEmpresa(api, slug);
   const razonSocial = empresa.data?.razon_social;
   const matches = useMatches();
-  const manejo = matches.at(-1)?.handle as { barraMovil?: 'normal' | 'oculta'; completa?: boolean; requiereModulo?: boolean } | undefined;
+  const manejo = matches.at(-1)?.handle as
+    | { barraMovil?: 'normal' | 'oculta'; completa?: boolean; requiereModulo?: boolean; soloSinModulo?: boolean }
+    | undefined;
   // DC-51 (CC-22): crear cuenta, activarla y registrar empresa existen solo con el módulo de cuentas.
   const sinModulo = empresa.data !== undefined && !empresa.data.modulo_cuentas;
   const barraMovil = manejo?.barraMovil ?? 'normal';
@@ -66,17 +68,18 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
           </button>
         </section>
       );
-  } else if (sinModulo && manejo?.requiereModulo) {
+  } else if ((sinModulo && manejo?.requiereModulo) || (empresa.data?.modulo_cuentas && manejo?.soloSinModulo)) {
     contenido = <NoDisponible />;
   } else contenido = <Outlet context={{ api, empresa: empresa.data, slug } satisfies ContextoPortal} />;
 
-  const registro = `/solicitar/${slug}/registro-empresa`;
+  // DC-51: con el módulo, registro con cuenta (HU-34); sin él, solicitud pública de convenio (HU-53).
+  const registro = sinModulo ? `/solicitar/${slug}/convenio` : `/solicitar/${slug}/registro-empresa`;
   return (
     <MarcoPortal
       marca={razonSocial ?? 'FlotaÁgil'}
       inicio={sinModulo ? `/solicitar/${slug}` : `/solicitar/${slug}/ingresar`}
       barraMovil={barraMovil}
-      accion={empresa.data && !sinModulo && !ubicacionEs(matches, registro) ? { a: registro, texto: '¿Eres empresa? Registra tu convenio' } : undefined}
+      accion={empresa.data && !ubicacionEs(matches, registro) ? { a: registro, texto: sinModulo ? '¿Eres empresa? Solicita un convenio' : '¿Eres empresa? Registra tu convenio' } : undefined}
       pie={
         <>
           {empresa.data && <Link to={`/solicitar/${slug}/privacidad`}>Aviso de privacidad</Link>}

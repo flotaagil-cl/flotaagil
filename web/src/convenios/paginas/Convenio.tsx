@@ -1,3 +1,4 @@
+import { useSesion } from '../../sesion/SesionProvider';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Aviso } from '../../componentes/Aviso';
@@ -10,6 +11,7 @@ import { useIdDeRuta } from '../../rutas/idDeRuta';
 import { mensajeDeErrorApi } from '../../reservas/errores';
 import {
   useAccionConvenio,
+  useAprobarConvenio,
   useAuditoriaConvenio,
   useConvenio,
   useEditarConvenio,
@@ -113,7 +115,20 @@ function Dato({ titulo, children }: { titulo: string; children: React.ReactNode 
   );
 }
 
+/** «a@b.cl, @c.cl» o uno por línea → lista sin vacíos. */
+function leerCorreos(texto: string): string[] {
+  return texto
+    .split(/[\s,;]+/)
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
 function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
+  const { estado: sesion } = useSesion();
+  // DC-55 (CC-22): el despachador revisa (aprueba o rechaza); editar, desactivar y la auditoría son del administrador.
+  const esAdmin = sesion.fase === 'autenticada' && sesion.usuario.rol === 'ADMINISTRADOR';
+  const aprobar = useAprobarConvenio(convenio.id);
+  const [correos, setCorreos] = useState(convenio.correos_autorizados.join('\n'));
   const editar = useEditarConvenio(convenio.id);
   const accion = useAccionConvenio(convenio.id);
   const rechazar = useRechazarConvenio(convenio.id);
@@ -125,7 +140,7 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
   const [falla, setFalla] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
-  const ocupado = accion.isPending || rechazar.isPending || restablecer.isPending || editar.isPending;
+  const ocupado = accion.isPending || aprobar.isPending || rechazar.isPending || restablecer.isPending || editar.isPending;
 
   async function ejecutar(fn: () => Promise<unknown>, exito: string) {
     setFalla(null);
@@ -144,7 +159,7 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
     if (confirmando === 'restablecer') {
       await ejecutar(async () => setPassword((await restablecer.mutateAsync()).password_temporal), 'Contraseña restablecida.');
     } else if (confirmando === 'aprobar') {
-      await ejecutar(() => accion.mutateAsync('aprobar'), 'Convenio aprobado. Se avisó al encargado por correo.');
+      await ejecutar(() => aprobar.mutateAsync(leerCorreos(correos)), 'Convenio aprobado. Se avisó a la empresa por correo.');
     } else if (confirmando === 'desactivar') {
       await ejecutar(() => accion.mutateAsync('desactivar'), 'Convenio desactivado: su cuenta perdió el acceso.');
     } else if (confirmando === 'activar') {
@@ -194,6 +209,9 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
             <Dato titulo="Encargado">{convenio.encargado_nombre || '—'}</Dato>
             <Dato titulo="Correo">{convenio.encargado_email || 'Sin cuenta'}</Dato>
             <Dato titulo="Teléfono">{convenio.encargado_telefono || '—'}</Dato>
+            {convenio.contacto_correo && <Dato titulo="Correo de contacto">{convenio.contacto_correo}</Dato>}
+            {convenio.viajes_estimados_mes != null && <Dato titulo="Viajes al mes (estimado)">{numero.format(convenio.viajes_estimados_mes)}</Dato>}
+            <Dato titulo="Correos autorizados">{convenio.correos_autorizados.length ? convenio.correos_autorizados.join(', ') : '—'}</Dato>
             <Dato titulo="Reservas">{numero.format(convenio.reservas)}</Dato>
             {convenio.revisado_en && (
               <Dato titulo="Revisado">
@@ -202,21 +220,35 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
             )}
             {convenio.motivo_rechazo && <Dato titulo="Motivo del rechazo">{convenio.motivo_rechazo}</Dato>}
           </dl>
-          <div className={estilos.acciones}>
-            <button type="button" className={estilos.botonSecundario} onClick={() => setEditando(true)}>
-              Editar
-            </button>
-          </div>
+          {esAdmin && (
+            <div className={estilos.acciones}>
+              <button type="button" className={estilos.botonSecundario} onClick={() => setEditando(true)}>
+                Editar
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       <div className={estilos.tarjeta}>
         <h2>Estado y acceso</h2>
-        {convenio.estado === 'EN_REVISION' && <p>La empresa se registró desde el portal y espera tu revisión.</p>}
-        {!convenio.tiene_cuenta && <p>Convenio anterior al registro en el portal, sin cuenta: queda como historial.</p>}
+        {convenio.estado === 'EN_REVISION' && <p>La empresa lo solicitó desde el portal y espera tu revisión.</p>}
+        {!convenio.tiene_cuenta && (
+          <p>
+            {convenio.contacto_correo
+              ? 'Sin cuenta (CC-22): sus reservas del portal con el RUT y un correo autorizado quedan en el convenio.'
+              : 'Convenio anterior al registro en el portal, sin cuenta: queda como historial.'}
+          </p>
+        )}
         {confirmando ? (
           <div role="alertdialog" aria-labelledby="pregunta-convenio">
             <p id="pregunta-convenio">{PREGUNTAS[confirmando].texto}</p>
+            {confirmando === 'aprobar' && (
+              <label>
+                Correos autorizados (uno por línea; «@empresa.cl» autoriza todo el dominio)
+                <textarea rows={4} value={correos} onChange={(e) => setCorreos(e.target.value)} />
+              </label>
+            )}
             <div className={estilos.acciones}>
               <button type="button" className={estilos.boton} disabled={ocupado} onClick={() => void confirmar()}>
                 {PREGUNTAS[confirmando].boton}
@@ -253,17 +285,17 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                 </button>
               </>
             )}
-            {convenio.estado === 'APROBADO' && (
+            {esAdmin && convenio.estado === 'APROBADO' && (
               <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('desactivar')}>
                 Desactivar convenio
               </button>
             )}
-            {convenio.estado === 'INACTIVO' && convenio.tiene_cuenta && (
+            {esAdmin && convenio.estado === 'INACTIVO' && convenio.tiene_cuenta && (
               <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('activar')}>
                 Activar convenio
               </button>
             )}
-            {convenio.tiene_cuenta && (
+            {esAdmin && convenio.tiene_cuenta && (
               <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('restablecer')}>
                 Restablecer contraseña
               </button>
@@ -276,7 +308,7 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
         <DialogoPassword password={password} cliente={convenio.cliente_nombre} alCerrar={() => setPassword(null)} />
       )}
 
-      <Auditoria id={convenio.id} />
+      {esAdmin && <Auditoria id={convenio.id} />}
     </section>
   );
 }

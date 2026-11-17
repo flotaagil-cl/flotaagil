@@ -23,7 +23,15 @@ from apps.cuentas.tareas import al_confirmar_correo
 
 from .models import Convenio, EstadoConvenio
 
-CAMPOS_EDITABLES = ("cliente_nombre", "cliente_rut", "direccion", "encargado_nombre", "encargado_telefono")
+CAMPOS_EDITABLES = (
+    "cliente_nombre",
+    "cliente_rut",
+    "direccion",
+    "encargado_nombre",
+    "encargado_telefono",
+    "contacto_correo",
+    "correos_autorizados",
+)
 
 
 class EstadoNoPermitido(APIException):
@@ -57,8 +65,48 @@ def _exigir(convenio: Convenio, *estados: str) -> None:
 
 
 def _avisar(convenio: Convenio, asunto: str, texto: str) -> None:
-    if convenio.usuario_id:
-        al_confirmar_correo(convenio.usuario.email, asunto, texto)
+    # CC-22 (DC-55): la solicitud pública no tiene cuenta: el resultado va al correo de contacto.
+    destino = convenio.usuario.email if convenio.usuario_id else convenio.contacto_correo
+    if destino:
+        al_confirmar_correo(destino, asunto, texto)
+
+
+def normalizar_correos(correos) -> list[str]:
+    """DC-54: en minúsculas, sin repetidos, en el orden recibido."""
+    vistos = []
+    for correo in correos or []:
+        correo = correo.strip().lower()
+        if correo and correo not in vistos:
+            vistos.append(correo)
+    return vistos
+
+
+# --- Solicitud pública sin cuenta (HU-53, CC-22) ---
+
+
+@transaction.atomic
+def solicitar_publico(empresa, datos: dict) -> Convenio:
+    """Convenio EN_REVISION sin usuario: lo revisan el administrador o el despachador."""
+    convenio = Convenio.objects.create(
+        empresa=empresa,
+        cliente_nombre=datos["cliente_nombre"],
+        cliente_rut=datos["cliente_rut"],
+        direccion=datos["direccion"],
+        encargado_nombre=datos["contacto_nombre"],
+        encargado_telefono=datos["contacto_telefono"],
+        contacto_correo=datos["contacto_correo"].strip().lower(),
+        viajes_estimados_mes=datos["viajes_estimados_mes"],
+        correos_autorizados=normalizar_correos(datos.get("correos_autorizados")),
+        estado=EstadoConvenio.EN_REVISION,
+    )
+    auditoria.registrar(
+        usuario=None,
+        empresa_id=empresa.pk,
+        entidad=Entidad.CONVENIO,
+        entidad_id=convenio.pk,
+        accion="SOLICITUD_PUBLICA",
+    )
+    return convenio
 
 
 # --- Registro público (HU-34) ---
@@ -117,21 +165,36 @@ def editar(convenio: Convenio, datos: dict, *, usuario) -> Convenio:
 
 
 @transaction.atomic
-def aprobar(convenio: Convenio, *, usuario) -> Convenio:
+def aprobar(convenio: Convenio, *, usuario, correos_autorizados=None) -> Convenio:
+    """HU-53: quien revisa puede ajustar los correos autorizados al aprobar (DC-54)."""
     convenio = _bloquear(convenio)
     _exigir(convenio, EstadoConvenio.EN_REVISION)
+    previos = {"estado": EstadoConvenio.EN_REVISION}
+    campos = ["estado", "revisado_por", "revisado_en"]
+    if correos_autorizados is not None:
+        nuevos = normalizar_correos(correos_autorizados)
+        if nuevos != convenio.correos_autorizados:
+            previos["correos_autorizados"] = convenio.correos_autorizados
+            convenio.correos_autorizados = nuevos
+            campos.append("correos_autorizados")
     convenio.estado, convenio.revisado_por, convenio.revisado_en = (
         EstadoConvenio.APROBADO,
         usuario,
         timezone.now(),
     )
-    convenio.save(update_fields=["estado", "revisado_por", "revisado_en"])
-    _auditar(usuario, convenio, "APROBACION", {"estado": EstadoConvenio.EN_REVISION})
+    convenio.save(update_fields=campos)
+    _auditar(usuario, convenio, "APROBACION", previos)
+    como_pedir = (
+        "Ya puedes pedir viajes iniciando sesión en FlotaÁgil."
+        if convenio.usuario_id
+        else "Las reservas hechas en el portal con el RUT de tu empresa y un correo autorizado quedan en el "
+        "convenio."
+    )
     _avisar(
         convenio,
         f"Tu convenio con {convenio.empresa.razon_social} fue aprobado",
         f"Hola {convenio.encargado_nombre}:\n\n{convenio.empresa.razon_social} aprobó el convenio de "
-        f"{convenio.cliente_nombre}. Ya puedes pedir viajes iniciando sesión en FlotaÁgil.\n",
+        f"{convenio.cliente_nombre}. {como_pedir}\n",
     )
     return convenio
 

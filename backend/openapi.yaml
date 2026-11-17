@@ -1218,6 +1218,17 @@ paths:
         required: true
       tags:
       - convenios
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AprobacionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AprobacionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AprobacionRequest'
       security:
       - jwtAuth: []
       responses:
@@ -1743,6 +1754,47 @@ paths:
           description: ''
         '404':
           description: Empresa inexistente o inactiva
+  /api/portal/{slug}/convenio/:
+    post:
+      operationId: portal_convenio_create
+      description: 'HU-53 (CC-22): crea el convenio EN_REVISION sin cuenta; lo revisan
+        el administrador o el despachador y el resultado llega al correo de contacto.'
+      summary: Solicitud pública de convenio (empresas sin el módulo de cuentas)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudConvenioPublicaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SolicitudConvenioPublicaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SolicitudConvenioPublicaRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitudConvenioRecibida'
+          description: ''
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Empresa inexistente o con el módulo de cuentas
+        '429':
+          description: '`limite_ip`'
   /api/portal/{slug}/cuenta/:
     post:
       operationId: portal_cuenta_create
@@ -3368,6 +3420,18 @@ components:
       - numero_vuelo
       - tipo
       - viaje
+    AprobacionRequest:
+      type: object
+      properties:
+        correos_autorizados:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 254
+          description: 'HU-53: ajusta los correos autorizados al aprobar (correos
+            exactos o «@dominio.cl»)'
+          maxItems: 50
     AsignarRequest:
       type: object
       properties:
@@ -3837,10 +3901,27 @@ components:
           type: string
           format: date-time
           readOnly: true
+        contacto_correo:
+          type: string
+          format: email
+          readOnly: true
+          nullable: true
+        viajes_estimados_mes:
+          type: integer
+          readOnly: true
+          nullable: true
+        correos_autorizados:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: 'DC-54: correos exactos o «@dominio.cl»'
       required:
       - activo
       - cliente_nombre
       - cliente_rut
+      - contacto_correo
+      - correos_autorizados
       - creado_en
       - direccion
       - encargado_email
@@ -3853,6 +3934,7 @@ components:
       - revisado_en
       - revisado_por
       - tiene_cuenta
+      - viajes_estimados_mes
     ConvenioResumen:
       type: object
       properties:
@@ -5019,6 +5101,19 @@ components:
             pattern: ^\+[1-9]\d{7,14}$
           - type: string
             maxLength: 0
+        contacto_correo:
+          type: string
+          format: email
+          nullable: true
+          minLength: 1
+          maxLength: 254
+        correos_autorizados:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 254
+          maxItems: 50
     PatchedPerfilEntradaRequest:
       type: object
       description: 'HU-45: el correo es el usuario de ingreso y no se cambia aquí.'
@@ -5720,6 +5815,66 @@ components:
       required:
       - access
       - usuario
+    SolicitudConvenioPublicaRequest:
+      type: object
+      description: 'HU-53 (CC-22): solicitud pública de convenio, sin cuenta.'
+      properties:
+        cliente_nombre:
+          type: string
+          minLength: 1
+          description: Razón social
+          maxLength: 120
+        cliente_rut:
+          type: string
+          minLength: 1
+          maxLength: 14
+        direccion:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contacto_nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        contacto_correo:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        contacto_telefono:
+          type: string
+          minLength: 1
+          maxLength: 16
+          pattern: ^\+[1-9]\d{7,14}$
+        viajes_estimados_mes:
+          type: integer
+          maximum: 10000
+          minimum: 1
+        correos_autorizados:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 254
+          maxItems: 50
+        sitio_web:
+          type: string
+          description: 'Campo trampa: debe ir vacío'
+      required:
+      - cliente_nombre
+      - cliente_rut
+      - contacto_correo
+      - contacto_nombre
+      - contacto_telefono
+      - direccion
+      - viajes_estimados_mes
+    SolicitudConvenioRecibida:
+      type: object
+      properties:
+        mensaje:
+          type: string
+      required:
+      - mensaje
     SolicitudConvenioRequest:
       type: object
       description: |-
