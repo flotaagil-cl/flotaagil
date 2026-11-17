@@ -1,10 +1,8 @@
-:root {
-  font-family: system-ui, sans-serif;
-  color: #1b1f24;
-  background: #f6f7f9;
-  --acento: #0f5c6e;
-  --borde: #c7ccd3;
-}
+/*
+ * HU-59 (CC-20, DC-58): la app del conductor con el sistema visual del portal. Los colores salen de los tokens
+ * (`./diseno/tokens.css`, copia generada del web) bajo `.tema-flotaagil`, que se aplica al <body> en main.tsx.
+ * Pensada para una mano: botones de 56 px de alto y zonas táctiles de 44 px o más.
+ */
 
 body {
   margin: 0;
@@ -17,12 +15,16 @@ main {
 }
 
 h1 {
-  font-size: 1.4rem;
+  margin: 0.5rem 0 1rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.4px;
 }
 
 h2 {
-  font-size: 1.1rem;
   margin-top: 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 label,
@@ -30,7 +32,8 @@ label,
   display: grid;
   gap: 0.3rem;
   margin-top: 0.9rem;
-  font-weight: 500;
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
 }
 
 .campo label {
@@ -39,40 +42,46 @@ label,
 
 input {
   font: inherit;
-  min-height: 44px;
-  padding: 0 0.7rem;
-  border: 1px solid var(--borde);
-  border-radius: 0.5rem;
-  background: #fff;
+  font-size: 16px;
+  min-height: var(--alto-campo);
+  padding: 0 0.8rem;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto);
 }
 
 input[aria-invalid='true'] {
-  border-color: #b91c1c;
+  border-color: var(--peligro);
 }
 
 .campo-error {
-  color: #991b1b;
+  color: var(--insignia-peligro-texto);
   font-size: 0.9rem;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 button {
   font: inherit;
-  min-height: 44px;
+  min-height: var(--toque);
   padding: 0.6rem 0.9rem;
-  border: 1px solid var(--borde);
-  border-radius: 0.5rem;
-  background: #fff;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--radio-boton);
+  background: var(--superficie);
+  color: var(--texto);
+  font-weight: 600;
 }
 
 button.principal {
   width: 100%;
+  min-height: 56px;
   margin-top: 1rem;
   padding: 0.9rem;
-  background: var(--acento);
-  border-color: var(--acento);
-  color: #fff;
-  font-weight: 600;
+  border: 0;
+  background: var(--grad-boton);
+  color: var(--sobre-oscuro);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 button:disabled {
@@ -89,32 +98,37 @@ button:disabled {
 .aviso,
 .error,
 .ok {
-  padding: 0.6rem 0.8rem;
-  border-radius: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radio-campo);
+  font-weight: 500;
 }
 
 .aviso {
-  background: #fef3c7;
+  background: var(--insignia-revision-fondo);
+  color: var(--insignia-revision-texto);
 }
 
 .error {
-  background: #fee2e2;
+  background: var(--insignia-peligro-fondo);
+  color: var(--insignia-peligro-texto);
 }
 
 .ok {
-  background: #dcfce7;
+  background: var(--insignia-ok-fondo);
+  color: var(--insignia-ok-texto);
 }
 
 .tarjeta {
   margin-top: 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e3e6ea;
-  border-radius: 0.5rem;
-  background: #fff;
+  padding: 1rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  box-shadow: 0 1px 2px var(--sombra);
 }
 
 .secundario {
-  color: #5b6670;
+  color: var(--texto-suave);
   font-size: 0.9rem;
 }
 
@@ -126,11 +140,12 @@ dl {
 }
 
 dt {
-  color: #5b6670;
+  color: var(--texto-suave);
 }
 
 dd {
   margin: 0;
+  font-weight: 600;
 }
 
 /* Fila de totales de Mi turno: cada par sigue la grilla del dl. */
@@ -143,31 +158,33 @@ dd {
 }
 
 button.principal.secundaria {
-  background: #fff;
-  border-color: var(--acento);
-  color: var(--acento);
+  border: 1px solid var(--color-primario-700);
+  background: var(--superficie);
+  color: var(--color-primario-900);
 }
 
 fieldset.vehiculos {
   margin: 1rem 0 0;
   padding: 0.5rem 0.75rem;
-  border: 1px solid #e3e6ea;
-  border-radius: 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
 }
 
 label.opcion {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  min-height: 44px;
+  min-height: var(--toque);
   margin-top: 0.25rem;
-  font-weight: 400;
+  font-size: var(--texto-base);
+  font-weight: 500;
 }
 
 label.opcion input {
   min-height: auto;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  accent-color: var(--color-primario-700);
 }
 
 details {
@@ -175,10 +192,11 @@ details {
 }
 
 summary {
-  min-height: 44px;
+  min-height: var(--toque);
   display: flex;
   align-items: center;
   cursor: pointer;
+  font-weight: 600;
 }
 
 .navegar {
@@ -195,13 +213,13 @@ summary {
 main.asignado {
   min-height: 100vh;
   box-sizing: border-box;
-  background: #fff7ed;
+  background: var(--grad-destacado);
 }
 
 .cuenta {
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: #9a3412;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-primario-900);
 }
 
 .responder {
@@ -211,8 +229,7 @@ main.asignado {
 }
 
 button.principal.rechazar {
-  background: #b91c1c;
-  border-color: #b91c1c;
+  background: var(--peligro);
 }
 
 /* HU-16: avance del viaje y pago. */
@@ -235,5 +252,5 @@ button.principal.rechazar {
 .avance legend {
   margin-bottom: 0.5rem;
   padding: 0;
-  font-weight: 600;
+  font-weight: 700;
 }
