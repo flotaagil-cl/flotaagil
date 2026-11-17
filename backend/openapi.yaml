@@ -1934,6 +1934,90 @@ paths:
           description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
             IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
             (varias solicitudes con el mismo número).'
+  /api/portal/{slug}/reservas/:
+    post:
+      operationId: portal_reservas_create
+      description: 'HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía
+        por correo el enlace para confirmarla (DC-53: hasta 24 h antes de la recogida,
+        o 60 min si falta menos).'
+      summary: Reserva pública sin cuenta (empresas sin el módulo de cuentas)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaPublicaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReservaPublicaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReservaPublicaRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaPublicaRespuesta'
+          description: ''
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Empresa inexistente o con el módulo de cuentas
+        '429':
+          description: '`limite_ip` o `limite_correo`'
+  /api/portal/{slug}/reservas/confirmar/:
+    post:
+      operationId: portal_reservas_confirmar_create
+      description: 'HU-51: el enlace firmado vale una sola vez y hasta `confirmar_hasta`.
+        La página lo envía por POST para que los revisores de enlaces del correo no
+        confirmen solos.'
+      summary: Confirmar la reserva pública con el enlace del correo
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaConfirmada'
+          description: ''
+        '400':
+          description: '`enlace_invalido`'
+        '409':
+          description: '`enlace_usado`'
+        '410':
+          description: '`enlace_vencido`: queda «Sin confirmar» (HU-52)'
   /api/reportes/{tipo}/:
     get:
       operationId: reportes_retrieve
@@ -5249,6 +5333,26 @@ components:
       - next
       - previous
       - totales
+    ReservaConfirmada:
+      type: object
+      properties:
+        id:
+          type: integer
+        estado:
+          type: string
+        recogida_en:
+          type: string
+          format: date-time
+        origen_dir:
+          type: string
+        destino_dir:
+          type: string
+      required:
+      - destino_dir
+      - estado
+      - id
+      - origen_dir
+      - recogida_en
     ReservaContingenciaRequest:
       type: object
       description: 'HU-32 (DC-33): viaje anotado durante una caída, con sus horas
@@ -5340,6 +5444,115 @@ components:
       - id
       - origen_dir
       - pasajero
+      - recogida_en
+    ReservaPublicaRequest:
+      type: object
+      description: 'HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin
+        WhatsApp (DC-55).'
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        telefono:
+          type: string
+          minLength: 1
+          description: WhatsApp en formato E.164, p. ej. +56912345678.
+          maxLength: 24
+        origen_dir:
+          type: string
+          minLength: 1
+          maxLength: 200
+        destino_dir:
+          type: string
+          minLength: 1
+          maxLength: 200
+        recogida_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Obligatoria, salvo en viajes desde el aeropuerto con vuelo:
+            ahí se calcula si no viene.'
+        sentido:
+          allOf:
+          - $ref: '#/components/schemas/SentidoEnum'
+          description: |-
+            Si no viene: DESDE_AEROPUERTO cuando hay vuelo, URBANO si no.
+
+            * `DESDE_AEROPUERTO` - Desde el aeropuerto
+            * `HACIA_AEROPUERTO` - Hacia el aeropuerto
+            * `URBANO` - Urbano
+        vuelo:
+          allOf:
+          - $ref: '#/components/schemas/VueloLlegadaRequest'
+          description: Solo para viajes desde el aeropuerto.
+        vuelo_salida:
+          allOf:
+          - $ref: '#/components/schemas/VueloSalidaRequest'
+          description: Solo para viajes al aeropuerto (HU-39).
+        lo_antes_posible:
+          type: boolean
+          description: 'HU-39: recogida ahora + la anticipación mínima (DC-10); ignora
+            `recogida_en`.'
+        pasajeros:
+          type: integer
+          maximum: 7
+          minimum: 1
+          description: Titular más acompañantes; no supera la capacidad de la flota
+            (DC-43).
+        maletas:
+          type: integer
+          maximum: 20
+          minimum: 0
+        acepta_privacidad:
+          type: boolean
+        sitio_web:
+          type: string
+          writeOnly: true
+        correo:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        es_empresa:
+          type: boolean
+          default: false
+        empresa_razon_social:
+          type: string
+          maxLength: 120
+        empresa_rut:
+          type: string
+          maxLength: 12
+        empresa_contacto:
+          type: string
+          maxLength: 80
+      required:
+      - acepta_privacidad
+      - correo
+      - destino_dir
+      - nombre
+      - origen_dir
+      - telefono
+    ReservaPublicaRespuesta:
+      type: object
+      properties:
+        id:
+          type: integer
+        estado:
+          type: string
+        recogida_en:
+          type: string
+          format: date-time
+        confirmar_hasta:
+          type: string
+          format: date-time
+        mensaje:
+          type: string
+      required:
+      - confirmar_hasta
+      - estado
+      - id
+      - mensaje
       - recogida_en
     ReservaVinculada:
       type: object
@@ -5675,6 +5888,15 @@ components:
       description: |-
         * `NACIONAL` - Nacional
         * `INTERNACIONAL` - Internacional
+    TokenRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - token
     Tokens:
       type: object
       properties:

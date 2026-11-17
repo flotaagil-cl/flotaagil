@@ -52,6 +52,31 @@ const PANTALLAS = {
     { nombre: 'portal-sin-modulo-cuenta', ruta: '/solicitar/taxi-pacifico/cuenta', sesion: null },
     { nombre: 'panel-inicio-sin-modulo', ruta: '/', sesion: 'admin@taxi-pacifico.example' },
   ],
+  // HU-51 (CC-22): reserva pública. Los enlaces de confirmación (uno por ancho) vienen en CAPTURAS_TOKEN_390 y
+  // CAPTURAS_TOKEN_1440: son de reservas sintéticas creadas para la captura.
+  'HU-51': [
+    { nombre: 'reserva-publica', ruta: '/solicitar/taxi-pacifico', sesion: null },
+    {
+      nombre: 'reserva-tus-datos',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByLabel('Origen').fill('Av. Providencia 1208, Providencia');
+        await pagina.getByLabel('Destino').fill('Plaza de Armas, Santiago');
+        await pagina.getByRole('button', { name: 'Pedir mi traslado' }).click();
+        await pagina.getByRole('heading', { name: 'Tus datos' }).waitFor();
+      },
+    },
+    {
+      nombre: 'reserva-confirmada',
+      ruta: (sufijo) => `/solicitar/taxi-pacifico/confirmar/${process.env[`CAPTURAS_TOKEN_${sufijo}`] ?? 'falta-token'}`,
+      sesion: null,
+      destino: /\/confirmar\//,
+      accion: async (pagina) => {
+        await pagina.getByRole('heading', { name: 'Reserva confirmada' }).waitFor();
+      },
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
@@ -99,7 +124,7 @@ async function iniciarSesion(pagina, alias) {
 
 function llegoA(pagina, pantalla) {
   const ruta = new URL(pagina.url()).pathname;
-  return pantalla.destino ? pantalla.destino.test(ruta) : ruta === pantalla.ruta;
+  return pantalla.destino ? pantalla.destino.test(ruta) : ruta === pantalla.rutaFinal;
 }
 
 async function main() {
@@ -128,7 +153,9 @@ async function main() {
         for (const pantalla of PANTALLAS[hu]) {
           const ctx = await contextoDe(pantalla.sesion);
           const pagina = await ctx.newPage();
-          await pagina.goto(`${URL_BASE}${pantalla.ruta}`);
+          // La ruta puede depender del ancho (p. ej. un enlace de un solo uso por captura).
+          pantalla.rutaFinal = typeof pantalla.ruta === 'function' ? pantalla.ruta(sufijo) : pantalla.ruta;
+          await pagina.goto(`${URL_BASE}${pantalla.rutaFinal}`);
           await pagina.waitForLoadState('networkidle');
           if (pantalla.accion) await pantalla.accion(pagina);
           const titulo = (await pagina.locator('h1').first().textContent({ timeout: 10000 }).catch(() => '')) ?? '';

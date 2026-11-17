@@ -1,6 +1,12 @@
 from rest_framework import serializers
 
-from apps.comun.validadores import normalizar_telefono, validar_telefono_e164, validar_vuelo_iata
+from apps.comun.validadores import (
+    normalizar_rut,
+    normalizar_telefono,
+    validar_rut,
+    validar_telefono_e164,
+    validar_vuelo_iata,
+)
 from apps.cuentas.models import Empresa
 from apps.reservas.models import MAX_PASAJEROS, Sentido, TipoVuelo
 
@@ -212,3 +218,55 @@ class CrearCuentaSerializer(serializers.Serializer):
         telefono = normalizar_telefono(valor)
         validar_telefono_e164(telefono)
         return telefono
+
+
+class ReservaPublicaSerializer(SolicitudSerializer):
+    """HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55)."""
+
+    acepta_whatsapp = None
+    correo = serializers.EmailField(max_length=254)
+    es_empresa = serializers.BooleanField(required=False, default=False)
+    empresa_razon_social = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    empresa_rut = serializers.CharField(max_length=12, required=False, allow_blank=True)
+    empresa_contacto = serializers.CharField(max_length=80, required=False, allow_blank=True)
+
+    def validate(self, datos):
+        datos = super().validate(datos)
+        if datos.get("es_empresa"):
+            errores = {}
+            for campo, texto in (
+                ("empresa_razon_social", "Ingresa la razón social."),
+                ("empresa_contacto", "Ingresa la persona de contacto."),
+            ):
+                datos[campo] = (datos.get(campo) or "").strip()
+                if not datos[campo]:
+                    errores[campo] = texto
+            rut = normalizar_rut(datos.get("empresa_rut") or "")
+            try:
+                validar_rut(rut)
+            except Exception:
+                errores["empresa_rut"] = "Ingresa un RUT válido (12345678-9)."
+            datos["empresa_rut"] = rut
+            if errores:
+                raise serializers.ValidationError(errores)
+        return datos
+
+
+class ReservaPublicaRespuestaSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    estado = serializers.CharField()
+    recogida_en = serializers.DateTimeField()
+    confirmar_hasta = serializers.DateTimeField()
+    mensaje = serializers.CharField()
+
+
+class TokenSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=200)
+
+
+class ReservaConfirmadaSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    estado = serializers.CharField()
+    recogida_en = serializers.DateTimeField()
+    origen_dir = serializers.CharField()
+    destino_dir = serializers.CharField()

@@ -102,6 +102,10 @@ class ConfiguracionEmpresa(models.Model):
     antelacion_vuelo_internacional_min = _minutos(180)
     # DC-33: antigüedad máxima de la hora real de una reserva de contingencia (HU-32).
     contingencia_max_dias = _minutos(7, minimo=1)
+    # DC-53 (CC-22): plazo para confirmar la reserva pública por correo: hasta estas horas antes de la
+    # recogida, o este plazo corto si al enviar falta menos.
+    confirmacion_antes_horas = _minutos(24, minimo=1)
+    confirmacion_plazo_corto_min = _minutos(60, minimo=1)
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)

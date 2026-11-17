@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Now
 
-from apps.comun.validadores import validar_no_vacio, validar_telefono_e164
+from apps.comun.validadores import validar_no_vacio, validar_rut, validar_telefono_e164
 
 
 class Pasajero(models.Model):
@@ -143,6 +143,17 @@ class Viaje(models.Model):
     autorizacion_avisos_por = models.ForeignKey(
         "cuentas.Usuario", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
+    # DC-52 (CC-22): reserva del formulario público. El correo de contacto vive en el viaje (el PASAJERO sigue
+    # identificado por su teléfono); la empresa sin convenio se cobra como particular.
+    contacto_correo = models.EmailField(max_length=254, null=True, blank=True)
+    privacidad_version = models.CharField(max_length=20, null=True, blank=True)
+    empresa_cliente_razon_social = models.CharField(max_length=120, null=True, blank=True)
+    empresa_cliente_rut = models.CharField(max_length=12, null=True, blank=True, validators=[validar_rut])
+    empresa_cliente_contacto = models.CharField(max_length=80, null=True, blank=True)
+    # DC-53: hasta cuándo vale el enlace de confirmación; después la reserva queda «Sin confirmar».
+    confirmar_hasta = models.DateTimeField(null=True, blank=True)
+    # DC-52 (HU-54): la confirma el contacto del convenio (el correo que reservó no está autorizado).
+    confirma_convenio = models.BooleanField(default=False, db_default=False)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

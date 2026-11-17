@@ -3,6 +3,7 @@ límite por teléfono y un campo trampa."""
 
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiExample, OpenApiResponse, extend_schema
 from rest_framework import serializers, status
 from rest_framework.permissions import AllowAny
@@ -19,10 +20,14 @@ from apps.cuentas.serializers import ErrorSerializer
 from apps.integraciones.notificaciones import enmascarar_telefono as enmascarar
 from apps.reservas import cuentas_pasajero
 
-from . import servicios
+from . import publico, servicios
 from .serializers import (
     CrearCuentaSerializer,
     EmpresaPublicaSerializer,
+    ReservaConfirmadaSerializer,
+    ReservaPublicaRespuestaSerializer,
+    ReservaPublicaSerializer,
+    TokenSerializer,
 )
 
 
@@ -34,8 +39,20 @@ class PortalPorHora(AnonRateThrottle):
     scope = "portal_hora"
 
 
+class ReservaPublicaPorHora(AnonRateThrottle):
+    scope = "reserva_publica"  # DC-56
+
+
 def _empresa(slug: str) -> Empresa:
     return get_object_or_404(Empresa.objects.select_related("configuracion"), slug=slug, activa=True)
+
+
+def _empresa_sin_modulo(slug: str) -> Empresa:
+    """DC-51 (CC-22): los formularios públicos son la base; con el módulo, el portal pide con cuenta."""
+    empresa = _empresa(slug)
+    if empresa.modulo_cuentas:
+        raise Http404("Esta empresa recibe los pedidos con cuenta.")
+    return empresa
 
 
 def _empresa_con_modulo(slug: str) -> Empresa:
@@ -229,3 +246,69 @@ class ReenviarActivacionView(_VistaActivacion):
         entrada.is_valid(raise_exception=True)
         cuenta = cuentas_pasajero.reenviar_activacion(empresa, **entrada.validated_data)
         return Response({"activa": False, "telefono": enmascarar(cuenta.telefono)})
+
+
+class ReservaPublicaView(_VistaPortal):
+    throttle_classes = [PortalPorMinuto, ReservaPublicaPorHora]
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Reserva pública sin cuenta (empresas sin el módulo de cuentas)",
+        request=ReservaPublicaSerializer,
+        responses={
+            201: ReservaPublicaRespuestaSerializer,
+            400: OpenApiResponse(description="Datos inválidos"),
+            404: OpenApiResponse(description="Empresa inexistente o con el módulo de cuentas"),
+            429: OpenApiResponse(description="`limite_ip` o `limite_correo`"),
+        },
+        description="HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía por correo el enlace "
+        "para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos).",
+    )
+    def post(self, request, slug):
+        empresa = _empresa_sin_modulo(slug)
+        entrada = ReservaPublicaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        datos = entrada.validated_data
+        mensaje = "Te enviamos un correo con el enlace para confirmar tu reserva."
+        if datos.get("sitio_web"):  # campo trampa: se responde igual, sin crear nada
+            ahora = timezone.now()
+            falsa = {"id": 0, "estado": "PENDIENTE_CONFIRMACION", "mensaje": mensaje}
+            falsa |= {"recogida_en": datos.get("recogida_en") or ahora, "confirmar_hasta": ahora}
+            return Response(ReservaPublicaRespuestaSerializer(falsa).data, status=status.HTTP_201_CREATED)
+        viaje = publico.crear(empresa, datos)
+        return Response(
+            ReservaPublicaRespuestaSerializer(
+                {
+                    "id": viaje.pk,
+                    "estado": viaje.estado,
+                    "recogida_en": viaje.recogida_en,
+                    "confirmar_hasta": viaje.confirmar_hasta,
+                    "mensaje": mensaje,
+                }
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class ConfirmarReservaView(_VistaPortal):
+    throttle_classes = [PortalPorMinuto, PortalPorHora]
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Confirmar la reserva pública con el enlace del correo",
+        request=TokenSerializer,
+        responses={
+            200: ReservaConfirmadaSerializer,
+            400: OpenApiResponse(description="`enlace_invalido`"),
+            409: OpenApiResponse(description="`enlace_usado`"),
+            410: OpenApiResponse(description="`enlace_vencido`: queda «Sin confirmar» (HU-52)"),
+        },
+        description="HU-51: el enlace firmado vale una sola vez y hasta `confirmar_hasta`. La página lo "
+        "envía por POST para que los revisores de enlaces del correo no confirmen solos.",
+    )
+    def post(self, request, slug):
+        empresa = _empresa(slug)
+        entrada = TokenSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        viaje = publico.confirmar(empresa, entrada.validated_data["token"])
+        return Response(ReservaConfirmadaSerializer(viaje).data)
