@@ -4,7 +4,7 @@ import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import { formatearFechaHora } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
-import { useViaje, type ViajeDetalle } from '../api';
+import { useConfirmarPorTelefono, useViaje, type ViajeDetalle } from '../api';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { DialogoCancelar } from '../componentes/DialogoCancelar';
 import { DialogoForzar } from '../componentes/DialogoForzar';
@@ -60,7 +60,7 @@ function DetalleDe({ id }: { id: number }) {
     <section>
       <div className={estilos.encabezado}>
         <h1>
-          Reserva #{viaje.id} {viaje.estado && <EstadoEtiqueta estado={viaje.estado} />}
+          Reserva #{viaje.id} {viaje.estado && <EstadoEtiqueta estado={viaje.estado} sinConfirmar={viaje.sin_confirmar} />}
           {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
         </h1>
         <Link to="/reservas" className={estilos.botonSecundario}>
@@ -72,8 +72,16 @@ function DetalleDe({ id }: { id: number }) {
       {forzado && <Aviso>{forzado}</Aviso>}
       {asignadoA && <Aviso>Reserva asignada a {asignadoA}. Esperando que acepte en la app (60 s).</Aviso>}
 
+      {viaje.sin_confirmar && (
+        <Aviso tipo="error">
+          Sin confirmar: el plazo para confirmar por correo venció
+          {viaje.confirmar_hasta ? ` el ${formatearFechaHora(viaje.confirmar_hasta)}` : ''}. Llama al pasajero y confírmala, cancélala o déjala.
+        </Aviso>
+      )}
+
       <div className={estilos.tarjeta}>
         <div className={estilos.acciones}>
+          {viaje.estado === 'PENDIENTE_CONFIRMACION' && <ConfirmarPorTelefono id={viaje.id} />}
           {viaje.estado === 'SOLICITADO' && (
             <button type="button" className={estilos.boton} onClick={() => setAsignando(true)}>
               Asignar conductor…
@@ -245,5 +253,15 @@ function DetalleDe({ id }: { id: number }) {
         />
       )}
     </section>
+  );
+}
+
+/** CC-22 (HU-52): el despacho llamó al pasajero y confirma la reserva (queda en el historial y la auditoría). */
+function ConfirmarPorTelefono({ id }: { id: number }) {
+  const confirmar = useConfirmarPorTelefono(id);
+  return (
+    <button type="button" className={estilos.boton} disabled={confirmar.isPending} onClick={() => confirmar.mutate()}>
+      {confirmar.isPending ? 'Confirmando…' : 'Confirmar por teléfono'}
+    </button>
   );
 }

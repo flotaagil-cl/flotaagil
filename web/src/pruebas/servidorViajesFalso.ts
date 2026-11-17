@@ -43,6 +43,12 @@ export function viajeDePrueba(cambios: Partial<ViajeDetalle> = {}): ViajeDetalle
     creado_en: '2026-10-30T12:00:00Z',
     editable: EDITABLES.includes(estado),
     cancelable: CANCELABLES.includes(estado),
+    sin_confirmar: false,
+    confirmar_hasta: null,
+    contacto_correo: null,
+    empresa_cliente_razon_social: null,
+    empresa_cliente_rut: null,
+    empresa_cliente_contacto: null,
     calificacion: null,
     alerta_vuelo: null,
     cierre_forzado: null,
@@ -65,7 +71,7 @@ export class ServidorViajesFalso {
   /** Conductores disponibles que devuelve /candidatos/ (HU-14). */
   candidatos: Candidato[] = [];
   /** Respuesta de /api/indicadores/ (HU-01). */
-  indicadores: unknown = { fecha: '2026-07-15', reservas: { total: 0, por_estado: [] }, vehiculos: { en_linea: 0, en_linea_con_senal: 0, en_linea_sin_senal: 0, fuera_de_linea: 0 } };
+  indicadores: unknown = { fecha: '2026-07-15', sin_confirmar: 0, reservas: { total: 0, por_estado: [] }, vehiculos: { en_linea: 0, en_linea_con_senal: 0, en_linea_sin_senal: 0, fuera_de_linea: 0 } };
   /** Cuerpos recibidos, por ruta («POST /api/viajes/», «PATCH /api/viajes/7/»…). */
   cuerpos: { ruta: string; cuerpo: unknown }[] = [];
   private programadas = new Map<string, Respuesta[]>();
@@ -113,7 +119,7 @@ export class ServidorViajesFalso {
     }
     if (ruta === 'GET /api/viajes/') return this.listar(url);
     if (ruta === 'POST /api/viajes/') return this.crear(cuerpo as ViajeCrear);
-    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos|confirmar-recogida|descartar-recogida|forzar-cierre)\/)?$/.exec(url.pathname);
+    const detalle = /^\/api\/viajes\/(\d+)\/(?:(cancelar|asignar|candidatos|confirmar-recogida|descartar-recogida|forzar-cierre|confirmar-telefono)\/)?$/.exec(url.pathname);
     const viaje = detalle && this.buscar(Number(detalle[1]));
     if (!viaje) return { estado: 404, cuerpo: { detail: 'No encontrado.' } };
     if (detalle[2] === 'candidatos') return { estado: 200, cuerpo: this.candidatos };
@@ -130,6 +136,12 @@ export class ServidorViajesFalso {
       const propuesta = (cuerpo as { recogida_propuesta: string }).recogida_propuesta;
       if (detalle[2] === 'confirmar-recogida') viaje.recogida_en = propuesta;
       Object.assign(viaje, { vuelo: { ...viaje.vuelo!, recogida_propuesta: null, propuesta_en: null } });
+      return { estado: 200, cuerpo: viaje };
+    }
+    if (detalle[2] === 'confirmar-telefono') {
+      // CC-22 (HU-52): el despacho confirma por teléfono una pendiente.
+      if (viaje.estado !== 'PENDIENTE_CONFIRMACION') return { estado: 409, cuerpo: { detail: 'No está pendiente.' } };
+      Object.assign(viaje, { estado: 'SOLICITADO', sin_confirmar: false });
       return { estado: 200, cuerpo: viaje };
     }
     if (detalle[2] === 'asignar') return this.asignar(viaje, (cuerpo as { conductor: number }).conductor);

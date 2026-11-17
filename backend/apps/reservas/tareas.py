@@ -140,7 +140,7 @@ def consultar_vuelo(self, vuelo_id: int) -> None:
 
 @shared_task(autoretry_for=(ErrorDeBase,), retry_backoff=True, retry_backoff_max=60, max_retries=3)
 def expirar_solicitudes() -> int:
-    """RN-06."""
+    """RN-06 (CC-22): cuenta las reservas «Sin confirmar»; ya no las cancela."""
     from .expiracion import expirar_pendientes
 
     return expirar_pendientes()

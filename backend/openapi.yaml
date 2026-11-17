@@ -2703,6 +2703,11 @@ paths:
           * `DESDE_AEROPUERTO` - Desde el aeropuerto
           * `HACIA_AEROPUERTO` - Hacia el aeropuerto
           * `URBANO` - Urbano
+      - in: query
+        name: sin_confirmar
+        schema:
+          type: boolean
+        description: 'CC-22: pendientes con el plazo para confirmar vencido'
       tags:
       - reservas
       security:
@@ -3005,6 +3010,11 @@ paths:
           * `DESDE_AEROPUERTO` - Desde el aeropuerto
           * `HACIA_AEROPUERTO` - Hacia el aeropuerto
           * `URBANO` - Urbano
+      - in: query
+        name: sin_confirmar
+        schema:
+          type: boolean
+        description: 'CC-22: pendientes con el plazo para confirmar vencido'
       tags:
       - reservas
       security:
@@ -3045,6 +3055,32 @@ paths:
             schema:
               $ref: '#/components/schemas/DecidirRecogidaRequest'
         required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ViajeDetalle'
+          description: ''
+        '409':
+          description: La reserva no admite la operación en su estado actual
+  /api/viajes/{id}/confirmar-telefono/:
+    post:
+      operationId: viajes_confirmar_telefono_create
+      description: 'HU-52: para las reservas «Sin confirmar» (o pendientes) que el
+        despacho confirma llamando al pasajero. Queda en el historial y en la auditoría.'
+      summary: Confirmar por teléfono una reserva pendiente (CC-22)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este viaje.
+        required: true
+      tags:
+      - reservas
       security:
       - jwtAuth: []
       responses:
@@ -4240,6 +4276,10 @@ components:
           type: string
           format: date
           description: Hoy, en hora de Chile
+        sin_confirmar:
+          type: integer
+          description: 'CC-22: reservas pendientes con el plazo vencido, de cualquier
+            fecha (alerta del panel)'
         reservas:
           $ref: '#/components/schemas/IndicadoresReservas'
         vehiculos:
@@ -4247,6 +4287,7 @@ components:
       required:
       - fecha
       - reservas
+      - sin_confirmar
       - vehiculos
     IndicadoresReservas:
       type: object
@@ -6464,6 +6505,33 @@ components:
         cancelable:
           type: boolean
           readOnly: true
+        confirmar_hasta:
+          type: string
+          format: date-time
+          nullable: true
+        sin_confirmar:
+          type: boolean
+          readOnly: true
+        contacto_correo:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        empresa_cliente_razon_social:
+          type: string
+          nullable: true
+          maxLength: 120
+        empresa_cliente_rut:
+          type: string
+          nullable: true
+          maxLength: 12
+        empresa_cliente_contacto:
+          type: string
+          nullable: true
+          maxLength: 80
       required:
       - alerta_vuelo
       - canal
@@ -6477,6 +6545,7 @@ components:
       - origen
       - pasajero
       - recogida_en
+      - sin_confirmar
       - vehiculo
       - vuelo
     ViajeActivo:
@@ -6695,6 +6764,33 @@ components:
         cancelable:
           type: boolean
           readOnly: true
+        confirmar_hasta:
+          type: string
+          format: date-time
+          nullable: true
+        sin_confirmar:
+          type: boolean
+          readOnly: true
+        contacto_correo:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        empresa_cliente_razon_social:
+          type: string
+          nullable: true
+          maxLength: 120
+        empresa_cliente_rut:
+          type: string
+          nullable: true
+          maxLength: 12
+        empresa_cliente_contacto:
+          type: string
+          nullable: true
+          maxLength: 80
         historial:
           type: array
           items:
@@ -6727,6 +6823,7 @@ components:
       - origen
       - pasajero
       - recogida_en
+      - sin_confirmar
       - vehiculo
       - vuelo
     Vuelo:

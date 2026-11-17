@@ -10,7 +10,8 @@ export function Inicio() {
   if (estado.fase !== 'autenticada') return null;
   const atajos = [
     { a: `/reservas?fecha=${hoy()}`, titulo: 'Reservas de hoy', texto: 'Recogidas del día (hora de Santiago).' },
-    { a: '/reservas?estado=PENDIENTE_CONFIRMACION', titulo: 'Por confirmar', texto: 'Esperan la respuesta del pasajero por WhatsApp.' },
+    { a: '/reservas?estado=PENDIENTE_CONFIRMACION', titulo: 'Por confirmar', texto: 'Esperan la confirmación del pasajero (correo o WhatsApp).' },
+    { a: '/reservas?sin_confirmar=true&desde=', titulo: 'Sin confirmar', texto: 'Venció el plazo: confírmalas por teléfono o cancélalas.' },
     { a: '/reservas?estado=SOLICITADO', titulo: 'Sin asignar', texto: 'Solicitadas, todavía sin conductor.' },
     { a: '/reservas', titulo: 'Próximas', texto: 'Todas desde hoy 00:00.' },
   ];

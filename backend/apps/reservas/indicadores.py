@@ -42,6 +42,9 @@ class IndicadoresVehiculosSerializer(serializers.Serializer):
 
 class IndicadoresSerializer(serializers.Serializer):
     fecha = serializers.DateField(help_text="Hoy, en hora de Chile")
+    sin_confirmar = serializers.IntegerField(
+        help_text="CC-22: reservas pendientes con el plazo vencido, de cualquier fecha (alerta del panel)"
+    )
     reservas = IndicadoresReservasSerializer()
     vehiculos = IndicadoresVehiculosSerializer()
 
@@ -68,8 +71,11 @@ def calcular(empresa_id: int) -> dict:
     )
     limite = timezone.now() - timedelta(seconds=settings.POSICION_CONFIABLE_SEGUNDOS)
     con_senal = sum(1 for instante in en_linea.values() if instante is not None and instante >= limite)
+    from .expiracion import sin_confirmar
+
     return {
         "fecha": hoy,
+        "sin_confirmar": sin_confirmar(Viaje.objects.filter(empresa_id=empresa_id)).count(),
         "reservas": {
             "total": sum(conteos.values()),
             "por_estado": [{"estado": e, "cantidad": conteos.get(e, 0)} for e in EstadoViaje.values],

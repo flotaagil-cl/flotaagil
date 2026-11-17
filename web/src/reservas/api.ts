@@ -110,6 +110,17 @@ export function useCancelarViaje(id: number) {
   });
 }
 
+/** CC-22 (HU-52): el despacho confirma por teléfono una reserva pendiente (queda auditado). */
+export function useConfirmarPorTelefono(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: () => resultado(api.POST('/api/viajes/{id}/confirmar-telefono/', { params: { path: { id } } })),
+    onSuccess: alTerminar.exito,
+    onError: (error) => alTerminar.error(id, error),
+  });
+}
+
 /** HU-27: el despachador confirma o descarta la nueva hora de recogida (RN-02). */
 export function useDecidirRecogida(id: number) {
   const api = useApi();

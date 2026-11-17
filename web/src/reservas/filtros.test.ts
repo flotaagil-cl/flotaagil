@@ -103,3 +103,13 @@ describe('consulta para la API', () => {
     expect(hayFiltros(leer('desde=&canal=WEB'))).toBe(true);
   });
 });
+
+describe('HU-52 · filtro «Sin confirmar» (CC-22)', () => {
+  it('se lee y se escribe en la URL y llega a la consulta', () => {
+    const f = leerFiltros(new URLSearchParams('sin_confirmar=true&desde='));
+    expect(f.sinConfirmar).toBe(true);
+    expect(escribirFiltros(f).get('sin_confirmar')).toBe('true');
+    expect(consultaDeFiltros(f).consulta.sin_confirmar).toBe(true);
+    expect(leerFiltros(new URLSearchParams('')).sinConfirmar).toBe(false);
+  });
+});

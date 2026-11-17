@@ -66,6 +66,14 @@ export function Indicadores({ crearSocket }: { crearSocket?: CrearSocket }) {
         </div>
       ) : (
         <>
+          {consulta.data.sin_confirmar > 0 && (
+            <p role="alert">
+              <Link to="/reservas?sin_confirmar=true&desde=">
+                {consulta.data.sin_confirmar === 1 ? '1 reserva sin confirmar' : `${consulta.data.sin_confirmar} reservas sin confirmar`}
+              </Link>
+              : venció su plazo. Confírmalas por teléfono o cancélalas.
+            </p>
+          )}
           <dl className={estilos.cifras} aria-label="Vehículos">
             <div>
               <dt>En línea con señal</dt>

@@ -121,6 +121,19 @@ class ViajeViewSet(
         return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
 
     @extend_schema(
+        summary="Confirmar por teléfono una reserva pendiente (CC-22)",
+        tags=["reservas"],
+        request=None,
+        responses={200: ViajeDetalleSerializer, 409: CONFLICTO},
+        description="HU-52: para las reservas «Sin confirmar» (o pendientes) que el despacho confirma "
+        "llamando al pasajero. Queda en el historial y en la auditoría.",
+    )
+    @action(detail=True, methods=["post"], url_path="confirmar-telefono")
+    def confirmar_telefono(self, request, pk=None):
+        viaje = servicios.confirmar_por_telefono(self.get_object(), usuario=request.user)
+        return Response(ViajeDetalleSerializer(self.get_queryset().get(pk=viaje.pk)).data)
+
+    @extend_schema(
         summary="Conductores para una reserva de contingencia",
         tags=["reservas"],
         responses=inline_serializer(
