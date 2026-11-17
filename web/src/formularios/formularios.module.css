@@ -16,7 +16,7 @@
   width: 100%;
   min-width: 0;
   padding: 0 var(--espacio-3);
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-campo, var(--borde));
   border-radius: var(--radio);
   background: var(--superficie);
   color: var(--texto);

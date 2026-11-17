@@ -21,16 +21,16 @@
   justify-content: center;
   min-height: var(--toque);
   padding: 0 var(--espacio-4);
-  border-radius: var(--radio);
+  border-radius: var(--radio-boton, var(--radio));
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
   cursor: pointer;
 }
 
 .boton {
   border: 0;
-  background: var(--acento);
+  background: var(--grad-boton, var(--acento));
   color: var(--sobre-acento);
 }
 
@@ -39,7 +39,7 @@
 }
 
 .botonSecundario {
-  border: 1px solid var(--borde);
+  border: 1px solid var(--borde-campo, var(--borde));
   background: var(--superficie);
   color: var(--texto);
 }
@@ -339,28 +339,29 @@
   white-space: nowrap;
 }
 
+/* CC-20: colores de estado fijos, los de las insignias del portal (contraste AA, HU-37). */
 .pendiente {
-  background: var(--info-fondo);
-  border-color: var(--info-borde);
-  color: var(--texto);
+  background: var(--insignia-revision-fondo, var(--info-fondo));
+  border-color: transparent;
+  color: var(--insignia-revision-texto, var(--texto));
 }
 
 .curso {
-  background: var(--acento-suave);
-  border-color: var(--acento);
-  color: var(--acento);
+  background: var(--insignia-info-fondo, var(--acento-suave));
+  border-color: transparent;
+  color: var(--insignia-info-texto, var(--acento));
 }
 
 .fin {
-  background: var(--fondo);
-  border-color: var(--borde);
-  color: var(--texto-suave);
+  background: var(--insignia-neutra-fondo, var(--fondo));
+  border-color: transparent;
+  color: var(--insignia-neutra-texto, var(--texto-suave));
 }
 
 .cancelado {
-  background: var(--error-fondo);
-  border-color: var(--error-borde);
-  color: var(--error-texto);
+  background: var(--insignia-peligro-fondo, var(--error-fondo));
+  border-color: transparent;
+  color: var(--insignia-peligro-texto, var(--error-texto));
 }
 
 /* --- Detalle --- */
@@ -370,7 +371,7 @@
   padding: var(--espacio-4);
   background: var(--superficie);
   border: 1px solid var(--borde);
-  border-radius: var(--radio);
+  border-radius: var(--radio-tarjeta, var(--radio));
 }
 
 .tarjeta h2 {
@@ -615,6 +616,8 @@
   padding: 2px 10px;
   border: 1px solid currentColor;
   border-radius: 999px;
+  color: var(--color-primario-700, var(--acento));
   font-size: 0.875rem;
+  font-weight: 600;
   text-decoration: none;
 }

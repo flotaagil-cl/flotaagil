@@ -6,6 +6,7 @@ import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
 import { useRutas } from '../rutas/contexto';
 import { SinPermiso } from '../paginas/SinPermiso';
 import { useSesion } from '../sesion/SesionProvider';
+import '../diseno/tokens.css';
 import estilos from './Layout.module.css';
 
 const NOMBRE_ROL = {
@@ -43,7 +44,7 @@ export function Layout() {
   }
 
   return (
-    <div className={estilos.marco}>
+    <div className={`${estilos.marco} tema-flotaagil`}>
       <header className={estilos.cabecera}>
         <button
           type="button"

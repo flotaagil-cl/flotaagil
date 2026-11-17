@@ -1,8 +1,8 @@
 /*
  * HU-37: sistema visual del portal «Tiffany degradé» (docs/diseno/portal/README.md).
  *
- * Los colores viven solo aquí: los componentes usan las variables. Se aplican bajo .tema-portal, así el panel
- * conserva su estilo. El color por empresa queda preparado: basta con redefinir los tres tokens de marca
+ * Los colores viven solo aquí: los componentes usan las variables. Se aplican bajo .tema-portal y, desde CC-20
+ * (DC-58), también bajo .tema-flotaagil: el panel y la app (copia generada) usan los mismos valores. El color por empresa queda preparado: basta con redefinir los tres tokens de marca
  * (--color-primario-900, --color-primario-700 y --color-tiffany) en el elemento .tema-portal y los degradés,
  * el foco y los pines los siguen.
  *
@@ -14,7 +14,8 @@
 @import '@fontsource/plus-jakarta-sans/latin-700.css';
 @import '@fontsource/plus-jakarta-sans/latin-800.css';
 
-.tema-portal {
+.tema-portal,
+.tema-flotaagil {
   /* Marca (cambiables por empresa). */
   --color-primario-900: #0b4f5c;
   --color-primario-700: #0c7f7d;
@@ -89,6 +90,8 @@
   --radio-hero: 24px;
   --radio-panel: 22px;
   --toque: 44px;
+  /* Radio general de los componentes del panel (CC-20). */
+  --radio: var(--radio-campo);
 
   /* El diseño es claro: el portal no cambia con el modo oscuro del sistema. */
   color-scheme: light;
@@ -99,13 +102,15 @@
   font-size: var(--texto-base);
 }
 
-.tema-portal :focus-visible {
+.tema-portal :focus-visible,
+.tema-flotaagil :focus-visible {
   outline: 3px solid var(--foco);
   outline-offset: 2px;
 }
 
 /* Texto solo para lectores de pantalla. */
-.tema-portal .solo-lector {
+.tema-portal .solo-lector,
+.tema-flotaagil .solo-lector {
   position: absolute;
   width: 1px;
   height: 1px;
