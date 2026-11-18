@@ -22,6 +22,13 @@ from .serializers import HistorialSerializer, PasajeroEntradaSerializer
 SOLO_PASAJERO = [con_roles(Rol.PASAJERO), ConModuloCuentas]  # DC-51
 
 
+class CentralSerializer(serializers.Serializer):
+    """HU-66 (DC-62): botones de emergencia; null si la empresa no lo configuró."""
+
+    telefono = serializers.CharField(allow_null=True)
+    whatsapp = serializers.CharField(allow_null=True)
+
+
 class MiCuentaSerializer(serializers.Serializer):
     nombre = serializers.CharField()
     email = serializers.EmailField(source="usuario.email")
@@ -31,9 +38,18 @@ class MiCuentaSerializer(serializers.Serializer):
     # HU-45: datos de «Mi perfil».
     pasajero_desde = serializers.DateTimeField(source="confirmada_en")
     acepta_avisos_correo = serializers.BooleanField(help_text="DC-62: avisos del viaje por correo.")
+    central = serializers.SerializerMethodField(help_text="HU-66: números de emergencia de la central.")
     password_cambiada_en = serializers.SerializerMethodField(
         help_text="Último cambio o recuperación de la contraseña registrado en la auditoría, o null."
     )
+
+    @extend_schema_field(CentralSerializer)
+    def get_central(self, cuenta):
+        configuracion = cuenta.empresa.configuracion
+        return {
+            "telefono": configuracion.telefono_central or None,
+            "whatsapp": configuracion.whatsapp_central or None,
+        }
 
     @extend_schema_field(serializers.DateTimeField(allow_null=True))
     def get_password_cambiada_en(self, cuenta):

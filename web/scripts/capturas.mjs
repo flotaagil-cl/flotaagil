@@ -347,6 +347,20 @@ const PANTALLAS = {
     { nombre: 'mi-perfil-avisos', ruta: '/mi-perfil', sesion: 'activa-hu64@correo.example' },
     { nombre: 'portal-crear-cuenta-avisos', ruta: `${PORTAL}/cuenta`, sesion: null },
   ],
+  // HU-66 (CC-19): chat con el conductor, soporte y lectura auditada de la central (viaje de la cuenta de HU-64).
+  'HU-66': [
+    { nombre: 'tu-viaje-chat', ruta: () => `/mis-viajes/${viajeHU66()}`, sesion: 'activa-hu64@correo.example' },
+    { nombre: 'portal-soporte', ruta: '/soporte', sesion: 'activa-hu64@correo.example' },
+    {
+      nombre: 'panel-lectura-chat',
+      ruta: () => `/reservas/${viajeHU66()}`,
+      sesion: 'despacho',
+      accion: async (pagina) => {
+        await pagina.getByRole('button', { name: 'Ver chat con el pasajero' }).click();
+        await pagina.getByRole('dialog', { name: 'Chat del viaje (solo lectura)' }).getByRole('list').waitFor();
+      },
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
@@ -418,6 +432,41 @@ function viajeHU65() {
     .split('\n')
     .at(-1);
   return viajeActivo;
+}
+
+// HU-66: el viaje de la cuenta de HU-64 pasa a ACEPTADO con conductor4, con mensajes sintéticos en su chat y soporte.
+const PREPARAR_HU66 = [
+  'from apps.chat import servicios as s',
+  'from apps.flota.models import Conductor',
+  'from apps.reservas.cuentas_pasajero import reservas_de',
+  'from apps.reservas.models import CuentaPasajero, Viaje',
+  'cuenta = CuentaPasajero.objects.get(usuario__email="activa-hu64@correo.example")',
+  'v = reservas_de(cuenta).order_by("-pk").first()',
+  `c = Conductor.objects.get(usuario__email="conductor4@${EMPRESA}.example")`,
+  'from apps.flota.models import ConductorVehiculo',
+  'veh = ConductorVehiculo.objects.filter(conductor=c).first().vehiculo',
+  'Viaje.objects.filter(pk=v.pk).update(conductor=c, vehiculo=veh, estado="ACEPTADO")',
+  'v.refresh_from_db()',
+  'chat = s.conversacion_de_viaje(v)',
+  'if not chat.mensajes.exists():',
+  '    s.publicar(c.usuario, chat, "Hola, voy en camino. Llego en 10 minutos.")',
+  '    s.publicar(cuenta.usuario, chat, "Perfecto, te espero en la entrada principal.")',
+  'soporte = s.soporte_de(cuenta.usuario)',
+  'if not soporte.mensajes.exists():',
+  '    s.publicar(cuenta.usuario, soporte, f"[Viaje N.º {v.pk}] ¿Puedo llevar una bicicleta plegable?")',
+  'print(v.pk)',
+].join('\n');
+let viajeConChat = null;
+
+function viajeHU66() {
+  viajeHU65();
+  viajeConChat ??= execFileSync('docker', ['compose', '-f', '../infra/docker-compose.dev.yml', 'exec', '-T', 'backend', 'python', 'manage.py', 'shell', '-c', PREPARAR_HU66], {
+    encoding: 'utf8',
+  })
+    .trim()
+    .split('\n')
+    .at(-1);
+  return viajeConChat;
 }
 
 /** HU-59: ingreso a la app del conductor con conductor1 (clave de los usuarios demo). */

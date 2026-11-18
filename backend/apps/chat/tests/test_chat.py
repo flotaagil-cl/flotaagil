@@ -23,6 +23,10 @@ def chofer2(empresa):
     return ConductorFactory(usuario__empresa=empresa, usuario__nombre="Ana Rojas")
 
 
+def despachador_de(empresa):
+    return UsuarioFactory(empresa=empresa, rol="DESPACHADOR")
+
+
 def como(cliente, usuario):
     cliente.force_authenticate(usuario)
     return cliente
@@ -195,11 +199,18 @@ class TestPrivacidad:
             == 403
         )
 
-    @pytest.mark.parametrize("rol", ["PASAJERO", "CONVENIO"])
-    def test_clientes_finales_fuera_del_chat_de_trabajo(self, cliente, empresa, rol):
-        como(cliente, UsuarioFactory(empresa=empresa, rol=rol))
+    def test_clientes_finales_fuera_del_chat_de_trabajo(self, cliente, empresa, chofer):
+        lista(como(cliente, despachador_de(empresa)))  # crea el hilo central del conductor
+        como(cliente, UsuarioFactory(empresa=empresa, rol="CONVENIO"))
         assert cliente.get(reverse("chat-conversaciones")).status_code == 403
+        # HU-66: el pasajero con módulo entra al chat, pero solo a sus viajes y su soporte.
+        como(cliente, UsuarioFactory(empresa=empresa, rol="PASAJERO"))
+        assert lista(cliente) == []
         assert cliente.get(reverse("chat-personal")).status_code == 403
+        assert (
+            cliente.post(reverse("chat-directos"), {"usuario": chofer.usuario.pk}, format="json").status_code
+            == 403
+        )
 
     def test_otra_empresa_no_existe(self, cliente, chofer, otra_empresa):
         central = lista(como(cliente, chofer.usuario))[0]["id"]

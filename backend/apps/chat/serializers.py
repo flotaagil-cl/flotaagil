@@ -30,6 +30,12 @@ class ConversacionChatSerializer(serializers.Serializer):
     ultimo_mensaje_en = serializers.DateTimeField(allow_null=True)
     puede_gestionar = serializers.BooleanField(help_text="Grupos: puede renombrar y cambiar integrantes.")
     puede_borrar = serializers.BooleanField(help_text="Grupos: su creador o el administrador.")
+    puede_escribir = serializers.BooleanField(
+        help_text="HU-66: el chat del viaje queda en solo lectura al terminar."
+    )
+    viaje = serializers.IntegerField(
+        allow_null=True, help_text="HU-66: el viaje del hilo conductor ↔ pasajero."
+    )
 
 
 class PaginaMensajesSerializer(serializers.Serializer):
@@ -43,6 +49,9 @@ class PaginaMensajesSerializer(serializers.Serializer):
 class NuevoMensajeSerializer(serializers.Serializer):
     texto = serializers.CharField(max_length=MAX_TEXTO, required=False, allow_blank=True)
     rapida = serializers.ChoiceField(choices=RespuestaRapida.choices, required=False)
+    viaje = serializers.IntegerField(
+        required=False, help_text="HU-66: en soporte, el viaje al que se refiere."
+    )
 
     def validate(self, datos):
         if datos.get("rapida"):

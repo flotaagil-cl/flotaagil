@@ -16,6 +16,7 @@ export type MiViaje = components['schemas']['MiReserva'];
 export const ENLACES_PASAJERO = [
   { a: '/pedir', texto: 'Pedir traslado' },
   { a: '/mis-viajes', texto: 'Mis viajes' },
+  { a: '/soporte', texto: 'Soporte' }, // HU-66
 ];
 
 /** Solo en el menú de la cuenta: datos, contraseña y eliminar la cuenta (HU-45). */

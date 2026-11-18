@@ -132,6 +132,36 @@ describe('chat de la app', () => {
   });
 });
 
+describe('chat con el pasajero (HU-66)', () => {
+  it('con viaje en curso abre el chat del pasajero; terminado, solo lectura', async () => {
+    const { pedir, pedirFalso, llamadas } = servidor([]);
+    const delViaje = { id: 80, tipo: 'VIAJE' as const, titulo: 'Paula Pasajera', no_leidos: 0, ultimo: null, puede_escribir: true };
+    pedirFalso.mockImplementationOnce(async () => [central]);
+    render(<Chat pedir={pedir} canal={canalFalso()} enViaje viajeId={8} volver={() => {}} />);
+    pedirFalso.mockImplementationOnce(async (metodo: string, ruta: string) => (llamadas.push({ metodo, ruta }), delViaje));
+    fireEvent.click(await screen.findByRole('button', { name: 'Chat con el pasajero' }));
+    expect(await screen.findByRole('heading', { name: 'Paula Pasajera' })).toBeTruthy();
+    expect(llamadas).toContainEqual({ metodo: 'POST', ruta: '/api/chat/viajes/8/' });
+    expect(screen.getByLabelText('Mensaje')).toBeTruthy();
+    cleanup();
+    pedirFalso.mockImplementationOnce(async () => [{ ...delViaje, puede_escribir: false }] as never);
+    render(<Chat pedir={pedir} canal={canalFalso()} enViaje={false} volver={() => {}} />);
+    expect(screen.queryByRole('button', { name: 'Chat con el pasajero' })).toBeNull();
+    fireEvent.click(await screen.findByRole('button', { name: /Paula Pasajera/ }));
+    expect(await screen.findByText('El viaje terminó: este chat queda en solo lectura.')).toBeTruthy();
+    expect(screen.queryByLabelText('Mensaje')).toBeNull();
+  });
+
+  it('sin cuenta del pasajero lo dice', async () => {
+    const { pedir, pedirFalso } = servidor([]);
+    render(<Chat pedir={pedir} canal={canalFalso()} enViaje viajeId={8} volver={() => {}} />);
+    await screen.findByRole('button', { name: /Central/ });
+    pedirFalso.mockRejectedValueOnce(new ErrorApi(404, { detail: 'El pasajero no tiene cuenta: comunícate por la central.' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Chat con el pasajero' }));
+    expect(await screen.findByText(/El pasajero no tiene cuenta/)).toBeTruthy();
+  });
+});
+
 describe('canal del chat', () => {
   function crear() {
     const sockets: (SocketMinimo & { url: string; protocolos: string[]; close: ReturnType<typeof vi.fn> })[] = [];

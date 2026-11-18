@@ -20,6 +20,8 @@ export function conversacionChat(cambios: Partial<Conversacion> = {}): Conversac
     ultimo_mensaje_en: '2026-11-17T12:00:00Z',
     puede_gestionar: false,
     puede_borrar: false,
+    puede_escribir: true,
+    viaje: null,
     ...cambios,
   };
 }
@@ -37,6 +39,9 @@ export class ServidorChatFalso {
     { id: 3, nombre: 'Carla Conductora', rol: 'CONDUCTOR' },
   ];
   grupos = new Map<number, Grupo>();
+  /** HU-66: el hilo del viaje 80 (null = el viaje no tiene chat) y cuántas lecturas auditadas hubo. */
+  chatDelViaje: Conversacion | null = null;
+  lecturas = 0;
   /** «MÉTODO ruta» y cuerpo de cada petición que no es GET. */
   recibidas: { ruta: string; cuerpo: unknown }[] = [];
   private programadas = new Map<string, Respuesta[]>();
@@ -61,6 +66,21 @@ export class ServidorChatFalso {
     if (programada) return programada;
 
     if (ruta === 'GET /api/chat/conversaciones/') return { estado: 200, cuerpo: this.conversaciones };
+    // HU-66: chat del viaje (con el pasajero), lectura auditada de la central y soporte.
+    const delViaje = /^\/api\/chat\/viajes\/(\d+)\/(lectura\/)?$/.exec(url.pathname);
+    if (delViaje && delViaje[2]) {
+      this.lecturas += 1;
+      return { estado: 200, cuerpo: { results: this.mensajes.get(80) ?? [], hay_mas: false, leido_por_otros_hasta: 0 } };
+    }
+    if (delViaje) {
+      if (!this.chatDelViaje) return { estado: 404, cuerpo: { detail: 'No encontrado.', code: 'sin_cuenta' } };
+      if (!this.mensajes.has(80)) this.mensajes.set(80, []);
+      return { estado: 200, cuerpo: this.chatDelViaje };
+    }
+    if (ruta === 'POST /api/chat/soporte/') {
+      if (!this.mensajes.has(90)) this.mensajes.set(90, []);
+      return { estado: 200, cuerpo: conversacionChat({ id: 90, tipo: 'SOPORTE', titulo: 'Soporte', no_leidos: 0, ultimo: null }) };
+    }
     if (ruta === 'GET /api/chat/personal/') return { estado: 200, cuerpo: this.personal };
     if (ruta === 'GET /api/chat/moderacion/grupos/') return { estado: 200, cuerpo: [...this.grupos.values()] };
     if (ruta === 'POST /api/chat/directos/') {

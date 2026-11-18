@@ -87,6 +87,12 @@ class Command(BaseCommand):
                 Geocerca.objects.get_or_create(
                     empresa=empresa, nombre=NOMBRE_ZONA_SCL, defaults={"poligono": poligono_scl()}
                 )
+                # HU-66: números sintéticos de la central para los botones de emergencia del portal.
+                configuracion = empresa.configuracion
+                if not configuracion.telefono_central:
+                    configuracion.telefono_central = f"+5622999{numero:04d}"
+                    configuracion.whatsapp_central = f"+5699990{numero:04d}"
+                    configuracion.save(update_fields=["telefono_central", "whatsapp_central"])
                 conductores = []
                 for rol, alias in USUARIOS_POR_EMPRESA:
                     nombre = faker.name()

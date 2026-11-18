@@ -259,7 +259,9 @@ export default function App() {
     return <Consentimiento alAceptar={async () => setPerfil(await api.pedir<Perfil>('POST', '/api/app/consentimiento/'))} />;
   }
   if (enMiTurno) return <MiTurno cargar={cargarMiTurno} volver={() => setEnMiTurno(false)} />;
-  if (enChat) return <Chat pedir={pedirChat} canal={canalChat} enViaje={viaje !== null} volver={() => (setEnChat(false), contarNoLeidos())} />;
+  if (enChat) {
+    return <Chat pedir={pedirChat} canal={canalChat} enViaje={viaje !== null} viajeId={viaje?.id ?? null} volver={() => (setEnChat(false), contarNoLeidos())} />;
+  }
   return (
     <Inicio
       usuario={estado.usuario}

@@ -9,7 +9,7 @@ from django.db import models, transaction
 from django.db.models import F, Q
 from django.db.models.functions import Now
 
-from apps.comun.validadores import validar_kebab, validar_no_vacio, validar_rut
+from apps.comun.validadores import validar_kebab, validar_no_vacio, validar_rut, validar_telefono_e164
 
 
 class Plan(models.TextChoices):
@@ -111,6 +111,14 @@ class ConfiguracionEmpresa(models.Model):
     reserva_publica_max_correo_hora = _minutos(5, minimo=1)
     reserva_publica_max_convenio_hora = _minutos(30, minimo=1)
     cierre_no_confirmada_horas = _minutos(2, minimo=1)
+    # DC-62 (CC-19, HU-66): botones de emergencia del portal («Llamar a la central», `tel:`, y «WhatsApp de la
+    # central», `wa.me`). Vacíos, el botón no se muestra.
+    telefono_central = models.CharField(
+        max_length=16, blank=True, default="", validators=[validar_telefono_e164]
+    )
+    whatsapp_central = models.CharField(
+        max_length=16, blank=True, default="", validators=[validar_telefono_e164]
+    )
     # Zona de operación: rectángulo aproximado de la Región Metropolitana por defecto.
     zona_lat_min = _coordenada("-34.300000", 90)
     zona_lat_max = _coordenada("-32.920000", 90)
