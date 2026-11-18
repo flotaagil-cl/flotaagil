@@ -3164,6 +3164,12 @@ export interface components {
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
             /** @description Número del vuelo de salida (opcional, solo viajes al aeropuerto; no se monitorea). */
             vuelo_salida_numero?: string | null;
+            /**
+             * Format: date-time
+             * @description Hora de salida del vuelo (opcional, viajes al aeropuerto).
+             */
+            vuelo_salida_en?: string | null;
+            vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["NullEnum"]) | null;
         };
         /** @description HU-42: con cuenta, la respuesta trae el número de la reserva (el pasajero solo ve las suyas). */
         PedidoRecibido: {
@@ -3848,6 +3854,12 @@ export interface components {
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
             /** @description Número del vuelo de salida (opcional, solo viajes al aeropuerto; no se monitorea). */
             vuelo_salida_numero?: string | null;
+            /**
+             * Format: date-time
+             * @description Hora de salida del vuelo (opcional, viajes al aeropuerto).
+             */
+            vuelo_salida_en?: string | null;
+            vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["NullEnum"]) | null;
         };
         ViajeDelTurno: {
             id: number;

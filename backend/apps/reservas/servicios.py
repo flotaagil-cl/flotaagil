@@ -58,6 +58,17 @@ def _validar_recogida(recogida_en) -> None:
         raise ValidationError({"recogida_en": ["La hora de recogida debe ser futura."]})
 
 
+CAMPOS_SALIDA = ("vuelo_salida_en", "vuelo_salida_tipo", "vuelo_salida_numero")
+
+
+def _validar_hora_y_tipo(hora, tipo) -> None:
+    """DC-70: la hora y el tipo del vuelo de salida van juntos (el tipo define la antelación)."""
+    if hora and not tipo:
+        raise ValidationError({"vuelo_salida_tipo": ["Indica si el vuelo es nacional o internacional."]})
+    if tipo and not hora:
+        raise ValidationError({"vuelo_salida_en": ["Indica la hora de salida."]})
+
+
 def _validar_vuelo(sentido: str, vuelo: dict | None) -> None:
     if vuelo and sentido != Sentido.DESDE_AEROPUERTO:
         raise ValidationError(
@@ -152,6 +163,7 @@ def crear_viaje(
     if validar_futuro:
         _validar_recogida(datos["recogida_en"])
     _validar_vuelo(sentido, vuelo)
+    _validar_hora_y_tipo(datos.get("vuelo_salida_en"), datos.get("vuelo_salida_tipo"))  # DC-70 (panel)
     if vuelo and "verificado" not in vuelo:
         vuelo = verificar_vuelo(vuelo)
     origen = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir")
@@ -174,9 +186,9 @@ def crear_viaje(
             tarifa=datos.get("tarifa"),
             pasajeros=datos.get("pasajeros", 1),
             maletas=datos.get("maletas", 0),
-            vuelo_salida_en=(datos.get("vuelo_salida") or {}).get("hora"),
-            vuelo_salida_tipo=(datos.get("vuelo_salida") or {}).get("tipo"),
-            # HU-69: el portal lo trae dentro de `vuelo_salida`; el panel, aparte.
+            # HU-69: el portal los trae dentro de `vuelo_salida`; el panel, como campos sueltos (DC-70).
+            vuelo_salida_en=(datos.get("vuelo_salida") or {}).get("hora") or datos.get("vuelo_salida_en"),
+            vuelo_salida_tipo=(datos.get("vuelo_salida") or {}).get("tipo") or datos.get("vuelo_salida_tipo"),
             vuelo_salida_numero=(datos.get("vuelo_salida") or {}).get("numero")
             or datos.get("vuelo_salida_numero"),
             estado=estado_inicial,
@@ -207,16 +219,21 @@ def editar_viaje(viaje: Viaje, datos: dict, *, geocodificador=None) -> Viaje:
         _validar_recogida(datos["recogida_en"])
 
     campos = {k: datos[k] for k in ("sentido", "recogida_en", "tarifa") if k in datos}
-    # HU-69: número del vuelo de salida, solo en viajes al aeropuerto (si deja de serlo, se borra).
+    # HU-69 (DC-70): vuelo de salida (hora, tipo y número), solo hacia el aeropuerto; si no, se borra.
     if sentido != Sentido.HACIA_AEROPUERTO:
-        if datos.get("vuelo_salida_numero"):
-            raise ValidationError(
-                {"vuelo_salida_numero": ["El vuelo de salida solo se informa en viajes al aeropuerto."]}
-            )
-        if viaje.vuelo_salida_numero:
-            campos["vuelo_salida_numero"] = None
-    elif "vuelo_salida_numero" in datos:
-        campos["vuelo_salida_numero"] = datos["vuelo_salida_numero"]
+        for campo in CAMPOS_SALIDA:
+            if datos.get(campo):
+                raise ValidationError(
+                    {campo: ["El vuelo de salida solo se informa en viajes al aeropuerto."]}
+                )
+            if getattr(viaje, campo):
+                campos[campo] = None
+    else:
+        campos.update({campo: datos[campo] for campo in CAMPOS_SALIDA if campo in datos})
+        _validar_hora_y_tipo(
+            campos.get("vuelo_salida_en", viaje.vuelo_salida_en),
+            campos.get("vuelo_salida_tipo", viaje.vuelo_salida_tipo),
+        )
     if "origen_dir" in datos and datos["origen_dir"] != viaje.origen_dir:
         campos["origen_dir"] = datos["origen_dir"]
         campos["origen_geo"] = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir")

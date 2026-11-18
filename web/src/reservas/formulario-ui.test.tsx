@@ -110,6 +110,37 @@ describe('crear reserva', () => {
     });
   });
 
+  it('DC-70: hacia el aeropuerto, con hora y tipo de salida (como el portal)', async () => {
+    const { viajes } = await abrirNueva();
+    const usuario = await llenarBasico();
+    await usuario.click(screen.getByLabelText('Hacia el aeropuerto'));
+    expect(screen.getByLabelText('Internacional')).toBeChecked();
+    await usuario.type(screen.getByLabelText('Número de vuelo (opcional)'), 'la 601');
+    fijarHora('Hora de salida', '2026-11-02T14:30');
+    await usuario.click(screen.getByLabelText('Nacional'));
+    await usuario.click(screen.getByRole('button', { name: 'Guardar reserva' }));
+    await waitFor(() => expect(cuerpos(viajes, 'POST /api/viajes/')).toHaveLength(1));
+    expect(cuerpos(viajes, 'POST /api/viajes/')[0]).toMatchObject({
+      sentido: 'HACIA_AEROPUERTO',
+      vuelo_salida_numero: 'LA 601',
+      vuelo_salida_en: '2026-11-02T17:30:00.000Z',
+      vuelo_salida_tipo: 'NACIONAL',
+    });
+  });
+
+  it('DC-70: sin hora de salida no envía hora ni tipo', async () => {
+    const { viajes } = await abrirNueva();
+    const usuario = await llenarBasico();
+    await usuario.click(screen.getByLabelText('Hacia el aeropuerto'));
+    await usuario.type(screen.getByLabelText('Número de vuelo (opcional)'), 'LA601');
+    await usuario.click(screen.getByRole('button', { name: 'Guardar reserva' }));
+    await waitFor(() => expect(cuerpos(viajes, 'POST /api/viajes/')).toHaveLength(1));
+    const cuerpo = cuerpos(viajes, 'POST /api/viajes/')[0];
+    expect(cuerpo).toMatchObject({ sentido: 'HACIA_AEROPUERTO', vuelo_salida_numero: 'LA601' });
+    expect(cuerpo).not.toHaveProperty('vuelo_salida_en');
+    expect(cuerpo).not.toHaveProperty('vuelo_salida_tipo');
+  });
+
   it('los 400 del backend se muestran en cada campo, también los anidados', async () => {
     const { viajes } = await abrirNueva();
     viajes.siguiente('POST /api/viajes/', {

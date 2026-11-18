@@ -388,7 +388,11 @@ const PANTALLAS = {
       sesion: 'despacho',
       accion: async (pagina) => {
         await pagina.getByRole('radio', { name: 'Hacia el aeropuerto' }).check();
-        await pagina.getByLabel('Número del vuelo de salida').fill('LA 601');
+        await pagina.getByLabel('Número de vuelo (opcional)').fill('LA 601');
+        // DC-70: hora y tipo del vuelo de salida, como en el portal (mañana a las 18:00, sintético).
+        const manana = new Date(Date.now() + 86_400_000).toLocaleDateString('sv-SE', { timeZone: 'America/Santiago' });
+        await pagina.getByLabel('Hora de salida').fill(`${manana}T18:00`);
+        await pagina.getByLabel('Nacional', { exact: true }).check();
       },
     },
     {

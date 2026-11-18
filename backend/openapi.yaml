@@ -6144,6 +6144,16 @@ components:
           description: Número del vuelo de salida (opcional, solo viajes al aeropuerto;
             no se monitorea).
           maxLength: 8
+        vuelo_salida_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: Hora de salida del vuelo (opcional, viajes al aeropuerto).
+        vuelo_salida_tipo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/TipoVueloEnum'
+          - $ref: '#/components/schemas/NullEnum'
     PedidoRecibido:
       type: object
       description: 'HU-42: con cuenta, la respuesta trae el número de la reserva (el
@@ -7862,6 +7872,16 @@ components:
           description: Número del vuelo de salida (opcional, solo viajes al aeropuerto;
             no se monitorea).
           maxLength: 8
+        vuelo_salida_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: Hora de salida del vuelo (opcional, viajes al aeropuerto).
+        vuelo_salida_tipo:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/TipoVueloEnum'
+          - $ref: '#/components/schemas/NullEnum'
       required:
       - destino_dir
       - origen_dir

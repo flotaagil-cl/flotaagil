@@ -110,3 +110,64 @@ class TestNumeroDeSalida:
             vuelo_salida_tipo="NACIONAL",
         )
         assert Viaje.objects.get(pk=viaje.pk).vuelo_salida_numero is None
+
+
+class TestSalidaEnElPanel:
+    """DC-70 (aprobada con cambio): hora y tipo de salida opcionales en el panel, como en el portal."""
+
+    @pytest.mark.parametrize(
+        ("tipo", "antelacion"),
+        [
+            ("NACIONAL", "antelacion_vuelo_nacional_min"),
+            ("INTERNACIONAL", "antelacion_vuelo_internacional_min"),
+        ],
+    )
+    def test_con_hora_calcula_cuando_debe_estar_en_el_aeropuerto(self, api, despachador, tipo, antelacion):
+        despegue = timezone.now() + timedelta(hours=8)
+        datos = reserva(
+            sentido="HACIA_AEROPUERTO",
+            vuelo_salida_numero="LA601",
+            vuelo_salida_en=despegue.isoformat(),
+            vuelo_salida_tipo=tipo,
+        )
+        respuesta = api.post(LISTA, datos, format="json")
+        assert respuesta.status_code == 201, respuesta.data
+        minutos = getattr(despachador.empresa.configuracion, antelacion)
+        esperado = timezone.localtime(despegue - timedelta(minutes=minutos)).isoformat()
+        assert respuesta.data["vuelo_salida_tipo"] == tipo
+        assert respuesta.data["en_aeropuerto_a_las"] == esperado
+
+    def test_sin_hora_queda_sin_hora_en_el_aeropuerto(self, api):
+        respuesta = api.post(
+            LISTA, reserva(sentido="HACIA_AEROPUERTO", vuelo_salida_numero="LA601"), format="json"
+        )
+        assert respuesta.status_code == 201
+        assert (respuesta.data["vuelo_salida_en"], respuesta.data["en_aeropuerto_a_las"]) == (None, None)
+
+    @pytest.mark.parametrize(
+        ("cambios", "campo"),
+        [
+            ({"vuelo_salida_en": en_horas(8)}, "vuelo_salida_tipo"),
+            ({"vuelo_salida_tipo": "NACIONAL"}, "vuelo_salida_en"),
+            (
+                {"sentido": "URBANO", "vuelo_salida_en": en_horas(8), "vuelo_salida_tipo": "NACIONAL"},
+                "vuelo_salida_en",
+            ),
+        ],
+    )
+    def test_hora_y_tipo_van_juntos_y_solo_hacia_el_aeropuerto(self, api, cambios, campo):
+        respuesta = api.post(LISTA, reserva(**{"sentido": "HACIA_AEROPUERTO", **cambios}), format="json")
+        assert respuesta.status_code == 400 and campo in respuesta.data
+
+    def test_editar_agrega_quita_y_borra_al_cambiar_de_sentido(self, api, despachador):
+        viaje = ViajeFactory(empresa=despachador.empresa, sentido=Sentido.HACIA_AEROPUERTO)
+        url = reverse("viaje-detail", args=[viaje.pk])
+        hora = en_horas(8)
+        datos = api.patch(url, {"vuelo_salida_en": hora, "vuelo_salida_tipo": "NACIONAL"}, format="json").data
+        assert datos["en_aeropuerto_a_las"] is not None
+        assert api.patch(url, {"vuelo_salida_tipo": None}, format="json").status_code == 400
+        quitada = api.patch(url, {"vuelo_salida_en": None, "vuelo_salida_tipo": None}, format="json").data
+        assert quitada["en_aeropuerto_a_las"] is None
+        api.patch(url, {"vuelo_salida_en": hora, "vuelo_salida_tipo": "INTERNACIONAL"}, format="json")
+        urbano = api.patch(url, {"sentido": "URBANO"}, format="json").data
+        assert (urbano["vuelo_salida_en"], urbano["vuelo_salida_tipo"]) == (None, None)

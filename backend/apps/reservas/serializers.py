@@ -8,7 +8,7 @@ from apps.comun.validadores import normalizar_telefono, validar_telefono_e164, v
 from apps.convenios.models import Convenio, EstadoConvenio
 
 from . import estados
-from .models import MONTO_MAXIMO, Canal, EstadoViaje, HistorialEstado, MetodoPago, Sentido, Viaje
+from .models import MONTO_MAXIMO, Canal, EstadoViaje, HistorialEstado, MetodoPago, Sentido, TipoVuelo, Viaje
 
 
 class UbicacionSerializer(serializers.Serializer):
@@ -288,6 +288,9 @@ def normalizar_numero_vuelo(valor: str | None) -> str | None:
     return numero
 
 
+CAMPOS_SALIDA = ("vuelo_salida_en", "vuelo_salida_tipo", "vuelo_salida_numero")
+
+
 def numero_de_salida(**opciones):
     """HU-69: número del vuelo de salida, opcional y sin monitoreo (solo viajes al aeropuerto)."""
     return serializers.CharField(
@@ -323,15 +326,24 @@ class ViajeCrearSerializer(serializers.Serializer):
     tarifa = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     vuelo = VueloEntradaSerializer(required=False, allow_null=True)
     vuelo_salida_numero = numero_de_salida()
+    # HU-69 (DC-70): hora y tipo del vuelo de salida, opcionales, como en el portal (HU-39).
+    vuelo_salida_en = serializers.DateTimeField(
+        required=False,
+        allow_null=True,
+        help_text="Hora de salida del vuelo (opcional, viajes al aeropuerto).",
+    )
+    vuelo_salida_tipo = serializers.ChoiceField(choices=TipoVuelo.choices, required=False, allow_null=True)
 
     def validate_vuelo_salida_numero(self, valor):
         return normalizar_numero_vuelo(valor)
 
     def validate(self, datos):
-        if datos.get("vuelo_salida_numero") and datos["sentido"] != Sentido.HACIA_AEROPUERTO:
-            raise serializers.ValidationError(
-                {"vuelo_salida_numero": "El vuelo de salida solo se informa en viajes al aeropuerto."}
-            )
+        if datos["sentido"] != Sentido.HACIA_AEROPUERTO:
+            for campo in CAMPOS_SALIDA:
+                if datos.get(campo):
+                    raise serializers.ValidationError(
+                        {campo: "El vuelo de salida solo se informa en viajes al aeropuerto."}
+                    )
         if datos["canal"] == Canal.CONVENIO and not datos.get("convenio"):
             raise serializers.ValidationError(
                 {"convenio": "Indica el convenio para una reserva corporativa."}
@@ -355,6 +367,13 @@ class ViajeEditarSerializer(serializers.Serializer):
     tarifa = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     vuelo = VueloEntradaSerializer(required=False, allow_null=True)
     vuelo_salida_numero = numero_de_salida()
+    # HU-69 (DC-70): hora y tipo del vuelo de salida, opcionales, como en el portal (HU-39).
+    vuelo_salida_en = serializers.DateTimeField(
+        required=False,
+        allow_null=True,
+        help_text="Hora de salida del vuelo (opcional, viajes al aeropuerto).",
+    )
+    vuelo_salida_tipo = serializers.ChoiceField(choices=TipoVuelo.choices, required=False, allow_null=True)
 
     def validate_vuelo_salida_numero(self, valor):
         return normalizar_numero_vuelo(valor)

@@ -132,6 +132,16 @@ describe('cuerpo para la API', () => {
     expect(cuerpoEditar(hacia, {})).toEqual({});
   });
 
+  it('DC-70: hora y tipo de salida al editar (con hora van los dos; sin hora se quitan los dos)', () => {
+    const hacia = { ...validos, vuelo_salida_hora: { pared: '2026-11-02T14:30', ocurrencia: 'primera' as const }, vuelo_salida_tipo: 'NACIONAL' as const };
+    expect(cuerpoCrear(hacia)).toMatchObject({ vuelo_salida_en: '2026-11-02T17:30:00.000Z', vuelo_salida_tipo: 'NACIONAL' });
+    expect(cuerpoEditar(hacia, { vuelo_salida_tipo: true })).toEqual({ vuelo_salida_en: '2026-11-02T17:30:00.000Z', vuelo_salida_tipo: 'NACIONAL' });
+    expect(cuerpoEditar({ ...hacia, vuelo_salida_hora: { pared: '', ocurrencia: 'primera' } }, { vuelo_salida_hora: true })).toEqual({ vuelo_salida_en: null, vuelo_salida_tipo: null });
+    expect(errores({ ...hacia, vuelo_salida_hora: { pared: '2026-09-06T00:30', ocurrencia: 'primera' } })).toHaveProperty('vuelo_salida_hora');
+    const viaje = viajeDePrueba({ sentido: 'HACIA_AEROPUERTO', vuelo_salida_en: '2026-11-02T17:30:00Z', vuelo_salida_tipo: 'NACIONAL', vuelo_salida_numero: 'LA 601' });
+    expect(valoresDeViaje(viaje)).toMatchObject({ vuelo_salida_numero: 'LA 601', vuelo_salida_tipo: 'NACIONAL', vuelo_salida_hora: { pared: '2026-11-02T14:30' } });
+  });
+
   it('editar: solo los campos modificados', () => {
     const valores = { ...validos, sentido: 'DESDE_AEROPUERTO' as const };
     expect(cuerpoEditar(valores, {})).toEqual({});

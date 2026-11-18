@@ -209,14 +209,39 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
       )}
 
       {sentido === 'HACIA_AEROPUERTO' && (
-        // HU-69: el número del vuelo de salida es opcional y no se monitorea.
+        // HU-69 (DC-70): los mismos datos opcionales del portal; no se monitorean. Con la hora y el tipo, la
+        // reserva muestra a qué hora debe estar el pasajero en el aeropuerto.
         <fieldset disabled={bloqueado}>
           <legend>Vuelo de salida (opcional)</legend>
-          <Campo etiqueta="Número del vuelo de salida" error={errors.vuelo_salida_numero?.message}>
+          <Campo etiqueta="Número de vuelo (opcional)" error={errors.vuelo_salida_numero?.message}>
             {(control) => (
-              <input autoComplete="off" autoCapitalize="characters" placeholder="LA601" {...control} {...register('vuelo_salida_numero')} />
+              <input autoComplete="off" autoCapitalize="characters" placeholder="Por ejemplo, LA 601" {...control} {...register('vuelo_salida_numero')} />
             )}
           </Campo>
+          <Controller
+            control={control}
+            name="vuelo_salida_hora"
+            render={({ field }) => (
+              <CampoFechaHora
+                etiqueta="Hora de salida"
+                nombre="vuelo-salida-hora"
+                valor={field.value}
+                alCambiar={field.onChange}
+                alSalir={field.onBlur}
+                refCampo={field.ref}
+                error={errors.vuelo_salida_hora?.message}
+              />
+            )}
+          />
+          <fieldset className={campos.opciones}>
+            <legend>Tipo de vuelo</legend>
+            {(['NACIONAL', 'INTERNACIONAL'] as const).map((tipoVuelo) => (
+              <label key={tipoVuelo} className={campos.opcion}>
+                <input type="radio" value={tipoVuelo} {...register('vuelo_salida_tipo')} />
+                {tipoVuelo === 'NACIONAL' ? 'Nacional' : 'Internacional'}
+              </label>
+            ))}
+          </fieldset>
         </fieldset>
       )}
 
