@@ -170,3 +170,7 @@ tbody > tr[data-con-vuelo='true'][data-con-vuelo] > td {
   gap: var(--espacio-1);
   margin-top: var(--espacio-1);
 }
+
+.bloque {
+  display: block;
+}

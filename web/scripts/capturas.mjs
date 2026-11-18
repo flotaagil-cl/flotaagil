@@ -375,6 +375,23 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-69: vuelos en el panel (datos de vuelosHU69) y en la app (CAPTURAS_URL de la app y CAPTURAS_SOLO=app-vuelo).
+  'HU-69': [
+    { nombre: 'panel-reservas-vuelos', ruta: () => (vuelosHU69(), '/reservas'), sesion: 'despacho' },
+    { nombre: 'panel-vuelos-de-hoy', ruta: () => (vuelosHU69(), '/vuelos-de-hoy'), sesion: 'despacho' },
+    { nombre: 'panel-detalle-vuelo-demorado', ruta: () => `/reservas/${vuelosHU69().demorado}`, sesion: 'despacho' },
+    { nombre: 'panel-detalle-vuelo-cancelado', ruta: () => `/reservas/${vuelosHU69().cancelado}`, sesion: 'despacho' },
+    { nombre: 'panel-detalle-salida', ruta: () => `/reservas/${vuelosHU69().salida}`, sesion: 'despacho' },
+    {
+      nombre: 'app-vuelo',
+      ruta: () => (vuelosHU69(), '/'),
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByText(/Vuelo H2290/).waitFor();
+      },
+    },
+  ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
   'HU-45': [
@@ -390,6 +407,62 @@ const PANTALLAS = {
     },
   ],
 };
+
+// HU-69: cuatro viajes de aeropuerto de hoy (sintéticos): uno a tiempo, uno demorado 40 min (con propuesta y
+// asignado a conductor1 para la app), uno cancelado por la aerolínea y una salida internacional. Usa simular_vuelo.
+const VUELOS_HU69 = [
+  'import json',
+  'from datetime import timedelta',
+  'from django.core.management import call_command',
+  'from django.utils import timezone',
+  'from apps.cuentas.models import Empresa',
+  'from apps.flota.models import Conductor, ConductorVehiculo',
+  'from apps.reservas import servicios',
+  'from apps.reservas.models import Actor, EstadoViaje, Sentido, Viaje',
+  `e = Empresa.objects.get(slug="${EMPRESA}")`,
+  `despacho = e.usuarios.get(email="despacho@${EMPRESA}.example")`,
+  'ahora = timezone.now().replace(second=0, microsecond=0)',
+  'AEROPUERTO = "Aeropuerto Arturo Merino Benítez, Pudahuel"',
+  'def viaje(tel, nombre, sentido, en_min, numero=None, tipo=None):',
+  '    previo = Viaje.objects.filter(empresa=e, pasajero__telefono=tel, creado_en__date=timezone.localdate()).first()',
+  '    if previo: return previo',
+  '    hora = ahora + timedelta(minutes=en_min)',
+  '    llegada = sentido == Sentido.DESDE_AEROPUERTO',
+  '    datos = {"pasajero": {"nombre": nombre, "telefono": tel}, "sentido": sentido,',
+  '             "origen_dir": AEROPUERTO if llegada else "Av. Apoquindo 3000, Las Condes",',
+  '             "destino_dir": "Av. Apoquindo 3000, Las Condes" if llegada else AEROPUERTO,',
+  '             "recogida_en": hora + timedelta(minutes=20) if llegada else hora - timedelta(hours=4),',
+  '             "vuelo": {"numero": numero, "hora_programada": hora} if llegada else None,',
+  '             "vuelo_salida": None if llegada else {"hora": hora, "tipo": tipo}}',
+  '    return servicios.crear_viaje(empresa=e, datos=datos, canal="TELEFONO", estado_inicial=EstadoViaje.SOLICITADO,',
+  '                                 actor=Actor.DESPACHADOR, usuario=despacho, validar_futuro=False)',
+  'a_tiempo = viaje("+56900069001", "Valentina Sintética", Sentido.DESDE_AEROPUERTO, 70, "LA841")',
+  'demorado = viaje("+56900069002", "Tomás Sintético", Sentido.DESDE_AEROPUERTO, 50, "H2290")',
+  'cancelado = viaje("+56900069003", "Josefa Sintética", Sentido.DESDE_AEROPUERTO, 110, "JA131")',
+  'salida = viaje("+56900069004", "Matías Sintético", Sentido.HACIA_AEROPUERTO, 300, tipo="INTERNACIONAL")',
+  'call_command("simular_vuelo", a_tiempo.pk, "--eta-min", "0", "--estado", "PROGRAMADO", "--origen", "SCFA", stdout=open("/dev/null", "w"))',
+  'if not demorado.vuelo.recogida_propuesta and demorado.conductor_id is None:',
+  '    call_command("simular_vuelo", demorado.pk, "--eta-min", "40", "--estado", "DEMORADO", "--origen", "SAEZ", stdout=open("/dev/null", "w"))',
+  'call_command("simular_vuelo", cancelado.pk, "--eta-min", "0", "--estado", "CANCELADO", stdout=open("/dev/null", "w"))',
+  `c = Conductor.objects.get(usuario__email="conductor1@${EMPRESA}.example")`,
+  'veh = ConductorVehiculo.objects.filter(conductor=c).first().vehiculo',
+  'Viaje.objects.filter(pk=demorado.pk).update(conductor=c, vehiculo=veh, estado=EstadoViaje.ACEPTADO)',
+  'print(json.dumps({"a_tiempo": a_tiempo.pk, "demorado": demorado.pk, "cancelado": cancelado.pk, "salida": salida.pk}))',
+].join('\n');
+let vuelosDeHoy = null;
+
+/** HU-69: crea (si faltan) los viajes de aeropuerto sintéticos de hoy y devuelve sus ids. */
+function vuelosHU69() {
+  vuelosDeHoy ??= JSON.parse(
+    execFileSync('docker', ['compose', '-f', '../infra/docker-compose.dev.yml', 'exec', '-T', 'backend', 'python', 'manage.py', 'shell', '-c', VUELOS_HU69], {
+      encoding: 'utf8',
+    })
+      .trim()
+      .split('\n')
+      .at(-1),
+  );
+  return vuelosDeHoy;
+}
 
 // HU-64: una cuenta pendiente y otra para activar (sintéticas, con la clave de los usuarios demo del contenedor).
 const CUENTAS_HU64 = [

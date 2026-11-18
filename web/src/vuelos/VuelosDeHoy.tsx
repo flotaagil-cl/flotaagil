@@ -206,7 +206,7 @@ function PropuestaEnFila({ viaje, propuesta, ahora }: { viaje: Viaje; propuesta:
   return (
     <>
       {formatearHora(viaje.recogida_en, ahora)}
-      <span className={c.aviso}>⚠ propuesta {formatearHora(propuesta, ahora)} sin confirmar</span>
+      <span className={`${c.aviso} ${c.bloque}`}>⚠ propuesta {formatearHora(propuesta, ahora)} sin confirmar</span>
       <span className={c.botonesFila}>
         <button
           type="button"
