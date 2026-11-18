@@ -40,6 +40,9 @@ export interface ValoresPedido {
   salidaTipo: TipoVuelo;
   /** HU-69: número del vuelo de salida, opcional (no se monitorea). */
   salidaNumero: string;
+  /** HU-71: coordenadas de la sugerencia elegida (null si se escribió a mano: se geocodifica al guardar). */
+  origenCoordenadas: { lat: number; lon: number } | null;
+  destinoCoordenadas: { lat: number; lon: number } | null;
   /** Recogida editada a mano (al aeropuerto con «Cambiar», o en la ciudad programado). */
   recogidaFecha: string;
   recogidaHora: string;
@@ -60,6 +63,8 @@ export const VALORES_INICIALES: ValoresPedido = {
   salidaHora: '',
   salidaTipo: 'INTERNACIONAL',
   salidaNumero: '',
+  origenCoordenadas: null,
+  destinoCoordenadas: null,
   recogidaFecha: '',
   recogidaHora: '',
   cambiarRecogida: false,
@@ -97,6 +102,16 @@ export function textoAntelacion(minutos: number): string {
 
 /** Valida y arma el cuerpo. Los errores van por campo, con el texto que ve el pasajero. */
 export function armarPedido(tipo: TipoPedido, v: ValoresPedido, empresa: EmpresaPublica): { cuerpo: CuerpoPedido } | { errores: Errores } {
+  const armado = armarSinCoordenadas(tipo, v, empresa);
+  if ('errores' in armado) return armado;
+  // HU-71: con las coordenadas de la sugerencia el backend no geocodifica (el aeropuerto es fijo).
+  const cuerpo = { ...armado.cuerpo };
+  if (tipo !== 'desde-aeropuerto' && v.origenCoordenadas) cuerpo.origen_coordenadas = v.origenCoordenadas;
+  if (tipo !== 'al-aeropuerto' && v.destinoCoordenadas) cuerpo.destino_coordenadas = v.destinoCoordenadas;
+  return { cuerpo };
+}
+
+function armarSinCoordenadas(tipo: TipoPedido, v: ValoresPedido, empresa: EmpresaPublica): { cuerpo: CuerpoPedido } | { errores: Errores } {
   const errores: Errores = {};
   const maximo = empresa.capacidad_maxima;
   if (v.pasajeros > maximo) errores.pasajeros = `Podemos llevar hasta ${maximo} pasajeros en un vehículo.`;

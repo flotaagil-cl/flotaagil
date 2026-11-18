@@ -6,6 +6,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.comun.vistas import ConfiguracionPublicaView
 from apps.cuentas.configuracion import ConfiguracionEmpresaView
+from apps.integraciones.sugerencias import SugerirDireccionesView
 
 
 def salud(_request):
@@ -26,6 +27,7 @@ urlpatterns = [
     path("api/app/", include("apps.flota.app_urls")),
     path("api/chat/", include("apps.chat.urls")),
     path("api/configuracion-empresa/", ConfiguracionEmpresaView.as_view(), name="configuracion-empresa"),
+    path("api/direcciones/sugerir/", SugerirDireccionesView.as_view(), name="sugerir-direcciones"),
     path("api/portal/", include("apps.portal.urls")),
     path("api/mi-convenio/", include("apps.convenios.cuenta_urls")),
     path("api/mi-cuenta/", include("apps.reservas.cuenta_urls")),

@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Controller, useForm, useWatch, type FieldPath } from 'react-hook-form';
 import { Aviso } from '../componentes/Aviso';
 import { erroresDelBackend } from '../api/erroresDrf';
 import { useEntorno } from '../entornoContexto';
 import { Campo } from '../formularios/Campo';
+import { CampoDireccionFormulario } from '../direcciones/CampoDireccionFormulario';
+import { buscarPublico } from '../direcciones/sugerencias';
 import { CampoFechaHora } from '../formularios/CampoFechaHora';
 import { aIso, escribirPared, formatearFechaHora, paredDe } from '../hora/hora';
 import type { CuerpoSolicitud, EmpresaPublica } from './api';
@@ -58,6 +60,8 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
     resolver: zodResolver(esquemaSolicitud(empresa, entorno.ahora, conDeclaracion)),
     defaultValues: pasajeroFijo ? { ...VALORES_INICIALES, ...pasajeroFijo } : VALORES_INICIALES,
   });
+  // HU-71: sugerencias por el backend, centradas en la zona de la empresa.
+  const buscar = useMemo(() => buscarPublico(empresa.slug), [empresa.slug]);
   const [sentido, telefono, vueloNumero, recogida] = useWatch({
     control,
     name: ['sentido', 'telefono', 'vuelo.numero', 'recogida.pared'],
@@ -177,12 +181,9 @@ export function FormularioSolicitud<R>({ empresa, solicitar, intro, leyendaDatos
           </div>
         )}
 
-        <Campo etiqueta="Dirección de origen" error={errors.origen_dir?.message}>
-          {(c) => <input autoComplete="off" enterKeyHint="next" {...c} {...register('origen_dir')} />}
-        </Campo>
-        <Campo etiqueta="Dirección de destino" error={errors.destino_dir?.message}>
-          {(c) => <input autoComplete="off" enterKeyHint="next" {...c} {...register('destino_dir')} />}
-        </Campo>
+        {/* HU-71: con sugerencias mientras se escribe. */}
+        <CampoDireccionFormulario control={control} name="origen_dir" coordenadas="origen_coordenadas" etiqueta="Dirección de origen" error={errors.origen_dir?.message} buscar={buscar} />
+        <CampoDireccionFormulario control={control} name="destino_dir" coordenadas="destino_coordenadas" etiqueta="Dirección de destino" error={errors.destino_dir?.message} buscar={buscar} />
 
         <Controller
           control={control}

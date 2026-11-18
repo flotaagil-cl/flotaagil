@@ -435,6 +435,27 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-71 (DC-72): sugerencias de direcciones abiertas (backend con SUGERIDOR_DIRECCIONES=photon e internet).
+  'HU-71': [
+    {
+      nombre: 'portal-publico-sugerencias',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByRole('combobox').first().pressSequentially('Avenida Providencia 12', { delay: 40 });
+        await pagina.getByRole('option').first().waitFor({ timeout: 15000 });
+      },
+    },
+    {
+      nombre: 'panel-sugerencias',
+      ruta: '/reservas/nueva',
+      sesion: 'despacho',
+      accion: async (pagina) => {
+        await pagina.getByRole('combobox', { name: 'Origen' }).pressSequentially('Avenida Providencia 12', { delay: 40 });
+        await pagina.getByRole('option').first().waitFor({ timeout: 15000 });
+      },
+    },
+  ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
   'HU-45': [

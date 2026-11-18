@@ -96,6 +96,28 @@ class TestAlAeropuerto:
         respuesta = pedir(con_cuenta, sentido="HACIA_AEROPUERTO", recogida_en=None, vuelo_salida=salida)
         assert respuesta.status_code == 400 and "numero" in respuesta.data["vuelo_salida"]
 
+    def test_hu71_coordenadas_de_la_sugerencia(self, con_cuenta, monkeypatch):
+        """HU-71: el pedido con cuenta (y el público y el de convenio, mismo serializador) no geocodifica."""
+
+        class Prohibido:
+            def geocodificar(self, direccion, zona):
+                raise AssertionError("no debió geocodificar")
+
+        monkeypatch.setattr(reservas, "obtener_geocodificador", Prohibido)
+        coordenadas = {
+            "origen_coordenadas": {"lat": -33.42, "lon": -70.6},
+            "destino_coordenadas": {"lat": -33.39, "lon": -70.79},
+        }
+        respuesta = pedir(
+            con_cuenta,
+            sentido="HACIA_AEROPUERTO",
+            recogida_en=None,
+            vuelo_salida=self.salida("NACIONAL"),
+            **coordenadas,
+        )
+        assert respuesta.status_code == 201, respuesta.data
+        assert Viaje.objects.get().origen_geo.y == -33.42
+
     def test_antelacion_configurable(self, con_cuenta, empresa):
         empresa.configuracion.antelacion_vuelo_internacional_min = 240
         empresa.configuracion.save()

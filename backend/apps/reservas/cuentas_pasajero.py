@@ -427,6 +427,8 @@ def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, d
                 "sentido": datos["sentido"],
                 "origen_dir": datos["origen_dir"],
                 "destino_dir": datos["destino_dir"],
+                "origen_coordenadas": datos.get("origen_coordenadas"),  # HU-71
+                "destino_coordenadas": datos.get("destino_coordenadas"),
                 "recogida_en": recogida,
                 "vuelo": vuelo,
                 # HU-39 (DC-42).
