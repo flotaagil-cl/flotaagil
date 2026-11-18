@@ -18,6 +18,8 @@ class Entidad(models.TextChoices):
     TURNO = "TURNO", "Turno"
     # DC-60 (CC-19): borrado y moderación de grupos del chat.
     CONVERSACION = "CONVERSACION", "Conversación"
+    # DC-68: cambios de la configuración de la empresa desde el panel.
+    EMPRESA = "EMPRESA", "Empresa"
 
 
 class AuditoriaInmutable(Exception):

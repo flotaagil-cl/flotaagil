@@ -936,6 +936,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/configuracion-empresa/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Configuración de mi empresa */
+        get: operations["configuracion_empresa_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cambiar la configuración de mi empresa (auditado) */
+        patch: operations["configuracion_empresa_partial_update"];
+        trace?: never;
+    };
     "/api/configuracion-publica/": {
         parameters: {
             query?: never;
@@ -2364,6 +2382,22 @@ export interface components {
             id: number;
             nombre: string;
         };
+        ConfiguracionEmpresa: {
+            telefono_central?: string;
+            whatsapp_central?: string;
+            /** @description Horas antes de la recogida para confirmar (1 a 168). */
+            confirmacion_antes_horas: number;
+            /** @description Minutos si falta menos que eso (10 a 240). */
+            confirmacion_plazo_corto_min: number;
+            /** @description Horas tras la recogida para cerrar (1 a 48). */
+            cierre_no_confirmada_horas: number;
+            /** @description Solicitudes por IP y hora (1 a 500). */
+            reserva_publica_max_ip_hora: number;
+            /** @description Solicitudes por correo y hora (1 a 50). */
+            reserva_publica_max_correo_hora: number;
+            /** @description Por correo de convenio y hora (1 a 500). */
+            reserva_publica_max_convenio_hora: number;
+        };
         ConfiguracionPublica: {
             /**
              * Format: email
@@ -3043,6 +3077,22 @@ export interface components {
             licencia_clase?: components["schemas"]["LicenciaClaseEnum"];
             /** Format: date */
             licencia_vence?: string;
+        };
+        PatchedConfiguracionEmpresaRequest: {
+            telefono_central?: string;
+            whatsapp_central?: string;
+            /** @description Horas antes de la recogida para confirmar (1 a 168). */
+            confirmacion_antes_horas?: number;
+            /** @description Minutos si falta menos que eso (10 a 240). */
+            confirmacion_plazo_corto_min?: number;
+            /** @description Horas tras la recogida para cerrar (1 a 48). */
+            cierre_no_confirmada_horas?: number;
+            /** @description Solicitudes por IP y hora (1 a 500). */
+            reserva_publica_max_ip_hora?: number;
+            /** @description Solicitudes por correo y hora (1 a 50). */
+            reserva_publica_max_correo_hora?: number;
+            /** @description Por correo de convenio y hora (1 a 500). */
+            reserva_publica_max_convenio_hora?: number;
         };
         PatchedConvenioEditarRequest: {
             cliente_nombre?: string;
@@ -5332,6 +5382,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InformeImportacion"];
+                };
+            };
+        };
+    };
+    configuracion_empresa_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionEmpresa"];
+                };
+            };
+        };
+    };
+    configuracion_empresa_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedConfiguracionEmpresaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedConfiguracionEmpresaRequest"];
+                "multipart/form-data": components["schemas"]["PatchedConfiguracionEmpresaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfiguracionEmpresa"];
                 };
             };
         };

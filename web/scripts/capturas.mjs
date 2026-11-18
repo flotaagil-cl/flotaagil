@@ -375,6 +375,8 @@ const PANTALLAS = {
       },
     },
   ],
+  // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
+  'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

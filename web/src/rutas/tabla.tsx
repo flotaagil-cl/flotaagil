@@ -165,6 +165,12 @@ export const pantallasDelPanel: RouteObject[] = [
     handle: { titulo: 'Usuarios', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
   },
   {
+    // DC-68: números de emergencia y parámetros de la reserva pública, solo el administrador.
+    path: 'configuracion',
+    lazy: async () => ({ Component: (await import('../configuracion/Configuracion')).Configuracion }),
+    handle: { titulo: 'Configuración', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
     path: 'caja',
     lazy: async () => ({ Component: (await import('../caja/Caja')).Caja }),
     handle: { titulo: 'Cierre de caja', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
