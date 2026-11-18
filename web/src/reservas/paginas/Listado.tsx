@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { LineaVuelo } from '../../vuelos/LineaVuelo';
+import { useAhora } from '../../vuelos/useAhora';
+import { lineaDeVuelo } from '../../vuelos/textos';
+import cv from '../../vuelos/vuelos.module.css';
 import { Link, useSearchParams } from 'react-router';
 import { Aviso } from '../../componentes/Aviso';
 import { formatearFecha, formatearFechaHora, formatearPared } from '../../hora/hora';
@@ -56,6 +60,7 @@ export function Listado() {
   // «hoy» se fija al cargar la pantalla (y al cambiar los filtros), no en cada render.
   const { consulta, errores } = useMemo(() => consultaDeFiltros(filtros), [filtros]);
   const lista = useViajes(consulta);
+  const ahora = useAhora();
 
   function aplicar(cambios: Partial<Filtros>, opciones: { replace?: boolean } = {}) {
     setParametros(escribirFiltros(cambiarFiltros(filtros, cambios)), opciones);
@@ -296,8 +301,12 @@ export function Listado() {
                 </tr>
               </thead>
               <tbody>
-                {datos.results.map((viaje) => (
-                  <tr key={viaje.id}>
+                {datos.results.map((viaje) => {
+                  // HU-69: la línea de vuelo va en su propia fila, pegada a la de la reserva.
+                  const linea = lineaDeVuelo(viaje, ahora);
+                  return (
+                    <Fragment key={viaje.id}>
+                  <tr data-con-vuelo={linea ? 'true' : undefined}>
                     <Celda titulo="Recogida">
                       <Link to={`/reservas/${viaje.id}`}>{formatearFechaHora(viaje.recogida_en)}</Link>
                       <span className={estilos.secundario}>#{viaje.id}</span>
@@ -323,7 +332,16 @@ export function Listado() {
                     </Celda>
                     <Celda titulo="Conductor">{viaje.conductor?.nombre ?? '—'}</Celda>
                   </tr>
-                ))}
+                      {linea && (
+                        <tr className={cv.filaVuelo} aria-label={`Vuelo de la reserva ${viaje.id}`}>
+                          <td colSpan={6}>
+                            <LineaVuelo linea={linea} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })}
               </tbody>
             </table>
             {paginas > 1 && (

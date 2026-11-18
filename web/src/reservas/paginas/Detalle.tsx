@@ -10,10 +10,10 @@ import { DialogoCancelar } from '../componentes/DialogoCancelar';
 import { DialogoForzar } from '../componentes/DialogoForzar';
 import { ContactoPasajero } from '../componentes/ContactoPasajero';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
-import { PropuestaRecogida } from '../componentes/PropuestaRecogida';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
-import { ACTORES, ALERTAS_VUELO, CANALES, CIERRES_FORZADOS, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
+import { ACTORES, ALERTAS_VUELO, CANALES, CIERRES_FORZADOS, ESTADOS, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
+import { TarjetaVuelo } from '../../vuelos/TarjetaVuelo';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 import { LecturaViaje } from '../../chat/LecturaViaje';
@@ -111,7 +111,8 @@ function DetalleDe({ id }: { id: number }) {
         {!(viaje.editable && viaje.cancelable) && <p className={estilos.explicacion}>{porQueNo(viaje)}</p>}
       </div>
 
-      <PropuestaRecogida viaje={viaje} />
+      {/* HU-69: vuelo con la propuesta de recogida integrada (o la salida con su hora en el aeropuerto). */}
+      <TarjetaVuelo viaje={viaje} />
 
       <div className={estilos.tarjeta}>
         <h2>Datos</h2>
@@ -156,21 +157,6 @@ function DetalleDe({ id }: { id: number }) {
               {viaje.convenio ? ` · ${viaje.convenio.cliente_nombre}` : ''}
             </dd>
           </div>
-          {viaje.vuelo && (
-            <div>
-              <dt>Vuelo</dt>
-              <dd>
-                {viaje.vuelo.numero} · llegada programada {formatearFechaHora(viaje.vuelo.hora_programada)}
-                {viaje.vuelo.hora_estimada && ` · estimada ${formatearFechaHora(viaje.vuelo.hora_estimada)}`}
-                {viaje.vuelo.estado_vuelo && ` · ${ESTADOS_VUELO[viaje.vuelo.estado_vuelo]}`}
-                <span className={estilos.secundario}>
-                  {viaje.vuelo.ultima_consulta_en
-                    ? `Verificado con la API de vuelos el ${formatearFechaHora(viaje.vuelo.ultima_consulta_en)}`
-                    : 'Sin verificar: la API de vuelos no respondió al registrarlo'}
-                </span>
-              </dd>
-            </div>
-          )}
           <div>
             <dt>Conductor</dt>
             <dd>

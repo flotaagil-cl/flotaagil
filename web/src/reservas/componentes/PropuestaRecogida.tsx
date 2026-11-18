@@ -6,7 +6,8 @@ import { useDecidirRecogida, type ViajeDetalle } from '../api';
 import { mensajeDeErrorApi } from '../errores';
 
 /** HU-27: la ETA del vuelo cambió. La recogida no cambia hasta que el despachador lo confirma (RN-02). */
-export function PropuestaRecogida({ viaje }: { viaje: ViajeDetalle }) {
+/** HU-69: `incrustada` la muestra dentro de la tarjeta de vuelo del detalle, sin tarjeta propia. */
+export function PropuestaRecogida({ viaje, incrustada = false }: { viaje: ViajeDetalle; incrustada?: boolean }) {
   const decidir = useDecidirRecogida(viaje.id);
   const [falla, setFalla] = useState<string | null>(null);
   const vuelo = viaje.vuelo;
@@ -23,8 +24,8 @@ export function PropuestaRecogida({ viaje }: { viaje: ViajeDetalle }) {
   }
 
   return (
-    <div className={estilos.tarjeta} role="region" aria-labelledby="titulo-propuesta">
-      <h2 id="titulo-propuesta">Cambió la llegada del vuelo</h2>
+    <div className={incrustada ? estilos.propuestaIncrustada : estilos.tarjeta} role="region" aria-labelledby="titulo-propuesta">
+      {incrustada ? <h3 id="titulo-propuesta">Cambió la llegada del vuelo</h3> : <h2 id="titulo-propuesta">Cambió la llegada del vuelo</h2>}
       <p>
         El vuelo {vuelo.numero} ahora llega {formatearFechaHora(vuelo.hora_estimada ?? vuelo.hora_programada)}. Hora de recogida
         propuesta: <strong>{formatearFechaHora(recogida_propuesta)}</strong> (actual: {formatearFechaHora(viaje.recogida_en)}).

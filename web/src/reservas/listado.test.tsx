@@ -29,6 +29,37 @@ describe('listado de reservas', () => {
     expect(screen.getByText(/1 reserva · página 1 de 1/)).toBeInTheDocument();
   });
 
+  it('HU-69: bajo la reserva de aeropuerto va la línea de vuelo; la urbana no la tiene', async () => {
+    const { viajes } = montarPanel('/reservas');
+    const en = (min: number) => new Date(Date.now() + min * 60_000).toISOString();
+    viajes.agregar(
+      viajeDePrueba({ id: 7, pasajero: { id: 1, nombre: 'Rita Ruiz', telefono: '+56900000002' } }),
+      viajeDePrueba({
+        id: 8,
+        sentido: 'DESDE_AEROPUERTO',
+        recogida_en: en(100),
+        vuelo: {
+          numero: 'LA845',
+          fecha: '2026-11-18',
+          hora_programada: en(80),
+          hora_estimada: null,
+          estado_vuelo: 'PROGRAMADO',
+          ultima_consulta_en: en(-5),
+          recogida_propuesta: null,
+          internacional: null,
+          margen_min: 20,
+          recogida_sugerida: en(100),
+        },
+      }),
+    );
+    await esperarListado();
+    const linea = screen.getByRole('row', { name: 'Vuelo de la reserva 8' });
+    expect(linea).toHaveTextContent(/Vuelo asociado LA845 · aterriza a las \d\d:\d\d/);
+    expect(linea).toHaveTextContent('a tiempo');
+    expect(linea).toHaveTextContent('en 1 h 20 min');
+    expect(screen.queryByRole('row', { name: 'Vuelo de la reserva 7' })).not.toBeInTheDocument();
+  });
+
   it('quitar «desde hoy» deja `desde=` en la URL y no se aplica', async () => {
     const { servidor, router } = montarPanel('/reservas');
     await esperarListado();

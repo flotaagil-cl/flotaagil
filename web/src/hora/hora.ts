@@ -246,6 +246,14 @@ export function formatearFechaHora(iso: string): string {
   return resolver(p).tipo === 'ambigua' ? `${texto} (${textoDesfase(instante)})` : texto;
 }
 
+/** HU-69: «23:30» en Santiago; si no es el mismo día que `ahora`, con la fecha: «05-04-2026 23:30». */
+export function formatearHora(iso: string, ahora: number = Date.now()): string {
+  const p = paredDe(Date.parse(iso));
+  const hoyP = paredDe(ahora);
+  const mismoDia = p.anio === hoyP.anio && p.mes === hoyP.mes && p.dia === hoyP.dia;
+  return mismoDia ? textoHora(p) : `${textoFecha(p)} ${textoHora(p)}`;
+}
+
 /** «04-04-2026» a partir de «2026-04-04» (fecha sin hora, ya en Santiago). */
 export function formatearFecha(fecha: string): string {
   const [anio, mes, dia] = fecha.split('-');
