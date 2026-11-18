@@ -1,0 +1,20 @@
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formulario fieldset {
+  margin: 0;
+}
+
+.formulario legend {
+  padding: 0 4px;
+  font-weight: 700;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 12px 16px;
+}

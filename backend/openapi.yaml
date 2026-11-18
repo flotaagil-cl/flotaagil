@@ -1478,6 +1478,46 @@ paths:
                 $ref: '#/components/schemas/InformeImportacion'
           description: 'Con `confirmar` y filas con errores: no se crea ninguno. Si
             el archivo no sirve, el error viene en `archivo`.'
+  /api/configuracion-empresa/:
+    get:
+      operationId: configuracion_empresa_retrieve
+      summary: Configuración de mi empresa
+      tags:
+      - configuracion
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionEmpresa'
+          description: ''
+    patch:
+      operationId: configuracion_empresa_partial_update
+      summary: Cambiar la configuración de mi empresa (auditado)
+      tags:
+      - configuracion
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConfiguracionEmpresaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConfiguracionEmpresaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConfiguracionEmpresaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguracionEmpresa'
+          description: ''
   /api/configuracion-publica/:
     get:
       operationId: configuracion_publica_retrieve
@@ -4369,6 +4409,52 @@ components:
       required:
       - id
       - nombre
+    ConfiguracionEmpresa:
+      type: object
+      properties:
+        telefono_central:
+          type: string
+          maxLength: 16
+        whatsapp_central:
+          type: string
+          maxLength: 16
+        confirmacion_antes_horas:
+          type: integer
+          maximum: 168
+          minimum: 1
+          description: Horas antes de la recogida para confirmar (1 a 168).
+        confirmacion_plazo_corto_min:
+          type: integer
+          maximum: 240
+          minimum: 10
+          description: Minutos si falta menos que eso (10 a 240).
+        cierre_no_confirmada_horas:
+          type: integer
+          maximum: 48
+          minimum: 1
+          description: Horas tras la recogida para cerrar (1 a 48).
+        reserva_publica_max_ip_hora:
+          type: integer
+          maximum: 500
+          minimum: 1
+          description: Solicitudes por IP y hora (1 a 500).
+        reserva_publica_max_correo_hora:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Solicitudes por correo y hora (1 a 50).
+        reserva_publica_max_convenio_hora:
+          type: integer
+          maximum: 500
+          minimum: 1
+          description: Por correo de convenio y hora (1 a 500).
+      required:
+      - cierre_no_confirmada_horas
+      - confirmacion_antes_horas
+      - confirmacion_plazo_corto_min
+      - reserva_publica_max_convenio_hora
+      - reserva_publica_max_correo_hora
+      - reserva_publica_max_ip_hora
     ConfiguracionPublica:
       type: object
       properties:
@@ -5841,6 +5927,45 @@ components:
         licencia_vence:
           type: string
           format: date
+    PatchedConfiguracionEmpresaRequest:
+      type: object
+      properties:
+        telefono_central:
+          type: string
+          maxLength: 16
+        whatsapp_central:
+          type: string
+          maxLength: 16
+        confirmacion_antes_horas:
+          type: integer
+          maximum: 168
+          minimum: 1
+          description: Horas antes de la recogida para confirmar (1 a 168).
+        confirmacion_plazo_corto_min:
+          type: integer
+          maximum: 240
+          minimum: 10
+          description: Minutos si falta menos que eso (10 a 240).
+        cierre_no_confirmada_horas:
+          type: integer
+          maximum: 48
+          minimum: 1
+          description: Horas tras la recogida para cerrar (1 a 48).
+        reserva_publica_max_ip_hora:
+          type: integer
+          maximum: 500
+          minimum: 1
+          description: Solicitudes por IP y hora (1 a 500).
+        reserva_publica_max_correo_hora:
+          type: integer
+          maximum: 50
+          minimum: 1
+          description: Solicitudes por correo y hora (1 a 50).
+        reserva_publica_max_convenio_hora:
+          type: integer
+          maximum: 500
+          minimum: 1
+          description: Por correo de convenio y hora (1 a 500).
     PatchedConvenioEditarRequest:
       type: object
       properties:
