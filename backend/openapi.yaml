@@ -1030,6 +1030,69 @@ paths:
                 items:
                   $ref: '#/components/schemas/PersonaChat'
           description: ''
+  /api/chat/soporte/:
+    post:
+      operationId: chat_soporte_create
+      description: 'HU-66: el hilo de soporte del pasajero con la central (uno por
+        cuenta).'
+      summary: Abrir mi soporte
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversacionChat'
+          description: ''
+  /api/chat/viajes/{viaje_id}/:
+    post:
+      operationId: chat_viajes_create
+      description: 'HU-66: el hilo del viaje entre el conductor y la cuenta del pasajero
+        (uno por viaje, al abrirlo).'
+      summary: Abrir el chat del viaje
+      parameters:
+      - in: path
+        name: viaje_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversacionChat'
+          description: ''
+  /api/chat/viajes/{viaje_id}/lectura/:
+    get:
+      operationId: chat_viajes_lectura_retrieve
+      description: 'HU-66 (CP-55): la central lee el chat del viaje en solo lectura
+        y cada lectura queda en auditoría.'
+      summary: Leer el chat del viaje (auditado)
+      parameters:
+      - in: path
+        name: viaje_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaMensajes'
+          description: ''
   /api/conductores/:
     get:
       operationId: conductores_list
@@ -4107,6 +4170,20 @@ components:
       - posicion_fila
       - sugerido
       - ultimo_viaje_en
+    Central:
+      type: object
+      description: 'HU-66 (DC-62): botones de emergencia; null si la empresa no lo
+        configuró.'
+      properties:
+        telefono:
+          type: string
+          nullable: true
+        whatsapp:
+          type: string
+          nullable: true
+      required:
+      - telefono
+      - whatsapp
     CerrarCajaRequest:
       type: object
       properties:
@@ -4587,15 +4664,24 @@ components:
         puede_borrar:
           type: boolean
           description: 'Grupos: su creador o el administrador.'
+        puede_escribir:
+          type: boolean
+          description: 'HU-66: el chat del viaje queda en solo lectura al terminar.'
+        viaje:
+          type: integer
+          nullable: true
+          description: 'HU-66: el viaje del hilo conductor ↔ pasajero.'
       required:
       - id
       - no_leidos
       - puede_borrar
+      - puede_escribir
       - puede_gestionar
       - tipo
       - titulo
       - ultimo
       - ultimo_mensaje_en
+      - viaje
     ConversacionChatTipoEnum:
       enum:
       - CENTRAL
@@ -5330,6 +5416,11 @@ components:
         acepta_avisos_correo:
           type: boolean
           description: 'DC-62: avisos del viaje por correo.'
+        central:
+          allOf:
+          - $ref: '#/components/schemas/Central'
+          readOnly: true
+          description: 'HU-66: números de emergencia de la central.'
         password_cambiada_en:
           type: string
           format: date-time
@@ -5339,6 +5430,7 @@ components:
             la auditoría, o null.
       required:
       - acepta_avisos_correo
+      - central
       - email
       - empresa
       - empresa_slug
@@ -5479,6 +5571,9 @@ components:
           maxLength: 1000
         rapida:
           $ref: '#/components/schemas/RapidaEnum'
+        viaje:
+          type: integer
+          description: 'HU-66: en soporte, el viaje al que se refiere.'
     NullEnum:
       enum:
       - null

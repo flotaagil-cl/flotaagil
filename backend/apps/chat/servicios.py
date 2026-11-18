@@ -7,7 +7,7 @@ from django.db.models import Max, Min
 from django.utils import timezone
 
 from apps.cuentas.autenticacion import ROLES_PANEL
-from apps.cuentas.models import Usuario
+from apps.cuentas.models import Rol, Usuario
 from apps.flota.models import Conductor
 
 from .models import Conversacion, Mensaje, Participante, TipoConversacion
@@ -48,6 +48,28 @@ def asegurar_centrales(empresa_id: int) -> None:
     )
 
 
+def _uno_solo(filtro: dict, crear: dict) -> Conversacion:
+    """Get-or-create que tolera dos aperturas simultáneas (la restricción única decide)."""
+    existente = Conversacion.objects.filter(**filtro).first()
+    if existente:
+        return existente
+    try:
+        with transaction.atomic():
+            return Conversacion.objects.create(**filtro, **crear)
+    except IntegrityError:
+        return Conversacion.objects.get(**filtro)
+
+
+def conversacion_de_viaje(viaje) -> Conversacion:
+    """HU-66: el hilo del viaje entre el conductor y el pasajero, uno por viaje."""
+    return _uno_solo({"tipo": T.VIAJE, "viaje": viaje}, {"empresa_id": viaje.empresa_id})
+
+
+def soporte_de(usuario: Usuario) -> Conversacion:
+    """HU-66: el hilo de soporte del pasajero con la central, uno por cuenta."""
+    return _uno_solo({"tipo": T.SOPORTE, "pasajero_usuario": usuario}, {"empresa_id": usuario.empresa_id})
+
+
 def clave_directo(a: int, b: int) -> str:
     return f"{min(a, b)}-{max(a, b)}"
 
@@ -79,12 +101,22 @@ def titulo(conversacion: Conversacion, usuario: Usuario) -> str:
     if conversacion.tipo == T.DIRECTO:
         otros = [p.usuario.nombre for p in conversacion.participantes.all() if p.usuario_id != usuario.pk]
         return otros[0] if otros else usuario.nombre
+    if conversacion.tipo == T.VIAJE:
+        # HU-66: el conductor ve solo el nombre del pasajero; el pasajero, el de su conductor.
+        viaje = conversacion.viaje
+        if usuario.rol == Rol.PASAJERO:
+            return viaje.conductor.usuario.nombre if viaje.conductor_id else f"Viaje N.º {viaje.pk}"
+        return viaje.pasajero.nombre
+    if conversacion.tipo == T.SOPORTE:
+        return f"Soporte · {conversacion.pasajero_usuario.nombre}" if es_equipo(usuario) else "Soporte"
     return conversacion.nombre
 
 
 def nombre_autor(mensaje: Mensaje, conversacion: Conversacion, usuario: Usuario) -> str:
-    """En el hilo central el conductor ve a todo el equipo como «Central»; el equipo ve quién escribió."""
-    if conversacion.tipo == T.CENTRAL and not es_equipo(usuario) and mensaje.autor_id != usuario.pk:
+    """En el hilo central y en el de soporte, el conductor o el pasajero ven al equipo como «Central»; el
+    equipo ve quién escribió."""
+    del_equipo_oculto = conversacion.tipo in (T.CENTRAL, T.SOPORTE) and not es_equipo(usuario)
+    if del_equipo_oculto and mensaje.autor_id != usuario.pk and mensaje.autor.rol in ROLES_PANEL:
         return NOMBRE_CENTRAL
     return mensaje.autor.nombre
 
@@ -104,9 +136,16 @@ def datos_mensaje(mensaje: Mensaje, conversacion: Conversacion, usuario: Usuario
 def leido_por_otros(conversacion: Conversacion, usuario: Usuario) -> int:
     """Hasta qué mensaje leyó «el otro lado»: en un grupo, todos los demás; en el central, el otro lado."""
     otros = Participante.objects.filter(conversacion=conversacion).exclude(usuario=usuario)
-    if conversacion.tipo == T.CENTRAL:
-        conductor = conversacion.conductor.usuario_id
-        otros = otros.filter(usuario_id=conductor) if usuario.pk != conductor else otros
+    if conversacion.tipo in (T.CENTRAL, T.SOPORTE):
+        # El otro lado del equipo es el conductor (central) o el pasajero (soporte), y viceversa.
+        unico = (
+            conversacion.conductor.usuario_id
+            if conversacion.tipo == T.CENTRAL
+            else conversacion.pasajero_usuario_id
+        )
+        otros = otros.filter(usuario_id=unico) if usuario.pk != unico else otros
+    elif conversacion.tipo == T.VIAJE:
+        otros = otros.exclude(usuario__rol__in=ROLES_PANEL)  # la lectura de la central no cuenta como leído
     agregado = Min if conversacion.tipo == T.GRUPO else Max
     return otros.aggregate(v=agregado("ultimo_leido_id"))["v"] or 0
 

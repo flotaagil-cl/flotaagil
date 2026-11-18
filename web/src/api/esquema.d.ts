@@ -659,6 +659,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/soporte/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abrir mi soporte
+         * @description HU-66: el hilo de soporte del pasajero con la central (uno por cuenta).
+         */
+        post: operations["chat_soporte_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/viajes/{viaje_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Abrir el chat del viaje
+         * @description HU-66: el hilo del viaje entre el conductor y la cuenta del pasajero (uno por viaje, al abrirlo).
+         */
+        post: operations["chat_viajes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/viajes/{viaje_id}/lectura/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Leer el chat del viaje (auditado)
+         * @description HU-66 (CP-55): la central lee el chat del viaje en solo lectura y cada lectura queda en auditoría.
+         */
+        get: operations["chat_viajes_lectura_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conductores/": {
         parameters: {
             query?: never;
@@ -2263,6 +2323,11 @@ export interface components {
             /** @description El más apto (HU-04). No asigna: lo confirma el despachador */
             sugerido: boolean;
         };
+        /** @description HU-66 (DC-62): botones de emergencia; null si la empresa no lo configuró. */
+        Central: {
+            telefono: string | null;
+            whatsapp: string | null;
+        };
         CerrarCajaRequest: {
             /** @description Efectivo rendido (CLP) */
             monto_rendido: number;
@@ -2437,6 +2502,10 @@ export interface components {
             puede_gestionar: boolean;
             /** @description Grupos: su creador o el administrador. */
             puede_borrar: boolean;
+            /** @description HU-66: el chat del viaje queda en solo lectura al terminar. */
+            puede_escribir: boolean;
+            /** @description HU-66: el viaje del hilo conductor ↔ pasajero. */
+            viaje: number | null;
         };
         /**
          * @description * `CENTRAL` - Central
@@ -2765,6 +2834,8 @@ export interface components {
             pasajero_desde: string;
             /** @description DC-62: avisos del viaje por correo. */
             acepta_avisos_correo: boolean;
+            /** @description HU-66: números de emergencia de la central. */
+            readonly central: components["schemas"]["Central"];
             /**
              * Format: date-time
              * @description Último cambio o recuperación de la contraseña registrado en la auditoría, o null.
@@ -2831,6 +2902,8 @@ export interface components {
         NuevoMensajeRequest: {
             texto?: string;
             rapida?: components["schemas"]["RapidaEnum"];
+            /** @description HU-66: en soporte, el viaje al que se refiere. */
+            viaje?: number;
         };
         /** @enum {unknown} */
         NullEnum: null;
@@ -4941,6 +5014,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PersonaChat"][];
+                };
+            };
+        };
+    };
+    chat_soporte_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionChat"];
+                };
+            };
+        };
+    };
+    chat_viajes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                viaje_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionChat"];
+                };
+            };
+        };
+    };
+    chat_viajes_lectura_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                viaje_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginaMensajes"];
                 };
             };
         };

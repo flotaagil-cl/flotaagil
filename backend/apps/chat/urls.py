@@ -18,4 +18,7 @@ urlpatterns = [
         name="chat-integrante",
     ),
     path("moderacion/grupos/", views.ModeracionView.as_view(), name="chat-moderacion"),
+    path("viajes/<int:viaje_id>/", views.ViajeChatView.as_view(), name="chat-viaje"),
+    path("viajes/<int:viaje_id>/lectura/", views.LecturaViajeView.as_view(), name="chat-viaje-lectura"),
+    path("soporte/", views.SoporteView.as_view(), name="chat-soporte"),
 ]

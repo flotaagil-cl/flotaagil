@@ -15,9 +15,10 @@ import { Avatar, Insignia, Tarjeta } from '../diseno/Tarjeta';
 import { formatearFechaHora } from '../hora/hora';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
-import { useEntorno } from '../entornoContexto';
-import { ConexionIndicadores } from '../paginas/conexionIndicadores';
 import { AvisosDelViaje } from './AvisosDelViaje';
+import { useCanalPasajero } from './canal';
+import { ChatConConductor } from './ChatConConductor';
+import { ContactoCentral } from './ContactoCentral';
 import { CancelarViaje } from './CancelarViaje';
 import { MarcoPasajero } from './MarcoPasajero';
 import { INSIGNIA, INSIGNIA_VUELO, pasosDelViaje, textoDeCancelacion, TIPO_DE_VIAJE, type TuViaje as Viaje } from './viaje';
@@ -54,22 +55,11 @@ export function TuViaje() {
     document.title = 'Tu viaje';
   }, []);
 
-  // HU-65: el cambio de estado llega en vivo por /ws/chat/; la revisión periódica queda de respaldo.
-  const entorno = useEntorno();
-  const { sesion } = useSesion();
-  useEffect(() => {
-    const conexion = new ConexionIndicadores(
-      `${entorno.origen.replace(/^http/, 'ws')}/ws/chat/`,
-      sesion,
-      (dato) => {
-        const evento = dato as { tipo?: string; viaje?: number };
-        if (evento.tipo === 'viaje' && evento.viaje === numero) void refetch();
-      },
-      () => undefined,
-    );
-    conexion.iniciar();
-    return () => conexion.detener();
-  }, [entorno, sesion, numero, refetch]);
+  // HU-65 y HU-66: el cambio de estado y los mensajes llegan en vivo por /ws/chat/; la revisión periódica queda
+  // de respaldo.
+  useCanalPasajero((evento) => {
+    if (evento.tipo === 'viaje' && evento.viaje === numero) void refetch();
+  });
 
   if (estado.fase !== 'autenticada') return null;
   if (estado.usuario.rol !== 'PASAJERO') return <Navigate to={inicioDeRol(estado.usuario.rol)} replace />;
@@ -159,7 +149,9 @@ export function TuViaje() {
           </Tarjeta>
         )}
 
+        {v.conductor && <ChatConConductor viaje={v.id} />}
         {v.estado !== 'FINALIZADO' && v.estado !== 'CANCELADO' && <AvisosDelViaje />}
+        {v.estado !== 'FINALIZADO' && v.estado !== 'CANCELADO' && <ContactoCentral />}
         {v.cancelable && <CancelarViaje id={v.id} resumen={`Reserva ${v.id} · ${formatearFechaHora(v.recogida_en)}`} />}
         {cancelacion && <p className={e.nota}>{cancelacion}</p>}
       </div>

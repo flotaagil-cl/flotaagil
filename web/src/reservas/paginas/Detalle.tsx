@@ -16,6 +16,10 @@ import { mensajeDeErrorApi } from '../errores';
 import { ACTORES, ALERTAS_VUELO, CANALES, CIERRES_FORZADOS, ESTADOS, ESTADOS_VUELO, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
+import { LecturaViaje } from '../../chat/LecturaViaje';
+
+/** HU-66: estados en que puede existir el chat entre el conductor y el pasajero. */
+const CON_CHAT: string[] = ['ACEPTADO', 'EN_CAMINO', 'EN_ZONA', 'PASAJERO_A_BORDO', 'FINALIZADO', 'CANCELADO'];
 
 function porQueNo(viaje: ViajeDetalle): string {
   if (viaje.estado === 'ASIGNADO') {
@@ -195,6 +199,8 @@ function DetalleDe({ id }: { id: number }) {
           </div>
         </dl>
       </div>
+
+      {CON_CHAT.includes(viaje.estado ?? '') && <LecturaViaje viaje={viaje.id} />}
 
       <div className={estilos.tarjeta}>
         <h2 id="titulo-historial">Historial de estados</h2>

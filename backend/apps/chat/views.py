@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.views import APIView
@@ -20,8 +21,17 @@ from apps.comun.permisos import con_roles
 from apps.cuentas.models import Rol, Usuario
 
 from . import servicios
-from .models import Conversacion, Mensaje, Participante, TipoConversacion
-from .permisos import ROLES_PERSONAL, es_equipo, puede_escribir, visibles
+from .models import MAX_TEXTO, Conversacion, Mensaje, Participante, TipoConversacion
+from .permisos import (
+    ESTADOS_CON_CHAT,
+    ROLES_PERSONAL,
+    es_equipo,
+    es_pasajero_con_modulo,
+    es_personal,
+    puede_escribir,
+    viajes_del_pasajero,
+    visibles,
+)
 from .serializers import (
     ConversacionChatSerializer,
     GrupoSerializer,
@@ -38,6 +48,17 @@ from .serializers import (
 T = TipoConversacion
 POR_PAGINA = 30
 DelPersonal = con_roles(*ROLES_PERSONAL)
+RELACIONADOS = ("conductor__usuario", "viaje__pasajero", "viaje__conductor__usuario", "pasajero_usuario")
+
+
+class ChatPermitido(BasePermission):
+    """El personal de la empresa y, con el módulo de cuentas, el pasajero (sus viajes y su soporte, HU-66)."""
+
+    def has_permission(self, request, view):
+        usuario = request.user
+        return bool(
+            usuario and usuario.is_authenticated and (es_personal(usuario) or es_pasajero_con_modulo(usuario))
+        )
 
 
 class AntispamChat(UserRateThrottle):
@@ -62,7 +83,7 @@ def _con_contadores(usuario, conversaciones):
         .values("c")
     )
     return (
-        conversaciones.select_related("conductor__usuario")
+        conversaciones.select_related(*RELACIONADOS)
         .prefetch_related("participantes__usuario")
         .annotate(mi_leido=Coalesce(Subquery(mi_leido), 0))
         .annotate(no_leidos=Coalesce(Subquery(no_leidos), 0))
@@ -99,17 +120,19 @@ def _datos(usuario, conversaciones) -> list[dict]:
                 "puede_gestionar": c.tipo == T.GRUPO,
                 "puede_borrar": c.tipo == T.GRUPO
                 and (c.creado_por_id == usuario.pk or usuario.rol == Rol.ADMINISTRADOR),
+                "puede_escribir": puede_escribir(usuario, c),
+                "viaje": c.viaje_id,
             }
         )
     return datos
 
 
 def _conversacion(request, pk) -> Conversacion:
-    return get_object_or_404(visibles(request.user).select_related("conductor__usuario"), pk=pk)
+    return get_object_or_404(visibles(request.user).select_related(*RELACIONADOS), pk=pk)
 
 
 class ConversacionesView(APIView):
-    permission_classes = [DelPersonal]
+    permission_classes = [ChatPermitido]
 
     @extend_schema(
         responses=ConversacionChatSerializer(many=True), summary="Mis conversaciones con no leídos"
@@ -127,7 +150,7 @@ class ConversacionesView(APIView):
 
 
 class ConversacionView(APIView):
-    permission_classes = [DelPersonal]
+    permission_classes = [ChatPermitido]
 
     @extend_schema(responses=ConversacionChatSerializer, summary="Una conversación")
     def get(self, request, pk):
@@ -139,7 +162,7 @@ class ConversacionView(APIView):
 
 
 class MensajesView(APIView):
-    permission_classes = [DelPersonal]
+    permission_classes = [ChatPermitido]
     throttle_classes = [AntispamChat]
 
     @extend_schema(
@@ -174,18 +197,22 @@ class MensajesView(APIView):
             raise PermissionDenied("En esta conversación solo puedes leer.", code="solo_lectura")
         entrada = NuevoMensajeSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
+        texto = entrada.validated_data["texto"]
+        viaje = entrada.validated_data.get("viaje")
+        if viaje and conversacion.tipo == T.SOPORTE:
+            # HU-66: el pasajero puede indicar a qué viaje suyo se refiere su consulta.
+            if not viajes_del_pasajero(request.user).filter(pk=viaje).exists():
+                raise ValidationError({"viaje": "Ese viaje no es tuyo."}, code="viaje_ajeno")
+            texto = f"[Viaje N.º {viaje}] {texto}"[:MAX_TEXTO]
         mensaje = servicios.publicar(
-            request.user,
-            conversacion,
-            entrada.validated_data["texto"],
-            entrada.validated_data.get("rapida", ""),
+            request.user, conversacion, texto, entrada.validated_data.get("rapida", "")
         )
         datos = servicios.datos_mensaje(mensaje, conversacion, request.user)
         return Response(MensajeChatSerializer(datos).data, status=status.HTTP_201_CREATED)
 
 
 class LeidoView(APIView):
-    permission_classes = [DelPersonal]
+    permission_classes = [ChatPermitido]
 
     @extend_schema(request=LeidoSerializer, responses={204: None}, summary="Marcar leído hasta un mensaje")
     def post(self, request, pk):
@@ -409,3 +436,83 @@ class ModeracionView(APIView):
             .order_by("nombre")
         )
         return Response(GrupoSerializer([_datos_grupo(g) for g in grupos], many=True).data)
+
+
+def _viaje_de_la_empresa(request, viaje_id):
+    from apps.reservas.models import Viaje
+
+    return get_object_or_404(
+        Viaje.objects.select_related("pasajero", "conductor__usuario"),
+        pk=viaje_id,
+        empresa_id=request.user.empresa_id,
+    )
+
+
+class ViajeChatView(APIView):
+    """HU-66: el hilo del viaje entre el conductor y la cuenta del pasajero (uno por viaje, al abrirlo)."""
+
+    permission_classes = [ChatPermitido]
+
+    @extend_schema(
+        request=None, responses={200: ConversacionChatSerializer}, summary="Abrir el chat del viaje"
+    )
+    def post(self, request, viaje_id):
+        from apps.reservas.avisos_pasajero import cuenta_del_viaje
+
+        usuario = request.user
+        viaje = _viaje_de_la_empresa(request, viaje_id)
+        es_conductor = viaje.conductor_id is not None and viaje.conductor.usuario_id == usuario.pk
+        es_pasajero = (
+            es_pasajero_con_modulo(usuario) and viajes_del_pasajero(usuario).filter(pk=viaje.pk).exists()
+        )
+        if not (es_conductor or es_pasajero) or viaje.estado not in ESTADOS_CON_CHAT:
+            raise NotFound()
+        if cuenta_del_viaje(viaje) is None:
+            raise NotFound("El pasajero no tiene cuenta: comunícate por la central.", code="sin_cuenta")
+        servicios.conversacion_de_viaje(viaje)
+        conversaciones = _con_contadores(usuario, visibles(usuario).filter(tipo=T.VIAJE, viaje=viaje))
+        datos = _datos(usuario, conversaciones)
+        if not datos:
+            raise NotFound()
+        return Response(ConversacionChatSerializer(datos[0]).data)
+
+
+class LecturaViajeView(APIView):
+    """HU-66 (CP-55): la central lee el chat del viaje en solo lectura y cada lectura queda en auditoría."""
+
+    permission_classes = [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)]
+
+    @extend_schema(responses=PaginaMensajesSerializer, summary="Leer el chat del viaje (auditado)")
+    def get(self, request, viaje_id):
+        viaje = _viaje_de_la_empresa(request, viaje_id)
+        conversacion = (
+            Conversacion.objects.select_related(*RELACIONADOS).filter(tipo=T.VIAJE, viaje=viaje).first()
+        )
+        mensajes = []
+        if conversacion is not None:
+            registrar(
+                usuario=request.user,
+                entidad=Entidad.VIAJE,
+                entidad_id=viaje.pk,
+                accion="LEER_CHAT_VIAJE",
+                datos_previos={"conversacion": conversacion.pk},
+            )
+            ultimos = list(conversacion.mensajes.select_related("autor").order_by("-pk")[:200])
+            mensajes = [servicios.datos_mensaje(m, conversacion, request.user) for m in reversed(ultimos)]
+        datos = {"results": mensajes, "hay_mas": False, "leido_por_otros_hasta": 0}
+        return Response(PaginaMensajesSerializer(datos).data)
+
+
+class SoporteView(APIView):
+    """HU-66: el hilo de soporte del pasajero con la central (uno por cuenta)."""
+
+    permission_classes = [ChatPermitido]
+
+    @extend_schema(request=None, responses={200: ConversacionChatSerializer}, summary="Abrir mi soporte")
+    def post(self, request):
+        usuario = request.user
+        if not es_pasajero_con_modulo(usuario):
+            raise PermissionDenied()
+        servicios.soporte_de(usuario)
+        conversaciones = _con_contadores(usuario, visibles(usuario).filter(tipo=T.SOPORTE))
+        return Response(ConversacionChatSerializer(_datos(usuario, conversaciones)[0]).data)

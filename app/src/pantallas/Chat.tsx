@@ -15,6 +15,8 @@ export interface ConversacionChat {
   titulo: string;
   no_leidos: number;
   ultimo: { texto: string; autor: string; creado_en: string } | null;
+  /** HU-66: el chat con el pasajero queda en solo lectura al terminar el viaje. */
+  puede_escribir?: boolean;
 }
 
 interface Pagina {
@@ -35,6 +37,8 @@ interface Props {
   canal: Pick<CanalChat, 'alEvento'>;
   enViaje: boolean;
   volver: () => void;
+  /** HU-66: el viaje en curso, para abrir el chat con su pasajero. */
+  viajeId?: number | null;
 }
 
 const MAX_TEXTO = 1000;
@@ -48,7 +52,7 @@ function mensajeDeError(error: unknown): string {
 
 type Vista = { tipo: 'lista' } | { tipo: 'hilo'; conversacion: ConversacionChat } | { tipo: 'directo' } | { tipo: 'grupo' };
 
-export function Chat({ pedir, canal, enViaje, volver }: Props) {
+export function Chat({ pedir, canal, enViaje, volver, viajeId }: Props) {
   const [vista, setVista] = useState<Vista>({ tipo: 'lista' });
   const abrir = (conversacion: ConversacionChat) => setVista({ tipo: 'hilo', conversacion });
   const aLista = () => setVista({ tipo: 'lista' });
@@ -60,14 +64,14 @@ export function Chat({ pedir, canal, enViaje, volver }: Props) {
           Evita escribir mientras manejas. Usa las respuestas rápidas o detente en un lugar seguro.
         </p>
       )}
-      {vista.tipo === 'lista' && <Lista pedir={pedir} canal={canal} abrir={abrir} nuevo={(tipo) => setVista({ tipo })} volver={volver} />}
+      {vista.tipo === 'lista' && <Lista pedir={pedir} canal={canal} abrir={abrir} nuevo={(tipo) => setVista({ tipo })} volver={volver} viajeId={viajeId} />}
       {vista.tipo === 'hilo' && <Hilo pedir={pedir} canal={canal} conversacion={vista.conversacion} volver={aLista} />}
       {(vista.tipo === 'directo' || vista.tipo === 'grupo') && <Nuevo pedir={pedir} tipo={vista.tipo} abrir={abrir} volver={aLista} />}
     </main>
   );
 }
 
-function Lista({ pedir, canal, abrir, nuevo, volver }: Pick<Props, 'pedir' | 'canal' | 'volver'> & { abrir: (c: ConversacionChat) => void; nuevo: (tipo: 'directo' | 'grupo') => void }) {
+function Lista({ pedir, canal, abrir, nuevo, volver, viajeId }: Pick<Props, 'pedir' | 'canal' | 'volver' | 'viajeId'> & { abrir: (c: ConversacionChat) => void; nuevo: (tipo: 'directo' | 'grupo') => void }) {
   const [conversaciones, setConversaciones] = useState<ConversacionChat[] | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
   const cargar = useCallback(async () => {
@@ -83,6 +87,15 @@ function Lista({ pedir, canal, abrir, nuevo, volver }: Pick<Props, 'pedir' | 'ca
     void cargar();
     return canal.alEvento(() => void cargar());
   }, [cargar, canal]);
+
+  /** HU-66: abre (o crea) el chat del viaje en curso con su pasajero. */
+  async function conPasajero(viaje: number) {
+    try {
+      abrir(await pedir<ConversacionChat>('POST', `/api/chat/viajes/${viaje}/`));
+    } catch (error) {
+      setFalla(mensajeDeError(error));
+    }
+  }
 
   return (
     <>
@@ -111,6 +124,11 @@ function Lista({ pedir, canal, abrir, nuevo, volver }: Pick<Props, 'pedir' | 'ca
         </ul>
       )}
       <div className="acciones">
+        {viajeId && (
+          <button type="button" className="principal" onClick={() => void conPasajero(viajeId)}>
+            Chat con el pasajero
+          </button>
+        )}
         <button type="button" onClick={() => nuevo('directo')}>
           Nuevo directo
         </button>
@@ -213,21 +231,27 @@ function Hilo({ pedir, canal, conversacion, volver }: Pick<Props, 'pedir' | 'can
           {falla}
         </p>
       )}
-      <div className="rapidas" role="group" aria-label="Respuestas rápidas">
-        {RAPIDAS.map((r) => (
-          <button key={r.codigo} type="button" disabled={enviando} onClick={() => void enviar({ rapida: r.codigo })}>
-            {r.texto}
-          </button>
-        ))}
-      </div>
-      <form onSubmit={alEnviar} className="campo">
-        <label htmlFor="mensaje-chat">Mensaje</label>
-        <textarea id="mensaje-chat" maxLength={MAX_TEXTO} value={texto} onChange={(e) => setTexto(e.target.value)} />
-        <span className="secundario">{`${texto.length}/${MAX_TEXTO}`}</span>
-        <button className="principal" type="submit" disabled={enviando || !texto.trim()}>
-          Enviar
-        </button>
-      </form>
+      {conversacion.puede_escribir === false ? (
+        <p className="secundario">El viaje terminó: este chat queda en solo lectura.</p>
+      ) : (
+        <>
+          <div className="rapidas" role="group" aria-label="Respuestas rápidas">
+            {RAPIDAS.map((r) => (
+              <button key={r.codigo} type="button" disabled={enviando} onClick={() => void enviar({ rapida: r.codigo })}>
+                {r.texto}
+              </button>
+            ))}
+          </div>
+          <form onSubmit={alEnviar} className="campo">
+            <label htmlFor="mensaje-chat">Mensaje</label>
+            <textarea id="mensaje-chat" maxLength={MAX_TEXTO} value={texto} onChange={(e) => setTexto(e.target.value)} />
+            <span className="secundario">{`${texto.length}/${MAX_TEXTO}`}</span>
+            <button className="principal" type="submit" disabled={enviando || !texto.trim()}>
+              Enviar
+            </button>
+          </form>
+        </>
+      )}
     </>
   );
 }

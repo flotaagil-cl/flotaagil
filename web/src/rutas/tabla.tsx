@@ -210,6 +210,8 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
             { path: '/mis-viajes', lazy: async () => ({ Component: (await import('../viajes/MisViajes')).MisViajes }) },
             // HU-43: el viaje del pasajero con su estado, conductor y vuelo.
             { path: '/mis-viajes/:id', lazy: async () => ({ Component: (await import('../viajes/TuViaje')).TuViaje }) },
+            // HU-66: soporte del pasajero con la central y botones de emergencia.
+            { path: '/soporte', lazy: async () => ({ Component: (await import('../viajes/Soporte')).Soporte }) },
             // HU-45: datos, contraseña y eliminar la cuenta.
             { path: '/mi-perfil', lazy: async () => ({ Component: (await import('../perfil/MiPerfil')).MiPerfil }) },
             // La pantalla «Mis reservas» de HU-35 era una lista de viajes: la reemplaza «Mis viajes» (HU-44).
