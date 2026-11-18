@@ -52,10 +52,34 @@ def test_lee_y_cambia_con_auditoria_de_los_valores_anteriores(admin, administrad
 @pytest.mark.parametrize("campo", list(RANGOS))
 def test_minimos_y_maximos(admin, campo):
     minimo, maximo = RANGOS[campo]
+    # Plazo corto al mínimo para que 1 h siga siendo mayor (la regla cruzada tiene su prueba).
+    admin.patch(URL, {"confirmacion_plazo_corto_min": 10}, format="json")
     for valor in (minimo - 1, maximo + 1):
         assert admin.patch(URL, {campo: valor}, format="json").status_code == 400
     for valor in (minimo, maximo):
         assert admin.patch(URL, {campo: valor}, format="json").status_code == 200
+
+
+@pytest.mark.parametrize(
+    ("datos", "codigo"),
+    [
+        ({"confirmacion_antes_horas": 1, "confirmacion_plazo_corto_min": 60}, 400),
+        ({"confirmacion_antes_horas": 1, "confirmacion_plazo_corto_min": 59}, 200),
+        ({"confirmacion_antes_horas": 2, "confirmacion_plazo_corto_min": 119}, 200),
+    ],
+)
+def test_plazo_corto_menor_que_el_plazo_normal(admin, datos, codigo):
+    respuesta = admin.patch(URL, datos, format="json")
+    assert respuesta.status_code == codigo, respuesta.data
+    if codigo == 400:
+        assert "60 min" in str(respuesta.data["confirmacion_plazo_corto_min"][0])
+
+
+def test_plazo_corto_se_compara_con_el_valor_guardado(admin):
+    # Se cambia solo uno de los dos: el otro se toma de la configuración guardada (24 h por defecto).
+    assert admin.patch(URL, {"confirmacion_plazo_corto_min": 240}, format="json").status_code == 200
+    respuesta = admin.patch(URL, {"confirmacion_antes_horas": 4}, format="json")
+    assert respuesta.status_code == 400 and "confirmacion_plazo_corto_min" in respuesta.data
 
 
 def test_telefono_invalido(admin):

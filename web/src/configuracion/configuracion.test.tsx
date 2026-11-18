@@ -83,6 +83,31 @@ describe('formulario', () => {
     expect(config.cuerpos).toEqual([]);
   });
 
+  it.each([
+    ['1', '60', true],
+    ['1', '59', false],
+  ])('con %s h de plazo, un plazo corto de %s min %s', async (horas, corto, rechaza) => {
+    const { config } = montar();
+    const plazo = await screen.findByLabelText(/Plazo para confirmar/);
+    await userEvent.clear(plazo);
+    await userEvent.type(plazo, horas);
+    const campo = screen.getByLabelText('Plazo corto (minutos)');
+    await userEvent.clear(campo);
+    await userEvent.type(campo, corto);
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    if (rechaza) {
+      expect(screen.getByText('Debe ser menor que el plazo para confirmar (1 h = 60 min).')).toBeInTheDocument();
+      expect(config.cuerpos).toEqual([]);
+    } else {
+      expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument();
+    }
+  });
+
+  it('el mínimo por conexión es 5', async () => {
+    montar();
+    expect(await screen.findByText(/Antispam del formulario público\. Entre 5 y 500\./)).toBeInTheDocument();
+  });
+
   it('muestra el error del servidor en su campo', async () => {
     const { config } = montar();
     config.siguiente = { estado: 400, cuerpo: { whatsapp_central: ['Número en formato internacional, p. ej. +56912345678.'] } };
