@@ -42,6 +42,7 @@ describe('menú y permisos', () => {
       'Historial WhatsApp',
       'Reportes',
       'Usuarios',
+      'Configuración',
       'Cierre de caja',
       'Convenios',
     ]);
