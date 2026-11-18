@@ -6,6 +6,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Max, Min
 from django.utils import timezone
 
+from apps.cuentas.autenticacion import ROLES_PANEL
 from apps.cuentas.models import Usuario
 from apps.flota.models import Conductor
 
@@ -141,6 +142,21 @@ def avisar_cambio(conversacion: Conversacion, ids_extra=()) -> None:
     """Cambió una conversación (creada, renombrada, borrada o con otros integrantes): se piden las listas."""
     ids = set(destinatarios(conversacion)) | set(ids_extra)
     avisar(ids, lambda _id: {"tipo": "conversaciones"})
+
+
+def alertar_llegada(viaje) -> None:
+    """HU-63: la geocerca marcó EN_ZONA. Avisa al equipo de la empresa en el panel (sonido y notificación)."""
+    nombre = viaje.conductor.usuario.nombre
+    ids = Usuario.objects.filter(empresa_id=viaje.empresa_id, rol__in=ROLES_PANEL, activo=True).values_list(
+        "pk", flat=True
+    )
+    datos = {
+        "tipo": "llegada",
+        "viaje": viaje.pk,
+        "conductor": nombre,
+        "texto": f"{nombre} llegó al origen del viaje #{viaje.pk}",
+    }
+    avisar(ids, lambda _id: datos)
 
 
 def borrar_grupo(conversacion: Conversacion) -> None:

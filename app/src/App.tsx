@@ -15,7 +15,8 @@ import { Login } from './pantallas/Login';
 import { MiTurno, type ResumenDelTurno } from './pantallas/MiTurno';
 import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
-import { alertar, pedirPermisoDeNotificaciones } from './conductor/alerta';
+import { alertar, pedirPermisoDeNotificaciones, sonarMensaje } from './conductor/alerta';
+import type { MensajeChat } from './chat/canal';
 import type { Accion } from './conductor/ejecucion';
 import { Recarga } from './conductor/recarga';
 import type { Pago } from './pantallas/AvanceViaje';
@@ -38,6 +39,7 @@ export default function App() {
   const [enMiTurno, setEnMiTurno] = useState(false);
   const [enChat, setEnChat] = useState(false);
   const [noLeidos, setNoLeidos] = useState(0);
+  const [avisoChat, setAvisoChat] = useState<MensajeChat | null>(null);
   const cargarMiTurno = useCallback(() => api.pedir<ResumenDelTurno>('GET', '/api/app/mi-turno/'), []);
   const pedirChat = useCallback(<T,>(metodo: 'GET' | 'POST', ruta: string, cuerpo?: unknown) => api.pedir<T>(metodo, ruta, cuerpo), []);
 
@@ -118,6 +120,17 @@ export default function App() {
       canalChat.detener();
     };
   }, [activa, contarNoLeidos]);
+
+  // HU-63: aviso con sonido por cada mensaje ajeno; fuera del chat queda en el inicio hasta abrirlo.
+  useEffect(
+    () =>
+      canalChat.alEvento((evento) => {
+        if (evento.tipo !== 'mensaje' || evento.mensaje.propio) return;
+        sonarMensaje();
+        if (!enChat) setAvisoChat(evento.mensaje);
+      }),
+    [enChat],
+  );
 
   // Al asignarse un viaje se recarga el perfil (el viaje en curso aparece al aceptarlo, HU-15).
   const asignacionId = enVivo.asignacion?.asignacion ?? null;
@@ -260,8 +273,9 @@ export default function App() {
       cambiarTurno={cambiarTurno}
       actualizar={() => void cargarPerfil()}
       verMiTurno={() => setEnMiTurno(true)}
-      verChat={() => setEnChat(true)}
+      verChat={() => (setEnChat(true), setAvisoChat(null))}
       noLeidos={noLeidos}
+      avisoChat={avisoChat}
       abrirAjustes={() => void abrirAjustes()}
       cerrarSesion={() => void cerrarSesion()}
     />

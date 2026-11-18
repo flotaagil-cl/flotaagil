@@ -20,6 +20,9 @@ const red = vi.hoisted(() => ({
   retener: false,
   retenidas: [] as (() => void)[],
   socket: null as unknown,
+  /** CC-19: socket del chat y pitidos de mensajes. */
+  chat: null as unknown,
+  sonidos: 0,
   /** Lugar en la fila que devuelve el perfil. */
   fila: null as unknown,
   llamadas: [] as string[],
@@ -118,12 +121,23 @@ vi.mock('./servicios', async () => {
     cola,
     rastreador: new Rastreador({ iniciar: async () => 'id', detener: async () => {} }, cola),
     canal: new CanalConductor('ws://x.example/ws/conductor/', sesion, crearSocket),
-    // CC-19: el canal del chat usa un socket inerte; estas pruebas no lo ejercitan.
-    canalChat: new CanalChat('ws://x.example/ws/chat/', sesion, () => ({ onopen: null, onmessage: null, onclose: null, close() {} })),
+    // CC-19: el canal del chat con su propio socket falso.
+    canalChat: new CanalChat('ws://x.example/ws/chat/', sesion, () => {
+      const socket: SocketMinimo = { onopen: null, onmessage: null, onclose: null, close() {} };
+      red.chat = socket;
+      return socket;
+    }),
   };
 });
 vi.mock('./gps/rastreo', () => ({ abrirAjustes: async () => {}, iniciarRastreo: async () => {}, detenerRastreo: async () => {} }));
-vi.mock('./conductor/alerta', () => ({ alertar: async () => {}, pedirPermisoDeNotificaciones: async () => {}, textoDeLaNotificacion: () => '' }));
+vi.mock('./conductor/alerta', () => ({
+  alertar: async () => {},
+  pedirPermisoDeNotificaciones: async () => {},
+  textoDeLaNotificacion: () => '',
+  sonarMensaje: () => {
+    red.sonidos += 1;
+  },
+}));
 vi.mock('@capacitor/app', () => ({ App: { addListener: async () => ({ remove() {} }) } }));
 vi.mock('@capacitor/app-launcher', () => ({ AppLauncher: { openUrl: async () => {} } }));
 
@@ -271,5 +285,23 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     await avanzar(50);
     expect(red.llamadas).toEqual(['POST /api/app/viajes/8/a-bordo/', 'GET /api/app/perfil/', 'GET /api/app/viaje-activo/']);
     expect(titulo()).toBe('Viaje en curso · Pasajero a bordo');
+  });
+
+  it('un mensaje del chat suena, avisa en el inicio y abre el chat con el aviso de manejo (HU-63)', async () => {
+    red.sonidos = 0;
+    await abrirApp();
+    expect(screen.getByRole('button', { name: 'Chat (2 sin leer)' })).toBeTruthy();
+    const mensaje = { id: 5, conversacion: 1, texto: 'Te espera en la puerta 3', rapida: '', autor: 'Central', propio: false, creado_en: '2026-11-17T12:00:00Z' };
+    act(() => (red.chat as SocketMinimo).onmessage?.({ data: JSON.stringify({ tipo: 'mensaje', mensaje: { ...mensaje, id: 6, propio: true } }) }));
+    act(() => (red.chat as SocketMinimo).onmessage?.({ data: JSON.stringify({ tipo: 'mensaje', mensaje }) }));
+    await avanzar(50);
+    expect(red.sonidos).toBe(1);
+    expect(screen.getByText('Nuevo mensaje de Central: Te espera en la puerta 3')).toBeTruthy();
+    await pulsar('Abrir chat');
+    await avanzar(50);
+    expect(screen.getByRole('heading', { name: 'Chat' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('Evita escribir mientras manejas');
+    await pulsar('Volver al inicio');
+    expect(screen.queryByText(/Nuevo mensaje de Central/)).toBeNull();
   });
 });

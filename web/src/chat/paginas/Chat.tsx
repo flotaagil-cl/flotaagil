@@ -29,6 +29,7 @@ import {
   usePersonal,
   type ConversacionChat,
 } from '../api';
+import { avisosDisponibles } from '../avisos';
 import c from '../chat.module.css';
 import { GestionGrupo } from './GestionGrupo';
 
@@ -51,11 +52,14 @@ export function Chat() {
     <section>
       <div className={estilos.encabezado}>
         <h1>Chat</h1>
-        {administrador && (
-          <Link to="/chat/moderacion" className={claseBoton('secundario')}>
-            Moderación de grupos
-          </Link>
-        )}
+        <div className={c.botones}>
+          <ActivarAvisos />
+          {administrador && (
+            <Link to="/chat/moderacion" className={claseBoton('secundario')}>
+              Moderación de grupos
+            </Link>
+          )}
+        </div>
       </div>
       {consulta.isPending ? (
         <Cargando />
@@ -74,6 +78,17 @@ export function Chat() {
         </div>
       )}
     </section>
+  );
+}
+
+/** HU-63: el navegador pide el permiso solo tras un clic; sin él, los avisos quedan en la pantalla con sonido. */
+function ActivarAvisos() {
+  const [permiso, setPermiso] = useState(() => (avisosDisponibles() ? Notification.permission : 'denied'));
+  if (permiso !== 'default') return null;
+  return (
+    <Boton variante="secundario" onClick={() => void Notification.requestPermission().then(setPermiso)}>
+      Activar avisos del navegador
+    </Boton>
   );
 }
 

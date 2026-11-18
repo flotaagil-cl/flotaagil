@@ -13,11 +13,11 @@ const PATRON_VIBRACION = [400, 200, 400, 200, 400];
 
 let contexto: AudioContext | null = null;
 
-function pitidos() {
+function pitidos(veces = 3) {
   try {
     contexto ??= new AudioContext();
     const inicio = contexto.currentTime;
-    for (let i = 0; i < 3; i += 1) {
+    for (let i = 0; i < veces; i += 1) {
       const oscilador = contexto.createOscillator();
       const volumen = contexto.createGain();
       oscilador.frequency.value = 880;
@@ -57,6 +57,11 @@ export async function alertar(asignacion: Asignacion, enSegundoPlano: boolean): 
   } catch {
     // Sin permiso de notificaciones: el aviso queda en la app.
   }
+}
+
+/** HU-63 (CC-19): un pitido por cada mensaje nuevo del chat. */
+export function sonarMensaje(): void {
+  pitidos(1);
 }
 
 export async function pedirPermisoDeNotificaciones(): Promise<void> {

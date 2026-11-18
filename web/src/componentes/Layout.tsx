@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Navigate, NavLink, Outlet, useLocation, useMatches, useNavigate } from 'react-router';
 import { AlertasVuelo } from '../alertas/AlertasVuelo';
+import { AlertasLlegada } from '../chat/AlertasLlegada';
 import { ChatEnVivo } from '../chat/EnVivo';
+import { NoLeidosChat } from '../chat/NoLeidos';
 import type { Manejo } from '../rutas/tabla';
 import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
 import { useRutas } from '../rutas/contexto';
@@ -74,6 +76,7 @@ export function Layout() {
               {/* Inicio solo se marca en «/»; Reservas también en /reservas/42. */}
               <NavLink to={entrada.ruta} end={entrada.ruta === '/'} onClick={() => setMenuAbierto(false)}>
                 {entrada.titulo}
+                {delPanel && entrada.ruta === '/chat' && <NoLeidosChat className={estilos.contadorMenu} />}
               </NavLink>
             </li>
           ))}
@@ -81,6 +84,7 @@ export function Layout() {
       </nav>
       <main className={estilos.contenido}>
         {delPanel && <AlertasVuelo />}
+        {delPanel && <AlertasLlegada />}
         {permitido ? <Outlet /> : <SinPermiso />}
       </main>
     </div>

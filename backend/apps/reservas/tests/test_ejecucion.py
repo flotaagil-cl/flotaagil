@@ -321,6 +321,47 @@ def test_la_app_se_entera_de_en_zona_y_de_la_cancelacion(chofer, despachador):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_la_llegada_automatica_alerta_al_despacho(chofer, despachador, otra_empresa):
+    """HU-63 (CC-19): EN_ZONA por geocerca avisa al equipo de su empresa por /ws/chat/ (no a otras)."""
+    from apps.cuentas.tests.fabricas import UsuarioFactory
+
+    viaje = viaje_de(chofer, E.EN_CAMINO)
+    ajeno = UsuarioFactory(empresa=otra_empresa, rol="DESPACHADOR")
+
+    @database_sync_to_async
+    def llegar():
+        enviar(chofer, posicion(CERCA))
+
+    async def prueba():
+        propio = WebsocketCommunicator(
+            application, "/ws/chat/", subprotocols=["flotaagil", str(AccessToken.for_user(despachador))]
+        )
+        otro = WebsocketCommunicator(
+            application, "/ws/chat/", subprotocols=["flotaagil", str(AccessToken.for_user(ajeno))]
+        )
+        await propio.connect()
+        await otro.connect()
+        await propio.receive_json_from()
+        await otro.receive_json_from()
+        await llegar()
+        alerta = await propio.receive_json_from(timeout=2)
+        nada = await otro.receive_nothing(timeout=0.3)
+        await propio.disconnect()
+        await otro.disconnect()
+        return alerta, nada
+
+    alerta, nada = async_to_sync(prueba)()
+    nombre = chofer.usuario.nombre
+    assert alerta == {
+        "tipo": "llegada",
+        "viaje": viaje.pk,
+        "conductor": nombre,
+        "texto": f"{nombre} llegó al origen del viaje #{viaje.pk}",
+    }
+    assert nada is True
+
+
+@pytest.mark.django_db(transaction=True)
 def test_la_app_se_entera_por_el_canal_de_cada_accion(chofer):
     """Si la respuesta de la API se pierde, la app se corrige con este evento (fix/app-peticiones)."""
     viaje = viaje_de(chofer, E.ACEPTADO)

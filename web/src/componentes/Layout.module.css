@@ -90,6 +90,17 @@
   background: var(--suave, var(--acento-suave));
 }
 
+/* HU-63: no leídos del chat junto a la entrada del menú. */
+.contadorMenu {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--insignia-info-fondo);
+  color: var(--insignia-info-texto);
+  font-size: var(--texto-etiqueta);
+  font-weight: 700;
+}
+
 .menu a[aria-current='page'] {
   background: var(--acento-suave);
   box-shadow: inset 4px 0 0 var(--acento);

@@ -15,6 +15,7 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
+from apps.chat.servicios import alertar_llegada
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
 from apps.integraciones.notificaciones import AVISO_EN_CAMINO, AVISO_EN_ZONA, AVISO_ENCUESTA
@@ -164,5 +165,6 @@ def marcar_en_zona(conductor: Conductor, posiciones: list[dict]) -> bool:
                 )
                 transaction.on_commit(lambda: avisar_viaje_actualizado(conductor_id, viaje_id))
                 avisos.programar(viaje_id, AVISO_EN_ZONA)  # HU-21: solo la llegada automática (DC-17)
+                alertar_llegada(viaje)  # HU-63: alerta de llegada al despacho
                 return True
     return False
