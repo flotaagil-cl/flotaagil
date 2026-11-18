@@ -50,12 +50,15 @@ function montar({ clave = CLAVE as string | null, aceptaCorreo = false } = {}) {
   return llamadas;
 }
 
-function navegadorConPush(permiso: NotificationPermission, pedir = vi.fn(async () => 'granted' as NotificationPermission)) {
+function navegadorConPush(permiso: NotificationPermission, pedir = vi.fn(async () => 'granted' as NotificationPermission), suscrito = false) {
   const suscribir = vi.fn(async () => ({ toJSON: () => SUSCRIPCION }));
-  const registrar = vi.fn(async () => ({ pushManager: { subscribe: suscribir } }));
+  const pushManager = { subscribe: suscribir, getSubscription: async () => (suscrito ? { toJSON: () => SUSCRIPCION } : null) };
+  const registrar = vi.fn(async () => ({ pushManager }));
+  const getRegistration = vi.fn(async () => (suscrito ? { pushManager } : undefined));
+  const ready = Promise.resolve({ pushManager });
   vi.stubGlobal('Notification', { permission: permiso, requestPermission: pedir });
   vi.stubGlobal('PushManager', class {});
-  Object.defineProperty(navigator, 'serviceWorker', { value: { register: registrar }, configurable: true });
+  Object.defineProperty(navigator, 'serviceWorker', { value: { register: registrar, getRegistration, ready }, configurable: true });
   return { pedir, registrar, suscribir };
 }
 
@@ -88,6 +91,22 @@ describe('HU-65 · avisos del viaje', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Activar avisos en este dispositivo' }));
     expect(await screen.findByText(/Los avisos están bloqueados en este navegador/)).toBeInTheDocument();
     expect(suscribir).not.toHaveBeenCalled();
+  });
+
+  it('con permiso dado pero sin suscripción en este navegador, ofrece activarlos (DC-67)', async () => {
+    const { suscribir } = navegadorConPush('granted');
+    const llamadas = montar();
+    await userEvent.click(await screen.findByRole('button', { name: 'Activar avisos en este dispositivo' }));
+    expect(await screen.findByText(/Te avisaremos en este dispositivo/)).toBeInTheDocument();
+    expect(suscribir).toHaveBeenCalled();
+    expect(llamadas).toContainEqual({ ruta: 'POST /api/mi-cuenta/push/', cuerpo: SUSCRIPCION });
+  });
+
+  it('con la suscripción ya hecha, los muestra activos sin botón', async () => {
+    navegadorConPush('granted', undefined, true);
+    montar();
+    expect(await screen.findByText(/Te avisaremos en este dispositivo/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Activar avisos en este dispositivo' })).not.toBeInTheDocument();
   });
 
   it('sin Web Push en el servidor: solo el correo, que ya aceptó', async () => {

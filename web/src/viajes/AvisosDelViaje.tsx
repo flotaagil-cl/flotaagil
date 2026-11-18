@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { resultado } from '../api/resultado';
 import { Boton } from '../diseno/Boton';
@@ -14,12 +14,13 @@ import { Tarjeta } from '../diseno/Tarjeta';
 import { useApi } from '../sesion/SesionProvider';
 import { claveComoBytes, pushDisponible } from './push';
 
-type Estado = 'activo' | 'bloqueado' | 'disponible' | 'no_disponible';
+type Estado = 'activo' | 'bloqueado' | 'disponible' | 'no_disponible' | 'revisando';
 
 function estadoInicial(): Estado {
   if (!pushDisponible()) return 'no_disponible';
   if (Notification.permission === 'denied') return 'bloqueado';
-  return Notification.permission === 'granted' ? 'activo' : 'disponible';
+  // Con permiso dado no basta: los avisos están activos solo si este navegador tiene la suscripción (DC-67).
+  return Notification.permission === 'granted' ? 'revisando' : 'disponible';
 }
 
 export function AvisosDelViaje() {
@@ -33,6 +34,21 @@ export function AvisosDelViaje() {
   const [activando, setActivando] = useState(false);
   const publica = clave.data?.clave_publica ?? null;
 
+  useEffect(() => {
+    if (estado !== 'revisando') return;
+    let vigente = true;
+    navigator.serviceWorker
+      .getRegistration('/sw-push.js')
+      .then((registro) => registro?.pushManager.getSubscription() ?? null)
+      .catch(() => null)
+      .then((suscripcion) => {
+        if (vigente) setEstado(suscripcion ? 'activo' : 'disponible');
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [estado]);
+
   async function activar() {
     if (!publica) return;
     setFalla(null);
@@ -43,7 +59,9 @@ export function AvisosDelViaje() {
         setEstado(permiso === 'denied' ? 'bloqueado' : 'disponible');
         return;
       }
-      const registro = await navigator.serviceWorker.register('/sw-push.js');
+      await navigator.serviceWorker.register('/sw-push.js');
+      // La primera vez el service worker aún se está instalando y sin uno activo la suscripción falla.
+      const registro = await navigator.serviceWorker.ready;
       const suscripcion = await registro.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: claveComoBytes(publica) });
       const datos = suscripcion.toJSON() as { endpoint: string; keys?: { p256dh: string; auth: string } };
       // Responde 201 sin cuerpo: basta con que haya salido bien.
