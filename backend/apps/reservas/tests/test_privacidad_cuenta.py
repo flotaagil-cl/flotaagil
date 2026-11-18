@@ -7,10 +7,8 @@ from django.urls import reverse
 
 from apps.auditoria.models import Auditoria
 from apps.portal.tests.test_portal import solicitud
-from apps.reservas import tareas
 from apps.reservas.models import CuentaPasajero, EstadoViaje, Pasajero, Viaje
 from apps.reservas.tests.fabricas import CuentaPasajeroFactory
-from apps.reservas.tests.test_whatsapp import TwilioFalso
 
 ALTA = {
     "nombre": "Paula Pasajera",
@@ -18,13 +16,6 @@ ALTA = {
     "email": "paula@correo.example",
     "password": "Clave-Sintetica-2026",
 }
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 @pytest.mark.django_db

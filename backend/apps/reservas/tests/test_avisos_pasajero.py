@@ -19,12 +19,11 @@ from apps.auditoria.models import Auditoria
 from apps.cuentas.tests.fabricas import UsuarioFactory
 from apps.flota.tests.test_mapa_ws import access
 from apps.integraciones import push
-from apps.integraciones.notificaciones import AVISO_CONDUCTOR, AVISO_CONFIRMACION, AVISO_EN_ZONA
 from apps.reservas import avisos_pasajero, tareas
 from apps.reservas.models import CuentaPasajero, EstadoViaje, SuscripcionPush, Viaje
 from apps.reservas.tests.fabricas import ViajeFactory
 from apps.reservas.tests.test_cuenta_pasajero import activar, crear_cuenta, entrar
-from apps.reservas.tests.test_whatsapp import TwilioFalso
+from apps.reservas.tipos_aviso import AVISO_CONDUCTOR, AVISO_CONFIRMACION, AVISO_EN_ZONA
 from config.asgi import application
 
 E = EstadoViaje
@@ -158,13 +157,6 @@ class TestWebPush:
     def test_sin_claves_no_esta_configurado(self, settings):
         settings.WEBPUSH_VAPID_PUBLICA = settings.WEBPUSH_VAPID_PRIVADA = ""
         assert not push.configurado()
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 @pytest.fixture

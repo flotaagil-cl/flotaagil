@@ -24,7 +24,6 @@ from apps.aeropuerto.models import MotivoSalidaFila
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
 from apps.flota.turnos import turno_abierto
-from apps.integraciones.notificaciones import AVISO_CONDUCTOR
 
 from . import avisos, estados
 from .models import (
@@ -37,6 +36,7 @@ from .models import (
     Sentido,
     Viaje,
 )
+from .tipos_aviso import AVISO_CONDUCTOR
 
 SEGUNDOS_PARA_RESPONDER = 60  # RN-04
 # Estados en que el viaje ocupa al conductor (RN-03).

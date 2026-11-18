@@ -1127,7 +1127,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Bandeja de conversaciones, la más reciente primero */
+        /** Historial de WhatsApp (canal retirado), la conversación más reciente primero */
         get: operations["conversaciones_list"];
         put?: never;
         post?: never;
@@ -1144,30 +1144,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Conversación con un pasajero */
+        /** Historial de WhatsApp con un pasajero (solo lectura) */
         get: operations["conversaciones_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/conversaciones/{id}/mensajes/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Responder dentro de la ventana de 24 h
-         * @description Queda registrado con quien lo escribió y lo envía el worker, con reintentos.
-         */
-        post: operations["conversaciones_mensajes_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2164,43 +2144,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/whatsapp/entrante/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Webhook de Twilio: mensaje entrante del pasajero
-         * @description Confirmar o Cancelar responde la verificación de RN-06. Idempotente por MessageSid.
-         */
-        post: operations["whatsapp_entrante_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/whatsapp/estado/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Webhook de Twilio: estado de entrega de un mensaje enviado */
-        post: operations["whatsapp_estado_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2476,17 +2419,11 @@ export interface components {
             /** @description El pasajero */
             id: number;
             nombre: string;
-            telefono: string;
+            telefono: string | null;
             ultimo_mensaje: string;
             ultima_direccion: components["schemas"]["DireccionMensajeEnum"];
             /** Format: date-time */
             ultimo_en: string;
-            /**
-             * Format: date-time
-             * @description Hasta cuándo admite texto libre; NULL si el pasajero nunca escribió
-             */
-            ventana_hasta: string | null;
-            dentro_ventana: boolean;
             /** @description La más reciente del pasajero */
             reserva: components["schemas"]["ReservaVinculada"] | null;
         };
@@ -2520,17 +2457,11 @@ export interface components {
             /** @description El pasajero */
             id: number;
             nombre: string;
-            telefono: string;
+            telefono: string | null;
             ultimo_mensaje: string;
             ultima_direccion: components["schemas"]["DireccionMensajeEnum"];
             /** Format: date-time */
             ultimo_en: string;
-            /**
-             * Format: date-time
-             * @description Hasta cuándo admite texto libre; NULL si el pasajero nunca escribió
-             */
-            ventana_hasta: string | null;
-            dentro_ventana: boolean;
             /** @description La más reciente del pasajero */
             reserva: components["schemas"]["ReservaVinculada"] | null;
             /** @description Los últimos 200, en orden */
@@ -2793,9 +2724,6 @@ export interface components {
             propio: boolean;
             /** Format: date-time */
             creado_en: string;
-        };
-        MensajeNuevoRequest: {
-            texto: string;
         };
         /**
          * @description * `PLANTILLA` - Plantilla
@@ -5734,41 +5662,6 @@ export interface operations {
             };
         };
     };
-    conversaciones_mensajes_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Un valor de entero único que identifique este pasajero. */
-                id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MensajeNuevoRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["MensajeNuevoRequest"];
-                "multipart/form-data": components["schemas"]["MensajeNuevoRequest"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Mensaje"];
-                };
-            };
-            /** @description `fuera_de_ventana`: solo plantillas aprobadas (PR-11) */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
     indicadores_retrieve: {
         parameters: {
             query?: never;
@@ -7603,68 +7496,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConductorContingencia"][];
                 };
-            };
-        };
-    };
-    whatsapp_entrante_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": {
-                    [key: string]: unknown;
-                };
-            };
-        };
-        responses: {
-            /** @description TwiML vacío */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Firma inválida */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    whatsapp_estado_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/x-www-form-urlencoded": {
-                    [key: string]: unknown;
-                };
-            };
-        };
-        responses: {
-            /** @description No response body */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Firma inválida */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
         };
     };

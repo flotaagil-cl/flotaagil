@@ -8,7 +8,6 @@ from django.utils import timezone
 
 from apps.auditoria.models import Auditoria, Entidad
 from apps.flota.models import MotivoTerminoTurno, Turno
-from apps.reservas import tareas
 from apps.reservas.models import (
     Canal,
     EstadoViaje,
@@ -18,7 +17,6 @@ from apps.reservas.models import (
     Viaje,
 )
 from apps.reservas.tests.fabricas import ConductorFactory, VehiculoFactory
-from apps.reservas.tests.test_whatsapp import TwilioFalso
 
 URL = reverse("viaje-contingencia")
 E = EstadoViaje
@@ -69,13 +67,6 @@ def chofer(empresa):
 def api(cliente, despachador):
     cliente.force_authenticate(despachador)
     return cliente
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 @pytest.mark.django_db

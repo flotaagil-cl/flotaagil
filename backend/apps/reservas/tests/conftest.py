@@ -1,19 +1,37 @@
-"""Fixtures compartidos de los avisos por WhatsApp (HU-21 y HU-24)."""
+"""Fixtures compartidos de las reservas.
+
+Desde CC-19 (HU-67) no hay cliente de WhatsApp. El fixture `twilio` queda como guarda de CP-57: `enviados`
+lista los mensajes salientes de WhatsApp registrados durante la prueba, que deben ser cero.
+"""
 
 import pytest
 from django.utils import timezone
 
 from apps.flota.models import ConductorVehiculo, EstadoConductor
-from apps.reservas import tareas
+from apps.reservas.models import DireccionMensaje, MensajeWhatsapp
 from apps.reservas.tests.fabricas import ConductorFactory, PasajeroFactory, VehiculoFactory
-from apps.reservas.tests.test_whatsapp import TwilioFalso
+
+
+class SinWhatsapp:
+    def __init__(self):
+        self.antes = set(MensajeWhatsapp.objects.values_list("pk", flat=True))
+
+    @property
+    def enviados(self) -> list[dict]:
+        nuevos = MensajeWhatsapp.objects.filter(direccion=DireccionMensaje.SALIENTE).exclude(
+            pk__in=self.antes
+        )
+        return list(nuevos.values("pk", "cuerpo"))
 
 
 @pytest.fixture
-def twilio_avisos(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
+def twilio(db):
+    return SinWhatsapp()
+
+
+@pytest.fixture
+def twilio_avisos(twilio):
+    return twilio
 
 
 @pytest.fixture

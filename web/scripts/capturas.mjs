@@ -361,6 +361,20 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-67 (CC-19): el historial de WhatsApp en solo lectura (mensajes sintéticos de datos_demo).
+  'HU-67': [
+    { nombre: 'panel-historial-whatsapp', ruta: '/conversaciones', sesion: 'despacho' },
+    {
+      nombre: 'panel-historial-whatsapp-hilo',
+      ruta: '/conversaciones',
+      sesion: 'despacho',
+      destino: /^\/conversaciones\/\d+$/,
+      accion: async (pagina) => {
+        await pagina.getByRole('table', { name: 'Historial de WhatsApp' }).getByRole('link').first().click();
+        await pagina.getByRole('list', { name: 'Mensajes' }).waitFor();
+      },
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

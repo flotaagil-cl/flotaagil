@@ -1,15 +1,14 @@
-"""Tareas de Celery de las reservas: WhatsApp, vuelos y expiraciones, con reintento exponencial.
+"""Tareas de Celery de las reservas: avisos al pasajero, vuelos, expiraciones y retención, con reintento.
 
-- El WhatsApp sale del worker: la respuesta al conductor o al webhook no espera a Twilio. Cada tarea hace un
-  intento; si falla por algo transitorio, Celery reintenta con espera creciente. Agotados los reintentos, el
-  mensaje queda en FAILED.
+- Los avisos salen del worker por correo o Web Push; desde CC-19 (HU-67) no sale ningún WhatsApp. El historial
+  de WhatsApp queda en solo lectura (MENSAJE_WHATSAPP) hasta que vence su retención.
 - La consulta inicial de un vuelo sigue en la petición, porque el formulario debe responder si el vuelo existe
   (HU-26). Si la API no responde, el vuelo queda sin verificar y `consultar_vuelo` reintenta aquí.
-- Las expiraciones (RN-04, RN-06) corren por beat y pueden ejecutarse varias veces sin efectos duplicados.
+- Las expiraciones (RN-04, RN-06) y la purga (RN-15) corren por beat y pueden ejecutarse varias veces sin
+  efectos duplicados.
 """
 
 import logging
-from datetime import datetime
 
 from celery import shared_task
 from django.db import OperationalError as ErrorDeBase
@@ -18,10 +17,9 @@ from django.utils import timezone
 from kombu.exceptions import OperationalError as ErrorDeBroker
 
 from apps.aeropuerto.models import Vuelo
-from apps.integraciones.notificaciones import EnvioTransitorio, obtener_notificador
 from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
 
-from .models import EstadoEntrega, MensajeWhatsapp, Pasajero, Viaje
+from .models import Viaje
 
 logger = logging.getLogger(__name__)
 
@@ -44,23 +42,6 @@ def al_confirmar(tarea, *args) -> None:
     transaction.on_commit(lambda: encolar(tarea, *args), robust=True)
 
 
-def _enviar(tarea, envio) -> None:
-    notificador = obtener_notificador()
-    notificador.definitivo = tarea.request.retries >= tarea.max_retries
-    try:
-        envio(notificador)
-    except EnvioTransitorio as error:
-        raise tarea.retry(exc=error, countdown=ESPERA_ENVIO_S * 2**tarea.request.retries) from error
-
-
-def _con_telefono(pasajero) -> bool:
-    """HU-45 (DC-50): el pasajero de una cuenta eliminada queda sin teléfono y no se le escribe."""
-    if pasajero.telefono:
-        return True
-    logger.info("WhatsApp no enviado: el pasajero %s no tiene teléfono (cuenta eliminada).", pasajero.pk)
-    return False
-
-
 def _viaje_para_mensaje(viaje_id: int) -> Viaje | None:
     return (
         Viaje.objects.select_related("pasajero", "empresa", "conductor__usuario", "vehiculo")
@@ -69,32 +50,18 @@ def _viaje_para_mensaje(viaje_id: int) -> Viaje | None:
     )
 
 
-@shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
-def enviar_verificacion(self, viaje_id: int, expira_en: str) -> None:
-    viaje = _viaje_para_mensaje(viaje_id)
-    if viaje is not None and _con_telefono(viaje.pasajero):
-        _enviar(self, lambda n: n.solicitar_verificacion(viaje, datetime.fromisoformat(expira_en)))
-
-
-@shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
-def enviar_aviso(self, viaje_id: int, tipo: str) -> None:
+@shared_task
+def enviar_aviso(viaje_id: int, tipo: str) -> None:
+    """HU-21 con CC-22 y CC-19: viaje de una cuenta (módulo), Web Push o correo con la casilla (HU-65); si no,
+    correo al `contacto_correo` del viaje (HU-56). Sin correo ni cuenta, el aviso no sale (sin WhatsApp)."""
     from . import avisos_correo, avisos_pasajero
 
     viaje = _viaje_para_mensaje(viaje_id)
     if viaje is None:
         return
     if viaje.empresa.modulo_cuentas and avisos_pasajero.enviar(viaje, tipo):
-        return  # HU-65 (CC-19): el viaje es de una cuenta; Web Push o correo con la casilla, sin WhatsApp.
-    if not viaje.empresa.modulo_cuentas or viaje.contacto_correo:
-        # HU-56 (CC-22, DC-55): sin el módulo de cuentas no sale ningún WhatsApp; los avisos van por correo.
-        # Con el módulo, la reserva pública («Reservar sin cuenta», HU-60) también avisa por correo: no
-        # autorizó WhatsApp.
-        avisos_correo.enviar(viaje, tipo)
         return
-    if tipo == avisos_correo.AVISO_CANCELACION:
-        return  # con el módulo, la cancelación sigue como hasta ahora (CC-19 la cambiará)
-    if _con_telefono(viaje.pasajero):
-        _enviar(self, lambda n: n.avisar(viaje, tipo))
+    avisos_correo.enviar(viaje, tipo)
 
 
 @shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
@@ -116,38 +83,6 @@ def enviar_push(self, suscripcion_id: int, datos: dict) -> None:
             logger.error("No se pudo enviar el aviso push %s: %s", suscripcion_id, error)
             return
         raise self.retry(exc=error, countdown=ESPERA_ENVIO_S * 2**self.request.retries) from error
-
-
-@shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
-def enviar_respuesta(self, pasajero_id: int, viaje_id: int | None, texto: str) -> None:
-    pasajero = Pasajero.objects.filter(pk=pasajero_id).first()
-    viaje = _viaje_para_mensaje(viaje_id) if viaje_id else None
-    if pasajero is not None and _con_telefono(pasajero) and pasajero.empresa.modulo_cuentas:
-        _enviar(self, lambda n: n.responder(pasajero, viaje, texto))
-
-
-@shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
-def enviar_chat(self, mensaje_id: int) -> None:
-    """HU-30. Sin SID ni falla: un reintento o una repetición de la tarea no lo envía dos veces."""
-    mensaje = (
-        MensajeWhatsapp.objects.select_related("pasajero__empresa")
-        .filter(pk=mensaje_id, proveedor_sid__isnull=True, estado_entrega=EstadoEntrega.QUEUED)
-        .first()
-    )
-    sin_whatsapp = mensaje is not None and not mensaje.pasajero.empresa.modulo_cuentas  # HU-56
-    if mensaje is not None and (sin_whatsapp or not _con_telefono(mensaje.pasajero)):
-        MensajeWhatsapp.objects.filter(pk=mensaje.pk).update(estado_entrega=EstadoEntrega.FAILED)
-    elif mensaje is not None:
-        _enviar(self, lambda n: n.enviar_mensaje(mensaje))
-
-
-def encolar_chat(mensaje_id: int) -> None:
-    """Sin broker, el mensaje queda en FAILED: el despachador tiene que verlo, no creer que salió."""
-    try:
-        enviar_chat.delay(mensaje_id)
-    except ErrorDeBroker:
-        logger.exception("No se pudo encolar el mensaje %s del chat.", mensaje_id)
-        MensajeWhatsapp.objects.filter(pk=mensaje_id).update(estado_entrega=EstadoEntrega.FAILED)
 
 
 @shared_task(bind=True, max_retries=REINTENTOS_VUELO)
@@ -189,3 +124,11 @@ def expirar_asignaciones() -> int:
     from .asignacion import expirar_asignaciones as expirar
 
     return expirar()
+
+
+@shared_task(autoretry_for=(ErrorDeBase,), retry_backoff=True, retry_backoff_max=60, max_retries=3)
+def purgar_mensajes() -> dict:
+    """RN-15 (HU-68): borra los mensajes del chat y el historial de WhatsApp de más de 12 meses."""
+    from .retencion import purgar_mensajes as purgar
+
+    return purgar()

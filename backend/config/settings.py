@@ -171,6 +171,12 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=3, minute=17),
         "options": {"expires": 3600},
     },
+    # RN-15 (HU-68): mensajes del chat y del historial de WhatsApp de más de 12 meses.
+    "purgar-mensajes-rn15": {
+        "task": "apps.reservas.tareas.purgar_mensajes",
+        "schedule": crontab(hour=3, minute=37),
+        "options": {"expires": 3600},
+    },
     "expirar-asignaciones-rn04": {
         "task": "apps.reservas.tareas.expirar_asignaciones",
         "schedule": timedelta(seconds=5),
@@ -198,19 +204,8 @@ GOOGLE_GEOCODING_API_KEY = env("GOOGLE_GEOCODING_API_KEY", default="")
 FLIGHTAWARE_API_KEY = env("FLIGHTAWARE_API_KEY", default="")
 AEROPUERTO_IATA = env("AEROPUERTO_IATA", default="SCL")
 
-# WhatsApp (HU-20): Twilio si están todas; si no, el notificador de desarrollo (registra y deja en el log).
-TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID", default="")
-TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN", default="")
-TWILIO_WHATSAPP_FROM = env("TWILIO_WHATSAPP_FROM", default="")  # +56…, número aprobado por Meta
-TWILIO_PLANTILLA_VERIFICACION = env("TWILIO_PLANTILLA_VERIFICACION", default="")  # ContentSid HX…
-# Avisos de estado (HU-21). Sin plantilla van como texto, que solo llega dentro de la ventana de 24 h.
-TWILIO_PLANTILLA_AVISO_CONFIRMACION = env("TWILIO_PLANTILLA_AVISO_CONFIRMACION", default="")
-TWILIO_PLANTILLA_AVISO_CONDUCTOR = env("TWILIO_PLANTILLA_AVISO_CONDUCTOR", default="")
-TWILIO_PLANTILLA_AVISO_EN_CAMINO = env("TWILIO_PLANTILLA_AVISO_EN_CAMINO", default="")
-TWILIO_PLANTILLA_AVISO_EN_ZONA = env("TWILIO_PLANTILLA_AVISO_EN_ZONA", default="")
-TWILIO_PLANTILLA_AVISO_ENCUESTA = env("TWILIO_PLANTILLA_AVISO_ENCUESTA", default="")
-# URL pública del backend con la que Twilio llama a los webhooks (y con la que se valida la firma).
-WHATSAPP_URL_BASE = env("WHATSAPP_URL_BASE", default="")
+# RN-15 (HU-68, CC-19): retención de los mensajes del chat y del historial de WhatsApp (12 meses).
+RETENCION_MENSAJES_DIAS = env.int("RETENCION_MENSAJES_DIAS", default=365)
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MIN", default=15)),

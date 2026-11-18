@@ -22,7 +22,7 @@ HU-02 y HU-29 se trabajan en pareja. Mientras Carlos no esté, Renato integra ca
 - **App del conductor:** React + Capacitor 7 + background-geolocation. Solo Android 10+ (API 29–35).
 - **Pruebas:** pytest + pytest-django + coverage, Vitest, Playwright, k6, Bandit, Ruff, ESLint, OWASP ZAP.
 - **Infra:** Docker Compose, Nginx + Certbot, AWS EC2 t4g.small (ARM64, us-east-1), EBS gp3, S3, DLM, Route 53, CloudWatch, SSM Parameter Store. Imágenes en `ghcr.io/flotaagil-cl/*`.
-- **Externos:** Twilio WhatsApp Business API, FlightAware AeroAPI / AeroDataBox (detrás de un adaptador), Google Maps JS API, Sentry, UptimeRobot.
+- **Externos:** FlightAware AeroAPI / AeroDataBox (detrás de un adaptador), Google Maps JS API, Web Push (VAPID), correo (SES), Sentry, UptimeRobot. Twilio WhatsApp se retiró con CC-19 (DC-63): queda solo el historial de mensajes en solo lectura.
 
 Todas las imágenes Docker deben tener variante ARM64.
 

@@ -62,8 +62,7 @@ export function AceptarPrivacidad() {
         <form className={e.formulario} onSubmit={(evento) => void enviar(evento)} noValidate aria-label="Aceptar el aviso de privacidad">
           {falla && <Aviso tipo="error">{falla}</Aviso>}
           <Casilla checked={acepta} onChange={(evento) => setAcepta(evento.target.checked)} error={error ?? undefined}>
-            Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {usuario.empresa.razon_social} y recibir
-            por WhatsApp los avisos de mis viajes.
+            Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {usuario.empresa.razon_social}.
           </Casilla>
           <Boton type="submit" ancho cargando={enviando}>
             {enviando ? 'Guardando…' : 'Aceptar y continuar'}

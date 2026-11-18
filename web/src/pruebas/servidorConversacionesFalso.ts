@@ -13,8 +13,6 @@ export function conversacionDePrueba(cambios: Partial<Detalle> = {}): Detalle {
     ultimo_mensaje: '¿Viene pronto?',
     ultima_direccion: 'ENTRANTE',
     ultimo_en: '2026-07-15T12:00:00Z',
-    ventana_hasta: '2026-07-16T12:00:00Z',
-    dentro_ventana: true,
     reserva: { id: 8, estado: 'EN_CAMINO' },
     mensajes: [
       { id: 1, direccion: 'ENTRANTE', tipo: 'SESION', cuerpo: '¿Viene pronto?', estado_entrega: 'DELIVERED', usuario: null, viaje: 8, creado_en: '2026-07-15T12:00:00Z' },
@@ -53,8 +51,6 @@ export class ServidorConversacionesFalso {
         ultimo_mensaje: c.ultimo_mensaje,
         ultima_direccion: c.ultima_direccion,
         ultimo_en: c.ultimo_en,
-        ventana_hasta: c.ventana_hasta,
-        dentro_ventana: c.dentro_ventana,
         reserva: c.reserva,
       }));
       return { estado: 200, cuerpo: { count: filas.length, next: null, previous: null, results: filas } };

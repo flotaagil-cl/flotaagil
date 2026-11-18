@@ -265,9 +265,8 @@ def confirmar_por_telefono(viaje: Viaje, *, usuario) -> Viaje:
         auditoria.registrar(
             usuario=usuario, entidad=Entidad.VIAJE, entidad_id=viaje.pk, accion="CONFIRMAR_POR_TELEFONO"
         )
-        from apps.integraciones.notificaciones import AVISO_CONFIRMACION
-
         from . import avisos
+        from .tipos_aviso import AVISO_CONFIRMACION
 
         avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21 / HU-56
     return viaje

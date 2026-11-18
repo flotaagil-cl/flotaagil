@@ -162,7 +162,7 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
         Pedir mi traslado
       </Boton>
       <p className={e.nota}>
-        Te avisaremos de tu viaje por WhatsApp. Tus datos se tratan según el{' '}
+        Sigue tu viaje en «Mis viajes»; también te avisamos por notificación o correo si lo activas. Tus datos se tratan según el{' '}
         <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link> que aceptaste al crear tu cuenta.
       </p>
     </form>

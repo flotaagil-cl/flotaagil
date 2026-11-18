@@ -18,11 +18,11 @@ from rest_framework.exceptions import APIException, ValidationError
 from apps.chat.servicios import alertar_llegada
 from apps.flota.models import Conductor, EstadoConductor, PosicionGps
 from apps.flota.tiempo_real import notificar_conductor
-from apps.integraciones.notificaciones import AVISO_EN_CAMINO, AVISO_EN_ZONA, AVISO_ENCUESTA
 
 from . import avisos, estados
 from .asignacion import grupo_conductor
 from .models import Actor, EstadoViaje, HistorialEstado, MetodoPago, PagoViaje, Viaje
+from .tipos_aviso import AVISO_EN_CAMINO, AVISO_EN_ZONA, AVISO_ENCUESTA
 
 # Geocerca del punto de recogida (informe: 150 m).
 RADIO_ZONA_M = 150

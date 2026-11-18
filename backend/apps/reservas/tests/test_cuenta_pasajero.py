@@ -13,7 +13,6 @@ from rest_framework.test import APIClient
 
 from apps.auditoria.models import Auditoria
 from apps.cuentas.models import Rol, Usuario
-from apps.reservas import tareas
 from apps.reservas.models import (
     Actor,
     Canal,
@@ -23,19 +22,11 @@ from apps.reservas.models import (
     Viaje,
 )
 from apps.reservas.tests.fabricas import ConductorFactory, PasajeroFactory, ViajeFactory
-from apps.reservas.tests.test_whatsapp import TwilioFalso
 
 ORIGEN = "http://localhost:5173"
 TELEFONO = "+56900009301"
 CLAVE = "Clave-Sintetica-2026"
 E = EstadoViaje
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 def crear_cuenta(cliente, empresa, **cambios):
@@ -51,10 +42,10 @@ def crear_cuenta(cliente, empresa, **cambios):
 
 
 def whatsapp(cliente, texto, desde=TELEFONO, sid="SM" + "9" * 32):
-    """Como Twilio: application/x-www-form-urlencoded, sin firma (DEBUG)."""
+    """Lo que enviaba Twilio al webhook de entrada. HU-67 (CC-19) retiró el webhook: ya no existe la ruta."""
     datos = {"From": f"whatsapp:{desde}", "Body": texto, "MessageSid": sid}
     return cliente.post(
-        reverse("whatsapp-entrante"),
+        "/api/whatsapp/entrante/",
         urllib.parse.urlencode(datos),
         content_type="application/x-www-form-urlencoded",
     )
@@ -227,7 +218,7 @@ class TestActivacion:
     def test_whatsapp_ya_no_activa(self, cliente, empresa, twilio, settings):
         settings.DEBUG = True
         crear_cuenta(cliente, empresa)
-        whatsapp(cliente, "CONFIRMAR CUENTA")
+        assert whatsapp(cliente, "CONFIRMAR CUENTA").status_code == 404  # CP-57: el webhook ya no existe
         assert CuentaPasajero.objects.get().confirmada_en is None
 
     def test_cuenta_verificada_antes_ve_sus_viajes_de_invitado(self, activa, empresa):

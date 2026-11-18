@@ -168,7 +168,7 @@ describe('HU-39 · pantalla del pedido', () => {
       Destino: 'Hotel Cumbres, Vitacura',
       Pasajeros: '1 · 2 maletas',
       Nombre: 'Pablo Pasajero',
-      WhatsApp: '+56 9 8765 4321',
+      Teléfono: '+56 9 8765 4321',
     });
     expect(screen.getByText('Seguimos tu vuelo por ti')).toBeInTheDocument();
     await confirmar();

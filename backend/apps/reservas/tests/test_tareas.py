@@ -8,21 +8,14 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from kombu.exceptions import OperationalError as ErrorDeBroker
+from rest_framework.test import APIClient
 
 from apps.aeropuerto.models import Vuelo
-from apps.integraciones.notificaciones import AVISO_EN_CAMINO
 from apps.integraciones.vuelos import DatosVuelo, EstadoVuelo, VuelosNoDisponibles
 from apps.reservas import tareas
-from apps.reservas.models import (
-    Actor,
-    EstadoEntrega,
-    EstadoViaje,
-    HistorialEstado,
-    MensajeWhatsapp,
-)
+from apps.reservas.models import Actor, EstadoViaje, HistorialEstado, MensajeWhatsapp
 from apps.reservas.tests.fabricas import ViajeFactory
-from apps.reservas.tests.test_avisos import como, viaje_con
-from apps.reservas.tests.test_whatsapp import TwilioFalso, http_error
+from apps.reservas.tipos_aviso import AVISO_EN_CAMINO
 from config.celery import app as celery_app
 
 E = EstadoViaje
@@ -33,11 +26,22 @@ def chofer(chofer_disponible):
     return chofer_disponible
 
 
-def twilio_con(monkeypatch, *errores):
-    falso = TwilioFalso(*errores)
-    falso.intentos = 1  # como en producción: cada tarea hace un intento
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
+def viaje_con(chofer, pasajero, estado):
+    viaje = ViajeFactory(
+        empresa=pasajero.empresa,
+        pasajero=pasajero,
+        conductor=chofer,
+        vehiculo=chofer.vehiculo_activo,
+        estado=estado,
+    )
+    HistorialEstado.objects.create(viaje=viaje, estado_nuevo=estado, actor=Actor.CONDUCTOR)
+    return viaje
+
+
+def como(usuario):
+    cliente = APIClient()
+    cliente.force_authenticate(usuario)
+    return cliente
 
 
 def espiar_reintentos(monkeypatch, tarea):
@@ -54,62 +58,31 @@ def espiar_reintentos(monkeypatch, tarea):
 
 @pytest.mark.django_db
 class TestEnvio:
-    def test_reintenta_con_espera_exponencial_y_se_recupera(self, monkeypatch, chofer, pasajero):
-        viaje = viaje_con(chofer, pasajero, E.EN_CAMINO)
-        twilio = twilio_con(monkeypatch, http_error(503), http_error(503), http_error(429))
-        esperas = espiar_reintentos(monkeypatch, tareas.enviar_aviso)
-        tareas.enviar_aviso.delay(viaje.pk, AVISO_EN_CAMINO)
-        assert esperas == [2, 4, 8]
-        assert len(twilio.enviados) == 4
-        mensaje = MensajeWhatsapp.objects.get(viaje=viaje)
-        assert mensaje.estado_entrega == EstadoEntrega.QUEUED
-
-    def test_agotados_los_reintentos_queda_en_failed(self, monkeypatch, chofer, pasajero):
-        viaje = viaje_con(chofer, pasajero, E.EN_CAMINO)
-        twilio = twilio_con(monkeypatch, *[http_error(503) for _ in range(6)])
-        esperas = espiar_reintentos(monkeypatch, tareas.enviar_aviso)
-        tareas.enviar_aviso.delay(viaje.pk, AVISO_EN_CAMINO)
-        assert esperas == [2, 4, 8, 16, 32]
-        assert len(twilio.enviados) == 6
-        assert MensajeWhatsapp.objects.get(viaje=viaje).estado_entrega == EstadoEntrega.FAILED
-
-    def test_error_definitivo_no_reintenta(self, monkeypatch, chofer, pasajero):
-        viaje = viaje_con(chofer, pasajero, E.EN_CAMINO)
-        twilio = twilio_con(monkeypatch, http_error(400))
-        tareas.enviar_aviso.delay(viaje.pk, AVISO_EN_CAMINO)
-        assert len(twilio.enviados) == 1
-        assert MensajeWhatsapp.objects.get(viaje=viaje).estado_entrega == EstadoEntrega.FAILED
-
-    def test_verificacion_y_respuesta_tambien_reintentan(self, monkeypatch, pasajero):
-        viaje = ViajeFactory(empresa=pasajero.empresa, pasajero=pasajero, estado=E.PENDIENTE_CONFIRMACION)
-        twilio = twilio_con(monkeypatch, http_error(503), http_error(503))
-        vence = (timezone.now() + timedelta(minutes=15)).isoformat()
-        tareas.enviar_verificacion.delay(viaje.pk, vence)
-        assert len(twilio.enviados) == 3  # dos fallas y el envío
-        tareas.enviar_respuesta.delay(pasajero.pk, viaje.pk, "Listo")
-        tareas.enviar_respuesta.delay(pasajero.pk, None, "Sin viaje")
-        assert twilio.enviados[-1]["Body"] == "Sin viaje"
-
-    def test_viaje_borrado_no_envia(self, monkeypatch):
-        twilio = twilio_con(monkeypatch)
-        tareas.enviar_aviso.delay(999999, AVISO_EN_CAMINO)
-        tareas.enviar_verificacion.delay(999999, timezone.now().isoformat())
-        tareas.enviar_respuesta.delay(999999, None, "x")
+    @pytest.mark.parametrize(
+        "tipo", ["confirmacion", "conductor", "en_camino", "en_zona", "encuesta", "cancelacion"]
+    )
+    def test_ningun_aviso_sale_por_whatsapp(self, twilio, chofer, pasajero, empresa, tipo):
+        """CP-57 (HU-67): con o sin el módulo de cuentas, ningún aviso queda como WhatsApp saliente."""
+        for modulo in (True, False):
+            empresa.modulo_cuentas = modulo
+            empresa.save()
+            viaje = viaje_con(chofer, pasajero, E.EN_CAMINO)
+            tareas.enviar_aviso.delay(viaje.pk, tipo)
+        tareas.enviar_aviso.delay(999999, tipo)  # viaje borrado
         assert twilio.enviados == []
+        assert not MensajeWhatsapp.objects.exists()
 
-    def test_la_respuesta_al_conductor_no_llama_a_twilio(
+    def test_la_respuesta_al_conductor_solo_encola(
         self, monkeypatch, chofer, pasajero, django_capture_on_commit_callbacks
     ):
-        """La acción solo encola: Twilio queda fuera de la petición."""
+        """La acción solo encola: el aviso sale del worker."""
         viaje = viaje_con(chofer, pasajero, E.ACEPTADO)
-        twilio = twilio_con(monkeypatch)
         delay = Mock()
         monkeypatch.setattr(tareas.enviar_aviso, "delay", delay)
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = como(chofer.usuario).post(reverse("app-en-camino", args=[viaje.pk]))
         assert respuesta.status_code == 200
         delay.assert_called_once_with(viaje.pk, AVISO_EN_CAMINO)
-        assert twilio.enviados == []
 
     def test_sin_broker_la_accion_no_se_rompe(
         self, monkeypatch, chofer, pasajero, caplog, django_capture_on_commit_callbacks
@@ -223,4 +196,5 @@ def test_beat_programa_las_expiraciones():
     programa = {t["task"]: t["schedule"] for t in settings.CELERY_BEAT_SCHEDULE.values()}
     assert programa["apps.reservas.tareas.expirar_solicitudes"] == timedelta(seconds=60)
     assert programa["apps.reservas.tareas.expirar_asignaciones"] == timedelta(seconds=5)
+    assert "apps.reservas.tareas.purgar_mensajes" in programa  # HU-68
     assert settings.CELERY_TIMEZONE == "America/Santiago"

@@ -91,7 +91,7 @@ function PedirViaje({ slug }: { slug: string }) {
     return (
       <Confirmacion
         {...enviada}
-        destacado="La reserva quedó registrada sin verificación por WhatsApp (RN-07)."
+        destacado="La reserva quedó registrada sin verificación del pasajero (RN-07)."
         alHacerOtra={() => {
           setEnviada(null);
           setVuelta((n) => n + 1);

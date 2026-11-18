@@ -7,26 +7,18 @@ from django.core import mail
 from django.urls import reverse
 
 from apps.cuentas.tests.fabricas import EmpresaFactory
-from apps.integraciones.notificaciones import (
+from apps.reservas import avisos_correo, tareas
+from apps.reservas.models import Calificacion, EstadoViaje
+from apps.reservas.tests.fabricas import ConductorFactory, VehiculoFactory, ViajeFactory
+from apps.reservas.tipos_aviso import (
     AVISO_CONDUCTOR,
     AVISO_CONFIRMACION,
     AVISO_EN_CAMINO,
     AVISO_EN_ZONA,
     AVISO_ENCUESTA,
 )
-from apps.reservas import avisos_correo, tareas
-from apps.reservas.models import Calificacion, EstadoViaje, MensajeWhatsapp
-from apps.reservas.tests.fabricas import ConductorFactory, VehiculoFactory, ViajeFactory
-from apps.reservas.tests.test_whatsapp import TwilioFalso
 
 E = EstadoViaje
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 @pytest.fixture
@@ -87,27 +79,13 @@ class TestAvisosPorCorreo:
         assert respuesta.status_code == 200
         assert "cancelada" in mail.outbox[-1].subject and "Sin flota" in mail.outbox[-1].body
 
-    def test_con_el_modulo_sigue_por_whatsapp_y_sin_aviso_de_cancelacion(self, twilio, db):
+    def test_con_el_modulo_y_sin_correo_ni_cuenta_no_sale_nada(self, twilio, db):
+        """CC-19 (HU-67, CP-57): ya no hay WhatsApp; una reserva del panel sin correo no recibe avisos."""
         con_modulo = EmpresaFactory(modulo_cuentas=True)
-        # Sin correo de contacto: reserva con cuenta o del panel.
         viaje = ViajeFactory(empresa=con_modulo, estado=E.SOLICITADO)
         tareas.enviar_aviso.delay(viaje.pk, AVISO_CONFIRMACION)
         tareas.enviar_aviso.delay(viaje.pk, avisos_correo.AVISO_CANCELACION)
-        assert len(twilio.enviados) == 1 and not mail.outbox
-
-    def test_sin_modulo_el_chat_del_panel_no_envia(self, base, twilio):
-        viaje = ViajeFactory(empresa=base, estado=E.SOLICITADO)
-        mensaje = MensajeWhatsapp.objects.create(
-            pasajero=viaje.pasajero,
-            viaje=viaje,
-            direccion="SALIENTE",
-            tipo="SESION",
-            cuerpo="Hola",
-            estado_entrega="QUEUED",
-        )
-        tareas.enviar_chat.delay(mensaje.pk)
-        mensaje.refresh_from_db()
-        assert (mensaje.estado_entrega, twilio.enviados) == ("FAILED", [])
+        assert twilio.enviados == [] and not mail.outbox
 
 
 @pytest.mark.django_db

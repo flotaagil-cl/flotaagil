@@ -16,10 +16,10 @@ from rest_framework.exceptions import APIException, Throttled
 
 from apps.convenios.models import Convenio, EstadoConvenio
 from apps.cuentas.tareas import al_confirmar_correo
-from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 from apps.reservas import avisos, estados
 from apps.reservas import servicios as reservas
 from apps.reservas.models import Actor, Canal, EstadoViaje, OrigenCancelacion, Pasajero, Viaje
+from apps.reservas.tipos_aviso import AVISO_CONFIRMACION
 
 from .servicios import validar_capacidad, vuelo_y_recogida
 
