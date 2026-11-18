@@ -258,6 +258,12 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
           path: 'autorizar/:token',
           lazy: async () => ({ Component: (await import('../portal/paginas/AutorizarReserva')).AutorizarReserva }),
         },
+        // HU-64 (CC-19): el enlace del correo que activa la cuenta del pasajero.
+        {
+          path: 'activar/:token',
+          lazy: async () => ({ Component: (await import('../portal/paginas/ActivarEnlace')).ActivarEnlace }),
+          handle: { requiereModulo: true },
+        },
         // HU-51 (CC-22): el enlace del correo que confirma la reserva pública.
         {
           path: 'confirmar/:token',

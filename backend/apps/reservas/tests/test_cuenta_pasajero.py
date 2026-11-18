@@ -68,20 +68,32 @@ def entrar(email="paula@correo.example", password=CLAVE):
     return web, respuesta
 
 
+def token_del_correo() -> str:
+    """HU-64: el enlace de activación del último correo enviado."""
+    return re.search(r"/activar/(\S+)", mail.outbox[-1].body).group(1)
+
+
+def activar(cliente, empresa, token=None):
+    return cliente.post(
+        reverse("portal-cuenta-activar", args=[empresa.slug]),
+        {"token": token or token_del_correo()},
+        format="json",
+    )
+
+
 @pytest.fixture
-def activa(cliente, empresa, twilio, settings, django_capture_on_commit_callbacks):
-    """Cuenta creada y confirmada por WhatsApp; devuelve el cliente con sesión."""
-    settings.DEBUG = True  # webhook sin firma, como en las pruebas de HU-20
+def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
+    """Cuenta creada y activada con el enlace del correo (HU-64); devuelve el cliente con sesión."""
     with django_capture_on_commit_callbacks(execute=True):
         crear_cuenta(cliente, empresa)
-        whatsapp(cliente, "Confirmar cuenta")
+    assert activar(cliente, empresa).status_code == 200
     web, _ = entrar()
     return web
 
 
 @pytest.mark.django_db
 class TestRegistro:
-    def test_queda_pendiente_y_envia_el_whatsapp(
+    def test_queda_pendiente_y_envia_el_correo(
         self, cliente, empresa, twilio, django_capture_on_commit_callbacks
     ):
         with django_capture_on_commit_callbacks(execute=True):
@@ -95,7 +107,11 @@ class TestRegistro:
             None,
         )
         assert (cuenta.usuario.rol, cuenta.usuario.activo) == (Rol.PASAJERO, False)
-        assert "CONFIRMAR CUENTA" in twilio.enviados[0]["Body"]
+        # DC-61: el enlace va al correo y vale 24 h; no sale ningún WhatsApp (CP-57).
+        assert (mail.outbox[0].to, mail.outbox[0].subject) == (["paula@correo.example"], "Activa tu cuenta")
+        assert f"/solicitar/{empresa.slug}/activar/" in mail.outbox[0].body
+        assert "24 horas" in mail.outbox[0].body
+        assert twilio.enviados == []
 
     def test_sin_confirmar_no_entra(self, cliente, empresa, twilio):
         crear_cuenta(cliente, empresa)
@@ -125,41 +141,104 @@ class TestRegistro:
 
 
 @pytest.mark.django_db
-class TestConfirmacion:
-    def test_confirmar_activa_y_liga_las_reservas_de_invitado(self, cliente, empresa, twilio, settings):
-        settings.DEBUG = True
+class TestActivacion:
+    """CP-56 (HU-64, DC-61 y DC-65): activación por el enlace del correo, de 24 h."""
+
+    def test_el_enlace_activa_sin_dar_acceso_a_viajes_de_invitado(
+        self, cliente, empresa, django_capture_on_commit_callbacks
+    ):
         anterior = PasajeroFactory(empresa=empresa, telefono=TELEFONO)
-        de_invitado = ViajeFactory(empresa=empresa, pasajero=anterior)
-        crear_cuenta(cliente, empresa)
-        assert whatsapp(cliente, "CONFIRMAR CUENTA").status_code == 200
+        ViajeFactory(empresa=empresa, pasajero=anterior)
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa)
+        respuesta = activar(cliente, empresa)
+        assert (respuesta.status_code, respuesta.data["activa"]) == (200, True)
+        assert respuesta.data["correo"] == "p***@correo.example"
         cuenta = CuentaPasajero.objects.get()
-        assert (cuenta.pasajero, cuenta.usuario.activo) == (anterior, True)
-        anterior.refresh_from_db()
-        assert anterior.verificado_en is not None
+        assert (cuenta.pasajero, cuenta.usuario.activo, cuenta.telefono_verificado) == (anterior, True, False)
+        assert Auditoria.objects.filter(accion="ACTIVAR_CUENTA", usuario=cuenta.usuario).exists()
         web, respuesta = entrar()
         assert respuesta.status_code == 200
-        assert [r["id"] for r in web.get(reverse("mi-cuenta-reservas")).json()["results"]] == [de_invitado.pk]
+        # DC-65: un número sin verificar no muestra los viajes de invitado de ese número.
+        assert web.get(reverse("mi-cuenta-reservas")).json()["results"] == []
+        # Abrir el enlace otra vez no cambia nada.
+        assert activar(cliente, empresa).status_code == 200
 
-    def test_vencida_no_confirma(self, cliente, empresa, twilio, settings):
-        settings.DEBUG = True
-        crear_cuenta(cliente, empresa)
-        CuentaPasajero.objects.update(creada_en=timezone.now() - timedelta(minutes=16))
-        whatsapp(cliente, "CONFIRMAR CUENTA")
+    def test_enlace_vencido_a_las_24_horas(
+        self, cliente, empresa, monkeypatch, django_capture_on_commit_callbacks
+    ):
+        import time
+
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa)
+        token = token_del_correo()
+        ahora = time.time()
+        monkeypatch.setattr("django.core.signing.time.time", lambda: ahora + 23.9 * 3600)
+        assert activar(cliente, empresa, token).status_code == 200
+        CuentaPasajero.objects.update(confirmada_en=None)
+        monkeypatch.setattr("django.core.signing.time.time", lambda: ahora + 24.1 * 3600)
+        respuesta = activar(cliente, empresa, token)
+        assert (respuesta.status_code, respuesta.data["code"]) == (400, "enlace_vencido")
+
+    def test_enlace_invalido_o_de_otra_empresa(
+        self, cliente, empresa, otra_empresa, django_capture_on_commit_callbacks
+    ):
+        otra_empresa.modulo_cuentas = True
+        otra_empresa.save()
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa)
+        for slug, token in ((empresa, "no-es-un-token"), (otra_empresa, token_del_correo())):
+            respuesta = activar(cliente, slug, token)
+            assert (respuesta.status_code, respuesta.data["code"]) == (400, "enlace_invalido")
         assert CuentaPasajero.objects.get().confirmada_en is None
 
-    def test_confirmar_una_reserva_no_confirma_la_cuenta(self, cliente, empresa, twilio, settings):
-        settings.DEBUG = True
-        crear_cuenta(cliente, empresa)
-        whatsapp(cliente, "Confirmar")
-        assert CuentaPasajero.objects.get().confirmada_en is None
+    def test_reenviar_manda_un_enlace_nuevo(self, cliente, empresa, django_capture_on_commit_callbacks):
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa)
+            respuesta = cliente.post(
+                reverse("portal-cuenta-reenviar", args=[empresa.slug]),
+                {"email": "paula@correo.example", "password": CLAVE},
+                format="json",
+            )
+        assert (respuesta.status_code, respuesta.data) == (
+            200,
+            {"activa": False, "correo": "p***@correo.example"},
+        )
+        assert len(mail.outbox) == 2
+        estado = cliente.post(
+            reverse("portal-cuenta-estado", args=[empresa.slug]),
+            {"email": "paula@correo.example", "password": CLAVE},
+            format="json",
+        )
+        assert estado.data == {"activa": False, "correo": "p***@correo.example"}
 
-    def test_un_telefono_confirmado_tiene_una_cuenta_por_empresa(self, cliente, empresa, twilio, settings):
-        settings.DEBUG = True
-        crear_cuenta(cliente, empresa)
-        whatsapp(cliente, "CONFIRMAR CUENTA")
-        crear_cuenta(cliente, empresa, email="otra@correo.example")
-        whatsapp(cliente, "CONFIRMAR CUENTA", sid="SM" + "8" * 32)
+    def test_un_telefono_activo_tiene_una_cuenta_por_empresa(
+        self, cliente, empresa, django_capture_on_commit_callbacks
+    ):
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa)
+        activar(cliente, empresa)
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa, email="otra@correo.example")
+        respuesta = activar(cliente, empresa)
+        assert (respuesta.status_code, respuesta.data["code"]) == (409, "telefono_en_uso")
         assert CuentaPasajero.objects.filter(confirmada_en__isnull=False).count() == 1
+
+    def test_whatsapp_ya_no_activa(self, cliente, empresa, twilio, settings):
+        settings.DEBUG = True
+        crear_cuenta(cliente, empresa)
+        whatsapp(cliente, "CONFIRMAR CUENTA")
+        assert CuentaPasajero.objects.get().confirmada_en is None
+
+    def test_cuenta_verificada_antes_ve_sus_viajes_de_invitado(self, activa, empresa):
+        """DC-65: las cuentas confirmadas por WhatsApp antes de CC-19 conservan lo que veían."""
+        cuenta = CuentaPasajero.objects.get()
+        de_invitado = ViajeFactory(empresa=empresa, pasajero=cuenta.pasajero)
+        assert activa.get(reverse("mi-cuenta-reservas")).json()["results"] == []
+        CuentaPasajero.objects.update(telefono_verificado=True)
+        assert [r["id"] for r in activa.get(reverse("mi-cuenta-reservas")).json()["results"]] == [
+            de_invitado.pk
+        ]
 
 
 @pytest.mark.django_db
@@ -211,12 +290,10 @@ class TestReservas:
 
     @pytest.mark.parametrize("estado", [E.ASIGNADO, E.ACEPTADO, E.EN_CAMINO])
     def test_con_conductor_no_cancela(self, activa, empresa, estado):
-        pasajero = CuentaPasajero.objects.get().pasajero
-        viaje = ViajeFactory(
-            empresa=empresa,
-            pasajero=pasajero,
-            estado=estado,
-            conductor=ConductorFactory(usuario__empresa=empresa),
+        activa.post(reverse("mi-cuenta-solicitudes"), self.solicitud(), format="json")
+        viaje = Viaje.objects.get()
+        Viaje.objects.filter(pk=viaje.pk).update(
+            estado=estado, conductor=ConductorFactory(usuario__empresa=empresa)
         )
         respuesta = activa.post(reverse("mi-cuenta-cancelar", args=[viaje.pk]))
         assert (respuesta.status_code, respuesta.data["code"]) == (409, "con_conductor")
@@ -242,11 +319,12 @@ class TestRecuperacion:
                 ).status_code
                 == 202
             )
-        enlace = re.search(r"/recuperar/([^/]+)/([^/?\s]+)\?empresa=([a-z0-9-]+)", mail.outbox[0].body)
-        assert enlace and mail.outbox[0].body.startswith("Hola")
+        cuerpo = mail.outbox[-1].body  # el primero es el de activación (HU-64)
+        enlace = re.search(r"/recuperar/([^/]+)/([^/?\s]+)\?empresa=([a-z0-9-]+)", cuerpo)
+        assert enlace and cuerpo.startswith("Hola")
         uid, token, slug = enlace.groups()
         # HU-41: vence en 30 minutos y el enlace lleva la empresa (su marca en la pantalla).
-        assert "vence en 30 minutos" in mail.outbox[0].body and slug == empresa.slug
+        assert "vence en 30 minutos" in cuerpo and slug == empresa.slug
         nueva = "Otra-Clave-Sintetica-1"
         respuesta = cliente.post(
             reverse("auth-recuperar-confirmar"),

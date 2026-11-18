@@ -1205,7 +1205,7 @@ export interface paths {
         head?: never;
         /**
          * Editar mi perfil
-         * @description El nombre cambia al tiro. Un WhatsApp nuevo queda pendiente hasta que responda «CONFIRMAR CUENTA»; mientras tanto la cuenta sigue con el número anterior (HU-45, DC-50).
+         * @description El nombre y el teléfono cambian al tiro, sin verificación (HU-64, DC-61). Un teléfono que ya es de otra cuenta o de otro pasajero de la empresa responde 409 (DC-65).
          */
         patch: operations["mi_cuenta_partial_update"];
         trace?: never;
@@ -1352,9 +1352,30 @@ export interface paths {
         put?: never;
         /**
          * Crear una cuenta de pasajero
-         * @description HU-35: crea la cuenta pendiente y envía el WhatsApp para confirmarla. Mismos límites que el portal.
+         * @description HU-35 y HU-64: crea la cuenta pendiente y manda el enlace de activación al correo, con los límites
+         *     del portal.
          */
         post: operations["portal_cuenta_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{slug}/cuenta/activar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activar la cuenta con el enlace del correo
+         * @description HU-64 (DC-61, CP-56): el enlace vale 24 h; abrirlo de nuevo con la cuenta activa responde 200. Sin verificar el teléfono, la cuenta ve solo los viajes que pide (DC-65).
+         */
+        post: operations["portal_cuenta_activar_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1391,8 +1412,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Reenviar el WhatsApp de activación (o corregir el número)
-         * @description HU-41 (DC-45): la vigencia del mensaje corre desde este envío.
+         * Reenviar el enlace de activación al correo
+         * @description HU-41 y HU-64 (DC-61): el nuevo enlace vale 24 h desde este envío.
          */
         post: operations["portal_cuenta_reenviar_create"];
         delete?: never;
@@ -2115,6 +2136,9 @@ export interface components {
             email: string;
             password: string;
         };
+        ActivarCuentaRequest: {
+            token: string;
+        };
         /**
          * @description * `CONDUCTOR` - Conductor
          *     * `DESPACHADOR` - Despachador
@@ -2470,8 +2494,8 @@ export interface components {
         };
         EstadoActivacion: {
             activa: boolean;
-            /** @description Número al que se envió el mensaje, enmascarado. */
-            telefono: string;
+            /** @description Correo al que se envió el enlace, enmascarado. */
+            correo: string;
         };
         /**
          * @description * `DISPONIBLE` - Disponible
@@ -2696,8 +2720,6 @@ export interface components {
             telefono: string;
             empresa: string;
             empresa_slug: string;
-            /** @description WhatsApp nuevo por confirmar (DC-50), o null si no hay o ya venció. */
-            readonly telefono_pendiente: string | null;
             /** Format: date-time */
             pasajero_desde: string;
             /**
@@ -3101,13 +3123,6 @@ export interface components {
         RecuperarRequest: {
             /** Format: email */
             email: string;
-        };
-        ReenviarActivacionRequest: {
-            /** Format: email */
-            email: string;
-            password: string;
-            /** @description Para corregir el número: el nuevo WhatsApp en formato E.164. */
-            telefono?: string;
         };
         RefreshRequest: {
             refresh: string;
@@ -5742,13 +5757,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description `limite_reenvio` */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
         };
     };
     mi_cuenta_privacidad_create: {
@@ -5992,7 +6000,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Pendiente: se activa al responder «CONFIRMAR CUENTA» por WhatsApp */
+            /** @description Pendiente: se activa con el enlace del correo (24 h, DC-61) */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -6021,6 +6029,47 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
+            };
+        };
+    };
+    portal_cuenta_activar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivarCuentaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ActivarCuentaRequest"];
+                "multipart/form-data": components["schemas"]["ActivarCuentaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EstadoActivacion"];
+                };
+            };
+            /** @description `enlace_invalido` o `enlace_vencido` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `telefono_en_uso`: el teléfono ya es de otra cuenta activa */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -6069,9 +6118,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ReenviarActivacionRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["ReenviarActivacionRequest"];
-                "multipart/form-data": components["schemas"]["ReenviarActivacionRequest"];
+                "application/json": components["schemas"]["ActivacionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ActivacionRequest"];
+                "multipart/form-data": components["schemas"]["ActivacionRequest"];
             };
         };
         responses: {
@@ -6083,7 +6132,7 @@ export interface operations {
                     "application/json": components["schemas"]["EstadoActivacion"];
                 };
             };
-            /** @description `cuenta_no_encontrada` o número inválido */
+            /** @description `cuenta_no_encontrada` */
             400: {
                 headers: {
                     [name: string]: unknown;

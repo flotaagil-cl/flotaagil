@@ -314,6 +314,33 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-64 (CC-19): activación por correo. Las cuentas sintéticas se crean en el backend (clave de los usuarios demo).
+  'HU-64': [
+    { nombre: 'portal-crear-cuenta', ruta: `${PORTAL}/cuenta`, sesion: null },
+    {
+      nombre: 'portal-activa-tu-cuenta',
+      ruta: `${PORTAL}/activar`,
+      sesion: null,
+      accion: async (pagina) => {
+        tokenHU64();
+        await pagina.getByLabel('Correo').fill('pendiente-hu64@correo.example');
+        await pagina.getByLabel('Contraseña').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+        await pagina.getByRole('button', { name: 'Continuar' }).click();
+        await pagina.getByRole('list', { name: 'Activación de tu cuenta' }).waitFor();
+      },
+    },
+    {
+      nombre: 'portal-cuenta-activada',
+      ruta: () => `${PORTAL}/activar/${tokenHU64()}`,
+      sesion: null,
+      destino: /\/activar\//,
+      accion: async (pagina) => {
+        await pagina.getByRole('heading', { name: '¡Tu cuenta está activa!' }).waitFor();
+      },
+    },
+    { nombre: 'portal-enlace-invalido', ruta: `${PORTAL}/activar/enlace-de-ejemplo`, sesion: null, destino: /\/activar\// },
+    { nombre: 'mi-perfil-telefono', ruta: '/mi-perfil', sesion: 'activa-hu64@correo.example' },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
@@ -327,6 +354,33 @@ const PANTALLAS = {
     },
   ],
 };
+
+// HU-64: una cuenta pendiente y otra para activar (sintéticas, con la clave de los usuarios demo del contenedor).
+const CUENTAS_HU64 = [
+  'import os',
+  'from apps.cuentas.models import Empresa',
+  'from apps.reservas import cuentas_pasajero as c',
+  'from apps.reservas.models import CuentaPasajero',
+  `e = Empresa.objects.get(slug="${EMPRESA}")`,
+  'def asegurar(email, tel):',
+  '    cuenta = CuentaPasajero.objects.filter(usuario__email=email).first()',
+  '    datos = {"nombre": "Paula Sintética", "telefono": tel, "email": email, "password": os.environ["DATOS_DEMO_PASSWORD"]}',
+  '    return cuenta or c.registrar(e, datos)',
+  'asegurar("pendiente-hu64@correo.example", "+56900006401")',
+  'print(c.token_activacion(asegurar("activa-hu64@correo.example", "+56900006402")))',
+].join('\n');
+let tokenActivacion = null;
+
+/** HU-64: crea (si faltan) las cuentas sintéticas y devuelve el token de activación de la segunda. */
+function tokenHU64() {
+  tokenActivacion ??= execFileSync('docker', ['compose', '-f', '../infra/docker-compose.dev.yml', 'exec', '-T', 'backend', 'python', 'manage.py', 'shell', '-c', CUENTAS_HU64], {
+    encoding: 'utf8',
+  })
+    .trim()
+    .split('\n')
+    .at(-1);
+  return tokenActivacion;
+}
 
 /** HU-59: ingreso a la app del conductor con conductor1 (clave de los usuarios demo). */
 async function ingresarApp(pagina) {

@@ -1895,9 +1895,9 @@ paths:
           description: '`cuenta_sin_confirmar`'
     patch:
       operationId: mi_cuenta_partial_update
-      description: El nombre cambia al tiro. Un WhatsApp nuevo queda pendiente hasta
-        que responda «CONFIRMAR CUENTA»; mientras tanto la cuenta sigue con el número
-        anterior (HU-45, DC-50).
+      description: El nombre y el teléfono cambian al tiro, sin verificación (HU-64,
+        DC-61). Un teléfono que ya es de otra cuenta o de otro pasajero de la empresa
+        responde 409 (DC-65).
       summary: Editar mi perfil
       tags:
       - mi-cuenta
@@ -1923,8 +1923,6 @@ paths:
           description: ''
         '409':
           description: '`telefono_en_uso` o `cuenta_sin_confirmar`'
-        '429':
-          description: '`limite_reenvio`'
     delete:
       operationId: mi_cuenta_destroy
       description: 'Anonimiza la cuenta (HU-45, DC-50): usuario inactivo y sin clave,
@@ -2150,8 +2148,9 @@ paths:
   /api/portal/{slug}/cuenta/:
     post:
       operationId: portal_cuenta_create
-      description: 'HU-35: crea la cuenta pendiente y envía el WhatsApp para confirmarla.
-        Mismos límites que el portal.'
+      description: |-
+        HU-35 y HU-64: crea la cuenta pendiente y manda el enlace de activación al correo, con los límites
+        del portal.
       summary: Crear una cuenta de pasajero
       parameters:
       - in: path
@@ -2177,7 +2176,7 @@ paths:
       - {}
       responses:
         '201':
-          description: 'Pendiente: se activa al responder «CONFIRMAR CUENTA» por WhatsApp'
+          description: 'Pendiente: se activa con el enlace del correo (24 h, DC-61)'
         '400':
           description: Datos inválidos o correo no disponible
         '404':
@@ -2203,6 +2202,46 @@ paths:
           description: 'Demasiadas solicitudes. `code`: `limite_ip` (desde la misma
             IP; con el wifi del aeropuerto muchos pasajeros la comparten) o `limite_telefono`
             (varias solicitudes con el mismo número).'
+  /api/portal/{slug}/cuenta/activar/:
+    post:
+      operationId: portal_cuenta_activar_create
+      description: 'HU-64 (DC-61, CP-56): el enlace vale 24 h; abrirlo de nuevo con
+        la cuenta activa responde 200. Sin verificar el teléfono, la cuenta ve solo
+        los viajes que pide (DC-65).'
+      summary: Activar la cuenta con el enlace del correo
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivarCuentaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivarCuentaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivarCuentaRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoActivacion'
+          description: ''
+        '400':
+          description: '`enlace_invalido` o `enlace_vencido`'
+        '409':
+          description: '`telefono_en_uso`: el teléfono ya es de otra cuenta activa'
   /api/portal/{slug}/cuenta/estado/:
     post:
       operationId: portal_cuenta_estado_create
@@ -2243,8 +2282,8 @@ paths:
   /api/portal/{slug}/cuenta/reenviar/:
     post:
       operationId: portal_cuenta_reenviar_create
-      description: 'HU-41 (DC-45): la vigencia del mensaje corre desde este envío.'
-      summary: Reenviar el WhatsApp de activación (o corregir el número)
+      description: 'HU-41 y HU-64 (DC-61): el nuevo enlace vale 24 h desde este envío.'
+      summary: Reenviar el enlace de activación al correo
       parameters:
       - in: path
         name: slug
@@ -2257,13 +2296,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReenviarActivacionRequest'
+              $ref: '#/components/schemas/ActivacionRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/ReenviarActivacionRequest'
+              $ref: '#/components/schemas/ActivacionRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ReenviarActivacionRequest'
+              $ref: '#/components/schemas/ActivacionRequest'
         required: true
       security:
       - {}
@@ -2275,7 +2314,7 @@ paths:
                 $ref: '#/components/schemas/EstadoActivacion'
           description: ''
         '400':
-          description: '`cuenta_no_encontrada` o número inválido'
+          description: '`cuenta_no_encontrada`'
         '409':
           description: '`cuenta_activa`'
         '429':
@@ -3791,6 +3830,15 @@ components:
       required:
       - email
       - password
+    ActivarCuentaRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - token
     ActorEnum:
       enum:
       - CONDUCTOR
@@ -4682,12 +4730,12 @@ components:
       properties:
         activa:
           type: boolean
-        telefono:
+        correo:
           type: string
-          description: Número al que se envió el mensaje, enmascarado.
+          description: Correo al que se envió el enlace, enmascarado.
       required:
       - activa
-      - telefono
+      - correo
     EstadoConductorEnum:
       enum:
       - DISPONIBLE
@@ -5193,12 +5241,6 @@ components:
           type: string
         empresa_slug:
           type: string
-        telefono_pendiente:
-          type: string
-          nullable: true
-          readOnly: true
-          description: WhatsApp nuevo por confirmar (DC-50), o null si no hay o ya
-            venció.
         pasajero_desde:
           type: string
           format: date-time
@@ -5217,7 +5259,6 @@ components:
       - pasajero_desde
       - password_cambiada_en
       - telefono
-      - telefono_pendiente
     MiReserva:
       type: object
       properties:
@@ -6045,26 +6086,6 @@ components:
           minLength: 1
       required:
       - email
-    ReenviarActivacionRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          minLength: 1
-        password:
-          type: string
-          writeOnly: true
-          minLength: 1
-          maxLength: 128
-        telefono:
-          type: string
-          minLength: 1
-          description: 'Para corregir el número: el nuevo WhatsApp en formato E.164.'
-          maxLength: 24
-      required:
-      - email
-      - password
     RefreshRequest:
       type: object
       properties:

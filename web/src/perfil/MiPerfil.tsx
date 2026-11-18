@@ -17,14 +17,14 @@ import { Insignia } from '../diseno/Tarjeta';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import { MarcoPasajero } from '../viajes/MarcoPasajero';
-import { PALABRA_ELIMINAR, mesYAnio, telefonoLegible } from './perfil';
+import { PALABRA_ELIMINAR, mesYAnio } from './perfil';
 import p from './perfil.module.css';
 
 type MiCuenta = components['schemas']['MiCuenta'];
 
 /**
- * HU-45: «Mi perfil» del pasajero. Edita su nombre y su WhatsApp (uno nuevo se confirma por WhatsApp y, mientras
- * tanto, se sigue usando el anterior, DC-50); el correo es su usuario y no se cambia aquí. Cambia la contraseña,
+ * HU-45: «Mi perfil» del pasajero. Edita su nombre y su teléfono de contacto (al tiro, sin verificación: HU-64,
+ * DC-61); el correo es su usuario y no se cambia aquí. Cambia la contraseña,
  * cierra sesión y elimina la cuenta escribiendo ELIMINAR (Ley 21.719): se anonimizan sus datos y se conservan los
  * viajes, los pagos y la auditoría.
  */
@@ -32,6 +32,8 @@ export function MiPerfil() {
   const { estado } = useSesion();
   const api = useApi();
   const perfil = useQuery({ queryKey: ['mi-cuenta', 'perfil'], queryFn: () => resultado(api.GET('/api/mi-cuenta/')) });
+  // Fuera del formulario: al guardar, el formulario se vuelve a montar con los datos nuevos.
+  const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
     document.title = 'Mi perfil';
@@ -50,7 +52,7 @@ export function MiPerfil() {
             <Resumen cuenta={perfil.data} />
             <div className={p.columna}>
               <h1 className={e.tituloPagina}>Mi perfil</h1>
-              <DatosPersonales key={`${perfil.data.nombre}|${perfil.data.telefono}`} cuenta={perfil.data} />
+              <DatosPersonales key={`${perfil.data.nombre}|${perfil.data.telefono}`} cuenta={perfil.data} guardado={guardado} setGuardado={setGuardado} />
               <SeguridadYCuenta cuenta={perfil.data} />
             </div>
           </>
@@ -70,21 +72,20 @@ function Resumen({ cuenta }: { cuenta: MiCuenta }) {
       <div className={p.resumenTexto}>
         <p className={p.nombre}>{cuenta.nombre}</p>
         {desde && <p className={p.desde}>Pasajero desde {desde}</p>}
-        <Insignia tono="ok">Cuenta verificada</Insignia>
+        <Insignia tono="ok">Cuenta activa</Insignia>
       </div>
     </section>
   );
 }
 
-function DatosPersonales({ cuenta }: { cuenta: MiCuenta }) {
+function DatosPersonales({ cuenta, guardado, setGuardado }: { cuenta: MiCuenta; guardado: boolean; setGuardado: (valor: boolean) => void }) {
   const api = useApi();
   const { sesion } = useSesion();
   const consultas = useQueryClient();
   const [nombre, setNombre] = useState(cuenta.nombre);
-  const [telefono, setTelefono] = useState(cuenta.telefono_pendiente ?? cuenta.telefono);
+  const [telefono, setTelefono] = useState(cuenta.telefono);
   const [errores, setErrores] = useState<{ nombre?: string; telefono?: string }>({});
   const [falla, setFalla] = useState<string | null>(null);
-  const [guardado, setGuardado] = useState(false);
 
   const guardar = useMutation({
     mutationFn: () => resultado(api.PATCH('/api/mi-cuenta/', { body: { nombre: nombre.trim(), telefono: telefono.trim() } })),
@@ -99,9 +100,7 @@ function DatosPersonales({ cuenta }: { cuenta: MiCuenta }) {
       if (primero('nombre') || primero('telefono')) {
         setErrores({ nombre: primero('nombre'), telefono: primero('telefono') });
       } else if (error instanceof ErrorApi && error.estado === 409) {
-        setErrores({ telefono: 'Ese WhatsApp ya está asociado a otra cuenta de esta empresa.' });
-      } else if (error instanceof ErrorApi && error.estado === 429) {
-        setFalla('Ya te enviamos varios mensajes. Espera unos minutos e intenta de nuevo.');
+        setErrores({ telefono: 'Ese teléfono ya está registrado en esta empresa. Si es tuyo, contacta a la empresa.' });
       } else {
         setFalla('No se pudieron guardar los cambios. Intenta de nuevo.');
       }
@@ -114,7 +113,7 @@ function DatosPersonales({ cuenta }: { cuenta: MiCuenta }) {
     setFalla(null);
     const encontrados: { nombre?: string; telefono?: string } = {};
     if (!nombre.trim()) encontrados.nombre = 'Escribe tu nombre y apellido.';
-    if (!telefono.trim()) encontrados.telefono = 'Escribe tu WhatsApp.';
+    if (!telefono.trim()) encontrados.telefono = 'Escribe tu teléfono.';
     setErrores(encontrados);
     if (Object.keys(encontrados).length === 0) guardar.mutate();
   }
@@ -128,23 +127,17 @@ function DatosPersonales({ cuenta }: { cuenta: MiCuenta }) {
         <Campo etiqueta="Nombre y apellido" autoComplete="name" maxLength={80} value={nombre} error={errores.nombre} onChange={(ev) => setNombre(ev.target.value)} />
         <Campo etiqueta="Correo" type="email" value={cuenta.email} readOnly ayuda="Para cambiar tu correo, contacta a la empresa." />
         <Campo
-          etiqueta="WhatsApp"
+          etiqueta="Teléfono"
           type="tel"
           inputMode="tel"
           autoComplete="tel"
           value={telefono}
           error={errores.telefono}
-          ayuda="Si cambias tu WhatsApp, te pediremos confirmarlo de nuevo."
+          ayuda="Para que la central y el conductor te contacten."
           onChange={(ev) => setTelefono(ev.target.value)}
         />
-        {cuenta.telefono_pendiente && (
-          <Aviso>
-            Te enviamos un WhatsApp al {telefonoLegible(cuenta.telefono_pendiente)}. Responde CONFIRMAR CUENTA para usarlo; mientras tanto te
-            seguimos escribiendo al {telefonoLegible(cuenta.telefono)}.
-          </Aviso>
-        )}
         {falla && <Aviso tipo="error">{falla}</Aviso>}
-        {guardado && !cuenta.telefono_pendiente && <Aviso>Cambios guardados.</Aviso>}
+        {guardado && <Aviso>Cambios guardados.</Aviso>}
         <div>
           <Boton type="submit" cargando={guardar.isPending}>
             {guardar.isPending ? 'Guardando…' : 'Guardar cambios'}

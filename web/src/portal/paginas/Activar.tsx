@@ -10,13 +10,13 @@ import { useContextoPortal } from '../contexto';
 
 /**
  * HU-41: volver a «Activa tu cuenta» después de cerrar la pantalla del alta. Pide el correo y la contraseña de la
- * cuenta para reenviar el mensaje o corregir el número.
+ * cuenta para reenviar el enlace (HU-64).
  */
 export function Activar() {
   const { api, slug } = useContextoPortal();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [telefono, setTelefono] = useState<string | null>(null);
+  const [correo, setCorreo] = useState<string | null>(null);
   const [activa, setActiva] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -29,7 +29,7 @@ export function Activar() {
     try {
       const estado = await resultado(api.POST('/api/portal/{slug}/cuenta/estado/', { params: { path: { slug } }, body: { email: email.trim(), password } }));
       setActiva(estado.activa);
-      setTelefono(estado.telefono);
+      setCorreo(estado.correo);
     } catch (falla) {
       setError(
         falla instanceof ErrorApi && falla.estado === 400
@@ -46,11 +46,11 @@ export function Activar() {
   return (
     <PantallaAcceso
       titulo="Activa tu cuenta"
-      subtitulo="Un último paso: confirma que el WhatsApp es tuyo."
+      subtitulo="Un último paso: abre el enlace que te enviamos por correo."
       movil="hero"
       volver={{ a: ingresar, texto: 'Volver a ingresar' }}
     >
-      {telefono !== null && activa && (
+      {correo !== null && activa && (
         <>
           <p className={e.esperando} data-activa="true" role="status">
             Tu cuenta ya está activa.
@@ -60,8 +60,8 @@ export function Activar() {
           </Link>
         </>
       )}
-      {telefono !== null && !activa && <ActivarCuenta api={api} slug={slug} email={email.trim()} password={password} telefono={telefono} />}
-      {telefono === null && (
+      {correo !== null && !activa && <ActivarCuenta api={api} slug={slug} email={email.trim()} password={password} correo={correo} />}
+      {correo === null && (
         <form className={e.formulario} onSubmit={(evento) => void buscar(evento)} noValidate aria-label="Buscar mi cuenta">
           {error && (
             <p className={e.alerta} role="alert">

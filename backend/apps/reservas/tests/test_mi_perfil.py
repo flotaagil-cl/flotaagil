@@ -29,7 +29,7 @@ from apps.reservas.models import (
     Viaje,
 )
 from apps.reservas.tests.fabricas import PasajeroFactory, ViajeFactory
-from apps.reservas.tests.test_cuenta_pasajero import CLAVE, TELEFONO, crear_cuenta, entrar, whatsapp
+from apps.reservas.tests.test_cuenta_pasajero import CLAVE, TELEFONO, activar, crear_cuenta, entrar, whatsapp
 from apps.reservas.tests.test_whatsapp import TwilioFalso
 
 E = EstadoViaje
@@ -45,12 +45,11 @@ def twilio(monkeypatch):
 
 
 @pytest.fixture
-def activa(cliente, empresa, twilio, settings, django_capture_on_commit_callbacks):
-    """Cuenta creada y confirmada por WhatsApp (como en HU-35); devuelve el cliente con sesión."""
-    settings.DEBUG = True
+def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
+    """Cuenta creada y activada con el enlace del correo (HU-64); devuelve el cliente con sesión."""
     with django_capture_on_commit_callbacks(execute=True):
         crear_cuenta(cliente, empresa)
-        whatsapp(cliente, "Confirmar cuenta")
+    activar(cliente, empresa)
     web, _ = entrar()
     return web
 
@@ -72,7 +71,6 @@ class TestVerPerfil:
             "paula@correo.example",
             TELEFONO,
         )
-        assert datos["telefono_pendiente"] is None
         assert datos["pasajero_desde"] is not None
         assert datos["password_cambiada_en"] is None
 
@@ -113,66 +111,37 @@ class TestEditarPerfil:
         assert respuesta.status_code == 200
         assert cuenta().usuario.email == "paula@correo.example"
 
-    def test_whatsapp_nuevo_queda_pendiente(self, activa, twilio, django_capture_on_commit_callbacks):
+    def test_telefono_nuevo_cambia_al_tiro_sin_whatsapp(
+        self, activa, twilio, django_capture_on_commit_callbacks
+    ):
+        """HU-64 (DC-61): sin verificación; la cuenta deja de ver lo que no pidió ella (DC-65)."""
+        CuentaPasajero.objects.update(telefono_verificado=True)
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = activa.patch(PERFIL, {"telefono": "+56 9 0000 9302"}, format="json")
         assert respuesta.status_code == 200, respuesta.data
-        assert (respuesta.data["telefono"], respuesta.data["telefono_pendiente"]) == (TELEFONO, NUEVO)
+        assert respuesta.data["telefono"] == NUEVO
+        assert "telefono_pendiente" not in respuesta.data
         c = cuenta()
-        assert (c.telefono, c.pasajero.telefono, c.telefono_pendiente) == (TELEFONO, TELEFONO, NUEVO)
-        assert any("CONFIRMAR CUENTA" in texto for texto in enviados_a(twilio, NUEVO))
-        # Mientras tanto la cuenta sigue activa: puede pedir y ver sus reservas.
-        assert activa.get(reverse("mi-cuenta-reservas")).status_code == 200
+        assert (c.telefono, c.pasajero.telefono, c.telefono_verificado) == (NUEVO, NUEVO, False)
+        assert c.pasajero.verificado_en is None
+        assert twilio.enviados == []
+        assert Auditoria.objects.get(accion="EDITAR_PERFIL").datos_previos == {"campos": ["telefono"]}
 
-    def test_al_confirmar_cambia_y_conserva_el_historial(
-        self, activa, cliente, empresa, twilio, django_capture_on_commit_callbacks
-    ):
-        viaje = ViajeFactory(empresa=empresa, pasajero=cuenta().pasajero, estado=E.FINALIZADO)
-        with django_capture_on_commit_callbacks(execute=True):
-            activa.patch(PERFIL, {"telefono": NUEVO}, format="json")
-        invitado = Pasajero.objects.get(empresa=empresa, telefono=NUEVO)
-        anterior = ViajeFactory(empresa=empresa, pasajero=invitado, estado=E.FINALIZADO)
-        with django_capture_on_commit_callbacks(execute=True):
-            whatsapp(cliente, "Confirmar cuenta", desde=NUEVO, sid="SM" + "8" * 32)
-        c = cuenta()
-        assert (c.telefono, c.telefono_pendiente, c.pasajero.telefono) == (NUEVO, None, NUEVO)
-        assert c.pasajero.verificado_en is not None
-        # El invitado del número nuevo era la misma persona: su viaje pasa a la cuenta y él se borra.
-        assert not Pasajero.objects.filter(pk=invitado.pk).exists()
-        assert set(Viaje.objects.filter(pasajero=c.pasajero)) == {viaje, anterior}
-        assert any("Desde ahora" in texto for texto in enviados_a(twilio, NUEVO))
-        assert Auditoria.objects.filter(accion="CONFIRMAR_TELEFONO").exists()
-
-    def test_sin_confirmar_a_tiempo_se_descarta(
-        self, activa, cliente, empresa, twilio, django_capture_on_commit_callbacks
-    ):
-        with django_capture_on_commit_callbacks(execute=True):
-            activa.patch(PERFIL, {"telefono": NUEVO}, format="json")
-        minutos = empresa.configuracion.expiracion_verificacion_min
-        CuentaPasajero.objects.update(telefono_pendiente_en=timezone.now() - timedelta(minutes=minutos + 1))
-        assert activa.get(PERFIL).data["telefono_pendiente"] is None
-        with django_capture_on_commit_callbacks(execute=True):
-            whatsapp(cliente, "Confirmar cuenta", desde=NUEVO, sid="SM" + "7" * 32)
+    def test_no_se_fusiona_con_un_invitado_del_numero_nuevo(self, activa, empresa):
+        """DC-65: otro PASAJERO con ese número puede ser otra persona: no se toma su historial."""
+        invitado = PasajeroFactory(empresa=empresa, telefono=NUEVO)
+        ViajeFactory(empresa=empresa, pasajero=invitado, estado=E.FINALIZADO)
+        respuesta = activa.patch(PERFIL, {"telefono": NUEVO}, format="json")
+        assert (respuesta.status_code, respuesta.data["code"]) == (409, "telefono_en_uso")
         assert cuenta().telefono == TELEFONO
+        assert Pasajero.objects.filter(pk=invitado.pk).exists()
 
-    def test_volver_al_numero_actual_descarta_el_pendiente(
-        self, activa, twilio, django_capture_on_commit_callbacks
-    ):
-        with django_capture_on_commit_callbacks(execute=True):
-            activa.patch(PERFIL, {"telefono": NUEVO}, format="json")
-        respuesta = activa.patch(PERFIL, {"telefono": TELEFONO}, format="json")
-        assert respuesta.data["telefono_pendiente"] is None
-        assert cuenta().telefono_pendiente is None
-
-    def test_whatsapp_de_otra_cuenta(
-        self, activa, cliente, empresa, twilio, django_capture_on_commit_callbacks
-    ):
+    def test_telefono_de_otra_cuenta(self, activa, cliente, empresa, django_capture_on_commit_callbacks):
         with django_capture_on_commit_callbacks(execute=True):
             crear_cuenta(cliente, empresa, email="otra@correo.example", telefono=NUEVO)
-            whatsapp(cliente, "Confirmar cuenta", desde=NUEVO, sid="SM" + "6" * 32)
+        activar(cliente, empresa)
         respuesta = activa.patch(PERFIL, {"telefono": NUEVO}, format="json")
-        assert respuesta.status_code == 409
-        assert respuesta.data["code"] == "telefono_en_uso" or "telefono_en_uso" in str(respuesta.data)
+        assert (respuesta.status_code, respuesta.data["code"]) == (409, "telefono_en_uso")
 
     def test_telefono_invalido(self, activa):
         assert activa.patch(PERFIL, {"telefono": "12"}, format="json").status_code == 400

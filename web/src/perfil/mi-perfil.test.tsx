@@ -15,7 +15,6 @@ const PERFIL = {
   telefono: '+56987654321',
   empresa: 'Transportes Andes Demo SpA',
   empresa_slug: 'transportes-andes',
-  telefono_pendiente: null as string | null,
   pasajero_desde: '2026-10-05T14:00:00Z',
   password_cambiada_en: null as string | null,
 };
@@ -41,7 +40,7 @@ function montar({ patch, eliminar }: Opciones = {}) {
       const cuerpo = (await peticion.json()) as Record<string, string>;
       llamadas.push({ ruta, cuerpo });
       if (patch) return patch(cuerpo);
-      perfil = { ...perfil, nombre: cuerpo.nombre, telefono_pendiente: cuerpo.telefono !== perfil.telefono ? cuerpo.telefono : null };
+      perfil = { ...perfil, nombre: cuerpo.nombre, telefono: cuerpo.telefono };
       return json(200, perfil);
     }
     if (ruta === 'DELETE /api/mi-cuenta/') {
@@ -73,23 +72,25 @@ describe('HU-45 · Mi perfil', () => {
     expect(screen.getByText('Nunca la has cambiado')).toBeInTheDocument();
   });
 
-  it('guarda el nombre y avisa que el WhatsApp nuevo se confirma', async () => {
+  it('guarda el nombre y el teléfono al tiro, sin confirmación (HU-64)', async () => {
     const { llamadas } = montar();
     const nombre = await screen.findByLabelText('Nombre y apellido');
     await userEvent.clear(nombre);
     await userEvent.type(nombre, 'Pablo Andrés Pasajero');
-    const whatsapp = screen.getByLabelText('WhatsApp');
-    await userEvent.clear(whatsapp);
-    await userEvent.type(whatsapp, '+56911112222');
+    const telefono = screen.getByLabelText('Teléfono');
+    expect(telefono).toHaveAccessibleDescription('Para que la central y el conductor te contacten.');
+    await userEvent.clear(telefono);
+    await userEvent.type(telefono, '+56911112222');
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
     await waitFor(() => expect(llamadas.find((l) => l.ruta === 'PATCH /api/mi-cuenta/')?.cuerpo).toEqual({ nombre: 'Pablo Andrés Pasajero', telefono: '+56911112222' }));
-    expect(await screen.findByText(/Te enviamos un WhatsApp al \+56 9 1111 2222/)).toHaveTextContent('te seguimos escribiendo al +56 9 8765 4321');
+    expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument();
+    expect(screen.queryByText(/WhatsApp/)).not.toBeInTheDocument();
     // El nombre nuevo también se ve en la cabecera.
     expect(await screen.findByRole('button', { name: /Pablo Andrés Pasajero.*menú de la cuenta/ })).toBeInTheDocument();
   });
 
-  it('no envía sin nombre y muestra el WhatsApp de otra cuenta', async () => {
-    const { llamadas } = montar({ patch: () => json(409, { detail: 'Ese WhatsApp ya está asociado a otra cuenta de esta empresa.', code: 'telefono_en_uso' }) });
+  it('no envía sin nombre y avisa si el teléfono ya está registrado', async () => {
+    const { llamadas } = montar({ patch: () => json(409, { detail: 'Ese teléfono ya está asociado a otra cuenta.', code: 'telefono_en_uso' }) });
     const nombre = await screen.findByLabelText('Nombre y apellido');
     await userEvent.clear(nombre);
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
@@ -97,7 +98,7 @@ describe('HU-45 · Mi perfil', () => {
     expect(llamadas.some((l) => l.ruta === 'PATCH /api/mi-cuenta/')).toBe(false);
     await userEvent.type(nombre, 'Pablo Pasajero');
     await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
-    expect(await screen.findByText('Ese WhatsApp ya está asociado a otra cuenta de esta empresa.')).toBeInTheDocument();
+    expect(await screen.findByText('Ese teléfono ya está registrado en esta empresa. Si es tuyo, contacta a la empresa.')).toBeInTheDocument();
   });
 
   it('cambia la contraseña y sigue con la sesión', async () => {

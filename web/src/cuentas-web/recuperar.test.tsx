@@ -121,7 +121,7 @@ describe('HU-41 · activa tu cuenta', () => {
     await userEvent.type(await screen.findByLabelText('Nombre'), 'Paula');
     await userEvent.type(screen.getByLabelText('Apellido'), 'Pasajera');
     await userEvent.type(screen.getByLabelText('Correo'), 'paula@correo.example');
-    await userEvent.type(screen.getByLabelText('WhatsApp'), '9 8765 4321');
+    await userEvent.type(screen.getByLabelText('Teléfono'), '9 8765 4321');
     await userEvent.type(screen.getByLabelText('Contraseña'), 'Clave-Sintetica-2026');
     await userEvent.click(screen.getByRole('checkbox', { name: /Acepto el aviso de privacidad/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
@@ -129,37 +129,25 @@ describe('HU-41 · activa tu cuenta', () => {
     return contexto;
   }
 
-  it('después de crearla: pasos, espera, reenviar y corregir el número', async () => {
+  it('después de crearla: pasos con el correo, espera y reenviar el enlace (HU-64)', async () => {
     const { recibidas } = await crearCuenta({
-      '/api/portal/transportes-andes/cuenta/reenviar/': [
-        { estado: 200, cuerpo: { activa: false, telefono: '+569******21' } },
-        { estado: 400, cuerpo: { telefono: ['Número inválido.'] } },
-        { estado: 200, cuerpo: { activa: false, telefono: '+569******22' } },
-      ],
+      '/api/portal/transportes-andes/cuenta/reenviar/': [{ estado: 200, cuerpo: { activa: false, correo: 'p***@correo.example' } }],
     });
     const pasos = screen.getByRole('list', { name: 'Activación de tu cuenta' });
     expect(within(pasos).getAllByRole('listitem')[1]).toHaveAttribute('aria-current', 'step');
-    expect(screen.getByRole('status')).toHaveTextContent('Esperando tu confirmación…');
-    await userEvent.click(screen.getByRole('button', { name: 'Reenviar mensaje de WhatsApp' }));
-    expect(await screen.findByText('Te enviamos el mensaje de nuevo.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Corregir mi número' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar al número nuevo' }));
-    expect(screen.getByLabelText('WhatsApp correcto')).toHaveAccessibleDescription(/Revisa el número/);
-    await userEvent.type(screen.getByLabelText('WhatsApp correcto'), '9 8765 4322');
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar al número nuevo' }));
-    expect(await screen.findByText('Número inválido.')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar al número nuevo' }));
-    expect(await screen.findByText(/Corregimos tu número y te enviamos el mensaje al \+569\*{6}22/)).toBeInTheDocument();
+    expect(pasos).toHaveTextContent('Te lo enviamos a paula@correo.example. Vale 24 horas');
+    expect(screen.getByRole('status')).toHaveTextContent('Esperando que abras el enlace…');
+    await userEvent.click(screen.getByRole('button', { name: 'Reenviar el correo' }));
+    expect(await screen.findByText('Te enviamos un enlace nuevo a p***@correo.example.')).toBeInTheDocument();
     const reenvios = recibidas.filter((r) => r.ruta.endsWith('/reenviar/'));
     expect(reenvios[0].cuerpo).toEqual({ email: 'paula@correo.example', password: 'Clave-Sintetica-2026' });
-    expect(reenvios[2].cuerpo).toEqual({ email: 'paula@correo.example', password: 'Clave-Sintetica-2026', telefono: '+56987654322' });
   });
 
   it('reenviar: límite, cuenta ya activa y falla', async () => {
     await crearCuenta({
       '/api/portal/transportes-andes/cuenta/reenviar/': [{ estado: 429 }, { estado: 500 }, { estado: 409, cuerpo: { code: 'cuenta_activa' } }],
     });
-    const reenviar = screen.getByRole('button', { name: 'Reenviar mensaje de WhatsApp' });
+    const reenviar = screen.getByRole('button', { name: 'Reenviar el correo' });
     await userEvent.click(reenviar);
     expect(await screen.findByRole('alert')).toHaveTextContent('varias veces');
     await userEvent.click(reenviar);
@@ -171,7 +159,7 @@ describe('HU-41 · activa tu cuenta', () => {
   it('consulta el estado cada pocos segundos y avisa cuando se activa', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const { recibidas } = await crearCuenta({
-      '/api/portal/transportes-andes/cuenta/estado/': ['red', { estado: 200, cuerpo: { activa: true, telefono: '+569******21' } }],
+      '/api/portal/transportes-andes/cuenta/estado/': ['red', { estado: 200, cuerpo: { activa: true, correo: 'p***@correo.example' } }],
     });
     await act(async () => vi.advanceTimersByTimeAsync(CONSULTA_MS));
     await act(async () => vi.advanceTimersByTimeAsync(CONSULTA_MS));
@@ -184,7 +172,7 @@ describe('HU-41 · activa tu cuenta', () => {
       '/api/portal/transportes-andes/cuenta/estado/': [
         { estado: 400, cuerpo: { code: 'cuenta_no_encontrada' } },
         { estado: 429 },
-        { estado: 200, cuerpo: { activa: false, telefono: '+569******21' } },
+        { estado: 200, cuerpo: { activa: false, correo: 'p***@correo.example' } },
       ],
     });
     await userEvent.type(await screen.findByLabelText('Correo'), 'paula@correo.example');
@@ -194,17 +182,42 @@ describe('HU-41 · activa tu cuenta', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Demasiados intentos');
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
-    expect(await screen.findByText(/Escribe CONFIRMAR CUENTA al mensaje que enviamos a \+569\*{6}21/)).toBeInTheDocument();
+    expect(await screen.findByText(/Te lo enviamos a p\*{3}@correo\.example/)).toBeInTheDocument();
   });
 
   it('/activar con la cuenta ya activa', async () => {
     montar('/solicitar/transportes-andes/activar', {
-      '/api/portal/transportes-andes/cuenta/estado/': [{ estado: 200, cuerpo: { activa: true, telefono: '+569******21' } }],
+      '/api/portal/transportes-andes/cuenta/estado/': [{ estado: 200, cuerpo: { activa: true, correo: 'p***@correo.example' } }],
     });
     await userEvent.type(await screen.findByLabelText('Correo'), 'paula@correo.example');
     await userEvent.type(screen.getByLabelText('Contraseña'), 'Clave-Sintetica-2026');
     await userEvent.click(screen.getByRole('button', { name: 'Continuar' }));
     expect(await screen.findByText('Tu cuenta ya está activa.')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('link', { name: 'Ingresar' })).toBeInTheDocument());
+  });
+});
+
+describe('HU-64 · enlace de activación (CP-56)', () => {
+  const RUTA = '/api/portal/transportes-andes/cuenta/activar/';
+
+  it('activa la cuenta una sola vez y ofrece ingresar', async () => {
+    const { recibidas } = montar('/solicitar/transportes-andes/activar/token-de-prueba', {
+      [RUTA]: [{ estado: 200, cuerpo: { activa: true, correo: 'p***@correo.example' } }],
+    });
+    expect(await screen.findByRole('heading', { name: '¡Tu cuenta está activa!' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '/solicitar/transportes-andes/ingresar');
+    expect(recibidas.filter((r) => r.ruta === RUTA)).toEqual([{ ruta: RUTA, cuerpo: { token: 'token-de-prueba' } }]);
+  });
+
+  it.each([
+    ['enlace_vencido', 'El enlace venció', true],
+    ['enlace_invalido', 'El enlace no es válido', false],
+    ['telefono_en_uso', 'No pudimos activar tu cuenta', false],
+  ])('%s: lo explica', async (codigo, titulo, ofreceOtro) => {
+    montar('/solicitar/transportes-andes/activar/x', { [RUTA]: [{ estado: codigo === 'telefono_en_uso' ? 409 : 400, cuerpo: { code: codigo } }] });
+    expect(await screen.findByRole('heading', { name: titulo })).toBeInTheDocument();
+    const otro = screen.queryByRole('link', { name: 'Pedir un enlace nuevo' });
+    if (ofreceOtro) expect(otro).toHaveAttribute('href', '/solicitar/transportes-andes/activar');
+    else expect(otro).not.toBeInTheDocument();
   });
 });

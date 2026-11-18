@@ -27,4 +27,5 @@ urlpatterns = [
     path(
         "<slug:slug>/cuenta/reenviar/", views.ReenviarActivacionView.as_view(), name="portal-cuenta-reenviar"
     ),
+    path("<slug:slug>/cuenta/activar/", views.ActivarCuentaView.as_view(), name="portal-cuenta-activar"),
 ]
