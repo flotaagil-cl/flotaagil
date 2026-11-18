@@ -1,3 +1,5 @@
+import type { VueloApp } from './vuelo';
+
 /**
  * Enlaces para navegar con Google Maps o Waze (HU-17). Son enlaces universales (https): Android los abre en la
  * app instalada y, si no está, en el navegador. Con un geocodificador real se pasan coordenadas, para no depender de
@@ -39,6 +41,10 @@ export interface ViajeActivo {
   origen: Punto;
   destino: Punto;
   vuelo: string | null;
+  /** HU-69: el vuelo de llegada con su estado (null si no hay). */
+  detalle_vuelo?: VueloApp | null;
+  /** HU-69: en las salidas, la hora a la que el pasajero debe estar en el aeropuerto. */
+  en_aeropuerto_a_las?: string | null;
   tarifa: number | null;
   convenio: boolean;
   hacia: Punto;

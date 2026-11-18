@@ -9,6 +9,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ViajeActivo } from './navegacion';
 import type { SocketMinimo } from './conductor/canal';
+import type { VueloApp } from './vuelo';
 
 const red = vi.hoisted(() => ({
   estado: 'ACEPTADO',
@@ -26,6 +27,8 @@ const red = vi.hoisted(() => ({
   /** Lugar en la fila que devuelve el perfil. */
   fila: null as unknown,
   llamadas: [] as string[],
+  // HU-69: vuelo de llegada del viaje activo (null: sin vuelo).
+  vuelo: null as VueloApp | null,
 }));
 
 function viajeActivo(estado: string): ViajeActivo {
@@ -37,7 +40,8 @@ function viajeActivo(estado: string): ViajeActivo {
     recogida_en: '2026-11-03T15:30:00Z',
     origen: punto,
     destino: punto,
-    vuelo: null,
+    vuelo: red.vuelo?.numero ?? null,
+    detalle_vuelo: red.vuelo,
     tarifa: 12000,
     convenio: false,
     hacia: punto,
@@ -179,6 +183,7 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     red.retener = false;
     red.retenidas.length = 0;
     red.llamadas.length = 0;
+    red.vuelo = null;
   });
 
   afterEach(async () => {
@@ -272,6 +277,23 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     enviarAlCanal({ tipo: 'fila' });
     await avanzar(50);
     expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('HU-69: con un vuelo de llegada relee el viaje cada minuto y muestra la demora', async () => {
+    const llegada = new Date(Date.now() + 60 * 60_000).toISOString();
+    red.vuelo = { numero: 'LA845', hora_programada: llegada, hora_estimada: null, estado_vuelo: 'PROGRAMADO' };
+    await abrirApp();
+    expect(screen.getByText('a tiempo').className).toBe('estado-vuelo ok');
+    red.vuelo = { ...red.vuelo, estado_vuelo: 'DEMORADO', hora_estimada: new Date(Date.parse(llegada) + 40 * 60_000).toISOString() };
+    await avanzar(60_000);
+    expect(screen.getByText('demorado 40 min').className).toBe('estado-vuelo aviso');
+  });
+
+  it('sin vuelo no relee el viaje por su cuenta', async () => {
+    await abrirApp();
+    red.llamadas.length = 0;
+    await avanzar(60_000);
+    expect(red.llamadas.filter((l) => l === 'GET /api/app/viaje-activo/')).toEqual([]);
   });
 
   it('después de cada acción vuelve a pedir el viaje activo', async () => {

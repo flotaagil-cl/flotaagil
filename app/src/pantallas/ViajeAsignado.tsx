@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { segundosRestantes, type Asignacion } from '../conductor/canal';
 import { horaDeChile } from '../hora';
+import { VueloDelViaje } from './VueloDelViaje';
 
 const pesos = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 
@@ -33,15 +34,7 @@ export function ViajeAsignado({ asignacion, acciones }: { asignacion: Asignacion
         <dd>{asignacion.pasajero}</dd>
         <dt>Tarifa</dt>
         <dd>{asignacion.tarifa === null ? 'Por definir' : pesos.format(asignacion.tarifa)}</dd>
-        {asignacion.vuelo && (
-          <>
-            <dt>Vuelo</dt>
-            <dd>
-              {asignacion.vuelo.numero} · llega {horaDeChile(asignacion.vuelo.hora_programada)}
-              {asignacion.vuelo.hora_estimada && ` · ETA ${horaDeChile(asignacion.vuelo.hora_estimada)}`}
-            </dd>
-          </>
-        )}
+        <VueloDelViaje vuelo={asignacion.vuelo} enAeropuerto={asignacion.en_aeropuerto_a_las} />
       </dl>
       {acciones}
     </main>

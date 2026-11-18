@@ -325,3 +325,24 @@ button.principal.rechazar {
   min-height: 5rem;
   font: inherit;
 }
+
+/* HU-69: estado del vuelo en el viaje (el texto dice el estado; el color acompaña). */
+.estado-vuelo {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+/* Pisa el relleno de los avisos .ok, .aviso y .error, que comparten los colores. */
+.estado-vuelo.ok,
+.estado-vuelo.aviso,
+.estado-vuelo.error {
+  padding: 0 0.5rem;
+}
+
+.estado-vuelo.neutro {
+  background: var(--insignia-neutra-fondo, var(--suave));
+  color: var(--insignia-neutra-texto, var(--texto-suave));
+}

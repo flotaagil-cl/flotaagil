@@ -27,6 +27,9 @@ import { Chat, type ConversacionChat } from './pantallas/Chat';
 import { api, canal, canalChat, cola, rastreador, sesion } from './servicios';
 import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
 
+/** HU-69: cada cuánto se relee el viaje mientras tenga un vuelo de llegada (el monitoreo consulta cada 5–15 min). */
+const VUELO_REFRESCO_MS = 60_000;
+
 export default function App() {
   const [estado, setEstado] = useState<EstadoSesion>(sesion.estado);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
@@ -87,6 +90,14 @@ export default function App() {
       void escucha.then((e) => e.remove());
     };
   }, [activa, cargarPerfil, recarga]);
+
+  // HU-69: con un vuelo de llegada por delante, el viaje se relee cada minuto para mostrar su estado o demora.
+  const conVuelo = Boolean(viaje?.detalle_vuelo) && viaje?.estado !== 'PASAJERO_A_BORDO';
+  useEffect(() => {
+    if (!activa || !conVuelo) return;
+    const reloj = window.setInterval(() => void cargarPerfil(), VUELO_REFRESCO_MS);
+    return () => window.clearInterval(reloj);
+  }, [activa, conVuelo, cargarPerfil]);
 
   // Si el backend dice que ya no está en turno o no hay consentimiento, se recarga el perfil (y se detiene).
   useEffect(() => {

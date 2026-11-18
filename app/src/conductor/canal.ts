@@ -8,6 +8,7 @@
  */
 
 import { SinRed, type SesionApp } from '../sesion/sesion';
+import type { VueloApp } from '../vuelo';
 
 export interface Punto {
   direccion: string;
@@ -23,7 +24,9 @@ export interface Asignacion {
   destino: Punto;
   recogida_en: string;
   tarifa: number | null;
-  vuelo: { numero: string; hora_programada: string; hora_estimada: string | null } | null;
+  vuelo: VueloApp | null;
+  /** HU-69: en las salidas, la hora a la que el pasajero debe estar en el aeropuerto. */
+  en_aeropuerto_a_las?: string | null;
   vence_en: string;
 }
 

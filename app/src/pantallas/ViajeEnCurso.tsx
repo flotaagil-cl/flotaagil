@@ -2,6 +2,7 @@ import { AppLauncher } from '@capacitor/app-launcher';
 import { useState, type ReactNode } from 'react';
 import { horaDeChile } from '../hora';
 import { enlaceGoogleMaps, enlaceWaze, type ViajeActivo } from '../navegacion';
+import { VueloDelViaje } from './VueloDelViaje';
 
 const ETAPAS = {
   ACEPTADO: 'Aceptado',
@@ -36,8 +37,10 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
         <dt>Recogida</dt>
         <dd>
           {horaDeChile(viaje.recogida_en)}
-          {viaje.vuelo ? ` · vuelo ${viaje.vuelo}` : ''}
+          {viaje.vuelo && !viaje.detalle_vuelo ? ` · vuelo ${viaje.vuelo}` : ''}
         </dd>
+        {/* HU-69: el estado del vuelo se renueva con el viaje (App recarga cada minuto mientras haya vuelo). */}
+        {!aBordo && <VueloDelViaje vuelo={viaje.detalle_vuelo} enAeropuerto={viaje.en_aeropuerto_a_las} />}
         <dt>Origen</dt>
         <dd>{viaje.origen.direccion}</dd>
         <dt>Destino</dt>
