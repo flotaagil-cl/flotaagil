@@ -84,9 +84,9 @@ def autenticar(email: str, password: str, roles_permitidos: frozenset[str]) -> U
             raise CuentaBloqueada()
         raise AuthenticationFailed(MENSAJE_CREDENCIALES, code="credenciales_invalidas")
     if not usuario.activo and usuario.rol == Rol.PASAJERO and hasattr(usuario, "cuenta_pasajero"):
-        # HU-35: la cuenta se activa al confirmar el teléfono por WhatsApp.
+        # HU-64 (DC-61): la cuenta se activa con el enlace que llega al correo.
         raise AuthenticationFailed(
-            "Confirma tu cuenta respondiendo el WhatsApp que te enviamos.", code="cuenta_sin_confirmar"
+            "Activa tu cuenta con el enlace que te enviamos por correo.", code="cuenta_sin_confirmar"
         )
     if not usuario.activo or not usuario.empresa.activa:
         raise AuthenticationFailed("La cuenta está deshabilitada.", code="cuenta_deshabilitada")

@@ -418,10 +418,11 @@ class Calificacion(models.Model):
 class CuentaPasajero(models.Model):
     """HU-35 (DC-36): cuenta web opcional del pasajero, por empresa.
 
-    Se crea con el usuario inactivo y se activa cuando el pasajero responde «CONFIRMAR CUENTA» por WhatsApp
-    desde el teléfono que declaró. Recién ahí `pasajero` apunta al PASAJERO de ese teléfono en la empresa y la
-    cuenta ve sus reservas, incluidas las anteriores de invitado. Eliminar la cuenta borra esta fila y
-    anonimiza al usuario: el pasajero y sus reservas quedan como de invitado.
+    Se crea con el usuario inactivo y se activa con el enlace que llega al correo (24 h, DC-61). Recién ahí
+    `pasajero` apunta al PASAJERO de ese teléfono en la empresa. El teléfono es un dato de contacto sin
+    verificar: la cuenta ve solo los viajes que pidió ella (DC-65), salvo las cuentas confirmadas antes por
+    WhatsApp. Eliminar la cuenta borra esta fila y anonimiza al usuario: el pasajero y sus reservas quedan
+    como de invitado.
     """
 
     usuario = models.OneToOneField(
@@ -439,12 +440,9 @@ class CuentaPasajero(models.Model):
     privacidad_aceptada_en = models.DateTimeField(null=True, blank=True)
     # HU-41 (DC-45): último reenvío del WhatsApp de activación; la vigencia corre desde ahí.
     reenviada_en = models.DateTimeField(null=True, blank=True)
-    # HU-45 (DC-50): WhatsApp nuevo por confirmar. La cuenta sigue con `telefono` hasta que el nuevo responda
-    # «CONFIRMAR CUENTA» dentro de `expiracion_verificacion_min`; si no, el cambio se descarta.
-    telefono_pendiente = models.CharField(
-        max_length=16, null=True, blank=True, validators=[validar_telefono_e164]
-    )
-    telefono_pendiente_en = models.DateTimeField(null=True, blank=True)
+    # DC-65 (CC-19): el teléfono se confirmó por WhatsApp (cuentas anteriores a CC-19). Sin esa confirmación
+    # la cuenta solo ve los viajes que pidió ella misma, no los de invitado con ese número.
+    telefono_verificado = models.BooleanField(default=False, db_default=False)
     privacidad_version = models.CharField(max_length=20, null=True, blank=True)
     creada_en = models.DateTimeField(db_default=Now(), editable=False)
 

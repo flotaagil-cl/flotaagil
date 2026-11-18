@@ -12,12 +12,11 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
 from apps.comun.excepciones import error_con_codigo
-from apps.comun.validadores import normalizar_telefono, validar_telefono_e164
 from apps.convenios import servicios as convenios
 from apps.convenios.serializers import RegistroConvenioSerializer, SolicitudConvenioPublicaSerializer
 from apps.cuentas.models import Empresa
 from apps.cuentas.serializers import ErrorSerializer
-from apps.integraciones.notificaciones import enmascarar_telefono as enmascarar
+from apps.integraciones.correo import enmascarar as enmascarar_correo
 from apps.reservas import cuentas_pasajero
 
 from . import publico, servicios
@@ -145,7 +144,8 @@ class RegistroEmpresaView(_VistaPortal):
 
 
 class CrearCuentaView(_VistaPortal):
-    """HU-35: crea la cuenta pendiente y envía el WhatsApp para confirmarla. Mismos límites que el portal."""
+    """HU-35 y HU-64: crea la cuenta pendiente y manda el enlace de activación al correo, con los límites
+    del portal."""
 
     throttle_classes = [PortalPorMinuto, PortalPorHora]
 
@@ -157,9 +157,7 @@ class CrearCuentaView(_VistaPortal):
         summary="Crear una cuenta de pasajero",
         request=CrearCuentaSerializer,
         responses={
-            201: OpenApiResponse(
-                description="Pendiente: se activa al responder «CONFIRMAR CUENTA» por WhatsApp"
-            ),
+            201: OpenApiResponse(description="Pendiente: se activa con el enlace del correo (24 h, DC-61)"),
             400: OpenApiResponse(description="Datos inválidos o correo no disponible"),
             404: OpenApiResponse(description="Empresa inexistente o inactiva"),
             429: LIMITE,
@@ -174,7 +172,7 @@ class CrearCuentaView(_VistaPortal):
         return Response(
             {
                 "estado": "PENDIENTE",
-                "mensaje": "Te enviamos un WhatsApp. Responde CONFIRMAR CUENTA para activarla.",
+                "mensaje": "Te enviamos un correo. Abre el enlace para activar tu cuenta.",
             },
             status=status.HTTP_201_CREATED,
         )
@@ -185,22 +183,13 @@ class ActivacionSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128, write_only=True)
 
 
-class ReenviarActivacionSerializer(ActivacionSerializer):
-    telefono = serializers.CharField(
-        max_length=24,
-        required=False,
-        help_text="Para corregir el número: el nuevo WhatsApp en formato E.164.",
-    )
-
-    def validate_telefono(self, valor):
-        telefono = normalizar_telefono(valor)
-        validar_telefono_e164(telefono)
-        return telefono
-
-
 class EstadoActivacionSerializer(serializers.Serializer):
     activa = serializers.BooleanField()
-    telefono = serializers.CharField(help_text="Número al que se envió el mensaje, enmascarado.")
+    correo = serializers.CharField(help_text="Correo al que se envió el enlace, enmascarado.")
+
+
+class ActivarCuentaSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=200)
 
 
 class _VistaActivacion(_VistaPortal):
@@ -226,28 +215,49 @@ class EstadoActivacionView(_VistaActivacion):
         entrada = ActivacionSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         estado = cuentas_pasajero.estado_activacion(empresa, **entrada.validated_data)
-        return Response({**estado, "telefono": enmascarar(estado["telefono"])})
+        return Response({**estado, "correo": enmascarar_correo(estado["correo"])})
 
 
 class ReenviarActivacionView(_VistaActivacion):
     @extend_schema(
         tags=["portal"],
-        summary="Reenviar el WhatsApp de activación (o corregir el número)",
-        request=ReenviarActivacionSerializer,
+        summary="Reenviar el enlace de activación al correo",
+        request=ActivacionSerializer,
         responses={
             200: EstadoActivacionSerializer,
-            400: OpenApiResponse(description="`cuenta_no_encontrada` o número inválido"),
+            400: OpenApiResponse(description="`cuenta_no_encontrada`"),
             409: OpenApiResponse(description="`cuenta_activa`"),
             429: OpenApiResponse(description="`limite_reenvio` (3 cada 15 min por cuenta) o límite por IP"),
         },
-        description="HU-41 (DC-45): la vigencia del mensaje corre desde este envío.",
+        description="HU-41 y HU-64 (DC-61): el nuevo enlace vale 24 h desde este envío.",
     )
     def post(self, request, slug):
         empresa = _empresa_con_modulo(slug)
-        entrada = ReenviarActivacionSerializer(data=request.data)
+        entrada = ActivacionSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
         cuenta = cuentas_pasajero.reenviar_activacion(empresa, **entrada.validated_data)
-        return Response({"activa": False, "telefono": enmascarar(cuenta.telefono)})
+        return Response({"activa": False, "correo": enmascarar_correo(cuenta.usuario.email)})
+
+
+class ActivarCuentaView(_VistaActivacion):
+    @extend_schema(
+        tags=["portal"],
+        summary="Activar la cuenta con el enlace del correo",
+        request=ActivarCuentaSerializer,
+        responses={
+            200: EstadoActivacionSerializer,
+            400: OpenApiResponse(description="`enlace_invalido` o `enlace_vencido`"),
+            409: OpenApiResponse(description="`telefono_en_uso`: el teléfono ya es de otra cuenta activa"),
+        },
+        description="HU-64 (DC-61, CP-56): el enlace vale 24 h; abrirlo de nuevo con la cuenta activa "
+        "responde 200. Sin verificar el teléfono, la cuenta ve solo los viajes que pide (DC-65).",
+    )
+    def post(self, request, slug):
+        empresa = _empresa_con_modulo(slug)
+        entrada = ActivarCuentaSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        cuenta = cuentas_pasajero.activar(empresa, entrada.validated_data["token"])
+        return Response({"activa": True, "correo": enmascarar_correo(cuenta.usuario.email)})
 
 
 class ReservaPublicaView(_VistaPortal):

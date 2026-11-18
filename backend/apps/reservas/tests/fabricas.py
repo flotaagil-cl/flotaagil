@@ -114,5 +114,7 @@ class CuentaPasajeroFactory(factory.django.DjangoModelFactory):
     nombre = factory.SelfAttribute("pasajero.nombre")
     telefono = factory.SelfAttribute("pasajero.telefono")
     confirmada_en = factory.LazyFunction(timezone.now)
+    # DC-65: como una cuenta confirmada por WhatsApp antes de CC-19 (ve todos los viajes de su PASAJERO).
+    telefono_verificado = True
     privacidad_aceptada_en = factory.LazyFunction(timezone.now)
     privacidad_version = factory.LazyFunction(lambda: settings.AVISO_PRIVACIDAD_VERSION)

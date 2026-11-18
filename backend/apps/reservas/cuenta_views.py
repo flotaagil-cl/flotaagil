@@ -25,17 +25,10 @@ class MiCuentaSerializer(serializers.Serializer):
     empresa = serializers.CharField(source="empresa.razon_social")
     empresa_slug = serializers.CharField(source="empresa.slug")
     # HU-45: datos de «Mi perfil».
-    telefono_pendiente = serializers.SerializerMethodField(
-        help_text="WhatsApp nuevo por confirmar (DC-50), o null si no hay o ya venció."
-    )
     pasajero_desde = serializers.DateTimeField(source="confirmada_en")
     password_cambiada_en = serializers.SerializerMethodField(
         help_text="Último cambio o recuperación de la contraseña registrado en la auditoría, o null."
     )
-
-    @extend_schema_field(serializers.CharField(allow_null=True))
-    def get_telefono_pendiente(self, cuenta):
-        return cuentas.telefono_pendiente_vigente(cuenta)
 
     @extend_schema_field(serializers.DateTimeField(allow_null=True))
     def get_password_cambiada_en(self, cuenta):
@@ -164,10 +157,9 @@ class MiCuentaView(APIView):
         responses={
             200: MiCuentaSerializer,
             409: OpenApiResponse(description="`telefono_en_uso` o `cuenta_sin_confirmar`"),
-            429: OpenApiResponse(description="`limite_reenvio`"),
         },
-        description="El nombre cambia al tiro. Un WhatsApp nuevo queda pendiente hasta que responda "
-        "«CONFIRMAR CUENTA»; mientras tanto la cuenta sigue con el número anterior (HU-45, DC-50).",
+        description="El nombre y el teléfono cambian al tiro, sin verificación (HU-64, DC-61). Un teléfono "
+        "que ya es de otra cuenta o de otro pasajero de la empresa responde 409 (DC-65).",
     )
     def patch(self, request):
         entrada = PerfilEntradaSerializer(data=request.data)

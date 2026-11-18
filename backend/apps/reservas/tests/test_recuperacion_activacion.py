@@ -1,7 +1,5 @@
-"""HU-41 (DC-45): recuperación con enlace de 30 min y hasta 3 envíos por correo cada 15 min;
-reenvío del WhatsApp de activación y corrección del número, con límite por cuenta; estado de la activación."""
-
-from datetime import timedelta
+"""HU-41 (DC-45) y HU-64 (DC-61): recuperación con enlace de 30 min y hasta 3 envíos por correo cada 15 min;
+reenvío del enlace de activación por correo, con límite por cuenta; estado de la activación."""
 
 import pytest
 from django.core import mail
@@ -9,7 +7,6 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.reservas import tareas
-from apps.reservas.cuentas_pasajero import vence_en
 from apps.reservas.models import CuentaPasajero
 from apps.reservas.tests.fabricas import CuentaPasajeroFactory
 from apps.reservas.tests.test_whatsapp import TwilioFalso
@@ -88,7 +85,7 @@ class TestActivacion:
             url("portal-cuenta-estado", empresa), {"email": EMAIL, "password": CLAVE}, format="json"
         )
         assert respuesta.status_code == 200
-        assert respuesta.json() == {"activa": False, "telefono": "+569******01"}
+        assert respuesta.json() == {"activa": False, "correo": "p***@correo.example"}
         pendiente.confirmada_en = timezone.now()
         pendiente.pasajero = CuentaPasajeroFactory(empresa=empresa).pasajero
         pendiente.save()
@@ -112,33 +109,19 @@ class TestActivacion:
         )
         assert respuesta.status_code == 400
 
-    def test_reenvia_y_renueva_la_vigencia(
+    def test_reenvia_el_enlace_por_correo_sin_whatsapp(
         self, cliente, empresa, pendiente, twilio, django_capture_on_commit_callbacks
     ):
-        CuentaPasajero.objects.filter(pk=pendiente.pk).update(
-            creada_en=timezone.now() - timedelta(minutes=14)
-        )
-        antes = len(twilio.enviados)
+        antes = len(mail.outbox)
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = cliente.post(
                 url("portal-cuenta-reenviar", empresa), {"email": EMAIL, "password": CLAVE}, format="json"
             )
         assert respuesta.status_code == 200
-        assert len(twilio.enviados) == antes + 1
-        cuenta = CuentaPasajero.objects.select_related("empresa__configuracion").get()
-        assert vence_en(cuenta) > timezone.now() + timedelta(minutes=14)
-
-    def test_corrige_el_numero(self, cliente, empresa, pendiente, twilio, django_capture_on_commit_callbacks):
-        datos = {"email": EMAIL, "password": CLAVE, "telefono": "+56 9 0000 9302"}
-        with django_capture_on_commit_callbacks(execute=True):
-            respuesta = cliente.post(url("portal-cuenta-reenviar", empresa), datos, format="json")
-        assert respuesta.status_code == 200
-        assert respuesta.json()["telefono"] == "+569******02"
-        assert CuentaPasajero.objects.get().telefono == "+56900009302"
-
-    def test_numero_invalido(self, cliente, empresa, pendiente):
-        datos = {"email": EMAIL, "password": CLAVE, "telefono": "123"}
-        assert cliente.post(url("portal-cuenta-reenviar", empresa), datos, format="json").status_code == 400
+        assert len(mail.outbox) == antes + 1
+        assert "/activar/" in mail.outbox[-1].body
+        assert twilio.enviados == []
+        assert CuentaPasajero.objects.get().reenviada_en is not None
 
     def test_hasta_3_reenvios_en_la_ventana(self, cliente, empresa, pendiente):
         datos = {"email": EMAIL, "password": CLAVE}

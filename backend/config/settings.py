@@ -311,6 +311,8 @@ RECUPERAR_MAX_ENVIOS = env.int("RECUPERAR_MAX_ENVIOS", default=3)
 RECUPERAR_VENTANA_MIN = env.int("RECUPERAR_VENTANA_MIN", default=15)
 # HU-41 (DC-45): reenvíos del WhatsApp de activación por cuenta en la misma ventana.
 ACTIVACION_MAX_REENVIOS = env.int("ACTIVACION_MAX_REENVIOS", default=3)
+# DC-61 (CC-19): vigencia del enlace de activación de la cuenta del pasajero, desde su envío.
+ACTIVACION_CUENTA_HORAS = env.int("ACTIVACION_CUENTA_HORAS", default=24)
 # DC-44: versión vigente del aviso de privacidad. Al cambiarla, cada pasajero con cuenta la acepta otra vez.
 AVISO_PRIVACIDAD_VERSION = env("AVISO_PRIVACIDAD_VERSION", default="2026-11")
 # Correo de soporte de FlotaÁgil para los administradores (ingreso del panel). Vacío: no se muestra.
