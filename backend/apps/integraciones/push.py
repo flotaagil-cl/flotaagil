@@ -91,6 +91,9 @@ def encabezado_vapid(endpoint: str, ahora: float | None = None) -> str:
 
 def enviar(endpoint: str, p256dh: str, auth: str, datos: dict) -> None:
     """Envía `datos` (JSON) a una suscripción. Lanza PushTransitorio o SuscripcionVencida."""
+    if urllib.parse.urlsplit(endpoint).scheme != "https":
+        # La API ya solo acepta servicios de push conocidos por https; esto lo asegura antes de abrir la URL.
+        raise ValueError("El endpoint de push debe ser https.")
     cuerpo = cifrar(json.dumps(datos, ensure_ascii=False).encode(), p256dh, auth)
     peticion = urllib.request.Request(
         endpoint,
@@ -105,7 +108,8 @@ def enviar(endpoint: str, p256dh: str, auth: str, datos: dict) -> None:
         },
     )
     try:
-        with urllib.request.urlopen(peticion, timeout=TIEMPO_LIMITE_S):
+        # Solo https: el esquema se valida al comienzo de la función.
+        with urllib.request.urlopen(peticion, timeout=TIEMPO_LIMITE_S):  # nosec B310
             return
     except urllib.error.HTTPError as error:
         if error.code in (404, 410):

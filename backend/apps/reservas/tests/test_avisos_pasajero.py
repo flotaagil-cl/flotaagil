@@ -151,6 +151,10 @@ class TestWebPush:
             with pytest.raises(esperado):
                 push.enviar(ENDPOINT, navegador["p256dh"], navegador["auth"], {})
 
+    def test_solo_https(self, navegador):
+        with pytest.raises(ValueError):
+            push.enviar("http://fcm.googleapis.com/x", navegador["p256dh"], navegador["auth"], {})
+
     def test_sin_claves_no_esta_configurado(self, settings):
         settings.WEBPUSH_VAPID_PUBLICA = settings.WEBPUSH_VAPID_PRIVADA = ""
         assert not push.configurado()
