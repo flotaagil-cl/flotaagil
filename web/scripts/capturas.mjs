@@ -338,7 +338,7 @@ const PANTALLAS = {
         await pagina.getByRole('heading', { name: '¡Tu cuenta está activa!' }).waitFor();
       },
     },
-    { nombre: 'portal-enlace-vencido', ruta: `${PORTAL}/activar/enlace-de-ejemplo`, sesion: null, destino: /\/activar\// },
+    { nombre: 'portal-enlace-invalido', ruta: `${PORTAL}/activar/enlace-de-ejemplo`, sesion: null, destino: /\/activar\// },
     { nombre: 'mi-perfil-telefono', ruta: '/mi-perfil', sesion: 'activa-hu64@correo.example' },
   ],
   'HU-45': [
