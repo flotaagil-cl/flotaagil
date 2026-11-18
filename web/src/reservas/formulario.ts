@@ -15,6 +15,8 @@ import { z } from 'zod';
 import { aIso, campoDeInstante, instanteDeCampo, type ValorFechaHora } from '../hora/hora';
 import type { CanalPanel, Sentido, ViajeCrear, ViajeDetalle, ViajeEditar } from './api';
 
+type TipoVuelo = 'NACIONAL' | 'INTERNACIONAL';
+
 export type Modo = 'crear' | 'editar';
 
 export const CANALES_PANEL: CanalPanel[] = ['TELEFONO', 'WHATSAPP'];
@@ -22,8 +24,8 @@ export const SENTIDOS_FORMULARIO: Sentido[] = ['URBANO', 'HACIA_AEROPUERTO', 'DE
 
 /** Campos que muestra cada modo (para ubicar los errores 400 del backend). */
 export const CAMPOS_DEL_MODO: Record<Modo, readonly string[]> = {
-  crear: ['pasajero.nombre', 'pasajero.telefono', 'canal', 'sentido', 'origen_dir', 'destino_dir', 'recogida', 'vuelo.numero', 'vuelo.hora', 'vuelo_salida_numero'],
-  editar: ['sentido', 'origen_dir', 'destino_dir', 'recogida', 'vuelo.numero', 'vuelo.hora', 'vuelo_salida_numero'],
+  crear: ['pasajero.nombre', 'pasajero.telefono', 'canal', 'sentido', 'origen_dir', 'destino_dir', 'recogida', 'vuelo.numero', 'vuelo.hora', 'vuelo_salida_numero', 'vuelo_salida_hora', 'vuelo_salida_tipo'],
+  editar: ['sentido', 'origen_dir', 'destino_dir', 'recogida', 'vuelo.numero', 'vuelo.hora', 'vuelo_salida_numero', 'vuelo_salida_hora', 'vuelo_salida_tipo'],
 };
 
 const SIN_HORA: ValorFechaHora = { pared: '', ocurrencia: 'primera' };
@@ -38,6 +40,9 @@ export interface ValoresReserva {
   vuelo: { numero: string; hora: ValorFechaHora };
   /** HU-69: número del vuelo de salida, opcional (solo HACIA_AEROPUERTO; no se monitorea). */
   vuelo_salida_numero: string;
+  /** DC-70: hora y tipo del vuelo de salida, opcionales, como en el portal (HU-39). */
+  vuelo_salida_hora: ValorFechaHora;
+  vuelo_salida_tipo: TipoVuelo;
 }
 
 export const VALORES_NUEVA: ValoresReserva = {
@@ -49,6 +54,9 @@ export const VALORES_NUEVA: ValoresReserva = {
   recogida: SIN_HORA,
   vuelo: { numero: '', hora: SIN_HORA },
   vuelo_salida_numero: '',
+  vuelo_salida_hora: SIN_HORA,
+  // Como el portal: internacional por omisión.
+  vuelo_salida_tipo: 'INTERNACIONAL',
 };
 
 export function valoresDeViaje(viaje: ViajeDetalle): ValoresReserva {
@@ -64,6 +72,8 @@ export function valoresDeViaje(viaje: ViajeDetalle): ValoresReserva {
       ? { numero: viaje.vuelo.numero, hora: campoDeInstante(viaje.vuelo.hora_programada) }
       : { numero: '', hora: SIN_HORA },
     vuelo_salida_numero: viaje.vuelo_salida_numero ?? '',
+    vuelo_salida_hora: viaje.vuelo_salida_en ? campoDeInstante(viaje.vuelo_salida_en) : SIN_HORA,
+    vuelo_salida_tipo: viaje.vuelo_salida_tipo || 'INTERNACIONAL',
   };
 }
 
@@ -98,6 +108,8 @@ export function esquemaReserva(modo: Modo) {
       recogida: fechaHora,
       vuelo: z.object({ numero: z.string(), hora: fechaHora }),
       vuelo_salida_numero: z.string(),
+      vuelo_salida_hora: fechaHora,
+      vuelo_salida_tipo: z.enum(['NACIONAL', 'INTERNACIONAL']),
     })
     .superRefine((v, ctx) => {
       const error = (ruta: (string | number)[], message: string) => ctx.addIssue({ code: 'custom', path: ruta, message });
@@ -130,6 +142,10 @@ export function esquemaReserva(modo: Modo) {
       if (v.sentido === 'HACIA_AEROPUERTO') {
         const salida = normalizarVuelo(v.vuelo_salida_numero);
         if (salida && !VUELO_IATA.test(salida)) error(['vuelo_salida_numero'], 'Número de vuelo IATA, p. ej. LA123 o H2 456.');
+        if (v.vuelo_salida_hora.pared) {
+          const hora = instanteDeCampo(v.vuelo_salida_hora);
+          if (!hora.ok) error(['vuelo_salida_hora'], hora.mensaje);
+        }
       }
     });
 }
@@ -158,6 +174,10 @@ export function cuerpoCrear(v: ValoresReserva): ViajeCrear {
   if (vuelo) cuerpo.vuelo = vuelo;
   const salida = v.sentido === 'HACIA_AEROPUERTO' ? normalizarVuelo(v.vuelo_salida_numero) : '';
   if (salida) cuerpo.vuelo_salida_numero = salida;
+  if (v.sentido === 'HACIA_AEROPUERTO' && v.vuelo_salida_hora.pared) {
+    cuerpo.vuelo_salida_en = instante(v.vuelo_salida_hora);
+    cuerpo.vuelo_salida_tipo = v.vuelo_salida_tipo;
+  }
   return cuerpo;
 }
 
@@ -174,6 +194,8 @@ export interface Modificados {
   recogida?: Marca;
   vuelo?: Marca;
   vuelo_salida_numero?: Marca;
+  vuelo_salida_hora?: Marca;
+  vuelo_salida_tipo?: Marca;
 }
 
 function tocado(marca: Marca | undefined): boolean {
@@ -191,5 +213,11 @@ export function cuerpoEditar(v: ValoresReserva, modificados: Modificados): Viaje
   if (v.sentido === 'DESDE_AEROPUERTO' && tocado(modificados.vuelo)) cuerpo.vuelo = vueloDe(v);
   // HU-69: igual con el número de salida (vacío = quitarlo); con otro sentido el backend lo quita solo.
   if (v.sentido === 'HACIA_AEROPUERTO' && tocado(modificados.vuelo_salida_numero)) cuerpo.vuelo_salida_numero = normalizarVuelo(v.vuelo_salida_numero) || null;
+  // DC-70: la hora y el tipo van juntos; sin hora se quitan los dos.
+  if (v.sentido === 'HACIA_AEROPUERTO' && (tocado(modificados.vuelo_salida_hora) || tocado(modificados.vuelo_salida_tipo))) {
+    const conHora = Boolean(v.vuelo_salida_hora.pared);
+    cuerpo.vuelo_salida_en = conHora ? instante(v.vuelo_salida_hora) : null;
+    cuerpo.vuelo_salida_tipo = conHora ? v.vuelo_salida_tipo : null;
+  }
   return cuerpo;
 }
