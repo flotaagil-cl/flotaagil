@@ -26,7 +26,7 @@ RANGOS = {
     "confirmacion_antes_horas": (1, 168),
     "confirmacion_plazo_corto_min": (10, 240),
     "cierre_no_confirmada_horas": (1, 48),
-    "reserva_publica_max_ip_hora": (1, 500),
+    "reserva_publica_max_ip_hora": (5, 500),
     "reserva_publica_max_correo_hora": (1, 50),
     "reserva_publica_max_convenio_hora": (1, 500),
 }
@@ -77,6 +77,22 @@ class ConfiguracionEmpresaSerializer(serializers.ModelSerializer):
 
     def validate_whatsapp_central(self, valor):
         return self._telefono(valor)
+
+    def validate(self, datos):
+        # DC-68: el plazo corto se usa cuando falta menos que el plazo normal; debe ser menor que él.
+        def valor(campo):
+            return datos.get(campo, getattr(self.instance, campo, None))
+
+        horas, corto = valor("confirmacion_antes_horas"), valor("confirmacion_plazo_corto_min")
+        if horas is not None and corto is not None and corto >= horas * 60:
+            raise serializers.ValidationError(
+                {
+                    "confirmacion_plazo_corto_min": (
+                        f"Debe ser menor que el plazo para confirmar ({horas} h = {horas * 60} min)."
+                    )
+                }
+            )
+        return datos
 
 
 class ConfiguracionEmpresaView(APIView):

@@ -2391,7 +2391,7 @@ export interface components {
             confirmacion_plazo_corto_min: number;
             /** @description Horas tras la recogida para cerrar (1 a 48). */
             cierre_no_confirmada_horas: number;
-            /** @description Solicitudes por IP y hora (1 a 500). */
+            /** @description Solicitudes por IP y hora (5 a 500). */
             reserva_publica_max_ip_hora: number;
             /** @description Solicitudes por correo y hora (1 a 50). */
             reserva_publica_max_correo_hora: number;
@@ -3087,7 +3087,7 @@ export interface components {
             confirmacion_plazo_corto_min?: number;
             /** @description Horas tras la recogida para cerrar (1 a 48). */
             cierre_no_confirmada_horas?: number;
-            /** @description Solicitudes por IP y hora (1 a 500). */
+            /** @description Solicitudes por IP y hora (5 a 500). */
             reserva_publica_max_ip_hora?: number;
             /** @description Solicitudes por correo y hora (1 a 50). */
             reserva_publica_max_correo_hora?: number;

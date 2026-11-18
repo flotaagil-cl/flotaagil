@@ -24,7 +24,7 @@ const NUMEROS: { campo: Numerico; etiqueta: string; min: number; max: number; ay
   { campo: 'confirmacion_antes_horas', etiqueta: 'Plazo para confirmar (horas antes de la recogida)', min: 1, max: 168, ayuda: 'La reserva pública se confirma por correo hasta esas horas antes.' },
   { campo: 'confirmacion_plazo_corto_min', etiqueta: 'Plazo corto (minutos)', min: 10, max: 240, ayuda: 'Si al pedir falta menos que el plazo anterior.' },
   { campo: 'cierre_no_confirmada_horas', etiqueta: 'Cierre de las «Sin confirmar» (horas tras la recogida)', min: 1, max: 48, ayuda: 'Después se cierran solas.' },
-  { campo: 'reserva_publica_max_ip_hora', etiqueta: 'Solicitudes por conexión (IP) y hora', min: 1, max: 500, ayuda: 'Antispam del formulario público.' },
+  { campo: 'reserva_publica_max_ip_hora', etiqueta: 'Solicitudes por conexión (IP) y hora', min: 5, max: 500, ayuda: 'Antispam del formulario público.' },
   { campo: 'reserva_publica_max_correo_hora', etiqueta: 'Solicitudes por correo y hora', min: 1, max: 50, ayuda: 'Antispam del formulario público.' },
   { campo: 'reserva_publica_max_convenio_hora', etiqueta: 'Solicitudes por correo de convenio y hora', min: 1, max: 500, ayuda: 'Para los correos autorizados de un convenio.' },
 ];
@@ -85,6 +85,11 @@ function Formulario({ inicial }: { inicial: Datos }) {
     for (const { campo, min, max } of NUMEROS) {
       const valor = Number(datos[campo]);
       if (!Number.isInteger(valor) || valor < min || valor > max) encontrados[campo] = `Debe ser un número entero entre ${min} y ${max}.`;
+    }
+    // DC-68: el plazo corto se usa cuando falta menos que el plazo normal, así que debe ser menor que él.
+    const horas = Number(datos.confirmacion_antes_horas);
+    if (!encontrados.confirmacion_antes_horas && !encontrados.confirmacion_plazo_corto_min && Number(datos.confirmacion_plazo_corto_min) >= horas * 60) {
+      encontrados.confirmacion_plazo_corto_min = `Debe ser menor que el plazo para confirmar (${horas} h = ${horas * 60} min).`;
     }
     setErrores(encontrados);
     if (Object.keys(encontrados).length) return;

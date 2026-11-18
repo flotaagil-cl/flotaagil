@@ -4436,8 +4436,8 @@ components:
         reserva_publica_max_ip_hora:
           type: integer
           maximum: 500
-          minimum: 1
-          description: Solicitudes por IP y hora (1 a 500).
+          minimum: 5
+          description: Solicitudes por IP y hora (5 a 500).
         reserva_publica_max_correo_hora:
           type: integer
           maximum: 50
@@ -5954,8 +5954,8 @@ components:
         reserva_publica_max_ip_hora:
           type: integer
           maximum: 500
-          minimum: 1
-          description: Solicitudes por IP y hora (1 a 500).
+          minimum: 5
+          description: Solicitudes por IP y hora (5 a 500).
         reserva_publica_max_correo_hora:
           type: integer
           maximum: 50
