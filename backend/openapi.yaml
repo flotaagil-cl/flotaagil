@@ -3865,6 +3865,43 @@ paths:
                 items:
                   $ref: '#/components/schemas/ConductorContingencia'
           description: ''
+  /api/vuelos-de-hoy/:
+    get:
+      operationId: vuelos_de_hoy_retrieve
+      description: 'HU-69: viajes de aeropuerto del día de la empresa del usuario.
+        Solo lee la base (sin API de vuelos).'
+      summary: Vuelos de hoy (llegadas y salidas)
+      parameters:
+      - in: query
+        name: estado
+        schema:
+          type: string
+          enum:
+          - ATERRIZADO
+          - CANCELADO
+          - DEMORADO
+          - DESVIADO
+          - PROGRAMADO
+        description: 'Estado del vuelo (solo llegadas: las salidas no se monitorean)'
+      - in: query
+        name: tipo
+        schema:
+          type: string
+          enum:
+          - llegadas
+          - salidas
+        description: Sin él, ambos
+      tags:
+      - vuelos
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VuelosDeHoy'
+          description: ''
 components:
   schemas:
     AccesoEnum:
@@ -4466,6 +4503,22 @@ components:
             está configurado.
       required:
       - soporte_correo
+    ContadoresVuelos:
+      type: object
+      properties:
+        demorados:
+          type: integer
+        cancelados_o_desviados:
+          type: integer
+        sin_conductor:
+          type: integer
+        propuestas_pendientes:
+          type: integer
+      required:
+      - cancelados_o_desviados
+      - demorados
+      - propuestas_pendientes
+      - sin_conductor
     Convenio:
       type: object
       properties:
@@ -7609,6 +7662,13 @@ components:
           oneOf:
           - $ref: '#/components/schemas/TipoAlertaVueloEnum'
           - $ref: '#/components/schemas/NullEnum'
+        en_aeropuerto_a_las:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 'Salidas: despegue menos la antelación nacional o internacional
+            de la empresa (HU-69).'
         motivo_cancelacion:
           type: string
           nullable: true
@@ -7665,6 +7725,7 @@ components:
       - creado_en
       - destino
       - editable
+      - en_aeropuerto_a_las
       - id
       - origen
       - pasajero
@@ -7693,6 +7754,17 @@ components:
           type: string
           nullable: true
           description: Número de vuelo, si es desde el aeropuerto
+        detalle_vuelo:
+          allOf:
+          - $ref: '#/components/schemas/VueloParaLaApp'
+          nullable: true
+          description: 'HU-69: el vuelo de llegada con su estado (se lee de la base)'
+        en_aeropuerto_a_las:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'HU-69: en las salidas, cuándo debe estar el pasajero en el
+            aeropuerto'
         tarifa:
           type: integer
           nullable: true
@@ -7716,6 +7788,8 @@ components:
       required:
       - convenio
       - destino
+      - detalle_vuelo
+      - en_aeropuerto_a_las
       - estado
       - hacia
       - id
@@ -7868,6 +7942,13 @@ components:
           oneOf:
           - $ref: '#/components/schemas/TipoAlertaVueloEnum'
           - $ref: '#/components/schemas/NullEnum'
+        en_aeropuerto_a_las:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 'Salidas: despegue menos la antelación nacional o internacional
+            de la empresa (HU-69).'
         motivo_cancelacion:
           type: string
           nullable: true
@@ -7942,6 +8023,7 @@ components:
       - creado_en
       - destino
       - editable
+      - en_aeropuerto_a_las
       - historial
       - id
       - origen
@@ -7986,10 +8068,28 @@ components:
           type: string
           format: date-time
           nullable: true
+        internacional:
+          type: boolean
+          nullable: true
+          readOnly: true
+          description: Según el aeropuerto de origen; null si la API aún no lo informa
+            (DC-69).
+        margen_min:
+          type: integer
+          readOnly: true
+          description: Margen de la recogida tras la llegada (RN-17).
+        recogida_sugerida:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Llegada (estimada o programada) + margen (RN-17).
       required:
       - fecha
       - hora_programada
+      - internacional
+      - margen_min
       - numero
+      - recogida_sugerida
     VueloDeMiViaje:
       type: object
       properties:
@@ -8044,6 +8144,25 @@ components:
             no responde, se pide la hora.'
       required:
       - numero
+    VueloParaLaApp:
+      type: object
+      properties:
+        numero:
+          type: string
+        hora_programada:
+          type: string
+          format: date-time
+        hora_estimada:
+          type: string
+          format: date-time
+          nullable: true
+        estado_vuelo:
+          type: string
+      required:
+      - estado_vuelo
+      - hora_estimada
+      - hora_programada
+      - numero
     VueloSalidaRequest:
       type: object
       description: 'HU-39: vuelo de salida en los viajes al aeropuerto (DC-42).'
@@ -8057,6 +8176,25 @@ components:
       required:
       - hora
       - tipo
+    VuelosDeHoy:
+      type: object
+      properties:
+        fecha:
+          type: string
+          format: date
+          description: Día de Chile al que corresponden los vuelos.
+        contadores:
+          allOf:
+          - $ref: '#/components/schemas/ContadoresVuelos'
+          description: Sobre todos los viajes del día, sin filtros.
+        viajes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Viaje'
+      required:
+      - contadores
+      - fecha
+      - viajes
   securitySchemes:
     jwtAuth:
       type: http

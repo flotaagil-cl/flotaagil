@@ -2162,6 +2162,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vuelos-de-hoy/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Vuelos de hoy (llegadas y salidas)
+         * @description HU-69: viajes de aeropuerto del día de la empresa del usuario. Solo lee la base (sin API de vuelos).
+         */
+        get: operations["vuelos_de_hoy_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2404,6 +2424,12 @@ export interface components {
              * @description Correo de soporte de FlotaÁgil (SOPORTE_CORREO); null si no está configurado.
              */
             soporte_correo: string | null;
+        };
+        ContadoresVuelos: {
+            demorados: number;
+            cancelados_o_desviados: number;
+            sin_conductor: number;
+            propuestas_pendientes: number;
         };
         Convenio: {
             readonly id: number;
@@ -3752,6 +3778,11 @@ export interface components {
             readonly vuelo: components["schemas"]["Vuelo"] | null;
             /** @description Alerta de vuelo sin atender (HU-28) */
             readonly alerta_vuelo: (components["schemas"]["TipoAlertaVueloEnum"] | components["schemas"]["NullEnum"]) | null;
+            /**
+             * Format: date-time
+             * @description Salidas: despegue menos la antelación nacional o internacional de la empresa (HU-69).
+             */
+            readonly en_aeropuerto_a_las: string | null;
             motivo_cancelacion?: string | null;
             origen_cancelacion?: (components["schemas"]["OrigenCancelacionEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             /** Format: date-time */
@@ -3777,6 +3808,13 @@ export interface components {
             destino: components["schemas"]["Punto"];
             /** @description Número de vuelo, si es desde el aeropuerto */
             vuelo: string | null;
+            /** @description HU-69: el vuelo de llegada con su estado (se lee de la base) */
+            detalle_vuelo: components["schemas"]["VueloParaLaApp"] | null;
+            /**
+             * Format: date-time
+             * @description HU-69: en las salidas, cuándo debe estar el pasajero en el aeropuerto
+             */
+            en_aeropuerto_a_las: string | null;
             /** @description Tarifa acordada (CLP), si la hay */
             tarifa: number | null;
             /** @description El viaje pertenece a un convenio */
@@ -3839,6 +3877,11 @@ export interface components {
             readonly vuelo: components["schemas"]["Vuelo"] | null;
             /** @description Alerta de vuelo sin atender (HU-28) */
             readonly alerta_vuelo: (components["schemas"]["TipoAlertaVueloEnum"] | components["schemas"]["NullEnum"]) | null;
+            /**
+             * Format: date-time
+             * @description Salidas: despegue menos la antelación nacional o internacional de la empresa (HU-69).
+             */
+            readonly en_aeropuerto_a_las: string | null;
             motivo_cancelacion?: string | null;
             origen_cancelacion?: (components["schemas"]["OrigenCancelacionEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             /** Format: date-time */
@@ -3877,6 +3920,15 @@ export interface components {
             recogida_propuesta?: string | null;
             /** Format: date-time */
             propuesta_en?: string | null;
+            /** @description Según el aeropuerto de origen; null si la API aún no lo informa (DC-69). */
+            readonly internacional: boolean | null;
+            /** @description Margen de la recogida tras la llegada (RN-17). */
+            readonly margen_min: number;
+            /**
+             * Format: date-time
+             * @description Llegada (estimada o programada) + margen (RN-17).
+             */
+            readonly recogida_sugerida: string;
         };
         VueloDeMiViaje: {
             numero: string;
@@ -3909,6 +3961,14 @@ export interface components {
              */
             fecha?: string;
         };
+        VueloParaLaApp: {
+            numero: string;
+            /** Format: date-time */
+            hora_programada: string;
+            /** Format: date-time */
+            hora_estimada: string | null;
+            estado_vuelo: string;
+        };
         /** @description HU-39: vuelo de salida en los viajes al aeropuerto (DC-42). */
         VueloSalidaRequest: {
             /**
@@ -3917,6 +3977,16 @@ export interface components {
              */
             hora: string;
             tipo: components["schemas"]["TipoVueloEnum"];
+        };
+        VuelosDeHoy: {
+            /**
+             * Format: date
+             * @description Día de Chile al que corresponden los vuelos.
+             */
+            fecha: string;
+            /** @description Sobre todos los viajes del día, sin filtros. */
+            contadores: components["schemas"]["ContadoresVuelos"];
+            viajes: components["schemas"]["Viaje"][];
         };
     };
     responses: never;
@@ -7589,6 +7659,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConductorContingencia"][];
+                };
+            };
+        };
+    };
+    vuelos_de_hoy_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Estado del vuelo (solo llegadas: las salidas no se monitorean) */
+                estado?: "ATERRIZADO" | "CANCELADO" | "DEMORADO" | "DESVIADO" | "PROGRAMADO";
+                /** @description Sin él, ambos */
+                tipo?: "llegadas" | "salidas";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VuelosDeHoy"];
                 };
             };
         };

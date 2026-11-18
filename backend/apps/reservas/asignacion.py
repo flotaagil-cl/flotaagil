@@ -163,7 +163,13 @@ def candidatos(viaje: Viaje) -> list[dict]:
 
 def datos_para_la_app(asignacion: Asignacion) -> dict:
     """Lo que ve el conductor al recibir el viaje (HU-14): origen, destino, pasajero, tarifa y vuelo con
-    ETA."""
+    ETA. HU-69: con el estado del vuelo y, en las salidas, la hora a la que el pasajero debe estar en el
+    aeropuerto."""
+    from apps.aeropuerto.informacion import en_aeropuerto_a_las
+
+    def _iso(hora):
+        return hora.isoformat() if hora else None
+
     viaje = asignacion.viaje
     vuelo = getattr(viaje, "vuelo", None)
     vence = asignacion.enviada_en + timedelta(seconds=SEGUNDOS_PARA_RESPONDER)
@@ -181,7 +187,9 @@ def datos_para_la_app(asignacion: Asignacion) -> dict:
             "numero": vuelo.numero,
             "hora_programada": vuelo.hora_programada.isoformat(),
             "hora_estimada": vuelo.hora_estimada.isoformat() if vuelo.hora_estimada else None,
+            "estado_vuelo": vuelo.estado_vuelo,  # HU-69
         },
+        "en_aeropuerto_a_las": _iso(en_aeropuerto_a_las(viaje, viaje.empresa.configuracion)),  # HU-69
         "vence_en": vence.isoformat(),
     }
 
