@@ -54,6 +54,8 @@ export default defineConfig({
     // Los formularios largos con userEvent superan los 5 s por defecto si la máquina está cargada.
     testTimeout: 20_000,
     setupFiles: ['./src/pruebas/setup.ts'],
+    // HU-70: las pruebas no cargan mapas reales salvo las que lo piden (sin red: Leaflet simulado).
+    env: { VITE_MAPA_PROVEEDOR: 'esquematico' },
     restoreMocks: true,
     // HU-37: las pruebas de src/diseno leen sus CSS (contraste de los tokens y que no haya colores sueltos).
     css: { include: [/src\/diseno\/.+\.css/] },

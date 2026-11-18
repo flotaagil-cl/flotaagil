@@ -189,6 +189,9 @@ describe('pantalla del mapa', () => {
     beforeEach(() => {
       vi.stubGlobal('WebSocket', SocketFalso);
       olvidarCargaDeGoogleMaps();
+      // HU-70: sin VITE_MAPA_PROVEEDOR, el proveedor sale de la clave (las pruebas fijan «esquematico» por omisión).
+      vi.stubEnv('VITE_MAPA_PROVEEDOR', '');
+      vi.stubEnv('DEV', false);
     });
 
     afterEach(() => {

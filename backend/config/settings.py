@@ -199,6 +199,8 @@ PORTAL_VENTANA_TELEFONO = timedelta(minutes=env.int("PORTAL_VENTANA_TELEFONO_MIN
 
 # Geocodificador (DC-05): sin clave se usa el de desarrollo (determinístico, sin servicios externos).
 GOOGLE_GEOCODING_API_KEY = env("GOOGLE_GEOCODING_API_KEY", default="")
+# HU-70 (DC-71): google | nominatim | desarrollo. Vacío: Google con clave; sin clave, Nominatim con DEBUG.
+GEOCODIFICADOR = env("GEOCODIFICADOR", default="")
 # Vuelos (HU-26): FlightAware AeroAPI si hay clave; si no, el consultor de desarrollo.
 # Se validan las llegadas a AEROPUERTO_IATA.
 FLIGHTAWARE_API_KEY = env("FLIGHTAWARE_API_KEY", default="")

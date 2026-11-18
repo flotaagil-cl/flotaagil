@@ -7,6 +7,8 @@ import { ConexionMapa, urlDelMapa, type CrearSocket, type EstadoMapa } from './c
 import { antiguedad, confianza, type ConductorMapa } from './estado';
 import { MapaEsquematico } from './MapaEsquematico';
 import { MapaGoogle } from './MapaGoogle';
+import { MapaOsm } from './MapaOsm';
+import { proveedorDelEntorno } from '../diseno/mapa/proveedor';
 import propios from './mapa.module.css';
 
 const ESTADOS = { DISPONIBLE: 'Disponible', EN_VIAJE: 'En viaje' } as const;
@@ -24,18 +26,20 @@ function hace(segundos: number | null): string {
 }
 
 /**
- * Mapa en tiempo real de los conductores en turno (HU-02). Con clave usa Google Maps; sin ella, o si no carga, el
- * esquemático. La clave va en `web/.env`, que está ignorado. `crearSocket` se reemplaza en las pruebas.
+ * Mapa en tiempo real de los conductores en turno (HU-02). El proveedor sale de `VITE_MAPA_PROVEEDOR` (HU-70): Google
+ * con clave, OpenStreetMap en desarrollo o el esquemático; si el elegido no carga, el esquemático. La clave va en
+ * `web/.env`, que está ignorado. `crearSocket` se reemplaza en las pruebas.
  */
 export function Mapa({ crearSocket }: { crearSocket?: CrearSocket }) {
   const claveMapa = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
+  const proveedor = proveedorDelEntorno();
   const entorno = useEntorno();
   const { sesion } = useSesion();
   const conexion = useMemo(() => new ConexionMapa(urlDelMapa(entorno.origen), sesion, crearSocket, () => entorno.ahora()), [entorno, sesion, crearSocket]);
   const [estado, setEstado] = useState<EstadoMapa>(conexion.estado);
   const [seleccionado, setSeleccionado] = useState<number | null>(null);
   const [ahora, setAhora] = useState(() => entorno.ahora());
-  const [fallaGoogle, setFallaGoogle] = useState(false);
+  const [fallaMapa, setFallaMapa] = useState(false);
 
   useEffect(() => {
     const quitar = conexion.suscribir(setEstado);
@@ -72,18 +76,24 @@ export function Mapa({ crearSocket }: { crearSocket?: CrearSocket }) {
       </div>
       {estado.fase === 'reconectando' && <Aviso tipo="error">Se perdió la conexión en vivo. Reintentando…</Aviso>}
 
-      {claveMapa && fallaGoogle && <Aviso tipo="error">No se pudo cargar Google Maps: se muestra el mapa esquemático.</Aviso>}
+      {fallaMapa && (
+        <Aviso tipo="error">
+          No se pudo cargar {proveedor === 'google' ? 'Google Maps' : 'OpenStreetMap'}: se muestra el mapa esquemático.
+        </Aviso>
+      )}
 
       <div className={propios.disposicion}>
-        {claveMapa && !fallaGoogle ? (
+        {proveedor === 'google' && claveMapa && !fallaMapa ? (
           <MapaGoogle
             clave={claveMapa}
             conductores={conductores}
             seleccionado={seleccionado}
             alSeleccionar={setSeleccionado}
             ahora={momento}
-            alFallar={() => setFallaGoogle(true)}
+            alFallar={() => setFallaMapa(true)}
           />
+        ) : proveedor === 'osm' && !fallaMapa ? (
+          <MapaOsm conductores={conductores} seleccionado={seleccionado} alSeleccionar={setSeleccionado} ahora={momento} alFallar={() => setFallaMapa(true)} />
         ) : (
           <MapaEsquematico conductores={conductores} seleccionado={seleccionado} alSeleccionar={setSeleccionado} ahora={momento} />
         )}
