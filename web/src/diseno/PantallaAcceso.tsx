@@ -78,7 +78,7 @@ export function HeroPortal() {
     <>
       <p className={e.heroAntetitulo}>Traslados aeropuerto de Santiago</p>
       <p className={e.heroTitulo}>Tu traslado, sin esperas.</p>
-      <p className={e.heroTexto}>Pides en un minuto, confirmas por WhatsApp y nosotros seguimos tu vuelo por ti.</p>
+      <p className={e.heroTexto}>Pides en un minuto, sigues tu viaje en línea y nosotros seguimos tu vuelo por ti.</p>
       {/* Ilustración del seguimiento de vuelos (datos de ejemplo, como en el diseño): decorativa. */}
       <div className={e.heroVuelo} aria-hidden="true">
         <div className={e.heroVueloFila}>

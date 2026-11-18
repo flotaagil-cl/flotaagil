@@ -27,7 +27,6 @@ from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
 from apps.cuentas import credenciales
 from apps.cuentas.models import Rol, Usuario
-from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 
 from . import avisos, estados
 from . import servicios as reservas
@@ -43,6 +42,7 @@ from .models import (
     SuscripcionPush,
     Viaje,
 )
+from .tipos_aviso import AVISO_CONFIRMACION
 
 PALABRA_CONFIRMAR = "confirmar cuenta"
 CANCELABLES = (EstadoViaje.PENDIENTE_CONFIRMACION, EstadoViaje.SOLICITADO)  # RN-09: sin conductor asignado

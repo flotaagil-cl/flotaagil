@@ -39,7 +39,7 @@ describe('menú y permisos', () => {
       'Vehículos',
       'Conductores',
       'Chat',
-      'Conversaciones',
+      'Historial WhatsApp',
       'Reportes',
       'Usuarios',
       'Cierre de caja',

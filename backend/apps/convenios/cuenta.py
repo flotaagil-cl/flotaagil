@@ -12,10 +12,10 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
-from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 from apps.reservas import avisos
 from apps.reservas import servicios as reservas
 from apps.reservas.models import Actor, Canal, EstadoViaje, Pasajero, Viaje
+from apps.reservas.tipos_aviso import AVISO_CONFIRMACION
 
 from .models import Convenio, EstadoConvenio
 

@@ -6,20 +6,11 @@ from django.core import mail
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.reservas import tareas
 from apps.reservas.models import CuentaPasajero
 from apps.reservas.tests.fabricas import CuentaPasajeroFactory
-from apps.reservas.tests.test_whatsapp import TwilioFalso
 
 CLAVE = "Clave-Sintetica-2026"
 EMAIL = "paula@correo.example"
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 @pytest.fixture

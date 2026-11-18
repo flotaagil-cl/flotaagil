@@ -110,6 +110,7 @@ class Command(BaseCommand):
                 # También en una base cargada antes de HU-34, que ya tiene viajes y no pasa por cargar().
                 demo_reservas.asegurar_convenio(empresa, numero, password)
                 demo_chat.cargar(empresa, conductores)
+                demo_chat.historial_whatsapp(empresa)
 
         self.stdout.write(
             self.style.SUCCESS(

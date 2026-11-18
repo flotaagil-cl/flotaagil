@@ -270,8 +270,9 @@ class EstadoEntrega(models.TextChoices):
 
 
 class MensajeWhatsapp(models.Model):
-    """MENSAJE_WHATSAPP (Anexo D). `proveedor_sid` (el SID de Twilio) hace idempotentes los webhooks.
-    Retención 12 meses (RN-15)."""
+    """MENSAJE_WHATSAPP (Anexo D). Desde CC-19 (HU-67, DC-63) es un historial de solo lectura: el canal se
+    retiró y ya no se agregan mensajes. `proveedor_sid` es el identificador que tenía el mensaje en el
+    proveedor. Retención 12 meses (RN-15, HU-68)."""
 
     pasajero = models.ForeignKey(Pasajero, on_delete=models.CASCADE, related_name="mensajes")
     viaje = models.ForeignKey(

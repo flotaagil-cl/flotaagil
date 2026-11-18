@@ -1,12 +1,10 @@
-/** HU-30: chat de WhatsApp desde el panel (CP-27). */
+/** HU-30 con HU-67 (CC-19): historial de WhatsApp en solo lectura («canal retirado»). */
 
-import { screen, waitFor, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
 import { conversacionDePrueba, ServidorConversacionesFalso } from '../pruebas/servidorConversacionesFalso';
-
-const AVISO = 'Fuera de la ventana de 24 h: solo plantillas aprobadas (pendiente PR-11)';
 
 function montar(ruta: string, conversaciones = [conversacionDePrueba()]) {
   const contexto = montarPanel(ruta);
@@ -15,27 +13,28 @@ function montar(ruta: string, conversaciones = [conversacionDePrueba()]) {
   return { ...contexto, chat };
 }
 
-describe('bandeja', () => {
-  it('muestra el pasajero, el último mensaje y la reserva vinculada', async () => {
+describe('historial de WhatsApp', () => {
+  it('muestra el pasajero, el último mensaje y la reserva, con el aviso del canal retirado', async () => {
     montar('/conversaciones');
+    expect(await screen.findByRole('heading', { name: 'Historial WhatsApp (canal retirado)', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText(/El canal de WhatsApp se retiró: este historial es de solo lectura/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir al Chat' })).toHaveAttribute('href', '/chat');
     const enlace = await screen.findByRole('link', { name: 'Ana Pérez' });
     expect(enlace).toHaveAttribute('href', '/conversaciones/5');
     const fila = enlace.closest('tr')!;
     expect(within(fila).getByText('¿Viene pronto?')).toBeInTheDocument();
     expect(within(fila).getByRole('link', { name: '#8 · En camino' })).toHaveAttribute('href', '/reservas/8');
-    expect(within(fila).getByText('Abierta')).toBeInTheDocument();
   });
 
-  it('distingue lo último enviado, sin reserva y con la ventana cerrada', async () => {
-    montar('/conversaciones', [conversacionDePrueba({ ultima_direccion: 'SALIENTE', ultimo_mensaje: 'Ya vamos', reserva: null, dentro_ventana: false })]);
-    expect(await screen.findByText('Tú: Ya vamos')).toBeInTheDocument();
+  it('distingue lo último de la central y sin reserva', async () => {
+    montar('/conversaciones', [conversacionDePrueba({ ultima_direccion: 'SALIENTE', ultimo_mensaje: 'Ya vamos', reserva: null })]);
+    expect(await screen.findByText('Central: Ya vamos')).toBeInTheDocument();
     expect(screen.getByText('Sin reserva')).toBeInTheDocument();
-    expect(screen.getByText('Cerrada')).toBeInTheDocument();
   });
 
-  it('sin conversaciones lo dice', async () => {
+  it('sin mensajes lo dice', async () => {
     montar('/conversaciones', []);
-    expect(await screen.findByText('Aún no hay conversaciones de WhatsApp.')).toBeInTheDocument();
+    expect(await screen.findByText('No hay mensajes de WhatsApp en el historial.')).toBeInTheDocument();
   });
 
   it('una falla ofrece reintentar', async () => {
@@ -45,15 +44,15 @@ describe('bandeja', () => {
     expect(await screen.findByRole('link', { name: 'Ana Pérez' })).toBeInTheDocument();
   });
 
-  it('aparece en el menú del despachador', async () => {
+  it('aparece en el menú como «Historial WhatsApp»', async () => {
     montar('/');
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
-    expect(within(menu).getByRole('link', { name: 'Conversaciones' })).toBeInTheDocument();
+    expect(within(menu).getByRole('link', { name: 'Historial WhatsApp' })).toBeInTheDocument();
   });
 });
 
-describe('hilo', () => {
-  it('muestra los mensajes con autor y estado', async () => {
+describe('hilo del historial', () => {
+  it('muestra los mensajes con autor y estado, sin campo para responder (CP-57)', async () => {
     const base = conversacionDePrueba();
     montar('/conversaciones/5', [
       {
@@ -70,59 +69,13 @@ describe('hilo', () => {
     expect(items.map((i) => within(i).getByText(/./, { selector: 'p' }).textContent)).toEqual(['¿Viene pronto?', 'Ya vamos', 'Otro']);
     expect(items[1]).toHaveTextContent('Diego Despacho · Leído');
     expect(items[2]).toHaveTextContent('No se pudo enviar');
-    expect(items[0]).not.toHaveTextContent('Entregado');
     expect(screen.getByRole('link', { name: '#8 · En camino' })).toBeInTheDocument();
+    expect(screen.getByText(/Historial de WhatsApp en solo lectura/)).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Enviar' })).not.toBeInTheDocument();
   });
 
-  it('dentro de la ventana envía texto libre, sin espacios sobrantes, y limpia el campo', async () => {
-    const { chat } = montar('/conversaciones/5');
-    const campo = await screen.findByRole('textbox', { name: 'Respuesta' });
-    expect(campo).toBeEnabled();
-    expect(screen.queryByText(AVISO)).not.toBeInTheDocument();
-    await userEvent.type(campo, '  Vamos en camino  ');
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar' }));
-    await waitFor(() => expect(chat.cuerpos).toEqual([{ texto: 'Vamos en camino' }]));
-    await waitFor(() => expect(campo).toHaveValue(''));
-    expect(await screen.findByText('Vamos en camino')).toBeInTheDocument();
-  });
-
-  it('sin texto no se puede enviar', async () => {
-    montar('/conversaciones/5');
-    await screen.findByRole('textbox', { name: 'Respuesta' });
-    expect(screen.getByRole('button', { name: 'Enviar' })).toBeDisabled();
-  });
-
-  it('fuera de la ventana deshabilita el campo con el aviso', async () => {
-    const { chat } = montar('/conversaciones/5', [conversacionDePrueba({ dentro_ventana: false })]);
-    expect(await screen.findByText(AVISO)).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'Respuesta' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Enviar' })).toBeDisabled();
-    expect(chat.cuerpos).toEqual([]);
-  });
-
-  it('si la ventana se cierra al enviar, muestra el aviso y conserva el texto', async () => {
-    const { chat } = montar('/conversaciones/5');
-    chat.siguiente('POST /api/conversaciones/5/mensajes/', { estado: 409, cuerpo: { detail: 'Fuera.', code: 'fuera_de_ventana' } });
-    const campo = await screen.findByRole('textbox', { name: 'Respuesta' });
-    await userEvent.type(campo, 'Hola');
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar' }));
-    expect(await screen.findByText(AVISO)).toBeInTheDocument();
-    expect(campo).toBeDisabled();
-    expect(campo).toHaveValue('Hola');
-  });
-
-  it('otra falla se informa y conserva el texto', async () => {
-    const { chat } = montar('/conversaciones/5');
-    chat.siguiente('POST /api/conversaciones/5/mensajes/', { estado: 500, cuerpo: {} });
-    const campo = await screen.findByRole('textbox', { name: 'Respuesta' });
-    await userEvent.type(campo, 'Hola');
-    await userEvent.click(screen.getByRole('button', { name: 'Enviar' }));
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    expect(campo).toHaveValue('Hola');
-    expect(campo).toBeEnabled();
-  });
-
-  it('otra empresa o inexistente: no encontrada', async () => {
+  it('otra empresa o inexistente: no encontrado', async () => {
     montar('/conversaciones/99');
     expect(await screen.findByRole('heading', { name: 'No encontrado' })).toBeInTheDocument();
   });
@@ -131,6 +84,6 @@ describe('hilo', () => {
     const { chat } = montar('/conversaciones/5');
     chat.siguiente('GET /api/conversaciones/5/', { estado: 500, cuerpo: {} });
     await userEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
-    expect(await screen.findByRole('textbox', { name: 'Respuesta' })).toBeInTheDocument();
+    expect(await screen.findByRole('list', { name: 'Mensajes' })).toBeInTheDocument();
   });
 });

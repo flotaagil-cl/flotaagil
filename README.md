@@ -22,7 +22,7 @@ Proyecto de Título TIHI84, INACAP La Granja.
 | App del conductor | React + Capacitor 7 + background-geolocation, Android 10+ (API 29–35) |
 | Pruebas | pytest, coverage, Vitest, Playwright, k6, Bandit, Ruff, ESLint, OWASP ZAP |
 | Infraestructura | Docker Compose, Nginx + Certbot, AWS EC2 t4g.small (ARM64), S3, Route 53, CloudWatch, SSM |
-| Externos | Twilio WhatsApp Business API, FlightAware AeroAPI / AeroDataBox, Google Maps JS API, Sentry, UptimeRobot |
+| Externos | FlightAware AeroAPI / AeroDataBox, Google Maps JS API, Web Push (VAPID), correo (SES), Sentry, UptimeRobot (Twilio WhatsApp retirado con CC-19) |
 
 ## Estructura
 

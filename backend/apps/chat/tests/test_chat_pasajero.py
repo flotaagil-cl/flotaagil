@@ -11,8 +11,9 @@ from apps.chat import permisos
 from apps.chat.models import Conversacion
 from apps.cuentas.tests.fabricas import UsuarioFactory
 from apps.reservas.models import CuentaPasajero, EstadoViaje, Viaje
+from apps.reservas.tests.conftest import twilio  # noqa: F401 (fixture)
 from apps.reservas.tests.fabricas import ConductorFactory, ViajeFactory
-from apps.reservas.tests.test_avisos_pasajero import activa, pedir, twilio  # noqa: F401 (fixtures)
+from apps.reservas.tests.test_avisos_pasajero import activa, pedir  # noqa: F401 (fixtures)
 
 E = EstadoViaje
 pytestmark = pytest.mark.django_db

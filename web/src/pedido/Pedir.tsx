@@ -144,7 +144,7 @@ export function Pedir() {
                 <dd>{cuenta.data.nombre}</dd>
               </div>
               <div>
-                <dt>WhatsApp</dt>
+                <dt>Teléfono</dt>
                 <dd>{mostrarTelefono(cuenta.data.telefono)}</dd>
               </div>
             </dl>
@@ -216,7 +216,7 @@ export function Pedir() {
     ) : (
       <>
         <h1 className={e.tituloPagina}>¿A dónde te llevamos?</h1>
-        <p className={e.subtituloPagina}>Pide tu traslado y te confirmamos por WhatsApp.</p>
+        <p className={e.subtituloPagina}>Pide tu traslado y síguelo en línea.</p>
         <Pestanas etiqueta="Tipo de viaje" pestanas={TIPOS} activa={tipo} onCambiar={(id) => navegar(`/pedir/${id}`)}>
           {formulario}
         </Pestanas>
@@ -232,7 +232,7 @@ export function Pedir() {
             <Icono nombre="check" tamano={36} />
           </span>
           <h1 className={e.tituloPagina}>¡Listo! Recibimos tu pedido</h1>
-          <p className={e.subtituloPagina}>Te avisaremos por WhatsApp cuando la central te asigne un conductor.</p>
+          <p className={e.subtituloPagina}>Te avisaremos cuando la central te asigne un conductor.</p>
           <p className={e.numeroReserva}>
             <span>N.º de reserva</span>
             <strong>{etapa.id}</strong>

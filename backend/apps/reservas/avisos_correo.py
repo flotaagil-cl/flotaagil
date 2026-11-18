@@ -11,9 +11,9 @@ from django.core import signing
 from django.utils import timezone
 
 from apps.cuentas.tareas import enviar_correo
-from apps.integraciones.notificaciones import AVISO_CONDUCTOR, AVISO_CONFIRMACION, AVISO_ENCUESTA
 
-AVISO_CANCELACION = "cancelacion"
+from .tipos_aviso import AVISO_CANCELACION, AVISO_CONDUCTOR, AVISO_CONFIRMACION, AVISO_ENCUESTA
+
 SAL_ENCUESTA = "reserva-publica-encuesta"
 VIGENCIA_ENCUESTA_S = 7 * 24 * 3600  # DC-56: la encuesta por correo vale 7 días
 

@@ -11,7 +11,6 @@ from apps.aeropuerto import monitoreo
 from apps.aeropuerto.models import AlertaVuelo
 from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 from apps.cuentas.models import Rol
-from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 
 from . import asignacion, avisos, contingencia, servicios
 from .estados import actor_de
@@ -29,6 +28,7 @@ from .serializers import (
     ViajeEditarSerializer,
     ViajeSerializer,
 )
+from .tipos_aviso import AVISO_CONFIRMACION
 
 CONFLICTO = OpenApiResponse(description="La reserva no admite la operación en su estado actual")
 

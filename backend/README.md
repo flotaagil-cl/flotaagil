@@ -7,7 +7,7 @@ API REST, WebSocket y tareas asíncronas de FlotaÁgil.
 - Django 5.2 LTS + DRF 3.16 + GeoDjango (PostgreSQL 16 + PostGIS 3.4).
 - Channels 4 + Daphne para WebSocket (posiciones GPS, panel en tiempo real); Redis 7.2 como capa de canales, caché y broker.
 - Celery 5.5 (worker y beat): expiración de reservas, timeout de 60 s, monitoreo de vuelos, retención de datos.
-- Integraciones: Twilio WhatsApp, API de vuelos y geocodificador (detrás de adaptadores), Sentry.
+- Integraciones: API de vuelos y geocodificador (detrás de adaptadores), correo, Web Push (VAPID) y Sentry. WhatsApp (Twilio) se retiró con CC-19.
 - Modelos según el diccionario de datos ([`docs/diccionario-datos.md`](../docs/diccionario-datos.md)); los agregados y desvíos están en [`docs/diccionario-cambios.md`](../docs/diccionario-cambios.md).
 
 Pruebas: pytest + pytest-django + coverage (≥ 70 % en módulos de negocio), Ruff y Bandit.
@@ -88,7 +88,7 @@ Protección: throttling por IP (`THROTTLE_PORTAL_MINUTO`, `THROTTLE_PORTAL_HORA`
 
 **Límites y 429.** El 429 lleva `code` para que el portal explique el caso: `limite_ip` (throttling por IP) o `limite_telefono` (varias solicitudes con el mismo número). Los límites por IP son holgados a propósito, **20/min y 200/hour** por defecto: con el wifi del aeropuerto (o cualquier NAT) muchos pasajeros comparten la misma IP pública, y un límite estricto bloquearía a pasajeros legítimos. El control principal contra abusos es el **límite por teléfono** (3 solicitudes cada 15 min por empresa), que además coincide con lo que cuesta cada solicitud: un WhatsApp de verificación.
 
-La verificación por WhatsApp está simulada (`apps/integraciones/notificaciones.py`, solo deja un log con el número enmascarado); Twilio es HU-20. Las solicitudes no confirmadas se cancelan al vencer el plazo (RN-06): Celery beat lo programa cada 60 s y el worker lo ejecuta; `python manage.py expirar_pendientes` hace una pasada manual.
+Desde CC-19 no hay verificación ni avisos por WhatsApp: la cuenta se activa por correo y los avisos van por correo o Web Push. Las solicitudes vencidas quedan «Sin confirmar» (RN-06 con CC-22): Celery beat lo revisa cada 60 s; `python manage.py expirar_pendientes` hace una pasada manual. Los mensajes del chat y el historial de WhatsApp se purgan a los 12 meses (`purgar_mensajes`, HU-68).
 
 **Celery:** el compose levanta `worker` y `beat`. El worker no recarga al guardar: tras cambiar una tarea, usa `docker compose -f infra/docker-compose.dev.yml restart worker`. Las pruebas usan `config/settings_pruebas.py`, con broker en memoria, y no llegan a este worker.
 

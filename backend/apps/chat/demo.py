@@ -48,3 +48,33 @@ def cargar(empresa, conductores: list[Usuario]) -> int:
         )
         Conversacion.objects.filter(pk=conversacion.pk).update(ultimo_mensaje_en=mensaje.creado_en)
     return len(textos)
+
+
+def historial_whatsapp(empresa) -> int:
+    """HU-67 (CC-19): mensajes sintéticos del canal retirado, para ver el historial de WhatsApp en solo lectura."""
+    from apps.reservas.models import DireccionMensaje, EstadoEntrega, MensajeWhatsapp, TipoMensaje, Viaje
+
+    if MensajeWhatsapp.objects.filter(pasajero__empresa=empresa).exists():
+        return 0
+    viaje = Viaje.objects.filter(empresa=empresa, pasajero__telefono__isnull=False).order_by("pk").first()
+    if viaje is None:
+        return 0
+    textos = [
+        (
+            DireccionMensaje.SALIENTE,
+            TipoMensaje.PLANTILLA,
+            "Tu reserva quedó confirmada. Te avisaremos al asignar.",
+        ),
+        (DireccionMensaje.ENTRANTE, TipoMensaje.SESION, "Gracias. ¿Pueden llegar 10 minutos antes?"),
+        (DireccionMensaje.SALIENTE, TipoMensaje.SESION, "Claro, le avisamos al conductor."),
+    ]
+    for direccion, tipo, cuerpo in textos:
+        MensajeWhatsapp.objects.create(
+            pasajero=viaje.pasajero,
+            viaje=viaje,
+            direccion=direccion,
+            tipo=tipo,
+            cuerpo=cuerpo,
+            estado_entrega=EstadoEntrega.DELIVERED,
+        )
+    return len(textos)

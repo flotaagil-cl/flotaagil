@@ -341,9 +341,9 @@ function EliminarCuenta({ abierto, ingreso, onCerrar }: { abierto: boolean; ingr
         <div className={p.explicacion}>
           <p className={p.explicacionTitulo}>Se borran</p>
           <ul>
-            <li>Tu nombre, tu correo y tu WhatsApp.</li>
+            <li>Tu nombre, tu correo y tu teléfono.</li>
             <li>Tu contraseña y tus sesiones abiertas.</li>
-            <li>El contenido de tus mensajes de WhatsApp con la central.</li>
+            <li>El contenido de tus mensajes con la central y con tus conductores.</li>
           </ul>
           <p className={p.explicacionTitulo}>Se conservan, sin tus datos personales</p>
           <ul>

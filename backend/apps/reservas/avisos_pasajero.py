@@ -10,11 +10,10 @@
 from django.db import transaction
 
 from apps.integraciones import push
-from apps.integraciones.notificaciones import AVISO_CONDUCTOR, AVISO_EN_ZONA
 
 from .models import CuentaPasajero, EstadoViaje, SuscripcionPush, Viaje
+from .tipos_aviso import AVISO_CANCELACION, AVISO_CONDUCTOR, AVISO_EN_ZONA
 
-AVISO_CANCELACION = "cancelacion"
 CLAVE = (AVISO_CONDUCTOR, AVISO_EN_ZONA, AVISO_CANCELACION)
 
 

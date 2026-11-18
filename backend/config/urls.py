@@ -5,7 +5,6 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.comun.vistas import ConfiguracionPublicaView
-from apps.reservas.whatsapp_views import WebhookEntranteView, WebhookEstadoView
 
 
 def salud(_request):
@@ -25,8 +24,6 @@ urlpatterns = [
     path("api/", include("apps.cuentas.usuarios_urls")),
     path("api/app/", include("apps.flota.app_urls")),
     path("api/chat/", include("apps.chat.urls")),
-    path("api/whatsapp/entrante/", WebhookEntranteView.as_view(), name="whatsapp-entrante"),
-    path("api/whatsapp/estado/", WebhookEstadoView.as_view(), name="whatsapp-estado"),
     path("api/portal/", include("apps.portal.urls")),
     path("api/mi-convenio/", include("apps.convenios.cuenta_urls")),
     path("api/mi-cuenta/", include("apps.reservas.cuenta_urls")),

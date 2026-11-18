@@ -13,7 +13,6 @@ from django.utils import timezone
 
 from apps.auditoria.models import Auditoria
 from apps.cuentas.models import Rol, Usuario
-from apps.integraciones.notificaciones import AVISO_CONFIRMACION
 from apps.reservas import cuentas_pasajero, tareas
 from apps.reservas.models import (
     CuentaPasajero,
@@ -30,18 +29,11 @@ from apps.reservas.models import (
 )
 from apps.reservas.tests.fabricas import PasajeroFactory, ViajeFactory
 from apps.reservas.tests.test_cuenta_pasajero import CLAVE, TELEFONO, activar, crear_cuenta, entrar, whatsapp
-from apps.reservas.tests.test_whatsapp import TwilioFalso
+from apps.reservas.tipos_aviso import AVISO_CONFIRMACION
 
 E = EstadoViaje
 NUEVO = "+56900009302"
 PERFIL = reverse("mi-cuenta")
-
-
-@pytest.fixture
-def twilio(monkeypatch):
-    falso = TwilioFalso()
-    monkeypatch.setattr(tareas, "obtener_notificador", lambda: falso)
-    return falso
 
 
 @pytest.fixture
@@ -56,10 +48,6 @@ def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
 
 def cuenta():
     return CuentaPasajero.objects.select_related("pasajero", "usuario").get()
-
-
-def enviados_a(twilio, telefono):
-    return [d.get("Body") for d in twilio.enviados if d["To"] == f"whatsapp:{telefono}"]
 
 
 @pytest.mark.django_db
@@ -239,24 +227,8 @@ def eliminado(empresa):
 class TestSinTelefono:
     """DC-50: con `telefono` NULL, los envíos se omiten (sin error ni reintento) y los reportes responden."""
 
-    def test_avisos_y_respuestas_se_omiten(self, eliminado, twilio):
+    def test_avisos_se_omiten(self, eliminado, twilio):
         tareas.enviar_aviso.delay(eliminado.pk, AVISO_CONFIRMACION)
-        tareas.enviar_verificacion.delay(eliminado.pk, timezone.now().isoformat())
-        tareas.enviar_respuesta.delay(eliminado.pasajero_id, eliminado.pk, "Hola")
-        assert twilio.enviados == []
-
-    def test_chat_queda_fallido(self, eliminado, twilio):
-        mensaje = MensajeWhatsapp.objects.create(
-            pasajero=eliminado.pasajero,
-            viaje=eliminado,
-            direccion=DireccionMensaje.SALIENTE,
-            tipo=TipoMensaje.SESION,
-            cuerpo="¿Dónde lo espero?",
-            estado_entrega=EstadoEntrega.QUEUED,
-        )
-        tareas.enviar_chat.delay(mensaje.pk)
-        mensaje.refresh_from_db()
-        assert mensaje.estado_entrega == EstadoEntrega.FAILED
         assert twilio.enviados == []
 
     def test_panel_y_reportes(self, eliminado, panel, administrador):
@@ -275,10 +247,10 @@ class TestSinTelefono:
             assert panel.get(reverse("reporte-csv", args=[tipo]), {"desde": desde}).status_code == 200
         assert panel.get(reverse("viaje-list"), {"q": "eliminado"}).status_code == 200
 
-    def test_whatsapp_de_un_numero_desconocido(self, eliminado, cliente, settings):
-        settings.DEBUG = True
+    def test_el_webhook_de_whatsapp_ya_no_existe(self, eliminado, cliente):
+        """HU-67 (CP-57): ni entrada ni salida por WhatsApp."""
         respuesta = whatsapp(cliente, "Hola", desde="+56900009399", sid="SM" + "5" * 32)
-        assert respuesta.status_code == 200
+        assert respuesta.status_code == 404
 
     def test_usuario_eliminado_no_es_rol_valido_para_ingresar(self, activa):
         activa.delete(PERFIL)

@@ -36,7 +36,7 @@ describe('HU-56 · Conversaciones solo con el módulo de cuentas', () => {
     [false, false],
   ])('con módulo %s, el menú muestra Conversaciones: %s', (modulo, visible) => {
     const titulos = entradasDeMenu(crearRutas(), 'DESPACHADOR', '', modulo).map((e) => e.titulo);
-    expect(titulos.includes('Conversaciones')).toBe(visible);
+    expect(titulos.includes('Historial WhatsApp')).toBe(visible);
     expect(titulos).toContain('Reservas');
   });
 });
