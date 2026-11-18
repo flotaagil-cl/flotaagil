@@ -78,11 +78,13 @@ def enviar_verificacion(self, viaje_id: int, expira_en: str) -> None:
 
 @shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
 def enviar_aviso(self, viaje_id: int, tipo: str) -> None:
-    from . import avisos_correo
+    from . import avisos_correo, avisos_pasajero
 
     viaje = _viaje_para_mensaje(viaje_id)
     if viaje is None:
         return
+    if viaje.empresa.modulo_cuentas and avisos_pasajero.enviar(viaje, tipo):
+        return  # HU-65 (CC-19): el viaje es de una cuenta; Web Push o correo con la casilla, sin WhatsApp.
     if not viaje.empresa.modulo_cuentas or viaje.contacto_correo:
         # HU-56 (CC-22, DC-55): sin el módulo de cuentas no sale ningún WhatsApp; los avisos van por correo.
         # Con el módulo, la reserva pública («Reservar sin cuenta», HU-60) también avisa por correo: no
@@ -93,6 +95,27 @@ def enviar_aviso(self, viaje_id: int, tipo: str) -> None:
         return  # con el módulo, la cancelación sigue como hasta ahora (CC-19 la cambiará)
     if _con_telefono(viaje.pasajero):
         _enviar(self, lambda n: n.avisar(viaje, tipo))
+
+
+@shared_task(bind=True, max_retries=REINTENTOS_ENVIO)
+def enviar_push(self, suscripcion_id: int, datos: dict) -> None:
+    """HU-65 (DC-62): Web Push a un navegador del pasajero, con reintento; la suscripción vencida se borra."""
+    from apps.integraciones import push
+
+    from .models import SuscripcionPush
+
+    suscripcion = SuscripcionPush.objects.filter(pk=suscripcion_id).first()
+    if suscripcion is None or not push.configurado():
+        return
+    try:
+        push.enviar(suscripcion.endpoint, suscripcion.p256dh, suscripcion.auth, datos)
+    except push.SuscripcionVencida:
+        suscripcion.delete()
+    except push.PushTransitorio as error:
+        if self.request.retries >= self.max_retries:
+            logger.error("No se pudo enviar el aviso push %s: %s", suscripcion_id, error)
+            return
+        raise self.retry(exc=error, countdown=ESPERA_ENVIO_S * 2**self.request.retries) from error
 
 
 @shared_task(bind=True, max_retries=REINTENTOS_ENVIO)

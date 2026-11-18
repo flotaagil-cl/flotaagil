@@ -1,6 +1,9 @@
 """HU-35: API de la cuenta del pasajero (`/api/mi-cuenta/`). Solo rol PASAJERO, con la cuenta confirmada; ve
 solo las reservas de su teléfono en su empresa (RN-13)."""
 
+from urllib.parse import urlsplit
+
+from django.conf import settings
 from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field
 from rest_framework import serializers, status
 from rest_framework.generics import ListAPIView, RetrieveAPIView
@@ -9,10 +12,11 @@ from rest_framework.views import APIView
 
 from apps.comun.permisos import ConModuloCuentas, con_roles
 from apps.cuentas.models import Rol
+from apps.integraciones import push
 from apps.portal.serializers import SolicitudRespuestaSerializer, SolicitudSerializer
 
 from . import cuentas_pasajero as cuentas
-from .models import EstadoViaje, Viaje
+from .models import EstadoViaje, SuscripcionPush, Viaje
 from .serializers import HistorialSerializer, PasajeroEntradaSerializer
 
 SOLO_PASAJERO = [con_roles(Rol.PASAJERO), ConModuloCuentas]  # DC-51
@@ -26,6 +30,7 @@ class MiCuentaSerializer(serializers.Serializer):
     empresa_slug = serializers.CharField(source="empresa.slug")
     # HU-45: datos de «Mi perfil».
     pasajero_desde = serializers.DateTimeField(source="confirmada_en")
+    acepta_avisos_correo = serializers.BooleanField(help_text="DC-62: avisos del viaje por correo.")
     password_cambiada_en = serializers.SerializerMethodField(
         help_text="Último cambio o recuperación de la contraseña registrado en la auditoría, o null."
     )
@@ -52,7 +57,10 @@ class PerfilEntradaSerializer(serializers.Serializer):
 
     nombre = serializers.CharField(max_length=80, required=False)
     telefono = serializers.CharField(
-        max_length=24, required=False, help_text="WhatsApp en formato E.164; uno nuevo se vuelve a confirmar."
+        max_length=24, required=False, help_text="Teléfono de contacto en formato E.164 (sin verificar)."
+    )
+    acepta_avisos_correo = serializers.BooleanField(
+        required=False, help_text="DC-62: avisos del viaje por correo."
     )
 
     def validate_nombre(self, valor):
@@ -372,3 +380,74 @@ class SolicitudMiCuentaView(APIView):
         viaje, respuesta = cuentas.solicitar(cuenta, entrada.validated_data, usuario=request.user)
         datos = {**respuesta, "id": viaje.pk}
         return Response(PedidoRecibidoSerializer(datos).data, status=status.HTTP_201_CREATED)
+
+
+class ClavesPushSerializer(serializers.Serializer):
+    p256dh = serializers.CharField(max_length=100)
+    auth = serializers.CharField(max_length=40)
+
+
+class SuscripcionPushSerializer(serializers.Serializer):
+    """La suscripción tal como la entrega `PushSubscription.toJSON()` del navegador."""
+
+    endpoint = serializers.URLField(max_length=500)
+    keys = ClavesPushSerializer(required=False)
+
+    def validate_endpoint(self, valor):
+        """Solo servicios de push conocidos y por https: el backend no llama a cualquier URL (SSRF)."""
+        partes = urlsplit(valor)
+        host = (partes.hostname or "").lower()
+        conocido = any(host == s or host.endswith(f".{s}") for s in settings.WEBPUSH_SERVICIOS)
+        if partes.scheme != "https" or not conocido:
+            raise serializers.ValidationError("Servicio de push no admitido.", code="push_no_admitido")
+        return valor
+
+
+class ClavePushSerializer(serializers.Serializer):
+    clave_publica = serializers.CharField(
+        allow_null=True, help_text="VAPID en base64url; null si no hay Web Push."
+    )
+
+
+class PushView(APIView):
+    """HU-65 (DC-62): avisos del viaje por Web Push en los navegadores del pasajero que lo aceptan."""
+
+    permission_classes = SOLO_PASAJERO
+
+    @extend_schema(tags=["mi-cuenta"], summary="Clave pública VAPID", responses=ClavePushSerializer)
+    def get(self, request):
+        clave = settings.WEBPUSH_VAPID_PUBLICA if push.configurado() else None
+        return Response({"clave_publica": clave})
+
+    @extend_schema(
+        tags=["mi-cuenta"],
+        summary="Guardar la suscripción de este navegador",
+        request=SuscripcionPushSerializer,
+        responses={201: None, 400: OpenApiResponse(description="`push_no_admitido` o datos inválidos")},
+    )
+    def post(self, request):
+        cuentas.cuenta_activa(request.user)
+        entrada = SuscripcionPushSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        claves = entrada.validated_data.get("keys")
+        if not claves:
+            raise serializers.ValidationError({"keys": ["Faltan las claves de la suscripción."]})
+        SuscripcionPush.objects.update_or_create(
+            endpoint=entrada.validated_data["endpoint"],
+            defaults={"usuario": request.user, "p256dh": claves["p256dh"], "auth": claves["auth"]},
+        )
+        return Response(status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        tags=["mi-cuenta"],
+        summary="Quitar la suscripción de este navegador",
+        request=SuscripcionPushSerializer,
+        responses={204: None},
+    )
+    def delete(self, request):
+        entrada = SuscripcionPushSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        SuscripcionPush.objects.filter(
+            usuario=request.user, endpoint=entrada.validated_data["endpoint"]
+        ).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

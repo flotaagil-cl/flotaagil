@@ -104,5 +104,9 @@ def transicionar(
             **(historial or {}),
         )
         _avisar_indicadores(actual.empresa_id)
+        # HU-65 (CC-19): «Tu viaje» del portal se actualiza en vivo.
+        from .avisos_pasajero import programar_en_vivo
+
+        programar_en_vivo(actual.pk)
     viaje.refresh_from_db()
     return viaje

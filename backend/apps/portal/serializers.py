@@ -192,12 +192,15 @@ class CrearCuentaSerializer(serializers.Serializer):
 
     nombre = serializers.CharField(max_length=80)
     telefono = serializers.CharField(
-        max_length=24, help_text="WhatsApp en formato E.164, p. ej. +56912345678."
+        max_length=24, help_text="Teléfono de contacto en formato E.164, p. ej. +56912345678 (sin verificar)."
     )
     email = serializers.EmailField(max_length=120)
     password = serializers.CharField(max_length=128, write_only=True)
-    acepta_privacidad = serializers.BooleanField(
-        help_text="DC-44: acepta el aviso de privacidad y los avisos de sus viajes por WhatsApp (una vez)."
+    acepta_privacidad = serializers.BooleanField(help_text="DC-44: acepta el aviso de privacidad (una vez).")
+    acepta_avisos_correo = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="DC-62: recibir por correo los avisos de sus viajes cuando no use Web Push.",
     )
     sitio_web = serializers.CharField(
         required=False, allow_blank=True, help_text="Campo trampa: debe ir vacío"

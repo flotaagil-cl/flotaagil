@@ -8,6 +8,7 @@ import time
 
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+from apps.cuentas.models import Rol
 from apps.cuentas.ws_auth import SUBPROTOCOLO
 from apps.flota.consumers import SIN_PERMISO, SIN_SESION
 
@@ -23,7 +24,9 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         if not getattr(usuario, "is_authenticated", False):
             await self.close(code=SIN_SESION)
             return
-        if usuario.rol not in ROLES_PERSONAL:
+        # HU-65: el pasajero con cuenta (módulo de cuentas) recibe aquí los cambios de su viaje.
+        pasajero = usuario.rol == Rol.PASAJERO and usuario.empresa.modulo_cuentas
+        if usuario.rol not in ROLES_PERSONAL and not pasajero:
             await self.close(code=SIN_PERMISO)
             return
         self.grupo = grupo_usuario(usuario.pk)

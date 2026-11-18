@@ -341,6 +341,12 @@ const PANTALLAS = {
     { nombre: 'portal-enlace-invalido', ruta: `${PORTAL}/activar/enlace-de-ejemplo`, sesion: null, destino: /\/activar\// },
     { nombre: 'mi-perfil-telefono', ruta: '/mi-perfil', sesion: 'activa-hu64@correo.example' },
   ],
+  // HU-65 (CC-19): «Tu viaje» con los avisos (Web Push o correo) y la casilla de «Mi perfil», con la cuenta de HU-64.
+  'HU-65': [
+    { nombre: 'tu-viaje-avisos', ruta: () => `/mis-viajes/${viajeHU65()}`, sesion: 'activa-hu64@correo.example' },
+    { nombre: 'mi-perfil-avisos', ruta: '/mi-perfil', sesion: 'activa-hu64@correo.example' },
+    { nombre: 'portal-crear-cuenta-avisos', ruta: `${PORTAL}/cuenta`, sesion: null },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {
@@ -380,6 +386,38 @@ function tokenHU64() {
     .split('\n')
     .at(-1);
   return tokenActivacion;
+}
+
+// HU-65: un viaje pedido por la cuenta activa de HU-64 (con la API, como lo haría el portal).
+const VIAJE_HU65 = [
+  'from datetime import timedelta',
+  'from django.utils import timezone',
+  'from rest_framework.test import APIClient',
+  'from apps.reservas.models import CuentaPasajero',
+  'from apps.reservas.cuentas_pasajero import reservas_de',
+  'cuenta = CuentaPasajero.objects.get(usuario__email="activa-hu64@correo.example")',
+  'viaje = reservas_de(cuenta).filter(estado="SOLICITADO").first()',
+  'if viaje is None:',
+  '    c = APIClient(HTTP_HOST="localhost")',
+  '    c.force_authenticate(cuenta.usuario)',
+  '    datos = {"origen_dir": "Av. Providencia 1234, Providencia", "destino_dir": "Plaza de Armas, Santiago",',
+  '             "recogida_en": (timezone.now() + timedelta(hours=3)).isoformat(), "acepta_privacidad": True}',
+  '    viaje_id = c.post("/api/mi-cuenta/solicitudes/", datos, format="json").data["id"]',
+  'else:',
+  '    viaje_id = viaje.pk',
+  'print(viaje_id)',
+].join('\n');
+let viajeActivo = null;
+
+function viajeHU65() {
+  tokenHU64();
+  viajeActivo ??= execFileSync('docker', ['compose', '-f', '../infra/docker-compose.dev.yml', 'exec', '-T', 'backend', 'python', 'manage.py', 'shell', '-c', VIAJE_HU65], {
+    encoding: 'utf8',
+  })
+    .trim()
+    .split('\n')
+    .at(-1);
+  return viajeActivo;
 }
 
 /** HU-59: ingreso a la app del conductor con conductor1 (clave de los usuarios demo). */

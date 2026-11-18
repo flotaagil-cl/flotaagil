@@ -1967,6 +1967,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/PrivacidadAceptada'
           description: ''
+  /api/mi-cuenta/push/:
+    get:
+      operationId: mi_cuenta_push_retrieve
+      description: 'HU-65 (DC-62): avisos del viaje por Web Push en los navegadores
+        del pasajero que lo aceptan.'
+      summary: Clave pública VAPID
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClavePush'
+          description: ''
+    post:
+      operationId: mi_cuenta_push_create
+      description: 'HU-65 (DC-62): avisos del viaje por Web Push en los navegadores
+        del pasajero que lo aceptan.'
+      summary: Guardar la suscripción de este navegador
+      tags:
+      - mi-cuenta
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SuscripcionPushRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SuscripcionPushRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SuscripcionPushRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          description: No response body
+        '400':
+          description: '`push_no_admitido` o datos inválidos'
+    delete:
+      operationId: mi_cuenta_push_destroy
+      description: 'HU-65 (DC-62): avisos del viaje por Web Push en los navegadores
+        del pasajero que lo aceptan.'
+      summary: Quitar la suscripción de este navegador
+      tags:
+      - mi-cuenta
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/mi-cuenta/reservas/:
     get:
       operationId: mi_cuenta_reservas_list
@@ -4118,6 +4173,29 @@ components:
       - creado_en
       - motivo
       - usuario
+    ClavePush:
+      type: object
+      properties:
+        clave_publica:
+          type: string
+          nullable: true
+          description: VAPID en base64url; null si no hay Web Push.
+      required:
+      - clave_publica
+    ClavesPushRequest:
+      type: object
+      properties:
+        p256dh:
+          type: string
+          minLength: 1
+          maxLength: 100
+        auth:
+          type: string
+          minLength: 1
+          maxLength: 40
+      required:
+      - auth
+      - p256dh
     Columna:
       type: object
       properties:
@@ -4589,7 +4667,8 @@ components:
         telefono:
           type: string
           minLength: 1
-          description: WhatsApp en formato E.164, p. ej. +56912345678.
+          description: Teléfono de contacto en formato E.164, p. ej. +56912345678
+            (sin verificar).
           maxLength: 24
         email:
           type: string
@@ -4603,8 +4682,12 @@ components:
           maxLength: 128
         acepta_privacidad:
           type: boolean
-          description: 'DC-44: acepta el aviso de privacidad y los avisos de sus viajes
-            por WhatsApp (una vez).'
+          description: 'DC-44: acepta el aviso de privacidad (una vez).'
+        acepta_avisos_correo:
+          type: boolean
+          default: false
+          description: 'DC-62: recibir por correo los avisos de sus viajes cuando
+            no use Web Push.'
         sitio_web:
           type: string
           description: 'Campo trampa: debe ir vacío'
@@ -5244,6 +5327,9 @@ components:
         pasajero_desde:
           type: string
           format: date-time
+        acepta_avisos_correo:
+          type: boolean
+          description: 'DC-62: avisos del viaje por correo.'
         password_cambiada_en:
           type: string
           format: date-time
@@ -5252,6 +5338,7 @@ components:
           description: Último cambio o recuperación de la contraseña registrado en
             la auditoría, o null.
       required:
+      - acepta_avisos_correo
       - email
       - empresa
       - empresa_slug
@@ -5822,8 +5909,11 @@ components:
         telefono:
           type: string
           minLength: 1
-          description: WhatsApp en formato E.164; uno nuevo se vuelve a confirmar.
+          description: Teléfono de contacto en formato E.164 (sin verificar).
           maxLength: 24
+        acepta_avisos_correo:
+          type: boolean
+          description: 'DC-62: avisos del viaje por correo.'
     PatchedUsuarioPanelEditarRequest:
       type: object
       properties:
@@ -6770,6 +6860,20 @@ components:
       - expira_en
       - mensaje
       - recogida_en
+    SuscripcionPushRequest:
+      type: object
+      description: La suscripción tal como la entrega `PushSubscription.toJSON()`
+        del navegador.
+      properties:
+        endpoint:
+          type: string
+          format: uri
+          minLength: 1
+          maxLength: 500
+        keys:
+          $ref: '#/components/schemas/ClavesPushRequest'
+      required:
+      - endpoint
     Temporal:
       type: object
       properties:

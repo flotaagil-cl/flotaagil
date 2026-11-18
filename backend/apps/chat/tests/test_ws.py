@@ -36,11 +36,15 @@ def marcar(usuario, central, hasta):
     assert cliente.post(reverse("chat-leido", args=[central]), {"hasta": hasta}).status_code == 204
 
 
-def test_sin_sesion_y_rol_sin_chat(empresa):
-    pasajero = UsuarioFactory(empresa=empresa, rol="PASAJERO")
+def test_sin_sesion_y_rol_sin_chat(empresa, otra_empresa):
+    convenio = UsuarioFactory(empresa=empresa, rol="CONVENIO")
+    otra_empresa.modulo_cuentas = False
+    otra_empresa.save()
+    sin_modulo = UsuarioFactory(empresa=otra_empresa, rol="PASAJERO")
 
     async def escenario():
-        for token, codigo in ((None, 4401), ("no-es-un-token", 4401), (access(pasajero), 4403)):
+        casos = ((None, 4401), ("no-es-un-token", 4401), (access(convenio), 4403), (access(sin_modulo), 4403))
+        for token, codigo in casos:
             ws = comunicador(token)
             conectado, cierre = await ws.connect()
             assert (conectado, cierre) == (False, codigo)
