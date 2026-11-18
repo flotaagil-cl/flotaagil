@@ -61,7 +61,7 @@ class TestEnvio:
     @pytest.mark.parametrize(
         "tipo", ["confirmacion", "conductor", "en_camino", "en_zona", "encuesta", "cancelacion"]
     )
-    def test_ningun_aviso_sale_por_whatsapp(self, twilio, chofer, pasajero, empresa, tipo):
+    def test_ningun_aviso_sale_por_whatsapp(self, sin_whatsapp, chofer, pasajero, empresa, tipo):
         """CP-57 (HU-67): con o sin el módulo de cuentas, ningún aviso queda como WhatsApp saliente."""
         for modulo in (True, False):
             empresa.modulo_cuentas = modulo
@@ -69,7 +69,7 @@ class TestEnvio:
             viaje = viaje_con(chofer, pasajero, E.EN_CAMINO)
             tareas.enviar_aviso.delay(viaje.pk, tipo)
         tareas.enviar_aviso.delay(999999, tipo)  # viaje borrado
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
         assert not MensajeWhatsapp.objects.exists()
 
     def test_la_respuesta_al_conductor_solo_encola(

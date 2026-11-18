@@ -160,7 +160,7 @@ class TestWebPush:
 
 
 @pytest.fixture
-def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
+def activa(cliente, empresa, sin_whatsapp, django_capture_on_commit_callbacks):
     with django_capture_on_commit_callbacks(execute=True):
         crear_cuenta(cliente, empresa)
     activar(cliente, empresa)
@@ -186,7 +186,7 @@ def suscribir(web, navegador):
 
 @pytest.mark.django_db
 class TestAvisosDelViaje:
-    def test_web_push_cuando_lo_acepto(self, activa, vapid, navegador, servicio_push, twilio):
+    def test_web_push_cuando_lo_acepto(self, activa, vapid, navegador, servicio_push, sin_whatsapp):
         enviadas, _ = servicio_push
         assert suscribir(activa, navegador).status_code == 201
         viaje = pedir(activa)
@@ -197,7 +197,7 @@ class TestAvisosDelViaje:
             "cuerpo": "Tu conductor llegó al punto de recogida.",
             "url": f"/mis-viajes/{viaje.pk}",
         }
-        assert mail.outbox == [] and twilio.enviados == []
+        assert mail.outbox == [] and sin_whatsapp.enviados == []
 
     def test_suscripcion_vencida_se_borra(self, activa, vapid, navegador, servicio_push):
         _, respuestas = servicio_push
@@ -206,7 +206,7 @@ class TestAvisosDelViaje:
         tareas.enviar_aviso(pedir(activa).pk, AVISO_EN_ZONA)
         assert not SuscripcionPush.objects.exists()
 
-    def test_sin_push_va_por_correo_solo_con_la_casilla(self, activa, settings, twilio):
+    def test_sin_push_va_por_correo_solo_con_la_casilla(self, activa, settings, sin_whatsapp):
         settings.WEBPUSH_VAPID_PUBLICA = ""
         viaje = pedir(activa)
         Viaje.objects.filter(pk=viaje.pk).update(estado=E.CANCELADO, motivo_cancelacion="Prueba")
@@ -221,7 +221,7 @@ class TestAvisosDelViaje:
         )
         tareas.enviar_aviso(viaje.pk, "cancelacion")
         assert (mail.outbox[0].to, mail.outbox[0].subject) == (["paula@correo.example"], "Viaje cancelado")
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
 
     def test_conductor_asignado_con_vehiculo(self, activa, empresa, settings):
         from apps.reservas.tests.fabricas import ConductorFactory, VehiculoFactory
@@ -237,12 +237,14 @@ class TestAvisosDelViaje:
         tareas.enviar_aviso(viaje.pk, AVISO_CONDUCTOR)
         assert "Pedro Soto irá a buscarte (Toyota Yaris, patente BCDF10)." in mail.outbox[0].body
 
-    def test_otros_avisos_no_salen_para_la_cuenta(self, activa, twilio):
+    def test_otros_avisos_no_salen_para_la_cuenta(self, activa, sin_whatsapp):
         CuentaPasajero.objects.update(acepta_avisos_correo=True)
         tareas.enviar_aviso(pedir(activa).pk, AVISO_CONFIRMACION)
-        assert mail.outbox == [] and twilio.enviados == []
+        assert mail.outbox == [] and sin_whatsapp.enviados == []
 
-    def test_viaje_de_invitado_del_mismo_numero_no_avisa_a_la_cuenta(self, activa, empresa, settings, twilio):
+    def test_viaje_de_invitado_del_mismo_numero_no_avisa_a_la_cuenta(
+        self, activa, empresa, settings, sin_whatsapp
+    ):
         """DC-65: la cuenta sin teléfono verificado no recibe avisos de viajes que no pidió."""
         settings.WEBPUSH_VAPID_PUBLICA = ""
         cuenta = CuentaPasajero.objects.get()

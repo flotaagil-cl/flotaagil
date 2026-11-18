@@ -37,7 +37,7 @@ PERFIL = reverse("mi-cuenta")
 
 
 @pytest.fixture
-def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
+def activa(cliente, empresa, sin_whatsapp, django_capture_on_commit_callbacks):
     """Cuenta creada y activada con el enlace del correo (HU-64); devuelve el cliente con sesión."""
     with django_capture_on_commit_callbacks(execute=True):
         crear_cuenta(cliente, empresa)
@@ -100,7 +100,7 @@ class TestEditarPerfil:
         assert cuenta().usuario.email == "paula@correo.example"
 
     def test_telefono_nuevo_cambia_al_tiro_sin_whatsapp(
-        self, activa, twilio, django_capture_on_commit_callbacks
+        self, activa, sin_whatsapp, django_capture_on_commit_callbacks
     ):
         """HU-64 (DC-61): sin verificación; la cuenta deja de ver lo que no pidió ella (DC-65)."""
         CuentaPasajero.objects.update(telefono_verificado=True)
@@ -112,7 +112,7 @@ class TestEditarPerfil:
         c = cuenta()
         assert (c.telefono, c.pasajero.telefono, c.telefono_verificado) == (NUEVO, NUEVO, False)
         assert c.pasajero.verificado_en is None
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
         assert Auditoria.objects.get(accion="EDITAR_PERFIL").datos_previos == {"campos": ["telefono"]}
 
     def test_no_se_fusiona_con_un_invitado_del_numero_nuevo(self, activa, empresa):
@@ -227,9 +227,9 @@ def eliminado(empresa):
 class TestSinTelefono:
     """DC-50: con `telefono` NULL, los envíos se omiten (sin error ni reintento) y los reportes responden."""
 
-    def test_avisos_se_omiten(self, eliminado, twilio):
+    def test_avisos_se_omiten(self, eliminado, sin_whatsapp):
         tareas.enviar_aviso.delay(eliminado.pk, AVISO_CONFIRMACION)
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
 
     def test_panel_y_reportes(self, eliminado, panel, administrador):
         panel.force_authenticate(administrador)

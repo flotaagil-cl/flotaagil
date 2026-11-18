@@ -31,7 +31,7 @@ class TestAlta:
         assert respuesta.status_code == 400
         assert not CuentaPasajero.objects.exists()
 
-    def test_registra_la_fecha_y_la_version(self, cliente, empresa, twilio, settings):
+    def test_registra_la_fecha_y_la_version(self, cliente, empresa, sin_whatsapp, settings):
         settings.AVISO_PRIVACIDAD_VERSION = "2026-11"
         datos = {**ALTA, "acepta_privacidad": True}
         assert (

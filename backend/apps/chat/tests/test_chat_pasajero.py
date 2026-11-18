@@ -1,6 +1,6 @@
 """HU-66 (CC-19): chat conductor ↔ pasajero (CP-54), lectura auditada (CP-55), soporte y emergencia."""
 
-# Las fixtures `activa` y `twilio` vienen de las pruebas de HU-65 y se usan como parámetros.
+# Las fixtures `activa` y `sin_whatsapp` vienen de las pruebas de HU-65 y se usan como parámetros.
 # ruff: noqa: F811
 
 import pytest
@@ -11,7 +11,7 @@ from apps.chat import permisos
 from apps.chat.models import Conversacion
 from apps.cuentas.tests.fabricas import UsuarioFactory
 from apps.reservas.models import CuentaPasajero, EstadoViaje, Viaje
-from apps.reservas.tests.conftest import twilio  # noqa: F401 (fixture)
+from apps.reservas.tests.conftest import sin_whatsapp  # noqa: F401 (fixture)
 from apps.reservas.tests.fabricas import ConductorFactory, ViajeFactory
 from apps.reservas.tests.test_avisos_pasajero import activa, pedir  # noqa: F401 (fixtures)
 

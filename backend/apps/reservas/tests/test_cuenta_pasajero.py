@@ -73,7 +73,7 @@ def activar(cliente, empresa, token=None):
 
 
 @pytest.fixture
-def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
+def activa(cliente, empresa, sin_whatsapp, django_capture_on_commit_callbacks):
     """Cuenta creada y activada con el enlace del correo (HU-64); devuelve el cliente con sesión."""
     with django_capture_on_commit_callbacks(execute=True):
         crear_cuenta(cliente, empresa)
@@ -85,7 +85,7 @@ def activa(cliente, empresa, twilio, django_capture_on_commit_callbacks):
 @pytest.mark.django_db
 class TestRegistro:
     def test_queda_pendiente_y_envia_el_correo(
-        self, cliente, empresa, twilio, django_capture_on_commit_callbacks
+        self, cliente, empresa, sin_whatsapp, django_capture_on_commit_callbacks
     ):
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = crear_cuenta(cliente, empresa)
@@ -102,9 +102,9 @@ class TestRegistro:
         assert (mail.outbox[0].to, mail.outbox[0].subject) == (["paula@correo.example"], "Activa tu cuenta")
         assert f"/solicitar/{empresa.slug}/activar/" in mail.outbox[0].body
         assert "24 horas" in mail.outbox[0].body
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
 
-    def test_sin_confirmar_no_entra(self, cliente, empresa, twilio):
+    def test_sin_confirmar_no_entra(self, cliente, empresa, sin_whatsapp):
         crear_cuenta(cliente, empresa)
         _, respuesta = entrar()
         assert (respuesta.status_code, respuesta.data["code"]) == (401, "cuenta_sin_confirmar")
@@ -121,7 +121,7 @@ class TestRegistro:
         assert respuesta.status_code == 400
         assert "email" in respuesta.data
 
-    def test_repetir_el_registro_pendiente_lo_reemplaza(self, cliente, empresa, twilio):
+    def test_repetir_el_registro_pendiente_lo_reemplaza(self, cliente, empresa, sin_whatsapp):
         crear_cuenta(cliente, empresa)
         assert crear_cuenta(cliente, empresa, telefono="+56900009302").status_code == 201
         assert CuentaPasajero.objects.get().telefono == "+56900009302"
@@ -215,11 +215,50 @@ class TestActivacion:
         assert (respuesta.status_code, respuesta.data["code"]) == (409, "telefono_en_uso")
         assert CuentaPasajero.objects.filter(confirmada_en__isnull=False).count() == 1
 
-    def test_whatsapp_ya_no_activa(self, cliente, empresa, twilio, settings):
+    def test_whatsapp_ya_no_activa(self, cliente, empresa, sin_whatsapp, settings):
         settings.DEBUG = True
         crear_cuenta(cliente, empresa)
         assert whatsapp(cliente, "CONFIRMAR CUENTA").status_code == 404  # CP-57: el webhook ya no existe
         assert CuentaPasajero.objects.get().confirmada_en is None
+
+    def test_al_activar_se_asocian_los_viajes_publicos_confirmados_con_su_correo(
+        self, cliente, empresa, django_capture_on_commit_callbacks
+    ):
+        """DC-65 (validado): mismo correo y confirmados con el enlace del correo; nada por teléfono."""
+        from apps.reservas.models import Actor as A
+
+        def publico(correo, actor=A.PASAJERO, telefono="+56900009399"):
+            viaje = ViajeFactory(
+                empresa=empresa,
+                canal=Canal.WEB,
+                estado=E.SOLICITADO,
+                contacto_correo=correo,
+                pasajero=PasajeroFactory(empresa=empresa, telefono=telefono),
+            )
+            HistorialEstado.objects.create(
+                viaje=viaje, estado_anterior=E.PENDIENTE_CONFIRMACION, estado_nuevo=E.SOLICITADO, actor=actor
+            )
+            return viaje
+
+        propio = publico("PAULA@correo.example")
+        por_telefono_del_despacho = publico(
+            "paula@correo.example", actor=A.DESPACHADOR, telefono="+56900009398"
+        )
+        otro_correo = publico("otra@correo.example", telefono="+56900009397")
+        mismo_telefono = publico("otra2@correo.example", telefono=TELEFONO)
+        with django_capture_on_commit_callbacks(execute=True):
+            crear_cuenta(cliente, empresa)
+        assert activar(cliente, empresa).status_code == 200
+        cuenta = CuentaPasajero.objects.get()
+        propio.refresh_from_db()
+        assert propio.pasajero == cuenta.pasajero
+        registro = Auditoria.objects.get(accion="ACTIVAR_CUENTA")
+        assert registro.datos_previos == {"viajes_asociados": [propio.pk]}
+        web, _ = entrar()
+        visibles = [r["id"] for r in web.get(reverse("mi-cuenta-reservas")).json()["results"]]
+        assert visibles == [propio.pk]
+        for ajeno in (por_telefono_del_despacho, otro_correo, mismo_telefono):
+            assert web.get(reverse("mi-cuenta-reserva", args=[ajeno.pk])).status_code == 404
 
     def test_cuenta_verificada_antes_ve_sus_viajes_de_invitado(self, activa, empresa):
         """DC-65: las cuentas confirmadas por WhatsApp antes de CC-19 conservan lo que veían."""
@@ -245,7 +284,7 @@ class TestReservas:
         datos.update(cambios)
         return datos
 
-    def test_pide_sin_verificar_con_sus_datos(self, activa, twilio):
+    def test_pide_sin_verificar_con_sus_datos(self, activa, sin_whatsapp):
         respuesta = activa.post(
             reverse("mi-cuenta-solicitudes"),
             self.solicitud(nombre="Otro", telefono="+56900000000"),

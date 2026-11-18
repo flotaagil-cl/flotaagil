@@ -14,7 +14,7 @@ EMAIL = "paula@correo.example"
 
 
 @pytest.fixture
-def pendiente(cliente, empresa, twilio, django_capture_on_commit_callbacks):
+def pendiente(cliente, empresa, sin_whatsapp, django_capture_on_commit_callbacks):
     """Cuenta recién creada por la API, sin confirmar."""
     datos = {"nombre": "Paula Pasajera", "telefono": "+56900009301", "email": EMAIL, "password": CLAVE}
     with django_capture_on_commit_callbacks(execute=True):
@@ -101,7 +101,7 @@ class TestActivacion:
         assert respuesta.status_code == 400
 
     def test_reenvia_el_enlace_por_correo_sin_whatsapp(
-        self, cliente, empresa, pendiente, twilio, django_capture_on_commit_callbacks
+        self, cliente, empresa, pendiente, sin_whatsapp, django_capture_on_commit_callbacks
     ):
         antes = len(mail.outbox)
         with django_capture_on_commit_callbacks(execute=True):
@@ -111,7 +111,7 @@ class TestActivacion:
         assert respuesta.status_code == 200
         assert len(mail.outbox) == antes + 1
         assert "/activar/" in mail.outbox[-1].body
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
         assert CuentaPasajero.objects.get().reenviada_en is not None
 
     def test_hasta_3_reenvios_en_la_ventana(self, cliente, empresa, pendiente):
