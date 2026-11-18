@@ -15,6 +15,9 @@ import { Avatar, Insignia, Tarjeta } from '../diseno/Tarjeta';
 import { formatearFechaHora } from '../hora/hora';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
+import { useEntorno } from '../entornoContexto';
+import { ConexionIndicadores } from '../paginas/conexionIndicadores';
+import { AvisosDelViaje } from './AvisosDelViaje';
 import { CancelarViaje } from './CancelarViaje';
 import { MarcoPasajero } from './MarcoPasajero';
 import { INSIGNIA, INSIGNIA_VUELO, pasosDelViaje, textoDeCancelacion, TIPO_DE_VIAJE, type TuViaje as Viaje } from './viaje';
@@ -45,10 +48,28 @@ export function TuViaje() {
     refetchInterval: ACTUALIZAR_MS,
     retry: false,
   });
+  const { refetch } = viaje;
 
   useEffect(() => {
     document.title = 'Tu viaje';
   }, []);
+
+  // HU-65: el cambio de estado llega en vivo por /ws/chat/; la revisión periódica queda de respaldo.
+  const entorno = useEntorno();
+  const { sesion } = useSesion();
+  useEffect(() => {
+    const conexion = new ConexionIndicadores(
+      `${entorno.origen.replace(/^http/, 'ws')}/ws/chat/`,
+      sesion,
+      (dato) => {
+        const evento = dato as { tipo?: string; viaje?: number };
+        if (evento.tipo === 'viaje' && evento.viaje === numero) void refetch();
+      },
+      () => undefined,
+    );
+    conexion.iniciar();
+    return () => conexion.detener();
+  }, [entorno, sesion, numero, refetch]);
 
   if (estado.fase !== 'autenticada') return null;
   if (estado.usuario.rol !== 'PASAJERO') return <Navigate to={inicioDeRol(estado.usuario.rol)} replace />;
@@ -104,7 +125,7 @@ export function TuViaje() {
             </div>
             <p className={e.avisoSuave}>
               <Icono nombre="mensaje" tamano={18} />
-              <span>Te avisaremos por WhatsApp cuando llegue.</span>
+              <span>Te avisaremos cuando llegue.</span>
             </p>
           </Tarjeta>
         ) : (
@@ -112,7 +133,7 @@ export function TuViaje() {
             <h2 id="titulo-buscando" className={e.conductorNombre}>
               Estamos buscando tu conductor
             </h2>
-            <p className={e.saludo}>Cuando acepte el viaje verás su nombre, el vehículo y la patente aquí y por WhatsApp.</p>
+            <p className={e.saludo}>Cuando acepte el viaje verás su nombre, el vehículo y la patente aquí.</p>
           </Tarjeta>
         )}
 
@@ -138,6 +159,7 @@ export function TuViaje() {
           </Tarjeta>
         )}
 
+        {v.estado !== 'FINALIZADO' && v.estado !== 'CANCELADO' && <AvisosDelViaje />}
         {v.cancelable && <CancelarViaje id={v.id} resumen={`Reserva ${v.id} · ${formatearFechaHora(v.recogida_en)}`} />}
         {cancelacion && <p className={e.nota}>{cancelacion}</p>}
       </div>

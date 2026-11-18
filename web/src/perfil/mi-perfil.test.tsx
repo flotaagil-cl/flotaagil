@@ -16,6 +16,7 @@ const PERFIL = {
   empresa: 'Transportes Andes Demo SpA',
   empresa_slug: 'transportes-andes',
   pasajero_desde: '2026-10-05T14:00:00Z',
+  acepta_avisos_correo: false,
   password_cambiada_en: null as string | null,
 };
 
@@ -40,7 +41,7 @@ function montar({ patch, eliminar }: Opciones = {}) {
       const cuerpo = (await peticion.json()) as Record<string, string>;
       llamadas.push({ ruta, cuerpo });
       if (patch) return patch(cuerpo);
-      perfil = { ...perfil, nombre: cuerpo.nombre, telefono: cuerpo.telefono };
+      perfil = { ...perfil, ...cuerpo };
       return json(200, perfil);
     }
     if (ruta === 'DELETE /api/mi-cuenta/') {
@@ -87,6 +88,15 @@ describe('HU-45 · Mi perfil', () => {
     expect(screen.queryByText(/WhatsApp/)).not.toBeInTheDocument();
     // El nombre nuevo también se ve en la cabecera.
     expect(await screen.findByRole('button', { name: /Pablo Andrés Pasajero.*menú de la cuenta/ })).toBeInTheDocument();
+  });
+
+  it('la casilla de avisos por correo se guarda al marcarla (HU-65)', async () => {
+    const { llamadas } = montar();
+    const casilla = await screen.findByRole('checkbox', { name: /Recibir por correo cuando me asignen conductor/ });
+    expect(casilla).not.toBeChecked();
+    await userEvent.click(casilla);
+    await waitFor(() => expect(llamadas.find((l) => l.ruta === 'PATCH /api/mi-cuenta/')?.cuerpo).toEqual({ acepta_avisos_correo: true }));
+    await waitFor(() => expect(casilla).toBeChecked());
   });
 
   it('no envía sin nombre y avisa si el teléfono ya está registrado', async () => {

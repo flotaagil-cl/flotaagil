@@ -76,7 +76,7 @@ export function pasosDelViaje(viaje: TuViaje): PasoLinea[] {
   const actual = enCurso(viaje.estado ?? 'SOLICITADO');
   return ORDEN.map((estado, i) => {
     let detalle = hora(estado);
-    if (estado === 'SOLICITADO' && actual === 0) detalle = 'Confírmalo respondiendo el WhatsApp';
+    if (estado === 'SOLICITADO' && actual === 0) detalle = 'Esperando tu confirmación';
     if (estado === 'ACEPTADO' && viaje.conductor) detalle = viaje.conductor.nombre;
     if (estado === 'ACEPTADO' && actual === 1 && !viaje.conductor) detalle = 'Buscando tu conductor';
     return {

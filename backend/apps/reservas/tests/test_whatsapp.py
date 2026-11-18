@@ -311,10 +311,11 @@ class TestWebhooks:
 
 @pytest.mark.django_db
 class TestPortalYComando:
-    def test_la_solicitud_web_envia_el_aviso_de_confirmacion(
+    def test_la_solicitud_web_no_envia_whatsapp(
         self, con_cuenta, empresa, django_capture_on_commit_callbacks
     ):
-        """CP-07 con HU-40: el pedido con cuenta no se verifica y deja registrado el aviso de confirmación."""
+        """CP-07 con HU-40 y HU-65 (CC-19): el pedido con cuenta no se verifica ni sale por WhatsApp; el
+        pasajero lo sigue en el portal (en vivo, Web Push o correo con la casilla)."""
         datos = {
             "nombre": "Ana Pérez",
             "telefono": "+56900009001",
@@ -327,9 +328,7 @@ class TestPortalYComando:
         with django_capture_on_commit_callbacks(execute=True):
             respuesta = con_cuenta.post(reverse("mi-cuenta-solicitudes"), datos, format="json")
         assert respuesta.status_code == 201
-        mensaje = MensajeWhatsapp.objects.get()
-        assert mensaje.direccion == DireccionMensaje.SALIENTE
-        assert mensaje.viaje.estado == EstadoViaje.SOLICITADO
+        assert not MensajeWhatsapp.objects.exists()
 
     def test_simular_confirmar(self, pendiente, settings, capsys):
         settings.DEBUG = True

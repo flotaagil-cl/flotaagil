@@ -313,6 +313,20 @@ RECUPERAR_VENTANA_MIN = env.int("RECUPERAR_VENTANA_MIN", default=15)
 ACTIVACION_MAX_REENVIOS = env.int("ACTIVACION_MAX_REENVIOS", default=3)
 # DC-61 (CC-19): vigencia del enlace de activación de la cuenta del pasajero, desde su envío.
 ACTIVACION_CUENTA_HORAS = env.int("ACTIVACION_CUENTA_HORAS", default=24)
+# DC-62 (CC-19, HU-65): Web Push con VAPID. Sin claves, los avisos del viaje van por correo (con la casilla).
+WEBPUSH_VAPID_PUBLICA = env("WEBPUSH_VAPID_PUBLICA", default="")
+WEBPUSH_VAPID_PRIVADA = env("WEBPUSH_VAPID_PRIVADA", default="")
+WEBPUSH_CONTACTO = env("WEBPUSH_CONTACTO", default="mailto:soporte@flotaagil.example")
+# Solo se aceptan suscripciones de estos servicios de push (evita que el backend llame a cualquier URL).
+WEBPUSH_SERVICIOS = env.list(
+    "WEBPUSH_SERVICIOS",
+    default=[
+        "fcm.googleapis.com",
+        "updates.push.services.mozilla.com",
+        "notify.windows.com",
+        "push.apple.com",
+    ],
+)
 # DC-44: versión vigente del aviso de privacidad. Al cambiarla, cada pasajero con cuenta la acepta otra vez.
 AVISO_PRIVACIDAD_VERSION = env("AVISO_PRIVACIDAD_VERSION", default="2026-11")
 # Correo de soporte de FlotaÁgil para los administradores (ingreso del panel). Vacío: no se muestra.

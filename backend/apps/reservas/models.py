@@ -443,6 +443,9 @@ class CuentaPasajero(models.Model):
     # DC-65 (CC-19): el teléfono se confirmó por WhatsApp (cuentas anteriores a CC-19). Sin esa confirmación
     # la cuenta solo ve los viajes que pidió ella misma, no los de invitado con ese número.
     telefono_verificado = models.BooleanField(default=False, db_default=False)
+    # DC-62 (HU-65): casilla de avisos del viaje por correo (conductor asignado, llegada y cancelación) cuando
+    # no hay Web Push. Los correos de la cuenta (activación, recuperar la clave) salen siempre.
+    acepta_avisos_correo = models.BooleanField(default=False, db_default=False)
     privacidad_version = models.CharField(max_length=20, null=True, blank=True)
     creada_en = models.DateTimeField(db_default=Now(), editable=False)
 
@@ -463,3 +466,25 @@ class CuentaPasajero(models.Model):
 
     def __str__(self):
         return f"Cuenta de {self.nombre}"
+
+
+class SuscripcionPush(models.Model):
+    """DC-62 (HU-65): suscripción Web Push de un navegador del pasajero (con su aceptación del permiso).
+
+    `endpoint` es la URL del servicio de push del navegador; `p256dh` y `auth` cifran el contenido (RFC 8291).
+    Se borra al quitar el permiso, al eliminar la cuenta o cuando el servicio responde 404 o 410.
+    """
+
+    usuario = models.ForeignKey(
+        "cuentas.Usuario", on_delete=models.CASCADE, related_name="suscripciones_push"
+    )
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=100)
+    auth = models.CharField(max_length=40)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "suscripcion_push"
+
+    def __str__(self):
+        return f"Push de {self.usuario_id}"

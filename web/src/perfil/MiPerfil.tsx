@@ -6,7 +6,7 @@ import { ErrorApi, resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
 import { Boton } from '../diseno/Boton';
-import { Campo } from '../diseno/Campo';
+import { Campo, Casilla } from '../diseno/Campo';
 import { iniciales } from '../diseno/clases';
 import { Dialogo } from '../diseno/Dialogo';
 import e from '../diseno/diseno.module.css';
@@ -53,6 +53,7 @@ export function MiPerfil() {
             <div className={p.columna}>
               <h1 className={e.tituloPagina}>Mi perfil</h1>
               <DatosPersonales key={`${perfil.data.nombre}|${perfil.data.telefono}`} cuenta={perfil.data} guardado={guardado} setGuardado={setGuardado} />
+              <AvisosPorCorreo acepta={perfil.data.acepta_avisos_correo} />
               <SeguridadYCuenta cuenta={perfil.data} />
             </div>
           </>
@@ -144,6 +145,32 @@ function DatosPersonales({ cuenta, guardado, setGuardado }: { cuenta: MiCuenta; 
           </Boton>
         </div>
       </form>
+    </section>
+  );
+}
+
+/** HU-65 (DC-62): avisos del viaje por correo cuando no hay Web Push. Se guarda al marcar o desmarcar. */
+function AvisosPorCorreo({ acepta }: { acepta: boolean }) {
+  const api = useApi();
+  const consultas = useQueryClient();
+  const [falla, setFalla] = useState(false);
+  const cambiar = useMutation({
+    mutationFn: (valor: boolean) => resultado(api.PATCH('/api/mi-cuenta/', { body: { acepta_avisos_correo: valor } })),
+    onSuccess: (datos) => {
+      setFalla(false);
+      consultas.setQueryData(['mi-cuenta', 'perfil'], datos);
+    },
+    onError: () => setFalla(true),
+  });
+  return (
+    <section className={e.tarjeta} aria-labelledby="avisos-viaje">
+      <h2 id="avisos-viaje" className={p.tituloSeccion}>
+        Avisos de tus viajes
+      </h2>
+      <Casilla checked={acepta} disabled={cambiar.isPending} onChange={(ev) => cambiar.mutate(ev.target.checked)}>
+        Recibir por correo cuando me asignen conductor, cuando llegue y si se cancela (si no activé los avisos en el navegador).
+      </Casilla>
+      {falla && <Aviso tipo="error">No se pudo guardar. Intenta de nuevo.</Aviso>}
     </section>
   );
 }

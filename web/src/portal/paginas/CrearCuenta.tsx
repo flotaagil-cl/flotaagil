@@ -45,6 +45,7 @@ export function CrearCuenta() {
   const crear = useCrearCuenta(api, slug);
   const [datos, setDatos] = useState<Campos>({ nombre: '', apellido: '', email: '', telefono: '', password: '' });
   const [privacidad, setPrivacidad] = useState(false);
+  const [avisosCorreo, setAvisosCorreo] = useState(false);
   const [trampa, setTrampa] = useState('');
   const [errores, setErrores] = useState<Errores>({});
   const [enviado, setEnviado] = useState<string | null>(null);
@@ -65,6 +66,7 @@ export function CrearCuenta() {
         telefono,
         password: datos.password,
         acepta_privacidad: privacidad,
+        acepta_avisos_correo: avisosCorreo,
         sitio_web: trampa,
       });
       setEnviado(datos.email.trim());
@@ -142,6 +144,9 @@ export function CrearCuenta() {
         />
         <Casilla checked={privacidad} onChange={(evento) => setPrivacidad(evento.target.checked)} error={errores.privacidad}>
           Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {empresa.razon_social}.
+        </Casilla>
+        <Casilla checked={avisosCorreo} onChange={(evento) => setAvisosCorreo(evento.target.checked)}>
+          Quiero recibir por correo los avisos de mis viajes (conductor asignado, llegada y cancelación). Opcional.
         </Casilla>
         <Destacado icono="mensaje">Te llegará un correo con el enlace para activar tu cuenta. Vale 24 horas.</Destacado>
         <div className="solo-lector" aria-hidden="true">

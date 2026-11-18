@@ -40,6 +40,7 @@ from .models import (
     MensajeWhatsapp,
     OrigenCancelacion,
     Pasajero,
+    SuscripcionPush,
     Viaje,
 )
 
@@ -271,6 +272,7 @@ def registrar(empresa, datos: dict) -> CuentaPasajero:
         # DC-44: la casilla del alta es la aceptación única (fecha y versión del aviso).
         privacidad_aceptada_en=timezone.now(),
         privacidad_version=settings.AVISO_PRIVACIDAD_VERSION,
+        acepta_avisos_correo=datos.get("acepta_avisos_correo", False),  # DC-62 (HU-65)
     )
     cuenta.usuario = usuario
     enviar_activacion(cuenta)
@@ -308,6 +310,11 @@ def actualizar_perfil(usuario, datos: dict) -> CuentaPasajero:
         cuenta.save(update_fields=["telefono", "telefono_verificado"])
         Pasajero.objects.filter(pk=cuenta.pasajero_id).update(telefono=telefono, verificado_en=None)
         cambios.append("telefono")
+    avisos_correo = datos.get("acepta_avisos_correo")
+    if avisos_correo is not None and avisos_correo != cuenta.acepta_avisos_correo:
+        cuenta.acepta_avisos_correo = avisos_correo
+        cuenta.save(update_fields=["acepta_avisos_correo"])
+        cambios.append("acepta_avisos_correo")  # DC-62: el consentimiento queda en la auditoría
     if cambios:
         # Solo qué cambió: el nombre o el número anteriores son datos personales y la auditoría se conserva.
         auditoria.registrar(
@@ -470,6 +477,7 @@ def eliminar(usuario) -> None:
     if pasajero_id and Viaje.objects.filter(pasajero_id=pasajero_id, estado__in=VIAJE_ACTIVO).exists():
         raise ViajeActivo()
     CuentaPasajero.objects.filter(usuario=usuario).delete()
+    SuscripcionPush.objects.filter(usuario=usuario).delete()  # HU-65: no quedan avisos a sus navegadores
     usuario.set_unusable_password()
     usuario.email = f"eliminado-{usuario.pk}@invalid"
     usuario.nombre = "Cuenta eliminada"

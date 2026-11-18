@@ -80,7 +80,7 @@ describe('HU-43 · avance del viaje', () => {
     expect(pasosDelViaje({ ...VIAJE, estado: 'ASIGNADO' })[1].estado).toBe('actual');
     expect(pasosDelViaje({ ...VIAJE, estado: 'ACEPTADO', conductor: { nombre: 'Juan Rojas' } })[1]).toMatchObject({ estado: 'actual', detalle: 'Juan Rojas' });
     const pendiente = pasosDelViaje({ ...VIAJE, estado: 'PENDIENTE_CONFIRMACION' });
-    expect(pendiente[0]).toMatchObject({ estado: 'actual', detalle: 'Confírmalo respondiendo el WhatsApp' });
+    expect(pendiente[0]).toMatchObject({ estado: 'actual', detalle: 'Esperando tu confirmación' });
   });
 
   it('texto para cancelar: solo donde no se puede cancelar desde la cuenta (RN-09)', () => {

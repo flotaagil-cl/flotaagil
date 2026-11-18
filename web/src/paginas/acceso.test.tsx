@@ -127,6 +127,7 @@ describe('HU-38 · crear cuenta', () => {
       telefono: '+56987654321',
       password: 'Clave-Sintetica-2026',
       acepta_privacidad: true, // DC-44: la casilla del alta es el consentimiento único
+      acepta_avisos_correo: false, // DC-62: opcional, desmarcada
       sitio_web: '',
     });
   });
@@ -139,7 +140,7 @@ describe('HU-38 · crear cuenta', () => {
     expect(screen.getAllByText('Completa este campo.')).toHaveLength(3);
     expect(screen.getByLabelText('Contraseña')).toHaveAccessibleDescription('Mínimo 10 caracteres.');
     expect(screen.getByLabelText('Teléfono')).toHaveAccessibleDescription(/Revisa el número/);
-    expect(screen.getByRole('checkbox')).toHaveAccessibleDescription('Para crear la cuenta debes aceptar el aviso de privacidad.');
+    expect(screen.getByRole('checkbox', { name: /Acepto el aviso de privacidad/ })).toHaveAccessibleDescription('Para crear la cuenta debes aceptar el aviso de privacidad.');
     expect(recibidos).toEqual([]);
   });
 

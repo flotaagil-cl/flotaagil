@@ -1230,6 +1230,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mi-cuenta/push/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Clave pública VAPID
+         * @description HU-65 (DC-62): avisos del viaje por Web Push en los navegadores del pasajero que lo aceptan.
+         */
+        get: operations["mi_cuenta_push_retrieve"];
+        put?: never;
+        /**
+         * Guardar la suscripción de este navegador
+         * @description HU-65 (DC-62): avisos del viaje por Web Push en los navegadores del pasajero que lo aceptan.
+         */
+        post: operations["mi_cuenta_push_create"];
+        /**
+         * Quitar la suscripción de este navegador
+         * @description HU-65 (DC-62): avisos del viaje por Web Push en los navegadores del pasajero que lo aceptan.
+         */
+        delete: operations["mi_cuenta_push_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mi-cuenta/reservas/": {
         parameters: {
             query?: never;
@@ -2258,6 +2286,14 @@ export interface components {
             /** Format: date-time */
             creado_en: string;
         };
+        ClavePush: {
+            /** @description VAPID en base64url; null si no hay Web Push. */
+            clave_publica: string | null;
+        };
+        ClavesPushRequest: {
+            p256dh: string;
+            auth: string;
+        };
         Columna: {
             clave: string;
             titulo: string;
@@ -2434,13 +2470,18 @@ export interface components {
         /** @description HU-35: cuenta opcional del pasajero en la empresa del portal. */
         CrearCuentaRequest: {
             nombre: string;
-            /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
+            /** @description Teléfono de contacto en formato E.164, p. ej. +56912345678 (sin verificar). */
             telefono: string;
             /** Format: email */
             email: string;
             password: string;
-            /** @description DC-44: acepta el aviso de privacidad y los avisos de sus viajes por WhatsApp (una vez). */
+            /** @description DC-44: acepta el aviso de privacidad (una vez). */
             acepta_privacidad: boolean;
+            /**
+             * @description DC-62: recibir por correo los avisos de sus viajes cuando no use Web Push.
+             * @default false
+             */
+            acepta_avisos_correo: boolean;
             /** @description Campo trampa: debe ir vacío */
             sitio_web?: string;
         };
@@ -2722,6 +2763,8 @@ export interface components {
             empresa_slug: string;
             /** Format: date-time */
             pasajero_desde: string;
+            /** @description DC-62: avisos del viaje por correo. */
+            acepta_avisos_correo: boolean;
             /**
              * Format: date-time
              * @description Último cambio o recuperación de la contraseña registrado en la auditoría, o null.
@@ -3017,8 +3060,10 @@ export interface components {
         /** @description HU-45: el correo es el usuario de ingreso y no se cambia aquí. */
         PatchedPerfilEntradaRequest: {
             nombre?: string;
-            /** @description WhatsApp en formato E.164; uno nuevo se vuelve a confirmar. */
+            /** @description Teléfono de contacto en formato E.164 (sin verificar). */
             telefono?: string;
+            /** @description DC-62: avisos del viaje por correo. */
+            acepta_avisos_correo?: boolean;
         };
         PatchedUsuarioPanelEditarRequest: {
             nombre?: string;
@@ -3425,6 +3470,12 @@ export interface components {
              */
             expira_en: string | null;
             mensaje: string;
+        };
+        /** @description La suscripción tal como la entrega `PushSubscription.toJSON()` del navegador. */
+        SuscripcionPushRequest: {
+            /** Format: uri */
+            endpoint: string;
+            keys?: components["schemas"]["ClavesPushRequest"];
         };
         Temporal: {
             /** @description Se muestra una sola vez */
@@ -5781,6 +5832,74 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["PrivacidadAceptada"];
                 };
+            };
+        };
+    };
+    mi_cuenta_push_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClavePush"];
+                };
+            };
+        };
+    };
+    mi_cuenta_push_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuscripcionPushRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SuscripcionPushRequest"];
+                "multipart/form-data": components["schemas"]["SuscripcionPushRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `push_no_admitido` o datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    mi_cuenta_push_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
