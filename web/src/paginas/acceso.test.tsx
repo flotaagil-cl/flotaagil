@@ -107,20 +107,20 @@ async function completar(telefono = '9 8765 4321') {
   await userEvent.type(await screen.findByLabelText('Nombre'), 'Paula');
   await userEvent.type(screen.getByLabelText('Apellido'), 'Pasajera');
   await userEvent.type(screen.getByLabelText('Correo'), 'paula@correo.example');
-  await userEvent.type(screen.getByLabelText('WhatsApp'), telefono);
+  await userEvent.type(screen.getByLabelText('Teléfono'), telefono);
   await userEvent.type(screen.getByLabelText('Contraseña'), 'Clave-Sintetica-2026');
   await userEvent.click(screen.getByRole('checkbox', { name: /Acepto el aviso de privacidad/ }));
 }
 
 describe('HU-38 · crear cuenta', () => {
-  it('envía nombre y apellido juntos, el WhatsApp con +56 y pide confirmar', async () => {
+  it('envía nombre y apellido juntos, el teléfono con +56 y pide abrir el enlace del correo', async () => {
     const { recibidos } = montarCrear();
     await completar();
+    expect(screen.getByText('Te llegará un correo con el enlace para activar tu cuenta. Vale 24 horas.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
-    // HU-41: al crearla pasa a «Activa tu cuenta» con el número enmascarado.
+    // HU-64: al crearla pasa a «Activa tu cuenta» con el correo al que va el enlace.
     expect(await screen.findByRole('heading', { name: 'Activa tu cuenta' })).toBeInTheDocument();
-    expect(screen.getByText(/Escribe CONFIRMAR CUENTA al mensaje que enviamos a \+569\*{6}21/)).toBeInTheDocument();
-    expect(screen.getByText(/El mensaje vale 15 minutos/)).toBeInTheDocument();
+    expect(screen.getByText(/Te lo enviamos a paula@correo\.example\. Vale 24 horas/)).toBeInTheDocument();
     expect(recibidos[0]).toEqual({
       nombre: 'Paula Pasajera',
       email: 'paula@correo.example',
@@ -134,11 +134,11 @@ describe('HU-38 · crear cuenta', () => {
   it('valida antes de enviar: obligatorios, mínimo de la contraseña y aviso de privacidad', async () => {
     const { recibidos } = montarCrear();
     await userEvent.type(await screen.findByLabelText('Contraseña'), 'corta');
-    await userEvent.type(screen.getByLabelText('WhatsApp'), '12');
+    await userEvent.type(screen.getByLabelText('Teléfono'), '12');
     await userEvent.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     expect(screen.getAllByText('Completa este campo.')).toHaveLength(3);
     expect(screen.getByLabelText('Contraseña')).toHaveAccessibleDescription('Mínimo 10 caracteres.');
-    expect(screen.getByLabelText('WhatsApp')).toHaveAccessibleDescription(/Revisa el número/);
+    expect(screen.getByLabelText('Teléfono')).toHaveAccessibleDescription(/Revisa el número/);
     expect(screen.getByRole('checkbox')).toHaveAccessibleDescription('Para crear la cuenta debes aceptar el aviso de privacidad.');
     expect(recibidos).toEqual([]);
   });

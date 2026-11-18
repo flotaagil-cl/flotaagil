@@ -9,7 +9,7 @@ import { Destacado } from '../../diseno/Tarjeta';
 import { useCrearCuenta } from '../api';
 import { useContextoPortal } from '../contexto';
 import { ActivarCuenta } from '../ActivarCuenta';
-import { enmascarar, normalizarWhatsapp } from '../telefono';
+import { normalizarWhatsapp } from '../telefono';
 
 interface Campos {
   nombre: string;
@@ -37,8 +37,8 @@ function validar(datos: Campos, privacidad: boolean): Errores {
 }
 
 /**
- * HU-35 con el diseño de HU-38: cuenta del pasajero en esta empresa. Queda pendiente hasta responder
- * «CONFIRMAR CUENTA» por WhatsApp. Mismo endpoint de HU-35; nombre y apellido viajan juntos en `nombre`.
+ * HU-35 con el diseño de HU-38: cuenta del pasajero en esta empresa. Queda pendiente hasta abrir el enlace que
+ * llega al correo (HU-64, DC-61). Mismo endpoint de HU-35; nombre y apellido viajan juntos en `nombre`.
  */
 export function CrearCuenta() {
   const { api, empresa, slug } = useContextoPortal();
@@ -67,7 +67,7 @@ export function CrearCuenta() {
         acepta_privacidad: privacidad,
         sitio_web: trampa,
       });
-      setEnviado(telefono);
+      setEnviado(datos.email.trim());
     } catch (error) {
       if (error instanceof ErrorApi && error.estado === 400) {
         const cuerpo = (error.cuerpo ?? {}) as Record<string, string[] | undefined>;
@@ -87,9 +87,8 @@ export function CrearCuenta() {
 
   if (enviado) {
     return (
-      <PantallaAcceso titulo="Activa tu cuenta" subtitulo="Un último paso: confirma que el WhatsApp es tuyo." movil="hero" volver={{ a: ingresar, texto: 'Volver a ingresar' }}>
-        <ActivarCuenta api={api} slug={slug} email={datos.email.trim()} password={datos.password} telefono={enmascarar(enviado)} />
-        <p className={e.nota}>El mensaje vale {empresa.expiracion_verificacion_min} minutos desde el último envío.</p>
+      <PantallaAcceso titulo="Activa tu cuenta" subtitulo="Un último paso: abre el enlace que te enviamos por correo." movil="hero" volver={{ a: ingresar, texto: 'Volver a ingresar' }}>
+        <ActivarCuenta api={api} slug={slug} email={enviado} password={datos.password} correo={enviado} />
       </PantallaAcceso>
     );
   }
@@ -122,12 +121,12 @@ export function CrearCuenta() {
           error={errores.email}
         />
         <Campo
-          etiqueta="WhatsApp"
+          etiqueta="Teléfono"
           type="tel"
           autoComplete="tel-national"
           prefijo="+56"
           placeholder="9 1234 5678"
-          ayuda="Número de Chile; si es de otro país, escríbelo con + y su código."
+          ayuda="Para que la central y el conductor te contacten. Número de Chile; si es de otro país, escríbelo con + y su código."
           value={datos.telefono}
           onChange={cambiar('telefono')}
           error={errores.telefono}
@@ -142,12 +141,9 @@ export function CrearCuenta() {
           error={errores.password}
         />
         <Casilla checked={privacidad} onChange={(evento) => setPrivacidad(evento.target.checked)} error={errores.privacidad}>
-          Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {empresa.razon_social} y recibir por
-          WhatsApp los avisos de mis viajes.
+          Acepto el <Link to={`/solicitar/${slug}/privacidad`}>aviso de privacidad</Link> de {empresa.razon_social}.
         </Casilla>
-        <Destacado icono="mensaje">
-          Te llegará un WhatsApp para activar tu cuenta. Responde <strong>CONFIRMAR CUENTA</strong>.
-        </Destacado>
+        <Destacado icono="mensaje">Te llegará un correo con el enlace para activar tu cuenta. Vale 24 horas.</Destacado>
         <div className="solo-lector" aria-hidden="true">
           <label>
             Sitio web
