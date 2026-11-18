@@ -51,7 +51,7 @@ def cargar(empresa, conductores: list[Usuario]) -> int:
 
 
 def historial_whatsapp(empresa) -> int:
-    """HU-67 (CC-19): mensajes sintéticos del canal retirado, para ver el historial de WhatsApp en solo lectura."""
+    """HU-67 (CC-19): mensajes sintéticos del canal retirado, para ver su historial en solo lectura."""
     from apps.reservas.models import DireccionMensaje, EstadoEntrega, MensajeWhatsapp, TipoMensaje, Viaje
 
     if MensajeWhatsapp.objects.filter(pasajero__empresa=empresa).exists():
