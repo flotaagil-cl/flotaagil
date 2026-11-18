@@ -1,6 +1,6 @@
 """Fixtures compartidos de las reservas.
 
-Desde CC-19 (HU-67) no hay cliente de WhatsApp. El fixture `twilio` queda como guarda de CP-57: `enviados`
+Desde CC-19 (HU-67) no hay cliente de WhatsApp. El fixture `sin_whatsapp` es la guarda de CP-57: `enviados`
 lista los mensajes salientes de WhatsApp registrados durante la prueba, que deben ser cero.
 """
 
@@ -25,13 +25,8 @@ class SinWhatsapp:
 
 
 @pytest.fixture
-def twilio(db):
+def sin_whatsapp(db):
     return SinWhatsapp()
-
-
-@pytest.fixture
-def twilio_avisos(twilio):
-    return twilio
 
 
 @pytest.fixture

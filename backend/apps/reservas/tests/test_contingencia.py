@@ -71,7 +71,7 @@ def api(cliente, despachador):
 
 @pytest.mark.django_db
 class TestCP37:
-    def test_finalizado_con_horas_reales_y_pago(self, api, chofer, despachador, twilio):
+    def test_finalizado_con_horas_reales_y_pago(self, api, chofer, despachador, sin_whatsapp):
         respuesta = api.post(URL, finalizado(chofer), format="json")
         assert respuesta.status_code == 201, respuesta.data
         viaje = Viaje.objects.get()
@@ -96,18 +96,18 @@ class TestCP37:
     def test_cancelado_puede_cancelarse_antes_de_la_hora_pedida(self, api):
         assert api.post(URL, cancelado(termino_en=hace(5).isoformat()), format="json").status_code == 201
 
-    def test_cancelado_con_motivo(self, api, despachador, twilio):
+    def test_cancelado_con_motivo(self, api, despachador, sin_whatsapp):
         assert api.post(URL, cancelado(), format="json").status_code == 201
         viaje = Viaje.objects.get()
         assert (viaje.estado, viaje.origen_cancelacion) == (E.CANCELADO, OrigenCancelacion.DESPACHADOR)
         assert not hasattr(viaje, "pago") or viaje.pago is None
         assert HistorialEstado.objects.get(viaje=viaje).estado_nuevo == E.CANCELADO
 
-    def test_sin_avisos_ni_encuesta(self, api, chofer, twilio, django_capture_on_commit_callbacks):
+    def test_sin_avisos_ni_encuesta(self, api, chofer, sin_whatsapp, django_capture_on_commit_callbacks):
         with django_capture_on_commit_callbacks(execute=True):
             api.post(URL, finalizado(chofer), format="json")
             api.post(URL, cancelado(), format="json")
-        assert twilio.enviados == []
+        assert sin_whatsapp.enviados == []
         assert not MensajeWhatsapp.objects.exists()
 
     def test_queda_en_auditoria(self, api, chofer, despachador):

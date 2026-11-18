@@ -18,7 +18,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core import signing
 from django.core.exceptions import ValidationError as ErrorDeDjango
 from django.db import IntegrityError, transaction
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
@@ -222,11 +222,16 @@ def activar(empresa, token: str) -> CuentaPasajero:
     cuenta.pasajero, cuenta.confirmada_en = pasajero, timezone.now()
     cuenta.save(update_fields=["pasajero", "confirmada_en"])
     Usuario.objects.filter(pk=cuenta.usuario_id).update(activo=True)
+    # DC-65: el correo ya está verificado; sus viajes públicos confirmados por correo pasan a la cuenta. Por
+    # teléfono no se asocia nada: no está verificado.
+    asociados = list(viajes_del_correo(cuenta).exclude(pasajero=pasajero).values_list("pk", flat=True))
+    Viaje.objects.filter(pk__in=asociados).update(pasajero=pasajero)
     auditoria.registrar(
         usuario=cuenta.usuario,
         entidad=Entidad.USUARIO,
         entidad_id=cuenta.usuario_id,
         accion="ACTIVAR_CUENTA",
+        datos_previos={"viajes_asociados": asociados} if asociados else None,
     )
     return cuenta
 
@@ -372,13 +377,35 @@ def cuenta_activa(usuario) -> CuentaPasajero:
     return cuenta
 
 
+def _confirmados_por_correo():
+    """Viajes del formulario público cuyo pasajero confirmó con el enlace del correo (CC-22): pasaron de
+    PENDIENTE_CONFIRMACION a SOLICITADO por acción del pasajero, no por teléfono desde el despacho."""
+    return Exists(
+        HistorialEstado.objects.filter(
+            viaje=OuterRef("pk"),
+            estado_anterior=EstadoViaje.PENDIENTE_CONFIRMACION,
+            estado_nuevo=EstadoViaje.SOLICITADO,
+            actor=Actor.PASAJERO,
+        )
+    )
+
+
+def viajes_del_correo(cuenta: CuentaPasajero):
+    """DC-65 (validado): viajes públicos de la empresa pedidos y confirmados con el correo de la cuenta."""
+    return Viaje.objects.filter(
+        empresa_id=cuenta.empresa_id, contacto_correo__iexact=cuenta.usuario.email
+    ).filter(_confirmados_por_correo())
+
+
 def reservas_de(cuenta: CuentaPasajero):
     """Con el teléfono verificado por WhatsApp (cuentas anteriores a CC-19), todos los viajes de su PASAJERO;
-    si no, solo los que pidió la cuenta (DC-65): un número sin verificar no da acceso a viajes de invitado."""
+    si no, los que pidió la cuenta y los públicos confirmados con su mismo correo (DC-65). Un número sin
+    verificar no da acceso a viajes de invitado."""
     viajes = Viaje.objects.filter(pasajero=cuenta.pasajero)
     if not cuenta.telefono_verificado:
         pedidos = HistorialEstado.objects.filter(viaje=OuterRef("pk"), usuario_id=cuenta.usuario_id)
-        viajes = viajes.filter(Exists(pedidos))
+        del_correo = Q(contacto_correo__iexact=cuenta.usuario.email) & Q(_confirmados_por_correo())
+        viajes = viajes.filter(Q(Exists(pedidos)) | del_correo)
     return viajes.order_by("-recogida_en", "-id")
 
 
