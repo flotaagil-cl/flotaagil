@@ -8,7 +8,7 @@ import { antiguedad, confianza, type ConductorMapa } from './estado';
 import { MapaEsquematico } from './MapaEsquematico';
 import { MapaGoogle } from './MapaGoogle';
 import { MapaOsm } from './MapaOsm';
-import { proveedorDelEntorno } from './proveedor';
+import { proveedorDelEntorno } from '../diseno/mapa/proveedor';
 import propios from './mapa.module.css';
 
 const ESTADOS = { DISPONIBLE: 'Disponible', EN_VIAJE: 'En viaje' } as const;

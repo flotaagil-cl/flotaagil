@@ -6,7 +6,7 @@ import type { ConductorMapa } from './estado';
 import { MapaOsm } from './MapaOsm';
 import { MapaOsmPortal } from './MapaOsmPortal';
 import { ATRIBUCION_OSM, olvidarCargaDeLeaflet, TESELAS_OSM } from './osm';
-import { elegirProveedor } from './proveedor';
+import { elegirProveedor } from '../diseno/mapa/proveedor';
 
 type Oyente = () => void;
 
