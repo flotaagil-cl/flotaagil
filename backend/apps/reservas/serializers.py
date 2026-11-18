@@ -60,6 +60,8 @@ class VueloSerializer(serializers.ModelSerializer):
             "estado_vuelo",
             "ultima_consulta_en",
             "origen_icao",
+            "origen_ciudad",
+            "origen_aeropuerto",
             "recogida_propuesta",
             "propuesta_en",
             "internacional",
@@ -146,6 +148,7 @@ class ViajeSerializer(serializers.ModelSerializer):
             "maletas",
             "vuelo_salida_en",
             "vuelo_salida_tipo",
+            "vuelo_salida_numero",
             "conductor",
             "vehiculo",
             "convenio",
@@ -273,9 +276,28 @@ class VueloEntradaSerializer(serializers.Serializer):
     hora_programada = serializers.DateTimeField(help_text="Hora programada de llegada.")
 
     def validate_numero(self, valor):
-        numero = " ".join(valor.upper().split())
-        validar_vuelo_iata(numero)
-        return numero
+        return normalizar_numero_vuelo(valor)
+
+
+def normalizar_numero_vuelo(valor: str | None) -> str | None:
+    """«la  123» → «LA 123», validado como código IATA; vacío → None (HU-69: el de salida es opcional)."""
+    numero = " ".join((valor or "").upper().split())
+    if not numero:
+        return None
+    validar_vuelo_iata(numero)
+    return numero
+
+
+def numero_de_salida(**opciones):
+    """HU-69: número del vuelo de salida, opcional y sin monitoreo (solo viajes al aeropuerto)."""
+    return serializers.CharField(
+        max_length=8,
+        required=False,
+        allow_null=True,
+        allow_blank=True,
+        help_text="Número del vuelo de salida (opcional, solo viajes al aeropuerto; no se monitorea).",
+        **opciones,
+    )
 
 
 @extend_schema_field(OpenApiTypes.INT)
@@ -300,8 +322,16 @@ class ViajeCrearSerializer(serializers.Serializer):
     recogida_en = serializers.DateTimeField()
     tarifa = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     vuelo = VueloEntradaSerializer(required=False, allow_null=True)
+    vuelo_salida_numero = numero_de_salida()
+
+    def validate_vuelo_salida_numero(self, valor):
+        return normalizar_numero_vuelo(valor)
 
     def validate(self, datos):
+        if datos.get("vuelo_salida_numero") and datos["sentido"] != Sentido.HACIA_AEROPUERTO:
+            raise serializers.ValidationError(
+                {"vuelo_salida_numero": "El vuelo de salida solo se informa en viajes al aeropuerto."}
+            )
         if datos["canal"] == Canal.CONVENIO and not datos.get("convenio"):
             raise serializers.ValidationError(
                 {"convenio": "Indica el convenio para una reserva corporativa."}
@@ -324,6 +354,10 @@ class ViajeEditarSerializer(serializers.Serializer):
     recogida_en = serializers.DateTimeField(required=False)
     tarifa = serializers.IntegerField(min_value=0, required=False, allow_null=True)
     vuelo = VueloEntradaSerializer(required=False, allow_null=True)
+    vuelo_salida_numero = numero_de_salida()
+
+    def validate_vuelo_salida_numero(self, valor):
+        return normalizar_numero_vuelo(valor)
 
     def validate(self, datos):
         for campo in ("origen_dir", "destino_dir"):

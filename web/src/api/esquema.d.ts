@@ -3162,6 +3162,8 @@ export interface components {
             recogida_en?: string;
             tarifa?: number | null;
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
+            /** @description Número del vuelo de salida (opcional, solo viajes al aeropuerto; no se monitorea). */
+            vuelo_salida_numero?: string | null;
         };
         /** @description HU-42: con cuenta, la respuesta trae el número de la reserva (el pasajero solo ve las suyas). */
         PedidoRecibido: {
@@ -3606,6 +3608,7 @@ export interface components {
             /** Format: date-time */
             vuelo_salida_en?: string | null;
             vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            vuelo_salida_numero?: (string) | null;
             /** Format: date-time */
             readonly creado_en: string;
             readonly cancelable: boolean;
@@ -3772,6 +3775,7 @@ export interface components {
             /** Format: date-time */
             vuelo_salida_en?: string | null;
             vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            vuelo_salida_numero?: (string) | null;
             conductor: components["schemas"]["ConductorResumen"] | null;
             vehiculo: components["schemas"]["VehiculoResumen"] | null;
             convenio: components["schemas"]["ConvenioResumen"] | null;
@@ -3842,6 +3846,8 @@ export interface components {
             recogida_en: string;
             tarifa?: number | null;
             vuelo?: components["schemas"]["VueloEntradaRequest"] | null;
+            /** @description Número del vuelo de salida (opcional, solo viajes al aeropuerto; no se monitorea). */
+            vuelo_salida_numero?: string | null;
         };
         ViajeDelTurno: {
             id: number;
@@ -3871,6 +3877,7 @@ export interface components {
             /** Format: date-time */
             vuelo_salida_en?: string | null;
             vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
+            vuelo_salida_numero?: (string) | null;
             conductor: components["schemas"]["ConductorResumen"] | null;
             vehiculo: components["schemas"]["VehiculoResumen"] | null;
             convenio: components["schemas"]["ConvenioResumen"] | null;
@@ -3916,6 +3923,8 @@ export interface components {
              */
             ultima_consulta_en?: string | null;
             origen_icao?: string | null;
+            origen_ciudad?: string | null;
+            origen_aeropuerto?: string | null;
             /** Format: date-time */
             recogida_propuesta?: string | null;
             /** Format: date-time */
@@ -3977,6 +3986,8 @@ export interface components {
              */
             hora: string;
             tipo: components["schemas"]["TipoVueloEnum"];
+            /** @description Número del vuelo de salida (opcional, solo viajes al aeropuerto; no se monitorea). */
+            numero?: string | null;
         };
         VuelosDeHoy: {
             /**

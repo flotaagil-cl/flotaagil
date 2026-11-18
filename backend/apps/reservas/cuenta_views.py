@@ -273,6 +273,7 @@ class TuViajeSerializer(serializers.ModelSerializer):
             "maletas",
             "vuelo_salida_en",
             "vuelo_salida_tipo",
+            "vuelo_salida_numero",
             "creado_en",
             "cancelable",
             "conductor",

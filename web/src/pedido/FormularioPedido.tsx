@@ -95,6 +95,16 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
             <Campo etiqueta="Fecha del vuelo" type="date" min={minimoFecha} value={v.salidaFecha} onChange={texto('salidaFecha')} error={errores.salidaFecha} />
             <Campo etiqueta="Hora de salida" type="time" value={v.salidaHora} onChange={texto('salidaHora')} error={errores.salidaHora} />
           </div>
+          {/* HU-69: opcional; el vuelo de salida no se monitorea. */}
+          <Campo
+            etiqueta="Número de vuelo (opcional)"
+            placeholder="Por ejemplo, LA 601"
+            autoComplete="off"
+            autoCapitalize="characters"
+            value={v.salidaNumero}
+            onChange={texto('salidaNumero')}
+            error={errores.salidaNumero}
+          />
           <Segmentado
             etiqueta="Tipo de vuelo"
             valor={v.salidaTipo}

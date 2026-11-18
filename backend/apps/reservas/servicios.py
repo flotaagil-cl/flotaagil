@@ -176,6 +176,9 @@ def crear_viaje(
             maletas=datos.get("maletas", 0),
             vuelo_salida_en=(datos.get("vuelo_salida") or {}).get("hora"),
             vuelo_salida_tipo=(datos.get("vuelo_salida") or {}).get("tipo"),
+            # HU-69: el portal lo trae dentro de `vuelo_salida`; el panel, aparte.
+            vuelo_salida_numero=(datos.get("vuelo_salida") or {}).get("numero")
+            or datos.get("vuelo_salida_numero"),
             estado=estado_inicial,
         )
         _guardar_vuelo(viaje, vuelo)
@@ -204,6 +207,16 @@ def editar_viaje(viaje: Viaje, datos: dict, *, geocodificador=None) -> Viaje:
         _validar_recogida(datos["recogida_en"])
 
     campos = {k: datos[k] for k in ("sentido", "recogida_en", "tarifa") if k in datos}
+    # HU-69: número del vuelo de salida, solo en viajes al aeropuerto (si deja de serlo, se borra).
+    if sentido != Sentido.HACIA_AEROPUERTO:
+        if datos.get("vuelo_salida_numero"):
+            raise ValidationError(
+                {"vuelo_salida_numero": ["El vuelo de salida solo se informa en viajes al aeropuerto."]}
+            )
+        if viaje.vuelo_salida_numero:
+            campos["vuelo_salida_numero"] = None
+    elif "vuelo_salida_numero" in datos:
+        campos["vuelo_salida_numero"] = datos["vuelo_salida_numero"]
     if "origen_dir" in datos and datos["origen_dir"] != viaje.origen_dir:
         campos["origen_dir"] = datos["origen_dir"]
         campos["origen_geo"] = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir")

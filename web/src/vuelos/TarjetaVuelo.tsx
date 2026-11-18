@@ -6,13 +6,16 @@ import type { ViajeDetalle } from '../reservas/api';
 import { PropuestaRecogida } from '../reservas/componentes/PropuestaRecogida';
 import { EstadoVuelo } from './LineaVuelo';
 import { useAhora } from './useAhora';
-import { cuentaRegresiva, enEspera, estadoDeVuelo, llegadaDe, minutosHasta, tipoDeSalida } from './textos';
+import { cuentaRegresiva, enEspera, estadoDeVuelo, llegadaDe, minutosHasta, nombreDeSalida, tipoDeSalida } from './textos';
 import c from './vuelos.module.css';
 
-function origenDe(internacional: boolean | null, icao: string | null): string {
-  // La ciudad no está en VUELO (DC-69): solo nacional o internacional y el código del aeropuerto, si la API lo dio.
-  const tipo = internacional === null ? 'Sin informar por la API de vuelos' : internacional ? 'Internacional' : 'Nacional';
-  return icao ? `${tipo} (aeropuerto ${icao})` : tipo;
+function origenDe(vuelo: NonNullable<ViajeDetalle['vuelo']>): string {
+  // DC-69: ciudad y aeropuerto solo si la API los entregó; si no, el código OACI. Nunca se deducen.
+  const { internacional, origen_icao: icao, origen_ciudad: ciudad, origen_aeropuerto: aeropuerto } = vuelo;
+  const tipo = internacional == null ? 'Sin informar por la API de vuelos' : internacional ? 'Internacional' : 'Nacional';
+  const lugar = [ciudad, aeropuerto ? `${aeropuerto}${icao ? `, ${icao}` : ''}` : icao ? `aeropuerto ${icao}` : null].filter(Boolean);
+  if (!lugar.length) return tipo;
+  return ciudad ? `${tipo} · ${ciudad}${lugar[1] ? ` (${lugar[1]})` : ''}` : `${tipo} (${lugar[0]})`;
 }
 
 export function TarjetaVuelo({ viaje }: { viaje: ViajeDetalle }) {
@@ -53,7 +56,7 @@ export function TarjetaVuelo({ viaje }: { viaje: ViajeDetalle }) {
         <dl className={estilos.datos}>
           <div>
             <dt>Origen</dt>
-            <dd>{origenDe(vuelo.internacional, vuelo.origen_icao ?? null)}</dd>
+            <dd>{origenDe(vuelo)}</dd>
           </div>
           <div>
             <dt>Última verificación</dt>
@@ -75,19 +78,21 @@ export function TarjetaVuelo({ viaje }: { viaje: ViajeDetalle }) {
     );
   }
 
-  if (viaje.sentido === 'HACIA_AEROPUERTO' && viaje.vuelo_salida_en) {
-    // Las salidas no se monitorean: sin estado ni hora estimada. El número no se registra en el viaje (DC-69).
+  if (viaje.sentido === 'HACIA_AEROPUERTO' && (viaje.vuelo_salida_en || viaje.vuelo_salida_numero)) {
+    // Las salidas no se monitorean: sin estado ni hora estimada. El número es opcional (HU-69).
     return (
       <section className={estilos.tarjeta} aria-labelledby="titulo-vuelo">
-        <h2 id="titulo-vuelo">Vuelo de salida</h2>
+        <h2 id="titulo-vuelo">{nombreDeSalida(viaje)}</h2>
         <dl className={estilos.datos}>
-          <div>
-            <dt>Despega</dt>
-            <dd>
-              {formatearFechaHora(viaje.vuelo_salida_en)}
-              {tipoDeSalida(viaje)}
-            </dd>
-          </div>
+          {viaje.vuelo_salida_en && (
+            <div>
+              <dt>Despega</dt>
+              <dd>
+                {formatearFechaHora(viaje.vuelo_salida_en)}
+                {tipoDeSalida(viaje)}
+              </dd>
+            </div>
+          )}
           {viaje.en_aeropuerto_a_las && (
             <div>
               <dt>En el aeropuerto</dt>

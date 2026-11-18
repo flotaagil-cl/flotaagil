@@ -119,6 +119,19 @@ describe('cuerpo para la API', () => {
     expect(cuerpoCrear({ ...validos, sentido: 'DESDE_AEROPUERTO' })).not.toHaveProperty('vuelo');
   });
 
+  it('HU-69: el número de salida es opcional, va solo con HACIA_AEROPUERTO y se valida', () => {
+    const hacia = { ...validos, sentido: 'HACIA_AEROPUERTO' as const, vuelo_salida_numero: ' la  601 ' };
+    expect(cuerpoCrear(hacia).vuelo_salida_numero).toBe('LA 601');
+    expect(cuerpoCrear({ ...hacia, vuelo_salida_numero: '' })).not.toHaveProperty('vuelo_salida_numero');
+    expect(cuerpoCrear({ ...hacia, sentido: 'URBANO' })).not.toHaveProperty('vuelo_salida_numero');
+    expect(esquemaReserva('crear').safeParse({ ...hacia, vuelo_salida_numero: 'ABCDEF' }).success).toBe(false);
+    // Con otro sentido el campo no se valida (no se envía).
+    expect(esquemaReserva('crear').safeParse({ ...validos, sentido: 'URBANO', vuelo_salida_numero: 'ABCDEF' }).success).toBe(true);
+    // Al editar: vacío lo quita; sin tocarlo no se envía.
+    expect(cuerpoEditar({ ...hacia, vuelo_salida_numero: '' }, { vuelo_salida_numero: true })).toEqual({ vuelo_salida_numero: null });
+    expect(cuerpoEditar(hacia, {})).toEqual({});
+  });
+
   it('editar: solo los campos modificados', () => {
     const valores = { ...validos, sentido: 'DESDE_AEROPUERTO' as const };
     expect(cuerpoEditar(valores, {})).toEqual({});

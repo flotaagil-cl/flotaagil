@@ -95,9 +95,11 @@ export function lineaDeVuelo(viaje: Viaje, ahora: number): LineaDeVuelo | null {
   if (vuelo) {
     const estado = estadoDeVuelo(vuelo, ahora);
     const espera = enEspera(vuelo);
+    // La ciudad solo si la API la entregó (DC-69): no se deduce del código.
+    const desde = vuelo.origen_ciudad ? ` · desde ${vuelo.origen_ciudad}` : '';
     const principal = espera
-      ? `Vuelo asociado ${vuelo.numero} · aterriza a las ${formatearHora(llegadaDe(vuelo), ahora)}`
-      : `Vuelo asociado ${vuelo.numero}`;
+      ? `Vuelo asociado ${vuelo.numero}${desde} · aterriza a las ${formatearHora(llegadaDe(vuelo), ahora)}`
+      : `Vuelo asociado ${vuelo.numero}${desde}`;
     const detalle: string[] = [];
     if (espera && minutosHasta(llegadaDe(vuelo), ahora) > 0) detalle.push(cuentaRegresiva(llegadaDe(vuelo), ahora));
     if (vuelo.recogida_propuesta) detalle.push(`⚠ propuesta de recogida ${formatearHora(vuelo.recogida_propuesta, ahora)} sin confirmar`);
@@ -105,15 +107,22 @@ export function lineaDeVuelo(viaje: Viaje, ahora: number): LineaDeVuelo | null {
     if (viaje.estado === 'EN_ZONA') detalle.push('conductor en zona');
     return { principal, estado, detalle, propuesta: Boolean(vuelo.recogida_propuesta) };
   }
-  if (viaje.sentido === 'HACIA_AEROPUERTO' && viaje.vuelo_salida_en) {
+  if (viaje.sentido === 'HACIA_AEROPUERTO' && (viaje.vuelo_salida_en || viaje.vuelo_salida_numero)) {
+    // HU-69: el número es opcional; el panel puede registrarlo sin la hora (solo el portal la pide).
+    const titulo = nombreDeSalida(viaje);
     return {
-      principal: `Vuelo de salida · despega a las ${formatearHora(viaje.vuelo_salida_en, ahora)}${tipoDeSalida(viaje)}`,
+      principal: viaje.vuelo_salida_en ? `${titulo} · despega a las ${formatearHora(viaje.vuelo_salida_en, ahora)}${tipoDeSalida(viaje)}` : titulo,
       estado: null,
       detalle: viaje.en_aeropuerto_a_las ? [`debe estar en el aeropuerto a las ${formatearHora(viaje.en_aeropuerto_a_las, ahora)}`] : [],
       propuesta: false,
     };
   }
   return null;
+}
+
+/** «Vuelo de salida LA 601», o «Vuelo de salida» sin número. */
+export function nombreDeSalida(viaje: Viaje): string {
+  return viaje.vuelo_salida_numero ? `Vuelo de salida ${viaje.vuelo_salida_numero}` : 'Vuelo de salida';
 }
 
 export function tipoDeSalida(viaje: Viaje): string {

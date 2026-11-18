@@ -6138,6 +6138,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/VueloEntradaRequest'
           nullable: true
+        vuelo_salida_numero:
+          type: string
+          nullable: true
+          description: Número del vuelo de salida (opcional, solo viajes al aeropuerto;
+            no se monitorea).
+          maxLength: 8
     PedidoRecibido:
       type: object
       description: 'HU-42: con cuenta, la respuesta trae el número de la reserva (el
@@ -7164,6 +7170,14 @@ components:
           - $ref: '#/components/schemas/TipoVueloEnum'
           - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
+        vuelo_salida_numero:
+          nullable: true
+          oneOf:
+          - type: string
+            pattern: ^[A-Z0-9]{2} ?\d{1,4}$
+            maxLength: 8
+          - type: string
+            maxLength: 0
         creado_en:
           type: string
           format: date-time
@@ -7638,6 +7652,14 @@ components:
           - $ref: '#/components/schemas/TipoVueloEnum'
           - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
+        vuelo_salida_numero:
+          nullable: true
+          oneOf:
+          - type: string
+            pattern: ^[A-Z0-9]{2} ?\d{1,4}$
+            maxLength: 8
+          - type: string
+            maxLength: 0
         conductor:
           allOf:
           - $ref: '#/components/schemas/ConductorResumen'
@@ -7834,6 +7856,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/VueloEntradaRequest'
           nullable: true
+        vuelo_salida_numero:
+          type: string
+          nullable: true
+          description: Número del vuelo de salida (opcional, solo viajes al aeropuerto;
+            no se monitorea).
+          maxLength: 8
       required:
       - destino_dir
       - origen_dir
@@ -7918,6 +7946,14 @@ components:
           - $ref: '#/components/schemas/TipoVueloEnum'
           - $ref: '#/components/schemas/BlankEnum'
           - $ref: '#/components/schemas/NullEnum'
+        vuelo_salida_numero:
+          nullable: true
+          oneOf:
+          - type: string
+            pattern: ^[A-Z0-9]{2} ?\d{1,4}$
+            maxLength: 8
+          - type: string
+            maxLength: 0
         conductor:
           allOf:
           - $ref: '#/components/schemas/ConductorResumen'
@@ -8060,6 +8096,14 @@ components:
           type: string
           nullable: true
           maxLength: 4
+        origen_ciudad:
+          type: string
+          nullable: true
+          maxLength: 80
+        origen_aeropuerto:
+          type: string
+          nullable: true
+          maxLength: 120
         recogida_propuesta:
           type: string
           format: date-time
@@ -8173,6 +8217,12 @@ components:
           description: Hora de salida del vuelo.
         tipo:
           $ref: '#/components/schemas/TipoVueloEnum'
+        numero:
+          type: string
+          nullable: true
+          description: Número del vuelo de salida (opcional, solo viajes al aeropuerto;
+            no se monitorea).
+          maxLength: 8
       required:
       - hora
       - tipo
