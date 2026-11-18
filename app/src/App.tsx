@@ -22,7 +22,8 @@ import type { Pago } from './pantallas/AvanceViaje';
 import type { EstadoCanal } from './conductor/canal';
 import { Responder } from './pantallas/Responder';
 import { ViajeAsignado } from './pantallas/ViajeAsignado';
-import { api, canal, cola, rastreador, sesion } from './servicios';
+import { Chat, type ConversacionChat } from './pantallas/Chat';
+import { api, canal, canalChat, cola, rastreador, sesion } from './servicios';
 import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
 
 export default function App() {
@@ -35,7 +36,10 @@ export default function App() {
   const [enVivo, setEnVivo] = useState<EstadoCanal>(canal.estado);
   const [avisoOculto, setAvisoOculto] = useState<number | null>(null);
   const [enMiTurno, setEnMiTurno] = useState(false);
+  const [enChat, setEnChat] = useState(false);
+  const [noLeidos, setNoLeidos] = useState(0);
   const cargarMiTurno = useCallback(() => api.pedir<ResumenDelTurno>('GET', '/api/app/mi-turno/'), []);
+  const pedirChat = useCallback(<T,>(metodo: 'GET' | 'POST', ruta: string, cuerpo?: unknown) => api.pedir<T>(metodo, ruta, cuerpo), []);
 
   useEffect(() => sesion.suscribir(setEstado), []);
   useEffect(() => cola.suscribir(setEnvio), []);
@@ -94,6 +98,26 @@ export default function App() {
     canal.iniciar();
     return () => canal.detener();
   }, [activa]);
+
+  // CC-19: chat en vivo mientras hay sesión; el botón del inicio muestra los no leídos.
+  const contarNoLeidos = useCallback(
+    () =>
+      void api.pedir<ConversacionChat[]>('GET', '/api/chat/conversaciones/').then(
+        (lista) => setNoLeidos(Array.isArray(lista) ? lista.reduce((total, c) => total + c.no_leidos, 0) : 0),
+        () => undefined,
+      ),
+    [],
+  );
+  useEffect(() => {
+    if (!activa) return;
+    canalChat.iniciar();
+    contarNoLeidos();
+    const quitar = canalChat.alEvento(contarNoLeidos);
+    return () => {
+      quitar();
+      canalChat.detener();
+    };
+  }, [activa, contarNoLeidos]);
 
   // Al asignarse un viaje se recarga el perfil (el viaje en curso aparece al aceptarlo, HU-15).
   const asignacionId = enVivo.asignacion?.asignacion ?? null;
@@ -165,6 +189,8 @@ export default function App() {
 
   async function cerrarSesion() {
     canal.detener();
+    canalChat.detener();
+    setEnChat(false);
     await rastreador.detener();
     cola.vaciarSinEnviar();
     setPerfil(null);
@@ -220,6 +246,7 @@ export default function App() {
     return <Consentimiento alAceptar={async () => setPerfil(await api.pedir<Perfil>('POST', '/api/app/consentimiento/'))} />;
   }
   if (enMiTurno) return <MiTurno cargar={cargarMiTurno} volver={() => setEnMiTurno(false)} />;
+  if (enChat) return <Chat pedir={pedirChat} canal={canalChat} enViaje={viaje !== null} volver={() => (setEnChat(false), contarNoLeidos())} />;
   return (
     <Inicio
       usuario={estado.usuario}
@@ -233,6 +260,8 @@ export default function App() {
       cambiarTurno={cambiarTurno}
       actualizar={() => void cargarPerfil()}
       verMiTurno={() => setEnMiTurno(true)}
+      verChat={() => setEnChat(true)}
+      noLeidos={noLeidos}
       abrirAjustes={() => void abrirAjustes()}
       cerrarSesion={() => void cerrarSesion()}
     />

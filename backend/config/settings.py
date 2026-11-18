@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.reservas",
     "apps.aeropuerto",
     "apps.auditoria",
+    "apps.chat",
 ]
 
 MIDDLEWARE = [
@@ -122,6 +123,8 @@ REST_FRAMEWORK = {
         "portal_hora": env("THROTTLE_PORTAL_HORA", default="200/hour"),
         # DC-59 (HU-60): solicitud pública de convenio, por IP (la reserva usa los parámetros de la empresa).
         "reserva_publica": env("THROTTLE_RESERVA_PUBLICA", default="20/hour"),
+        # CC-19: antispam moderado del chat, por usuario.
+        "chat": env("THROTTLE_CHAT", default="20/min"),
     },
     # Proxies delante de Django (Nginx en producción = 1) para obtener la IP real del cliente.
     "NUM_PROXIES": int(env("DJANGO_NUM_PROXIES", default=""))

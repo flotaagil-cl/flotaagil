@@ -1,6 +1,7 @@
 /** Servicios de la app armados una sola vez: sesión, API, cola de envío y rastreador del GPS. */
 
 import { Api } from './api';
+import { CanalChat, urlDelChat } from './chat/canal';
 import { CanalConductor, urlDelCanal } from './conductor/canal';
 import { ColaPosiciones } from './gps/envio';
 import { detenerRastreo, iniciarRastreo } from './gps/rastreo';
@@ -25,3 +26,6 @@ export const rastreador = new Rastreador(
 
 /** Viajes asignados en vivo (HU-14). */
 export const canal = new CanalConductor(urlDelCanal(API_URL), sesion);
+
+/** Chat de trabajo en vivo (CC-19). */
+export const canalChat = new CanalChat(urlDelChat(API_URL), sesion);

@@ -254,3 +254,74 @@ button.principal.rechazar {
   padding: 0;
   font-weight: 700;
 }
+
+/* CC-19: chat */
+.conversaciones {
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conversacion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.insignia {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--insignia-info-fondo);
+  color: var(--insignia-info-texto);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.mensajes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mensajes .ajeno,
+.mensajes .propio {
+  max-width: 85%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+}
+
+.mensajes .ajeno {
+  align-self: flex-start;
+  background: var(--superficie);
+}
+
+.mensajes .propio {
+  align-self: flex-end;
+  background: var(--info-fondo);
+}
+
+.mensajes p {
+  margin: 0.2rem 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.rapidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.campo textarea {
+  min-height: 5rem;
+  font: inherit;
+}

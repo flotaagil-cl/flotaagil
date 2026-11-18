@@ -124,6 +124,19 @@ export const pantallasDelPanel: RouteObject[] = [
     ],
   },
   {
+    path: 'chat',
+    handle: { titulo: 'Chat', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
+      {
+        path: 'moderacion',
+        lazy: async () => ({ Component: (await import('../chat/paginas/Moderacion')).Moderacion }),
+        handle: { titulo: 'Moderación del chat', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+      { path: ':id', lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
+    ],
+  },
+  {
     path: 'conversaciones',
     handle: { titulo: 'Conversaciones', menu: true, roles: ROLES_PANEL, conModulo: true } satisfies Manejo,
     children: [

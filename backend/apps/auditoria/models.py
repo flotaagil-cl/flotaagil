@@ -16,6 +16,8 @@ class Entidad(models.TextChoices):
     CONDUCTOR = "CONDUCTOR", "Conductor"
     # DC-32: turnos y cierre de caja (HU-31).
     TURNO = "TURNO", "Turno"
+    # DC-60 (CC-19): borrado y moderación de grupos del chat.
+    CONVERSACION = "CONVERSACION", "Conversación"
 
 
 class AuditoriaInmutable(Exception):
