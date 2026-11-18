@@ -210,6 +210,65 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-61 y HU-62 (CC-19): chat de trabajo con los mensajes sintéticos de datos_demo. Las de la app se corren con
+  // CAPTURAS_URL en el servidor de la app y CAPTURAS_SOLO=app-chat,app-chat-central.
+  'HU-61': [
+    { nombre: 'panel-chat', ruta: '/chat', sesion: 'despacho' },
+    {
+      nombre: 'panel-chat-central',
+      ruta: '/chat',
+      sesion: 'despacho',
+      destino: /^\/chat\/\d+$/,
+      accion: async (pagina) => {
+        await pagina.getByRole('link', { name: /Conductor · .*Llegué/ }).first().click();
+        await pagina.getByRole('list', { name: 'Mensajes' }).waitFor();
+      },
+    },
+    {
+      nombre: 'app-chat',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('button', { name: /^Chat/ }).click();
+        await pagina.getByRole('heading', { name: 'Chat' }).waitFor();
+      },
+    },
+    {
+      nombre: 'app-chat-central',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('button', { name: /^Chat/ }).click();
+        await pagina.getByRole('button', { name: /^Central/ }).click();
+        await pagina.getByRole('group', { name: 'Respuestas rápidas' }).waitFor();
+      },
+    },
+  ],
+  'HU-62': [
+    {
+      nombre: 'panel-chat-grupo',
+      ruta: '/chat',
+      sesion: 'despacho',
+      destino: /^\/chat\/\d+$/,
+      accion: async (pagina) => {
+        await pagina.getByRole('link', { name: /Turno noche/ }).click();
+        await pagina.getByRole('button', { name: 'Gestionar grupo' }).click();
+        await pagina.getByRole('dialog', { name: 'Gestionar grupo' }).getByRole('list').waitFor();
+      },
+    },
+    {
+      nombre: 'panel-chat-nuevo-grupo',
+      ruta: '/chat',
+      sesion: 'despacho',
+      accion: async (pagina) => {
+        await pagina.getByRole('button', { name: 'Nuevo grupo' }).click();
+        await pagina.getByRole('dialog', { name: 'Nuevo grupo' }).getByRole('checkbox').first().waitFor();
+      },
+    },
+    { nombre: 'panel-chat-moderacion', ruta: '/chat/moderacion', sesion: 'admin' },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

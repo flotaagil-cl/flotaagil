@@ -19,7 +19,8 @@ export class ConexionIndicadores {
   constructor(
     private readonly url: string,
     private readonly sesion: SesionParaMapa,
-    private readonly alCambiar: () => void,
+    /** Recibe el mensaje ya leído; los indicadores lo ignoran y el chat (CC-19) lo usa. */
+    private readonly alCambiar: (mensaje: unknown) => void,
     private readonly alCambiarFase: (fase: FaseIndicadores) => void,
     private readonly crearSocket: CrearSocket = (url, protocolos) => new WebSocket(url, protocolos) as unknown as SocketMinimo,
   ) {}
@@ -49,7 +50,7 @@ export class ConexionIndicadores {
       this.intentos = 0;
       this.alCambiarFase('en_vivo');
     };
-    socket.onmessage = () => this.alCambiar();
+    socket.onmessage = (evento) => this.alCambiar(JSON.parse(evento.data) as unknown);
     socket.onclose = (evento) => {
       if (this.socket !== socket || this.detenida) return;
       this.socket = null;

@@ -31,7 +31,8 @@ class SocketFalso implements SocketMinimo {
     readonly url: string,
     readonly protocolos: string[],
   ) {
-    SocketFalso.creados.push(this);
+    // El canal del chat (CC-19) corre en todo el panel; aquí solo cuenta el del mapa.
+    if (!url.endsWith('/ws/chat/')) SocketFalso.creados.push(this);
   }
   abrir(mensaje?: unknown) {
     this.onopen?.();

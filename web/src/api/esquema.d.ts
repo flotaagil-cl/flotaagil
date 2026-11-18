@@ -452,6 +452,213 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/conversaciones/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mis conversaciones con no leídos */
+        get: operations["chat_conversaciones_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversaciones/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Una conversación */
+        get: operations["chat_conversaciones_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversaciones/{id}/leido/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Marcar leído hasta un mensaje */
+        post: operations["chat_conversaciones_leido_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/conversaciones/{id}/mensajes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Historial paginado (los 30 anteriores a «antes») */
+        get: operations["chat_conversaciones_mensajes_retrieve"];
+        put?: never;
+        /** Escribir */
+        post: operations["chat_conversaciones_mensajes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/directos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["chat_directos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/grupos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crear un grupo */
+        post: operations["chat_grupos_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/grupos/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Datos del grupo (nombre, integrantes y fechas)
+         * @description Los integrantes gestionan su grupo; el administrador modera cualquiera sin leerlo (solo metadatos).
+         */
+        get: operations["chat_grupos_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Borrar el grupo (su creador o el administrador)
+         * @description Los integrantes gestionan su grupo; el administrador modera cualquiera sin leerlo (solo metadatos).
+         */
+        delete: operations["chat_grupos_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * Renombrar el grupo
+         * @description Los integrantes gestionan su grupo; el administrador modera cualquiera sin leerlo (solo metadatos).
+         */
+        patch: operations["chat_grupos_partial_update"];
+        trace?: never;
+    };
+    "/api/chat/grupos/{id}/integrantes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agregar a un integrante
+         * @description Los integrantes gestionan su grupo; el administrador modera cualquiera sin leerlo (solo metadatos).
+         */
+        post: operations["chat_grupos_integrantes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/grupos/{id}/integrantes/{usuario_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Quitar a un integrante o salir del grupo
+         * @description Los integrantes gestionan su grupo; el administrador modera cualquiera sin leerlo (solo metadatos).
+         */
+        delete: operations["chat_grupos_integrantes_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/moderacion/grupos/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Grupos de la empresa (solo metadatos)
+         * @description Solo metadatos: el administrador no lee los mensajes de grupos ni directos.
+         */
+        get: operations["chat_moderacion_grupos_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/chat/personal/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Personal de la empresa para directos y grupos */
+        get: operations["chat_personal_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/conductores/": {
         parameters: {
             query?: never;
@@ -2158,6 +2365,28 @@ export interface components {
             /** @description La más reciente del pasajero */
             reserva: components["schemas"]["ReservaVinculada"] | null;
         };
+        ConversacionChat: {
+            id: number;
+            tipo: components["schemas"]["ConversacionChatTipoEnum"];
+            titulo: string;
+            no_leidos: number;
+            ultimo: components["schemas"]["UltimoMensaje"] | null;
+            /** Format: date-time */
+            ultimo_mensaje_en: string | null;
+            /** @description Grupos: puede renombrar y cambiar integrantes. */
+            puede_gestionar: boolean;
+            /** @description Grupos: su creador o el administrador. */
+            puede_borrar: boolean;
+        };
+        /**
+         * @description * `CENTRAL` - Central
+         *     * `DIRECTO` - Directo
+         *     * `GRUPO` - Grupo
+         *     * `VIAJE` - Viaje
+         *     * `SOPORTE` - Soporte
+         * @enum {string}
+         */
+        ConversacionChatTipoEnum: "CENTRAL" | "DIRECTO" | "GRUPO" | "VIAJE" | "SOPORTE";
         ConversacionDetalle: {
             /** @description El pasajero */
             id: number;
@@ -2317,6 +2546,16 @@ export interface components {
             metodo?: components["schemas"]["MetodoEnum"];
             monto?: number;
         };
+        Grupo: {
+            readonly id: number;
+            nombre: string;
+            readonly integrantes: components["schemas"]["PersonaChat"][];
+            readonly creado_por: string | null;
+            /** Format: date-time */
+            readonly creado_en: string;
+            /** Format: date-time */
+            readonly ultimo_mensaje_en: string | null;
+        };
         Historial: {
             estado_anterior?: (components["schemas"]["EstadoViajeEnum"] | components["schemas"]["BlankEnum"] | components["schemas"]["NullEnum"]) | null;
             estado_nuevo: components["schemas"]["EstadoViajeEnum"];
@@ -2370,6 +2609,12 @@ export interface components {
             con_errores: number;
             creados: number;
         };
+        IntegranteRequest: {
+            usuario: number;
+        };
+        LeidoRequest: {
+            hasta: number;
+        };
         /**
          * @description * `A1` - A1
          *     * `A2` - A2
@@ -2403,6 +2648,17 @@ export interface components {
             readonly viaje: number | null;
             /** Format: date-time */
             readonly creado_en: string;
+        };
+        MensajeChat: {
+            id: number;
+            conversacion: number;
+            texto: string;
+            rapida: string;
+            /** @description En el hilo central el conductor ve al equipo como «Central». */
+            autor: string;
+            propio: boolean;
+            /** Format: date-time */
+            creado_en: string;
         };
         MensajeNuevoRequest: {
             texto: string;
@@ -2500,6 +2756,17 @@ export interface components {
          * @enum {string}
          */
         NavegarConEnum: "COORDENADAS" | "DIRECCION";
+        NuevoDirectoRequest: {
+            usuario: number;
+        };
+        NuevoGrupoRequest: {
+            nombre: string;
+            ids_integrantes: number[];
+        };
+        NuevoMensajeRequest: {
+            texto?: string;
+            rapida?: components["schemas"]["RapidaEnum"];
+        };
         /** @enum {unknown} */
         NullEnum: null;
         Opcion: {
@@ -2521,6 +2788,12 @@ export interface components {
          * @enum {string}
          */
         OrigenCancelacionEnum: "PASAJERO" | "DESPACHADOR" | "ADMINISTRADOR" | "SUPERVISOR" | "SISTEMA" | "NO_CONFIRMADA" | "CONVENIO";
+        PaginaMensajes: {
+            results: components["schemas"]["MensajeChat"][];
+            hay_mas: boolean;
+            /** @description Los mensajes propios hasta este id ya se leyeron. */
+            leido_por_otros_hasta: number;
+        };
         PaginatedAlertaVueloList: {
             /** @example 123 */
             count: number;
@@ -2716,6 +2989,9 @@ export interface components {
             contacto_correo?: string | null;
             correos_autorizados?: string[];
         };
+        PatchedGrupoRequest: {
+            nombre?: string;
+        };
         /** @description HU-45: el correo es el usuario de ingreso y no se cambia aquí. */
         PatchedPerfilEntradaRequest: {
             nombre?: string;
@@ -2767,6 +3043,16 @@ export interface components {
             readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
             readonly fila: components["schemas"]["LugarEnFila"] | null;
         };
+        PersonaChat: {
+            id: number;
+            nombre: string;
+            rol: string;
+        };
+        PersonaChatRequest: {
+            id: number;
+            nombre: string;
+            rol: string;
+        };
         PosicionRequest: {
             /** Format: double */
             lat: number;
@@ -2795,6 +3081,15 @@ export interface components {
             /** Format: double */
             lng: number;
         };
+        /**
+         * @description * `EN_CAMINO` - Voy en camino
+         *     * `LLEGUE` - Llegué
+         *     * `NO_APARECE` - Pasajero no aparece
+         *     * `ATRASO` - Me atraso 10 min
+         *     * `AYUDA` - Necesito ayuda
+         * @enum {string}
+         */
+        RapidaEnum: "EN_CAMINO" | "LLEGUE" | "NO_APARECE" | "ATRASO" | "AYUDA";
         RechazoRequest: {
             motivo: string;
         };
@@ -3221,6 +3516,12 @@ export interface components {
             lat: number;
             /** Format: double */
             lon: number;
+        };
+        UltimoMensaje: {
+            texto: string;
+            autor: string;
+            /** Format: date-time */
+            creado_en: string;
         };
         UsuarioCreado: {
             readonly id: number;
@@ -4246,6 +4547,335 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    chat_conversaciones_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionChat"][];
+                };
+            };
+        };
+    };
+    chat_conversaciones_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionChat"];
+                };
+            };
+        };
+    };
+    chat_conversaciones_leido_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeidoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LeidoRequest"];
+                "multipart/form-data": components["schemas"]["LeidoRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    chat_conversaciones_mensajes_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Id del mensaje más antiguo cargado */
+                antes?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginaMensajes"];
+                };
+            };
+        };
+    };
+    chat_conversaciones_mensajes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["NuevoMensajeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["NuevoMensajeRequest"];
+                "multipart/form-data": components["schemas"]["NuevoMensajeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MensajeChat"];
+                };
+            };
+        };
+    };
+    chat_directos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NuevoDirectoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["NuevoDirectoRequest"];
+                "multipart/form-data": components["schemas"]["NuevoDirectoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionChat"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversacionChat"];
+                };
+            };
+        };
+    };
+    chat_grupos_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NuevoGrupoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["NuevoGrupoRequest"];
+                "multipart/form-data": components["schemas"]["NuevoGrupoRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Grupo"];
+                };
+            };
+        };
+    };
+    chat_grupos_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Grupo"];
+                };
+            };
+        };
+    };
+    chat_grupos_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    chat_grupos_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedGrupoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedGrupoRequest"];
+                "multipart/form-data": components["schemas"]["PatchedGrupoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Grupo"];
+                };
+            };
+        };
+    };
+    chat_grupos_integrantes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntegranteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IntegranteRequest"];
+                "multipart/form-data": components["schemas"]["IntegranteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Grupo"];
+                };
+            };
+        };
+    };
+    chat_grupos_integrantes_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                usuario_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    chat_moderacion_grupos_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Grupo"][];
+                };
+            };
+        };
+    };
+    chat_personal_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonaChat"][];
+                };
             };
         };
     };

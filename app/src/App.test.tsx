@@ -86,6 +86,8 @@ async function httpFalso(url: string, init: RequestInit): Promise<Response> {
       }
       return foto;
     }
+    case 'GET /api/chat/conversaciones/':
+      return json([{ id: 1, tipo: 'CENTRAL', titulo: 'Central', no_leidos: 2, ultimo: null }]);
     default:
       return json({ viaje: 8, estado: red.estado });
   }
@@ -94,6 +96,7 @@ async function httpFalso(url: string, init: RequestInit): Promise<Response> {
 vi.mock('./servicios', async () => {
   const { Api } = await import('./api');
   const { CanalConductor } = await import('./conductor/canal');
+  const { CanalChat } = await import('./chat/canal');
   const { ColaPosiciones } = await import('./gps/envio');
   const { Rastreador } = await import('./gps/turno');
   const { conTiempoLimite } = await import('./http');
@@ -115,6 +118,8 @@ vi.mock('./servicios', async () => {
     cola,
     rastreador: new Rastreador({ iniciar: async () => 'id', detener: async () => {} }, cola),
     canal: new CanalConductor('ws://x.example/ws/conductor/', sesion, crearSocket),
+    // CC-19: el canal del chat usa un socket inerte; estas pruebas no lo ejercitan.
+    canalChat: new CanalChat('ws://x.example/ws/chat/', sesion, () => ({ onopen: null, onmessage: null, onclose: null, close() {} })),
   };
 });
 vi.mock('./gps/rastreo', () => ({ abrirAjustes: async () => {}, iniciarRastreo: async () => {}, detenerRastreo: async () => {} }));

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, NavLink, Outlet, useLocation, useMatches, useNavigate } from 'react-router';
 import { AlertasVuelo } from '../alertas/AlertasVuelo';
+import { ChatEnVivo } from '../chat/EnVivo';
 import type { Manejo } from '../rutas/tabla';
 import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
 import { useRutas } from '../rutas/contexto';
@@ -43,7 +44,7 @@ export function Layout() {
     navegar('/login', { replace: true });
   }
 
-  return (
+  const marco = (
     <div className={`${estilos.marco} tema-flotaagil`}>
       <header className={estilos.cabecera}>
         <button
@@ -84,4 +85,6 @@ export function Layout() {
       </main>
     </div>
   );
+  // CC-19: el canal del chat corre en todo el panel (el convenio y el pasajero no usan el chat de trabajo).
+  return delPanel ? <ChatEnVivo>{marco}</ChatEnVivo> : marco;
 }

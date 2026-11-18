@@ -25,12 +25,15 @@ interface Props {
   cambiarTurno: (estado: 'DISPONIBLE' | 'NO_DISPONIBLE', vehiculo?: number) => Promise<string | null>;
   actualizar: () => void;
   verMiTurno: () => void;
+  /** CC-19: abre el chat; `noLeidos` se muestra en el botón. */
+  verChat: () => void;
+  noLeidos: number;
   abrirAjustes: () => void;
   cerrarSesion: () => void;
 }
 
 /** Inicio del conductor: empezar o terminar el turno con su vehículo (HU-13) y estado del GPS. */
-export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, verMiTurno, abrirAjustes, cerrarSesion }: Props) {
+export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, verMiTurno, verChat, noLeidos, abrirAjustes, cerrarSesion }: Props) {
   const enTurno = perfil.estado !== 'NO_DISPONIBLE';
   const [elegido, setElegido] = useState<number | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -171,6 +174,9 @@ export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignac
       </div>
 
       <div className="acciones">
+        <button type="button" className="principal" onClick={verChat}>
+          {noLeidos > 0 ? `Chat (${noLeidos} sin leer)` : 'Chat'}
+        </button>
         <button type="button" onClick={verMiTurno}>
           Mi turno
         </button>

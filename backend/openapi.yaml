@@ -678,6 +678,358 @@ paths:
           description: ''
         '401':
           description: Falta el access o no es válido (`token_not_valid`).
+  /api/chat/conversaciones/:
+    get:
+      operationId: chat_conversaciones_list
+      summary: Mis conversaciones con no leídos
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConversacionChat'
+          description: ''
+  /api/chat/conversaciones/{id}/:
+    get:
+      operationId: chat_conversaciones_retrieve
+      summary: Una conversación
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversacionChat'
+          description: ''
+  /api/chat/conversaciones/{id}/leido/:
+    post:
+      operationId: chat_conversaciones_leido_create
+      summary: Marcar leído hasta un mensaje
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeidoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LeidoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LeidoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/chat/conversaciones/{id}/mensajes/:
+    get:
+      operationId: chat_conversaciones_mensajes_retrieve
+      summary: Historial paginado (los 30 anteriores a «antes»)
+      parameters:
+      - in: query
+        name: antes
+        schema:
+          type: integer
+        description: Id del mensaje más antiguo cargado
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginaMensajes'
+          description: ''
+    post:
+      operationId: chat_conversaciones_mensajes_create
+      summary: Escribir
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NuevoMensajeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NuevoMensajeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NuevoMensajeRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MensajeChat'
+          description: ''
+  /api/chat/directos/:
+    post:
+      operationId: chat_directos_create
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NuevoDirectoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NuevoDirectoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NuevoDirectoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversacionChat'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversacionChat'
+          description: ''
+  /api/chat/grupos/:
+    post:
+      operationId: chat_grupos_create
+      summary: Crear un grupo
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NuevoGrupoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/NuevoGrupoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/NuevoGrupoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+          description: ''
+  /api/chat/grupos/{id}/:
+    get:
+      operationId: chat_grupos_retrieve
+      description: Los integrantes gestionan su grupo; el administrador modera cualquiera
+        sin leerlo (solo metadatos).
+      summary: Datos del grupo (nombre, integrantes y fechas)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+          description: ''
+    patch:
+      operationId: chat_grupos_partial_update
+      description: Los integrantes gestionan su grupo; el administrador modera cualquiera
+        sin leerlo (solo metadatos).
+      summary: Renombrar el grupo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGrupoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGrupoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGrupoRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+          description: ''
+    delete:
+      operationId: chat_grupos_destroy
+      description: Los integrantes gestionan su grupo; el administrador modera cualquiera
+        sin leerlo (solo metadatos).
+      summary: Borrar el grupo (su creador o el administrador)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/chat/grupos/{id}/integrantes/:
+    post:
+      operationId: chat_grupos_integrantes_create
+      description: Los integrantes gestionan su grupo; el administrador modera cualquiera
+        sin leerlo (solo metadatos).
+      summary: Agregar a un integrante
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntegranteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IntegranteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IntegranteRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Grupo'
+          description: ''
+  /api/chat/grupos/{id}/integrantes/{usuario_id}/:
+    delete:
+      operationId: chat_grupos_integrantes_destroy
+      description: Los integrantes gestionan su grupo; el administrador modera cualquiera
+        sin leerlo (solo metadatos).
+      summary: Quitar a un integrante o salir del grupo
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: usuario_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/chat/moderacion/grupos/:
+    get:
+      operationId: chat_moderacion_grupos_list
+      description: 'Solo metadatos: el administrador no lee los mensajes de grupos
+        ni directos.'
+      summary: Grupos de la empresa (solo metadatos)
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Grupo'
+          description: ''
+  /api/chat/personal/:
+    get:
+      operationId: chat_personal_list
+      summary: Personal de la empresa para directos y grupos
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PersonaChat'
+          description: ''
   /api/conductores/:
     get:
       operationId: conductores_list
@@ -4084,6 +4436,54 @@ components:
       - ultimo_en
       - ultimo_mensaje
       - ventana_hasta
+    ConversacionChat:
+      type: object
+      properties:
+        id:
+          type: integer
+        tipo:
+          $ref: '#/components/schemas/ConversacionChatTipoEnum'
+        titulo:
+          type: string
+        no_leidos:
+          type: integer
+        ultimo:
+          allOf:
+          - $ref: '#/components/schemas/UltimoMensaje'
+          nullable: true
+        ultimo_mensaje_en:
+          type: string
+          format: date-time
+          nullable: true
+        puede_gestionar:
+          type: boolean
+          description: 'Grupos: puede renombrar y cambiar integrantes.'
+        puede_borrar:
+          type: boolean
+          description: 'Grupos: su creador o el administrador.'
+      required:
+      - id
+      - no_leidos
+      - puede_borrar
+      - puede_gestionar
+      - tipo
+      - titulo
+      - ultimo
+      - ultimo_mensaje_en
+    ConversacionChatTipoEnum:
+      enum:
+      - CENTRAL
+      - DIRECTO
+      - GRUPO
+      - VIAJE
+      - SOPORTE
+      type: string
+      description: |-
+        * `CENTRAL` - Central
+        * `DIRECTO` - Directo
+        * `GRUPO` - Grupo
+        * `VIAJE` - Viaje
+        * `SOPORTE` - Soporte
     ConversacionDetalle:
       type: object
       properties:
@@ -4424,6 +4824,40 @@ components:
       required:
       - accion
       - motivo
+    Grupo:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          maxLength: 60
+        integrantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonaChat'
+          readOnly: true
+        creado_por:
+          type: string
+          readOnly: true
+          nullable: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+        ultimo_mensaje_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - creado_en
+      - creado_por
+      - id
+      - integrantes
+      - nombre
+      - ultimo_mensaje_en
     Historial:
       type: object
       properties:
@@ -4541,6 +4975,21 @@ components:
       - creados
       - filas
       - validas
+    IntegranteRequest:
+      type: object
+      properties:
+        usuario:
+          type: integer
+      required:
+      - usuario
+    LeidoRequest:
+      type: object
+      properties:
+        hasta:
+          type: integer
+          minimum: 1
+      required:
+      - hasta
     LicenciaClaseEnum:
       enum:
       - A1
@@ -4634,6 +5083,33 @@ components:
       - id
       - tipo
       - viaje
+    MensajeChat:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversacion:
+          type: integer
+        texto:
+          type: string
+        rapida:
+          type: string
+        autor:
+          type: string
+          description: En el hilo central el conductor ve al equipo como «Central».
+        propio:
+          type: boolean
+        creado_en:
+          type: string
+          format: date-time
+      required:
+      - autor
+      - conversacion
+      - creado_en
+      - id
+      - propio
+      - rapida
+      - texto
     MensajeNuevoRequest:
       type: object
       properties:
@@ -4843,6 +5319,38 @@ components:
       description: |-
         * `COORDENADAS` - COORDENADAS
         * `DIRECCION` - DIRECCION
+    NuevoDirectoRequest:
+      type: object
+      properties:
+        usuario:
+          type: integer
+      required:
+      - usuario
+    NuevoGrupoRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 60
+        ids_integrantes:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+          maxItems: 100
+          minItems: 1
+      required:
+      - ids_integrantes
+      - nombre
+    NuevoMensajeRequest:
+      type: object
+      properties:
+        texto:
+          type: string
+          maxLength: 1000
+        rapida:
+          $ref: '#/components/schemas/RapidaEnum'
     NullEnum:
       enum:
       - null
@@ -4888,6 +5396,22 @@ components:
         * `SISTEMA` - Sistema
         * `NO_CONFIRMADA` - No confirmada
         * `CONVENIO` - Rechazada por el convenio
+    PaginaMensajes:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MensajeChat'
+        hay_mas:
+          type: boolean
+        leido_por_otros_hasta:
+          type: integer
+          description: Los mensajes propios hasta este id ya se leyeron.
+      required:
+      - hay_mas
+      - leido_por_otros_hasta
+      - results
     PaginatedAlertaVueloList:
       type: object
       required:
@@ -5239,6 +5763,13 @@ components:
             minLength: 1
             maxLength: 254
           maxItems: 50
+    PatchedGrupoRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 60
     PatchedPerfilEntradaRequest:
       type: object
       description: 'HU-45: el correo es el usuario de ingreso y no se cambia aquí.'
@@ -5375,6 +5906,34 @@ components:
       - nombre
       - vehiculo_activo
       - vehiculos
+    PersonaChat:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        rol:
+          type: string
+      required:
+      - id
+      - nombre
+      - rol
+    PersonaChatRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+          minLength: 1
+        rol:
+          type: string
+          minLength: 1
+      required:
+      - id
+      - nombre
+      - rol
     PosicionRequest:
       type: object
       properties:
@@ -5438,6 +5997,20 @@ components:
       required:
       - lat
       - lng
+    RapidaEnum:
+      enum:
+      - EN_CAMINO
+      - LLEGUE
+      - NO_APARECE
+      - ATRASO
+      - AYUDA
+      type: string
+      description: |-
+        * `EN_CAMINO` - Voy en camino
+        * `LLEGUE` - Llegué
+        * `NO_APARECE` - Pasajero no aparece
+        * `ATRASO` - Me atraso 10 min
+        * `AYUDA` - Necesito ayuda
     RechazoRequest:
       type: object
       properties:
@@ -6450,6 +7023,20 @@ components:
       - direccion
       - lat
       - lon
+    UltimoMensaje:
+      type: object
+      properties:
+        texto:
+          type: string
+        autor:
+          type: string
+        creado_en:
+          type: string
+          format: date-time
+      required:
+      - autor
+      - creado_en
+      - texto
     UsuarioCreado:
       type: object
       properties:
