@@ -1172,6 +1172,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/direcciones/sugerir/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sugerencias de direcciones mientras se escribe (HU-71) */
+        get: operations["direcciones_sugerir_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/indicadores/": {
         parameters: {
             query?: never;
@@ -2527,6 +2544,13 @@ export interface components {
             /** @description Los últimos 200, en orden */
             mensajes: components["schemas"]["Mensaje"][];
         };
+        /** @description HU-71: coordenadas de una sugerencia elegida; si llegan, no se geocodifica (deben estar en Chile). */
+        CoordenadasEntradaRequest: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
+        };
         /** @description HU-35: cuenta opcional del pasajero en la empresa del portal. */
         CrearCuentaRequest: {
             nombre: string;
@@ -3170,6 +3194,10 @@ export interface components {
              */
             vuelo_salida_en?: string | null;
             vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            origen_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            destino_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
         };
         /** @description HU-42: con cuenta, la respuesta trae el número de la reserva (el pasajero solo ve las suyas). */
         PedidoRecibido: {
@@ -3346,6 +3374,10 @@ export interface components {
             telefono: string;
             origen_dir: string;
             destino_dir: string;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            origen_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            destino_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
             /**
              * Format: date-time
              * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
@@ -3405,6 +3437,11 @@ export interface components {
             viaje: number;
             resultado: string;
             estado_viaje: string;
+        };
+        RespuestaSugerencias: {
+            /** @description False si el sugeridor está en «ninguno». */
+            disponible: boolean;
+            sugerencias: components["schemas"]["Sugerencia"][];
         };
         RespuestaViajeActivo: {
             viaje: components["schemas"]["ViajeActivo"] | null;
@@ -3482,6 +3519,10 @@ export interface components {
             telefono: string;
             origen_dir: string;
             destino_dir: string;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            origen_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            destino_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
             /**
              * Format: date-time
              * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
@@ -3519,6 +3560,10 @@ export interface components {
             telefono?: string;
             origen_dir: string;
             destino_dir: string;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            origen_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            destino_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
             /**
              * Format: date-time
              * @description Obligatoria, salvo en viajes desde el aeropuerto con vuelo: ahí se calcula si no viene.
@@ -3555,6 +3600,13 @@ export interface components {
              */
             expira_en: string | null;
             mensaje: string;
+        };
+        Sugerencia: {
+            texto: string;
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lon: number;
         };
         /** @description La suscripción tal como la entrega `PushSubscription.toJSON()` del navegador. */
         SuscripcionPushRequest: {
@@ -3860,6 +3912,10 @@ export interface components {
              */
             vuelo_salida_en?: string | null;
             vuelo_salida_tipo?: (components["schemas"]["TipoVueloEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            origen_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
+            /** @description Coordenadas de la sugerencia elegida (HU-71), opcionales. */
+            destino_coordenadas?: components["schemas"]["CoordenadasEntradaRequest"] | null;
         };
         ViajeDelTurno: {
             id: number;
@@ -5845,6 +5901,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConversacionDetalle"];
+                };
+            };
+        };
+    };
+    direcciones_sugerir_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Slug, en los formularios públicos */
+                empresa?: string;
+                /** @description Texto escrito (desde 3 caracteres) */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RespuestaSugerencias"];
                 };
             };
         };

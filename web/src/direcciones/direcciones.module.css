@@ -1,0 +1,46 @@
+/* HU-71: lista de sugerencias bajo el campo de dirección (sistema visual CC-20: solo tokens). */
+.envoltura {
+  position: relative;
+}
+
+.desplegable {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  overflow: hidden;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-campo, var(--radio));
+  box-shadow: 0 6px 18px var(--sombra, rgb(0 0 0 / 12%));
+}
+
+.desplegable[hidden] {
+  display: none;
+}
+
+.lista {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.opcion {
+  padding: 10px 14px;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.opcion:hover,
+.opcion[aria-selected='true'] {
+  background: var(--acento-suave, var(--fondo));
+}
+
+.atribucion {
+  margin: 0;
+  padding: 6px 14px;
+  border-top: 1px solid var(--borde);
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+}

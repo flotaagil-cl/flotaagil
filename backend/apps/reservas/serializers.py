@@ -288,6 +288,19 @@ def normalizar_numero_vuelo(valor: str | None) -> str | None:
     return numero
 
 
+class CoordenadasEntradaSerializer(serializers.Serializer):
+    """HU-71: coordenadas de una sugerencia elegida; si llegan, no se geocodifica (deben estar en Chile)."""
+
+    lat = serializers.FloatField(min_value=-90, max_value=90)
+    lon = serializers.FloatField(min_value=-180, max_value=180)
+
+
+def coordenadas_de_sugerencia():
+    return CoordenadasEntradaSerializer(
+        required=False, allow_null=True, help_text="Coordenadas de la sugerencia elegida (HU-71), opcionales."
+    )
+
+
 CAMPOS_SALIDA = ("vuelo_salida_en", "vuelo_salida_tipo", "vuelo_salida_numero")
 
 
@@ -333,6 +346,8 @@ class ViajeCrearSerializer(serializers.Serializer):
         help_text="Hora de salida del vuelo (opcional, viajes al aeropuerto).",
     )
     vuelo_salida_tipo = serializers.ChoiceField(choices=TipoVuelo.choices, required=False, allow_null=True)
+    origen_coordenadas = coordenadas_de_sugerencia()
+    destino_coordenadas = coordenadas_de_sugerencia()
 
     def validate_vuelo_salida_numero(self, valor):
         return normalizar_numero_vuelo(valor)
@@ -374,6 +389,8 @@ class ViajeEditarSerializer(serializers.Serializer):
         help_text="Hora de salida del vuelo (opcional, viajes al aeropuerto).",
     )
     vuelo_salida_tipo = serializers.ChoiceField(choices=TipoVuelo.choices, required=False, allow_null=True)
+    origen_coordenadas = coordenadas_de_sugerencia()
+    destino_coordenadas = coordenadas_de_sugerencia()
 
     def validate_vuelo_salida_numero(self, valor):
         return normalizar_numero_vuelo(valor)

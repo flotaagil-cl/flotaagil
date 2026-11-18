@@ -125,6 +125,8 @@ REST_FRAMEWORK = {
         "reserva_publica": env("THROTTLE_RESERVA_PUBLICA", default="20/hour"),
         # CC-19: antispam moderado del chat, por usuario.
         "chat": env("THROTTLE_CHAT", default="20/min"),
+        # HU-71: sugerencias de direcciones, por usuario con sesión o por IP.
+        "sugerencias": env("THROTTLE_SUGERENCIAS", default="30/min"),
     },
     # Proxies delante de Django (Nginx en producción = 1) para obtener la IP real del cliente.
     "NUM_PROXIES": int(env("DJANGO_NUM_PROXIES", default=""))
@@ -201,6 +203,8 @@ PORTAL_VENTANA_TELEFONO = timedelta(minutes=env.int("PORTAL_VENTANA_TELEFONO_MIN
 GOOGLE_GEOCODING_API_KEY = env("GOOGLE_GEOCODING_API_KEY", default="")
 # HU-70 (DC-71): google | nominatim | desarrollo. Vacío: Google con clave; sin clave, Nominatim con DEBUG.
 GEOCODIFICADOR = env("GEOCODIFICADOR", default="")
+# HU-71 (DC-72): photon | ninguno. Vacío: photon con DEBUG y ninguno en producción.
+SUGERIDOR_DIRECCIONES = env("SUGERIDOR_DIRECCIONES", default="")
 # Vuelos (HU-26): FlightAware AeroAPI si hay clave; si no, el consultor de desarrollo.
 # Se validan las llegadas a AEROPUERTO_IATA.
 FLIGHTAWARE_API_KEY = env("FLIGHTAWARE_API_KEY", default="")

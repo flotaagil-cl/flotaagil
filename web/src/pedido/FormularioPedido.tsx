@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { Boton } from '../diseno/Boton';
 import { Campo, DatoFijo } from '../diseno/Campo';
@@ -7,6 +7,8 @@ import e from '../diseno/diseno.module.css';
 import { Segmentado } from '../diseno/Segmentado';
 import { Destacado } from '../diseno/Tarjeta';
 import { hoy } from '../hora/hora';
+import { CampoDireccionPortal } from '../direcciones/CampoDireccionPortal';
+import { buscarPublico, type Sugerencia } from '../direcciones/sugerencias';
 import {
   AEROPUERTO,
   armarPedido,
@@ -40,6 +42,16 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
   const cambiar = <K extends keyof ValoresPedido>(campo: K, valor: ValoresPedido[K]) => setV((actual) => ({ ...actual, [campo]: valor }));
   const texto = (campo: keyof ValoresPedido) => (evento: { target: { value: string } }) => cambiar(campo, evento.target.value as never);
   const maximo = empresa.capacidad_maxima;
+  // HU-71: sugerencias por el backend; escribir a mano borra las coordenadas de una sugerencia anterior.
+  const buscar = useMemo(() => buscarPublico(empresa.slug), [empresa.slug]);
+  const direccion = (campo: 'origen' | 'destino') => {
+    const coordenadas = campo === 'origen' ? 'origenCoordenadas' : 'destinoCoordenadas';
+    return {
+      buscar,
+      alCambiar: (valor: string) => setV((actual) => ({ ...actual, [campo]: valor, [coordenadas]: null })),
+      alElegir: (s: Sugerencia) => setV((actual) => ({ ...actual, [campo]: s.texto, [coordenadas]: { lat: s.lat, lon: s.lon } })),
+    };
+  };
   const minimoFecha = hoy();
 
   function revisar(evento: FormEvent) {
@@ -82,14 +94,14 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
             <Campo etiqueta="Hora de llegada" type="time" value={v.vueloHora} onChange={texto('vueloHora')} error={errores.vueloHora} />
           )}
           <Destacado titulo="Seguimos tu vuelo por ti">Si se atrasa, tu conductor ya lo sabe. No tienes que avisarnos.</Destacado>
-          <Campo etiqueta="¿A dónde vas?" placeholder="Dirección de destino" autoComplete="street-address" value={v.destino} onChange={texto('destino')} error={errores.destino} />
+          <CampoDireccionPortal etiqueta="¿A dónde vas?" placeholder="Dirección de destino" valor={v.destino} error={errores.destino} {...direccion('destino')} />
           {contadores}
         </>
       )}
 
       {tipo === 'al-aeropuerto' && (
         <>
-          <Campo etiqueta="¿Dónde te recogemos?" placeholder="Dirección de recogida" autoComplete="street-address" value={v.origen} onChange={texto('origen')} error={errores.origen} />
+          <CampoDireccionPortal etiqueta="¿Dónde te recogemos?" placeholder="Dirección de recogida" valor={v.origen} error={errores.origen} {...direccion('origen')} />
           <DatoFijo etiqueta="Destino" valor={AEROPUERTO} />
           <div className={e.fila}>
             <Campo etiqueta="Fecha del vuelo" type="date" min={minimoFecha} value={v.salidaFecha} onChange={texto('salidaFecha')} error={errores.salidaFecha} />
@@ -144,8 +156,8 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
 
       {tipo === 'en-la-ciudad' && (
         <>
-          <Campo etiqueta="Origen" placeholder="¿Dónde te recogemos?" autoComplete="street-address" value={v.origen} onChange={texto('origen')} error={errores.origen} />
-          <Campo etiqueta="Destino" placeholder="¿A dónde vas?" value={v.destino} onChange={texto('destino')} error={errores.destino} />
+          <CampoDireccionPortal etiqueta="Origen" placeholder="¿Dónde te recogemos?" valor={v.origen} error={errores.origen} {...direccion('origen')} />
+          <CampoDireccionPortal etiqueta="Destino" placeholder="¿A dónde vas?" valor={v.destino} error={errores.destino} {...direccion('destino')} />
           <Segmentado
             etiqueta="¿Cuándo?"
             forma="pastillas"

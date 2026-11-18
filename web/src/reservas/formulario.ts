@@ -16,6 +16,7 @@ import { aIso, campoDeInstante, instanteDeCampo, type ValorFechaHora } from '../
 import type { CanalPanel, Sentido, ViajeCrear, ViajeDetalle, ViajeEditar } from './api';
 
 type TipoVuelo = 'NACIONAL' | 'INTERNACIONAL';
+type Coordenadas = { lat: number; lon: number };
 
 export type Modo = 'crear' | 'editar';
 
@@ -43,6 +44,9 @@ export interface ValoresReserva {
   /** DC-70: hora y tipo del vuelo de salida, opcionales, como en el portal (HU-39). */
   vuelo_salida_hora: ValorFechaHora;
   vuelo_salida_tipo: TipoVuelo;
+  /** HU-71: coordenadas de la sugerencia elegida (null si se escribió a mano: se geocodifica al guardar). */
+  origen_coordenadas: Coordenadas | null;
+  destino_coordenadas: Coordenadas | null;
 }
 
 export const VALORES_NUEVA: ValoresReserva = {
@@ -57,6 +61,8 @@ export const VALORES_NUEVA: ValoresReserva = {
   vuelo_salida_hora: SIN_HORA,
   // Como el portal: internacional por omisión.
   vuelo_salida_tipo: 'INTERNACIONAL',
+  origen_coordenadas: null,
+  destino_coordenadas: null,
 };
 
 export function valoresDeViaje(viaje: ViajeDetalle): ValoresReserva {
@@ -74,6 +80,8 @@ export function valoresDeViaje(viaje: ViajeDetalle): ValoresReserva {
     vuelo_salida_numero: viaje.vuelo_salida_numero ?? '',
     vuelo_salida_hora: viaje.vuelo_salida_en ? campoDeInstante(viaje.vuelo_salida_en) : SIN_HORA,
     vuelo_salida_tipo: viaje.vuelo_salida_tipo || 'INTERNACIONAL',
+    origen_coordenadas: null,
+    destino_coordenadas: null,
   };
 }
 
@@ -110,6 +118,8 @@ export function esquemaReserva(modo: Modo) {
       vuelo_salida_numero: z.string(),
       vuelo_salida_hora: fechaHora,
       vuelo_salida_tipo: z.enum(['NACIONAL', 'INTERNACIONAL']),
+      origen_coordenadas: z.object({ lat: z.number(), lon: z.number() }).nullable(),
+      destino_coordenadas: z.object({ lat: z.number(), lon: z.number() }).nullable(),
     })
     .superRefine((v, ctx) => {
       const error = (ruta: (string | number)[], message: string) => ctx.addIssue({ code: 'custom', path: ruta, message });
@@ -170,6 +180,9 @@ export function cuerpoCrear(v: ValoresReserva): ViajeCrear {
     destino_dir: v.destino_dir.trim(),
     recogida_en: instante(v.recogida),
   };
+  // HU-71: con las coordenadas de la sugerencia el backend no geocodifica.
+  if (v.origen_coordenadas) cuerpo.origen_coordenadas = v.origen_coordenadas;
+  if (v.destino_coordenadas) cuerpo.destino_coordenadas = v.destino_coordenadas;
   const vuelo = v.sentido === 'DESDE_AEROPUERTO' ? vueloDe(v) : null;
   if (vuelo) cuerpo.vuelo = vuelo;
   const salida = v.sentido === 'HACIA_AEROPUERTO' ? normalizarVuelo(v.vuelo_salida_numero) : '';
@@ -206,8 +219,14 @@ function tocado(marca: Marca | undefined): boolean {
 export function cuerpoEditar(v: ValoresReserva, modificados: Modificados): ViajeEditar {
   const cuerpo: ViajeEditar = {};
   if (tocado(modificados.sentido)) cuerpo.sentido = v.sentido;
-  if (tocado(modificados.origen_dir)) cuerpo.origen_dir = v.origen_dir.trim();
-  if (tocado(modificados.destino_dir)) cuerpo.destino_dir = v.destino_dir.trim();
+  if (tocado(modificados.origen_dir)) {
+    cuerpo.origen_dir = v.origen_dir.trim();
+    if (v.origen_coordenadas) cuerpo.origen_coordenadas = v.origen_coordenadas;
+  }
+  if (tocado(modificados.destino_dir)) {
+    cuerpo.destino_dir = v.destino_dir.trim();
+    if (v.destino_coordenadas) cuerpo.destino_coordenadas = v.destino_coordenadas;
+  }
   if (tocado(modificados.recogida)) cuerpo.recogida_en = instante(v.recogida);
   // Con otro sentido el backend quita el vuelo solo; con DESDE_AEROPUERTO se envía si se tocó (vacío = quitarlo).
   if (v.sentido === 'DESDE_AEROPUERTO' && tocado(modificados.vuelo)) cuerpo.vuelo = vueloDe(v);

@@ -9,7 +9,7 @@ from apps.comun.validadores import (
 )
 from apps.cuentas.models import Empresa
 from apps.reservas.models import MAX_PASAJEROS, Sentido, TipoVuelo
-from apps.reservas.serializers import normalizar_numero_vuelo, numero_de_salida
+from apps.reservas.serializers import coordenadas_de_sugerencia, normalizar_numero_vuelo, numero_de_salida
 
 
 class EmpresaPublicaSerializer(serializers.ModelSerializer):
@@ -92,6 +92,9 @@ class SolicitudSerializer(serializers.Serializer):
     )
     origen_dir = serializers.CharField(max_length=200)
     destino_dir = serializers.CharField(max_length=200)
+    # HU-71: coordenadas de la sugerencia elegida (opcionales; si no, se geocodifica al guardar).
+    origen_coordenadas = coordenadas_de_sugerencia()
+    destino_coordenadas = coordenadas_de_sugerencia()
     recogida_en = serializers.DateTimeField(
         required=False,
         allow_null=True,

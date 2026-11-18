@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Controller, useForm, useWatch, type FieldPath } from 'react-hook-form';
 import { Link } from 'react-router';
 import { Aviso } from '../../componentes/Aviso';
@@ -21,6 +21,9 @@ import campos from '../../formularios/formularios.module.css';
 import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 import { CampoFechaHora } from '../../formularios/CampoFechaHora';
+import { CampoDireccionFormulario } from '../../direcciones/CampoDireccionFormulario';
+import { buscarConSesion } from '../../direcciones/sugerencias';
+import { useApi } from '../../sesion/SesionProvider';
 
 interface Props {
   modo: Modo;
@@ -39,6 +42,9 @@ interface Props {
 export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFalla, bloqueo, volverA }: Props) {
   const [falla, setFalla] = useState<ReactNode>(null);
   const [generales, setGenerales] = useState<string[]>([]);
+  // HU-71: sugerencias con la sesión del panel (zona de la empresa y límite por usuario).
+  const api = useApi();
+  const buscar = useMemo(() => buscarConSesion((q, signal) => api.GET('/api/direcciones/sugerir/', { params: { query: { q } }, signal })), [api]);
   const {
     register,
     control,
@@ -155,12 +161,25 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
             </label>
           ))}
         </fieldset>
-        <Campo etiqueta="Origen" error={errors.origen_dir?.message} ancho>
-          {(control) => <input autoComplete="off" {...control} {...register('origen_dir')} />}
-        </Campo>
-        <Campo etiqueta="Destino" error={errors.destino_dir?.message} ancho>
-          {(control) => <input autoComplete="off" {...control} {...register('destino_dir')} />}
-        </Campo>
+        {/* HU-71: con sugerencias mientras se escribe; elegir una guarda sus coordenadas. */}
+        <CampoDireccionFormulario
+          control={control}
+          name="origen_dir"
+          coordenadas="origen_coordenadas"
+          etiqueta="Origen"
+          error={errors.origen_dir?.message ?? errors.origen_coordenadas?.message}
+          ancho
+          buscar={buscar}
+        />
+        <CampoDireccionFormulario
+          control={control}
+          name="destino_dir"
+          coordenadas="destino_coordenadas"
+          etiqueta="Destino"
+          error={errors.destino_dir?.message ?? errors.destino_coordenadas?.message}
+          ancho
+          buscar={buscar}
+        />
         <Controller
           control={control}
           name="recogida"

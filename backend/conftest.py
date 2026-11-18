@@ -29,6 +29,7 @@ def _geocodificador_sin_red(settings):
     """HU-70: aunque el .env local pida Nominatim o Google, las pruebas no llaman a la red: sin valor, sin
     clave y sin DEBUG queda el de desarrollo; las que prueban otro proveedor lo piden y simulan la red."""
     settings.GEOCODIFICADOR = ""
+    settings.SUGERIDOR_DIRECCIONES = "ninguno"  # HU-71: tampoco Photon
     settings.GOOGLE_GEOCODING_API_KEY = ""
     settings.DEBUG = False
 

@@ -28,6 +28,9 @@ export interface ValoresSolicitud {
   sentido: Sentido;
   origen_dir: string;
   destino_dir: string;
+  /** HU-71: coordenadas de la sugerencia elegida (null si se escribió a mano). */
+  origen_coordenadas: { lat: number; lon: number } | null;
+  destino_coordenadas: { lat: number; lon: number } | null;
   recogida: ValorFechaHora;
   vuelo: { numero: string; hora: ValorFechaHora };
   acepta_privacidad: boolean;
@@ -43,6 +46,8 @@ export const VALORES_INICIALES: ValoresSolicitud = {
   sentido: 'URBANO',
   origen_dir: '',
   destino_dir: '',
+  origen_coordenadas: null,
+  destino_coordenadas: null,
   recogida: SIN_HORA,
   vuelo: { numero: '', hora: SIN_HORA },
   acepta_privacidad: false,
@@ -58,6 +63,8 @@ export const CAMPOS_API: Record<string, string> = {
   sentido: 'sentido',
   origen_dir: 'origen_dir',
   destino_dir: 'destino_dir',
+  origen_coordenadas: 'origen_dir',
+  destino_coordenadas: 'destino_dir',
   recogida_en: 'recogida',
   vuelo: 'vuelo.numero',
   'vuelo.numero': 'vuelo.numero',
@@ -100,6 +107,8 @@ export function esquemaSolicitud(empresa: EmpresaPublica, ahora: () => number, c
       sentido: z.enum(['URBANO', 'HACIA_AEROPUERTO', 'DESDE_AEROPUERTO']),
       origen_dir: z.string(),
       destino_dir: z.string(),
+      origen_coordenadas: z.object({ lat: z.number(), lon: z.number() }).nullable(),
+      destino_coordenadas: z.object({ lat: z.number(), lon: z.number() }).nullable(),
       recogida: z.object({ pared: z.string(), ocurrencia: z.enum(['primera', 'segunda']) }),
       vuelo: z.object({ numero: z.string(), hora: z.object({ pared: z.string(), ocurrencia: z.enum(['primera', 'segunda']) }) }),
       acepta_privacidad: z.boolean(),
@@ -176,6 +185,9 @@ export function cuerpoSolicitud(v: ValoresSolicitud, conDeclaracion = false): Cu
     acepta_privacidad: v.acepta_privacidad,
     acepta_whatsapp: v.acepta_whatsapp,
     sitio_web: v.sitio_web,
+    // HU-71: con las coordenadas de la sugerencia el backend no geocodifica.
+    ...(v.origen_coordenadas && { origen_coordenadas: v.origen_coordenadas }),
+    ...(v.destino_coordenadas && { destino_coordenadas: v.destino_coordenadas }),
   };
   if (conDeclaracion) {
     cuerpo.declara_autorizacion = v.declara_autorizacion;

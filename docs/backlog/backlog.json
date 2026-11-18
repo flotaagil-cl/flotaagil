@@ -1361,6 +1361,27 @@
       "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
       "epica": "Gestión y despacho",
       "label_epica": "epica:gestion-despacho"
+    },
+    {
+      "id": "HU-71",
+      "titulo": "Sugerencias de direcciones mientras se escribe",
+      "historia": "Como despachador o pasajero, quiero sugerencias de direcciones mientras escribo, para elegir la dirección correcta con sus coordenadas (demo y pruebas).",
+      "criterios": "Endpoint /api/direcciones/sugerir/ con Photon a través del backend (caché, límite por usuario o IP, solo Chile); campo con sugerencias accesible (combobox) en el panel, el formulario público, el pedido con cuenta y la solicitud de convenio; al elegir se guardan las coordenadas sin geocodificar; sin servicio, texto normal (DC-72).",
+      "sp": 3,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-70"
+      ],
+      "prioridad": "Media",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho"
     }
   ],
   "tareas": [

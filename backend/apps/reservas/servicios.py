@@ -40,7 +40,15 @@ def normalizar_vuelo(numero: str) -> str:
     return " ".join(numero.upper().split())
 
 
-def _punto(direccion: str, zona: Zona, geocodificador, campo: str) -> Point:
+def _punto(direccion: str, zona: Zona, geocodificador, campo: str, coordenadas: dict | None = None) -> Point:
+    """HU-71: con las coordenadas de una sugerencia elegida no se geocodifica (deben estar en Chile)."""
+    if coordenadas:
+        from apps.integraciones.sugerencias import en_chile
+
+        if not en_chile(coordenadas["lat"], coordenadas["lon"]):
+            campo_coordenadas = campo.replace("_dir", "_coordenadas")
+            raise ValidationError({campo_coordenadas: ["La ubicación elegida está fuera de Chile."]})
+        return Point(coordenadas["lon"], coordenadas["lat"], srid=4326)
     try:
         coordenadas = geocodificador.geocodificar(direccion, zona)
     except GeocodificacionError as error:
@@ -166,9 +174,11 @@ def crear_viaje(
     _validar_hora_y_tipo(datos.get("vuelo_salida_en"), datos.get("vuelo_salida_tipo"))  # DC-70 (panel)
     if vuelo and "verificado" not in vuelo:
         vuelo = verificar_vuelo(vuelo)
-    origen = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir")
+    origen = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir", datos.get("origen_coordenadas"))
     _validar_origen_en_zona(origen, zona)
-    destino = _punto(datos["destino_dir"], zona, geocodificador, "destino_dir")
+    destino = _punto(
+        datos["destino_dir"], zona, geocodificador, "destino_dir", datos.get("destino_coordenadas")
+    )
 
     with transaction.atomic():
         pasajero = obtener_pasajero(empresa, **datos["pasajero"])
@@ -234,13 +244,20 @@ def editar_viaje(viaje: Viaje, datos: dict, *, geocodificador=None) -> Viaje:
             campos.get("vuelo_salida_en", viaje.vuelo_salida_en),
             campos.get("vuelo_salida_tipo", viaje.vuelo_salida_tipo),
         )
-    if "origen_dir" in datos and datos["origen_dir"] != viaje.origen_dir:
+    # HU-71: también se actualiza si llegan coordenadas de una sugerencia, aunque el texto sea el mismo.
+    if "origen_dir" in datos and (datos["origen_dir"] != viaje.origen_dir or datos.get("origen_coordenadas")):
         campos["origen_dir"] = datos["origen_dir"]
-        campos["origen_geo"] = _punto(datos["origen_dir"], zona, geocodificador, "origen_dir")
+        campos["origen_geo"] = _punto(
+            datos["origen_dir"], zona, geocodificador, "origen_dir", datos.get("origen_coordenadas")
+        )
         _validar_origen_en_zona(campos["origen_geo"], zona)
-    if "destino_dir" in datos and datos["destino_dir"] != viaje.destino_dir:
+    if "destino_dir" in datos and (
+        datos["destino_dir"] != viaje.destino_dir or datos.get("destino_coordenadas")
+    ):
         campos["destino_dir"] = datos["destino_dir"]
-        campos["destino_geo"] = _punto(datos["destino_dir"], zona, geocodificador, "destino_dir")
+        campos["destino_geo"] = _punto(
+            datos["destino_dir"], zona, geocodificador, "destino_dir", datos.get("destino_coordenadas")
+        )
 
     with transaction.atomic():
         for campo, valor in campos.items():

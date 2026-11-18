@@ -1859,6 +1859,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConversacionDetalle'
           description: ''
+  /api/direcciones/sugerir/:
+    get:
+      operationId: direcciones_sugerir_retrieve
+      summary: Sugerencias de direcciones mientras se escribe (HU-71)
+      parameters:
+      - in: query
+        name: empresa
+        schema:
+          type: string
+        description: Slug, en los formularios públicos
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Texto escrito (desde 3 caracteres)
+      tags:
+      - direcciones
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RespuestaSugerencias'
+          description: ''
   /api/indicadores/:
     get:
       operationId: indicadores_retrieve
@@ -4786,6 +4813,24 @@ components:
       - ultima_direccion
       - ultimo_en
       - ultimo_mensaje
+    CoordenadasEntradaRequest:
+      type: object
+      description: 'HU-71: coordenadas de una sugerencia elegida; si llegan, no se
+        geocodifica (deben estar en Chile).'
+      properties:
+        lat:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        lon:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+      required:
+      - lat
+      - lon
     CrearCuentaRequest:
       type: object
       description: 'HU-35: cuenta opcional del pasajero en la empresa del portal.'
@@ -6154,6 +6199,16 @@ components:
           oneOf:
           - $ref: '#/components/schemas/TipoVueloEnum'
           - $ref: '#/components/schemas/NullEnum'
+        origen_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
+        destino_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
     PedidoRecibido:
       type: object
       description: 'HU-42: con cuenta, la respuesta trae el número de la reserva (el
@@ -6601,6 +6656,16 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        origen_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
+        destino_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
         recogida_en:
           type: string
           format: date-time
@@ -6728,6 +6793,19 @@ components:
       - estado_viaje
       - resultado
       - viaje
+    RespuestaSugerencias:
+      type: object
+      properties:
+        disponible:
+          type: boolean
+          description: False si el sugeridor está en «ninguno».
+        sugerencias:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sugerencia'
+      required:
+      - disponible
+      - sugerencias
     RespuestaViajeActivo:
       type: object
       properties:
@@ -6900,6 +6978,16 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        origen_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
+        destino_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
         recogida_en:
           type: string
           format: date-time
@@ -6977,6 +7065,16 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+        origen_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
+        destino_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
         recogida_en:
           type: string
           format: date-time
@@ -7045,6 +7143,21 @@ components:
       - expira_en
       - mensaje
       - recogida_en
+    Sugerencia:
+      type: object
+      properties:
+        texto:
+          type: string
+        lat:
+          type: number
+          format: double
+        lon:
+          type: number
+          format: double
+      required:
+      - lat
+      - lon
+      - texto
     SuscripcionPushRequest:
       type: object
       description: La suscripción tal como la entrega `PushSubscription.toJSON()`
@@ -7882,6 +7995,16 @@ components:
           oneOf:
           - $ref: '#/components/schemas/TipoVueloEnum'
           - $ref: '#/components/schemas/NullEnum'
+        origen_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
+        destino_coordenadas:
+          allOf:
+          - $ref: '#/components/schemas/CoordenadasEntradaRequest'
+          nullable: true
+          description: Coordenadas de la sugerencia elegida (HU-71), opcionales.
       required:
       - destino_dir
       - origen_dir
