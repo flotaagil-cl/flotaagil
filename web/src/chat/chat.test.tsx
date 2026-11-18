@@ -3,6 +3,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { sonarAlerta } from '../alertas/sonido';
 import { montarPanel } from '../pruebas/montar';
 import { conversacionChat, mensajeChat, ServidorChatFalso } from '../pruebas/servidorChatFalso';
 
@@ -28,7 +29,10 @@ function montar(ruta: string, email?: string) {
 
 const pedidas = (urls: string[], ruta: string) => urls.filter((u) => u === ruta).length;
 
+vi.mock('../alertas/sonido', () => ({ sonarAlerta: vi.fn() }));
+
 beforeEach(() => {
+  vi.mocked(sonarAlerta).mockClear();
   SocketFalso.creados = [];
   vi.stubGlobal('WebSocket', SocketFalso);
 });
@@ -37,7 +41,9 @@ describe('bandeja', () => {
   it('aparece en el menú y muestra los no leídos del hilo central', async () => {
     montar('/chat');
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
-    expect(within(menu).getByRole('link', { name: 'Chat' })).toHaveAttribute('href', '/chat');
+    const entrada = within(menu).getByRole('link', { name: /^Chat/ });
+    expect(entrada).toHaveAttribute('href', '/chat');
+    await waitFor(() => expect(entrada).toHaveTextContent('Chat 1 sin leer'));
     const enlace = await screen.findByRole('link', { name: /Pedro Soto/ });
     expect(enlace).toHaveAttribute('href', '/chat/1');
     expect(enlace).toHaveTextContent('Conductor · Pedro Soto: Voy en camino');
@@ -160,6 +166,52 @@ describe('directos y grupos', () => {
     expect(screen.queryByRole('button', { name: 'Borrar grupo' })).not.toBeInTheDocument();
     await userEvent.click(await screen.findByRole('button', { name: 'Quitar a Carla Conductora' }));
     expect(await screen.findByText('Solo quien creó el grupo o el administrador quitan integrantes.')).toBeInTheDocument();
+  });
+});
+
+describe('avisos (HU-63)', () => {
+  const canal = () => SocketFalso.creados.find((s) => s.url.endsWith('/ws/chat/'))!;
+
+  it('la llegada al origen alerta al despacho con sonido y enlace a la reserva', async () => {
+    montar('/');
+    await waitFor(() => expect(canal()).toBeDefined());
+    act(() => canal().onmessage!({ data: JSON.stringify({ tipo: 'llegada', viaje: 8, conductor: 'Pedro Soto', texto: 'Pedro Soto llegó al origen del viaje #8' }) }));
+    const alerta = await screen.findByRole('status', { name: 'Llegadas al origen' });
+    expect(alerta).toHaveTextContent('Pedro Soto llegó al origen del viaje #8');
+    expect(within(alerta).getByRole('link', { name: 'Ver reserva #8' })).toHaveAttribute('href', '/reservas/8');
+    expect(sonarAlerta).toHaveBeenCalled();
+    await userEvent.click(within(alerta).getByRole('button', { name: 'Cerrar el aviso de la reserva 8' }));
+    expect(screen.queryByRole('status', { name: 'Llegadas al origen' })).not.toBeInTheDocument();
+  });
+
+  it('un mensaje ajeno suena y, con la pestaña oculta y permiso, notifica', async () => {
+    const creadas: { titulo: string; cuerpo?: string }[] = [];
+    vi.stubGlobal(
+      'Notification',
+      class {
+        static permission = 'granted';
+        constructor(titulo: string, opciones?: { body?: string }) {
+          creadas.push({ titulo, cuerpo: opciones?.body });
+        }
+      },
+    );
+    const oculto = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    montar('/chat');
+    await screen.findByRole('link', { name: /Pedro Soto/ });
+    act(() => canal().onmessage!({ data: JSON.stringify({ tipo: 'mensaje', mensaje: mensajeChat({ id: 9, texto: 'Llegué' }) }) }));
+    act(() => canal().onmessage!({ data: JSON.stringify({ tipo: 'mensaje', mensaje: mensajeChat({ id: 10, propio: true }) }) }));
+    expect(sonarAlerta).toHaveBeenCalledTimes(1);
+    expect(creadas).toEqual([{ titulo: 'Mensaje de Pedro Soto', cuerpo: 'Llegué' }]);
+    oculto.mockRestore();
+  });
+
+  it('pide el permiso del navegador con un clic', async () => {
+    const pedir = vi.fn(async () => 'granted');
+    vi.stubGlobal('Notification', { permission: 'default', requestPermission: pedir });
+    montar('/chat');
+    await userEvent.click(await screen.findByRole('button', { name: 'Activar avisos del navegador' }));
+    expect(pedir).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Activar avisos del navegador' })).not.toBeInTheDocument());
   });
 });
 

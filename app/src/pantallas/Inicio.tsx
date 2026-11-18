@@ -5,6 +5,7 @@ import type { EstadoRastreo } from '../gps/turno';
 import { horaDeChile } from '../hora';
 import { vehiculoParaTurno, type Perfil } from '../perfil';
 import type { Asignacion } from '../conductor/canal';
+import type { MensajeChat } from '../chat/canal';
 import type { ViajeActivo } from '../navegacion';
 import type { Usuario } from '../sesion/sesion';
 import { AvanceViaje, type Pago } from './AvanceViaje';
@@ -28,12 +29,14 @@ interface Props {
   /** CC-19: abre el chat; `noLeidos` se muestra en el botón. */
   verChat: () => void;
   noLeidos: number;
+  /** HU-63: último mensaje ajeno recibido fuera del chat. */
+  avisoChat?: MensajeChat | null;
   abrirAjustes: () => void;
   cerrarSesion: () => void;
 }
 
 /** Inicio del conductor: empezar o terminar el turno con su vehículo (HU-13) y estado del GPS. */
-export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, verMiTurno, verChat, noLeidos, abrirAjustes, cerrarSesion }: Props) {
+export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignacion, envio, rastreo, cambiarTurno, actualizar, verMiTurno, verChat, noLeidos, avisoChat, abrirAjustes, cerrarSesion }: Props) {
   const enTurno = perfil.estado !== 'NO_DISPONIBLE';
   const [elegido, setElegido] = useState<number | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -58,6 +61,15 @@ export function Inicio({ usuario, perfil, viaje, avanzar, asignacion, verAsignac
     <main>
       <h1>Hola, {usuario.nombre}</h1>
       <p className="secundario">{usuario.empresa.razon_social}</p>
+
+      {avisoChat && (
+        <p className="aviso" role="status">
+          {`Nuevo mensaje de ${avisoChat.autor}: ${avisoChat.texto}`}{' '}
+          <button type="button" onClick={verChat}>
+            Abrir chat
+          </button>
+        </p>
+      )}
 
       {asignacion && (
         <p className="aviso" role="status">

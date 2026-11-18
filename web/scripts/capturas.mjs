@@ -9,6 +9,7 @@
 // Usa el Edge instalado (CAPTURAS_CANAL=chrome para Chrome): no descarga navegadores.
 // Guarda docs/evidencias/HU-xx/<nombre>-390.png y <nombre>-1440.png. Solo datos sintéticos: no capturar
 // pantallas que muestren una contraseña temporal sin invalidarla después.
+import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -19,6 +20,23 @@ const EVIDENCIAS = join(RAIZ, 'docs', 'evidencias');
 const URL_BASE = process.env.CAPTURAS_URL ?? 'http://localhost:5173';
 const EMPRESA = 'transportes-andes';
 const PORTAL = `/solicitar/${EMPRESA}`;
+// HU-63: alerta de llegada de un viaje sintético con conductor (se envía al cerrar la transacción).
+const LLEGADA = [
+  'from django.db import transaction',
+  'from apps.chat.servicios import alertar_llegada',
+  'from apps.reservas.models import Viaje',
+  `v = Viaje.objects.filter(empresa__slug="${EMPRESA}", conductor__isnull=False).order_by("pk").first()`,
+  'with transaction.atomic(): alertar_llegada(v)',
+].join('\n');
+// HU-63: el despacho escribe en el hilo central de conductor1.
+const MENSAJE_CENTRAL = [
+  'from apps.chat.models import Conversacion',
+  'from apps.chat.servicios import publicar',
+  'from apps.cuentas.models import Usuario',
+  `d = Usuario.objects.get(email="despacho@${EMPRESA}.example")`,
+  `c = Conversacion.objects.get(tipo="CENTRAL", conductor__usuario__email="conductor1@${EMPRESA}.example")`,
+  'publicar(d, c, "Tu próximo pasajero espera en la puerta 3.")',
+].join('\n');
 
 const ANCHOS = [
   { sufijo: '390', opciones: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true } },
@@ -268,6 +286,33 @@ const PANTALLAS = {
       },
     },
     { nombre: 'panel-chat-moderacion', ruta: '/chat/moderacion', sesion: 'admin' },
+  ],
+  // HU-63 (CC-19): la llegada se dispara en el backend (docker compose) mientras el panel escucha /ws/chat/.
+  'HU-63': [
+    {
+      nombre: 'panel-alerta-llegada',
+      ruta: '/',
+      sesion: 'despacho',
+      accion: async (pagina) => {
+        await pagina.waitForTimeout(1500);
+        execFileSync('docker', ['compose', '-f', '../infra/docker-compose.dev.yml', 'exec', '-T', 'backend', 'python', 'manage.py', 'shell', '-c', LLEGADA]);
+        await pagina.getByRole('status', { name: 'Llegadas al origen' }).waitFor();
+      },
+    },
+    { nombre: 'panel-chat-no-leidos', ruta: '/chat', sesion: 'admin' },
+    // En la app (CAPTURAS_URL del servidor de la app): el despacho escribe a conductor1 mientras está en el inicio.
+    {
+      nombre: 'app-aviso-chat',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('button', { name: /^Chat/ }).waitFor();
+        await pagina.waitForTimeout(1500);
+        execFileSync('docker', ['compose', '-f', '../infra/docker-compose.dev.yml', 'exec', '-T', 'backend', 'python', 'manage.py', 'shell', '-c', MENSAJE_CENTRAL]);
+        await pagina.getByText(/Nuevo mensaje de Central/).waitFor();
+      },
+    },
   ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },

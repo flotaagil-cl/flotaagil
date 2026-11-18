@@ -7,6 +7,8 @@ export type EventoChat =
   | { tipo: 'mensaje'; mensaje: MensajeChat }
   | { tipo: 'leido'; conversacion: number }
   | { tipo: 'conversaciones' }
+  /** HU-63: la geocerca marcó la llegada del conductor al origen. */
+  | { tipo: 'llegada'; viaje: number; conductor: string; texto: string }
   | { tipo: 'pong' };
 
 export type OyenteChat = (evento: EventoChat) => void;

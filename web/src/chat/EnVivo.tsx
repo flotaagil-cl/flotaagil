@@ -10,6 +10,7 @@ import type { CrearSocket } from '../mapa/conexion';
 import { ConexionIndicadores, type FaseIndicadores } from '../paginas/conexionIndicadores';
 import { useSesion } from '../sesion/SesionProvider';
 import { claves } from './api';
+import { notificar, sonar } from './avisos';
 import { ContextoChatEnVivo, type ContextoChat, type EventoChat, type OyenteChat } from './enVivoContexto';
 
 export function ChatEnVivo({ children, crearSocket }: { children: ReactNode; crearSocket?: CrearSocket }) {
@@ -30,6 +31,14 @@ export function ChatEnVivo({ children, crearSocket }: { children: ReactNode; cre
           if (evento.tipo === 'mensaje') {
             void cliente.invalidateQueries({ queryKey: claves.conversaciones });
             void cliente.invalidateQueries({ queryKey: claves.mensajes(evento.mensaje.conversacion) });
+            // HU-63: sonido y, con la pestaña oculta, notificación del sistema.
+            if (!evento.mensaje.propio) {
+              sonar();
+              notificar(`Mensaje de ${evento.mensaje.autor}`, evento.mensaje.texto);
+            }
+          } else if (evento.tipo === 'llegada') {
+            sonar();
+            notificar('Llegada al origen', evento.texto);
           } else if (evento.tipo === 'leido') {
             void cliente.invalidateQueries({ queryKey: claves.mensajes(evento.conversacion) });
           } else {

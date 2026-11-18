@@ -43,3 +43,14 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+/* HU-63: la llegada al origen es informativa, no un problema. */
+.alertas[data-tono='info'],
+.alertas[data-tono='info'] button {
+  border-color: var(--info-borde);
+  color: var(--texto);
+}
+
+.alertas[data-tono='info'] {
+  background: var(--info-fondo);
+}
