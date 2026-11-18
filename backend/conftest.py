@@ -25,6 +25,15 @@ def _cache_de_pruebas(settings):
 
 
 @pytest.fixture(autouse=True)
+def _geocodificador_sin_red(settings):
+    """HU-70: aunque el .env local pida Nominatim o Google, las pruebas no llaman a la red: sin valor, sin
+    clave y sin DEBUG queda el de desarrollo; las que prueban otro proveedor lo piden y simulan la red."""
+    settings.GEOCODIFICADOR = ""
+    settings.GOOGLE_GEOCODING_API_KEY = ""
+    settings.DEBUG = False
+
+
+@pytest.fixture(autouse=True)
 def _capa_de_canales_en_memoria(settings):
     """Las pruebas no usan Redis para los WebSocket (HU-02)."""
     settings.CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}

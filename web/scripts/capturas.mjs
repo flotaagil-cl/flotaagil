@@ -422,6 +422,19 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-70 (DC-71): mapa del panel con OpenStreetMap (web/.env con VITE_MAPA_PROVEEDOR=osm y conexión a internet).
+  'HU-70': [
+    {
+      nombre: 'panel-mapa-osm',
+      ruta: '/mapa',
+      sesion: 'despacho',
+      accion: async (pagina) => {
+        await pagina.locator('.leaflet-tile-loaded').first().waitFor({ timeout: 30000 });
+        await pagina.getByText('OpenStreetMap').first().waitFor();
+        await pagina.waitForTimeout(1500); // que terminen de pintarse las teselas a la vista
+      },
+    },
+  ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
   'HU-45': [

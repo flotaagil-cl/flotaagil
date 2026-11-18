@@ -1,0 +1,40 @@
+/* HU-70: mapa de OpenStreetMap del portal. Ocupa el mismo lugar que el de respaldo; colores solo de tokens. */
+.mapa {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+  background: var(--mapa);
+}
+
+.contenedorPin {
+  background: transparent;
+  border: 0;
+}
+
+.pin {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--superficie);
+  border-radius: 50%;
+  background: var(--acento);
+  box-shadow: 0 2px 6px var(--sombra);
+}
+
+.pin[data-tipo='destino'] {
+  width: 22px;
+  height: 22px;
+  margin: 5px;
+  border-radius: 4px;
+}
+
+.pin svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--superficie);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

@@ -1342,6 +1342,25 @@
       "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
       "epica": "Aeropuerto",
       "label_epica": "epica:aeropuerto"
+    },
+    {
+      "id": "HU-70",
+      "titulo": "Mapa y geocodificación con OpenStreetMap para desarrollo",
+      "historia": "Como equipo de desarrollo, quiero un mapa real y gratis (OpenStreetMap) y geocodificación con Nominatim para probar, sin reemplazar Google Maps, que sigue siendo el de producción.",
+      "criterios": "Proveedor por configuración (VITE_MAPA_PROVEEDOR y GEOCODIFICADOR); mapa OSM con Leaflet en el panel y el portal, con atribución, marcadores por estado y caída al esquemático; Nominatim con 1 solicitud por segundo, User-Agent propio, caché en Redis y búsqueda en Chile; solo desarrollo y pruebas (DC-71).",
+      "sp": 3,
+      "reglas": [],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-02"
+      ],
+      "prioridad": "Media",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho"
     }
   ],
   "tareas": [

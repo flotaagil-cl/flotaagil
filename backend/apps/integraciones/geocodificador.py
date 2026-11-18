@@ -3,6 +3,9 @@
 - `GeocodificadorDesarrollo`: coordenadas aproximadas y determinísticas por texto, dentro de la zona de
   operación de la empresa. No llama a ningún servicio externo.
 - `GeocodificadorGoogle`: Google Geocoding API; se usa cuando `GOOGLE_GEOCODING_API_KEY` está definida.
+- `GeocodificadorNominatim` (HU-70, DC-71): Nominatim de OpenStreetMap, solo para desarrollo y pruebas.
+
+`GEOCODIFICADOR` (google | nominatim | desarrollo) elige el proveedor.
 """
 
 import hashlib
@@ -133,9 +136,123 @@ class GeocodificadorGoogle:
         raise GeocodificacionError("El servicio de direcciones no está disponible. Intenta nuevamente.")
 
 
-def obtener_geocodificador() -> Geocodificador:
+class GeocodificadorNominatim:
+    """HU-70 (DC-71): Nominatim de OpenStreetMap, solo para desarrollo y pruebas.
+
+    Cumple su política de uso: a lo más 1 solicitud por segundo entre todos los procesos (candado en Redis),
+    un User-Agent que identifica la aplicación y caché de los resultados para no repetir consultas.
+    """
+
+    URL = "https://nominatim.openstreetmap.org/search"
+    USER_AGENT = "FlotaAgil-pruebas (+https://github.com/flotaagil-cl/flotaagil)"
+    CANDADO = "nominatim:candado"
+    CACHE_DIAS = 30
+    # Una dirección que no existe también se recuerda (menos tiempo), para no volver a preguntarla.
+    CACHE_NO_ENCONTRADA_S = 3600
+
+    def __init__(
+        self,
+        intentos: int = 3,
+        espera_base: float = 1.0,
+        timeout: float = 5.0,
+        espera_maxima_candado: float = 5.0,
+        dormir=time.sleep,
+        reloj=time.monotonic,
+    ):
+        self.intentos = intentos
+        self.espera_base = espera_base
+        self.timeout = timeout
+        self.espera_maxima_candado = espera_maxima_candado
+        self.dormir = dormir
+        self.reloj = reloj
+
+    def _clave_cache(self, direccion: str, zona: Zona) -> str:
+        texto = f"{_normalizar(direccion)}|{zona.lat_min},{zona.lat_max},{zona.lon_min},{zona.lon_max}"
+        return "nominatim:" + hashlib.sha256(texto.encode()).hexdigest()
+
+    def _esperar_turno(self) -> None:
+        """1 solicitud por segundo: `cache.add` es atómico en Redis (SET NX) y la llave vence en 1 s."""
+        from django.core.cache import cache
+
+        limite = self.reloj() + self.espera_maxima_candado
+        while not cache.add(self.CANDADO, 1, timeout=1):
+            if self.reloj() >= limite:
+                raise GeocodificacionError(
+                    "El servicio de direcciones no está disponible. Intenta nuevamente."
+                )
+            self.dormir(0.2)
+
+    def _consultar(self, direccion: str, zona: Zona) -> list:
+        parametros = urllib.parse.urlencode(
+            {
+                "q": direccion,
+                "format": "jsonv2",
+                "limit": 1,
+                "countrycodes": "cl",
+                "accept-language": "es",
+                # Sesgo hacia la zona de operación (no la restringe), como `bounds` en Google.
+                "viewbox": f"{zona.lon_min},{zona.lat_max},{zona.lon_max},{zona.lat_min}",
+            }
+        )
+        pedido = urllib.request.Request(f"{self.URL}?{parametros}", headers={"User-Agent": self.USER_AGENT})
+        # La URL es fija y https; no se abren esquemas arbitrarios.
+        with urllib.request.urlopen(pedido, timeout=self.timeout) as respuesta:  # nosec B310
+            return json.load(respuesta)
+
+    def geocodificar(self, direccion: str, zona: Zona) -> Coordenadas:
+        from django.core.cache import cache
+
+        if not _normalizar(direccion):
+            raise GeocodificacionError("La dirección está vacía.")
+        clave = self._clave_cache(direccion, zona)
+        guardado = cache.get(clave)
+        if guardado == "no_encontrada":
+            raise GeocodificacionError("No se encontró la dirección.")
+        if guardado:
+            return Coordenadas(*guardado)
+        for intento in range(self.intentos):
+            self._esperar_turno()
+            try:
+                resultados = self._consultar(direccion, zona)
+            except (urllib.error.URLError, TimeoutError, ValueError) as error:
+                logger.warning("Nominatim falló (intento %s/%s): %s", intento + 1, self.intentos, error)
+                resultados = None
+            if resultados is not None:
+                if not resultados:
+                    cache.set(clave, "no_encontrada", self.CACHE_NO_ENCONTRADA_S)
+                    raise GeocodificacionError("No se encontró la dirección.")
+                punto = Coordenadas(float(resultados[0]["lat"]), float(resultados[0]["lon"]))
+                cache.set(clave, [punto.lat, punto.lon], self.CACHE_DIAS * 86400)
+                return punto
+            if intento < self.intentos - 1:
+                self.dormir(self.espera_base * 2**intento)  # reintento exponencial
+        raise GeocodificacionError("El servicio de direcciones no está disponible. Intenta nuevamente.")
+
+
+PROVEEDORES = ("google", "nominatim", "desarrollo")
+
+
+def proveedor_de_geocodificacion() -> str:
+    """HU-70: manda `GEOCODIFICADOR`; sin él, Google si hay clave y, si no, Nominatim con DEBUG."""
+    elegido = (getattr(settings, "GEOCODIFICADOR", "") or "").strip().lower()
     clave = getattr(settings, "GOOGLE_GEOCODING_API_KEY", "")
-    return GeocodificadorGoogle(clave) if clave else GeocodificadorDesarrollo()
+    if elegido == "google" and not clave:
+        logger.warning("GEOCODIFICADOR=google sin GOOGLE_GEOCODING_API_KEY: se usa el de desarrollo.")
+        return "desarrollo"
+    if elegido in PROVEEDORES:
+        return elegido
+    if clave:
+        return "google"
+    return "nominatim" if settings.DEBUG else "desarrollo"
+
+
+def obtener_geocodificador() -> Geocodificador:
+    proveedor = proveedor_de_geocodificacion()
+    if proveedor == "google":
+        return GeocodificadorGoogle(settings.GOOGLE_GEOCODING_API_KEY)
+    if proveedor == "nominatim":
+        return GeocodificadorNominatim()
+    return GeocodificadorDesarrollo()
 
 
 def coordenadas_reales() -> bool:
