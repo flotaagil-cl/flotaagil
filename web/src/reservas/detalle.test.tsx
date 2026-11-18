@@ -9,6 +9,9 @@ import { esperarListado, montarPanel } from '../pruebas/montar';
 import { viajeDePrueba } from '../pruebas/servidorViajesFalso';
 import type { components } from '../api/esquema';
 
+// HU-69: campos que calcula el backend con la configuración de la empresa.
+const CALCULADOS = { internacional: null, margen_min: 20, recogida_sugerida: '2026-07-15T14:10:00Z' };
+
 type Candidato = components['schemas']['Candidato'];
 
 async function abrirDetalle(viaje = viajeDePrueba({ id: 8 })) {
@@ -28,7 +31,7 @@ describe('detalle', () => {
         recogida_en: '2026-07-15T14:00:00Z',
         conductor: { id: 3, nombre: 'Carla Conductora' },
         vehiculo: { id: 4, patente: 'ABCD12' },
-        vuelo: { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: '2026-07-15T13:50:00Z', estado_vuelo: 'DEMORADO' },
+        vuelo: { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: '2026-07-15T13:50:00Z', estado_vuelo: 'DEMORADO', ultima_consulta_en: '2026-07-15T12:00:00Z', ...CALCULADOS },
         historial: [
           { estado_anterior: 'SOLICITADO', estado_nuevo: 'ASIGNADO', actor: 'SISTEMA', usuario: '', creado_en: '2026-07-15T12:01:00Z' },
           { estado_anterior: null, estado_nuevo: 'SOLICITADO', actor: 'DESPACHADOR', usuario: 'Diego Despacho', creado_en: '2026-07-15T12:00:00Z' },
@@ -36,8 +39,13 @@ describe('detalle', () => {
       }),
     );
     expect(screen.getByRole('heading', { name: 'Reserva #8 Asignado' })).toBeInTheDocument();
-    expect(screen.getByText('mié 15-07-2026 10:00')).toBeInTheDocument();
-    expect(screen.getByText(/LA123 · llegada programada mié 15-07-2026 09:30 · estimada mié 15-07-2026 09:50 · Demorado/)).toBeInTheDocument();
+    // La recogida va en los datos y, como «Recogida actual», en la tarjeta del vuelo (HU-69).
+    expect(screen.getAllByText('mié 15-07-2026 10:00')).toHaveLength(2);
+    // HU-69: el vuelo va en su tarjeta, con la programada frente a la estimada.
+    const tarjeta = screen.getByRole('region', { name: /Vuelo LA123/ });
+    expect(within(tarjeta).getByText('15-07-2026 09:30')).toBeInTheDocument();
+    expect(within(tarjeta).getByText('15-07-2026 09:50')).toBeInTheDocument();
+    expect(within(tarjeta).getByText(/demorado 20 min/)).toBeInTheDocument();
     expect(screen.getByText('Carla Conductora · ABCD12')).toBeInTheDocument();
     const pasos = within(screen.getByRole('list', { name: 'Historial de estados' })).getAllByRole('listitem');
     expect(pasos.map((p) => p.textContent)).toEqual([
@@ -179,15 +187,15 @@ describe('cancelar con motivo (CP-06)', () => {
 
 describe('vuelo verificado (HU-26)', () => {
   it('indica si el vuelo se verificó con la API de vuelos', async () => {
-    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const };
+    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, ...CALCULADOS };
     await abrirDetalle(viajeDePrueba({ id: 8, sentido: 'DESDE_AEROPUERTO', vuelo: { ...vuelo, ultima_consulta_en: '2026-07-15T10:00:00Z' } }));
-    expect(screen.getByText('Verificado con la API de vuelos el mié 15-07-2026 06:00')).toBeInTheDocument();
+    expect(screen.getByText('Con la API de vuelos el mié 15-07-2026 06:00')).toBeInTheDocument();
   });
 
   it('o si quedó sin verificar', async () => {
-    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, ultima_consulta_en: null };
+    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, ultima_consulta_en: null, ...CALCULADOS };
     await abrirDetalle(viajeDePrueba({ id: 9, sentido: 'DESDE_AEROPUERTO', vuelo }));
-    expect(screen.getByText('Sin verificar: la API de vuelos no respondió al registrarlo')).toBeInTheDocument();
+    expect(screen.getByText('Sin verificar con la API de vuelos')).toBeInTheDocument();
   });
 });
 
@@ -381,6 +389,7 @@ describe('nueva hora de recogida (HU-27)', () => {
     estado_vuelo: 'DEMORADO' as const,
     recogida_propuesta: '2026-07-15T14:30:00Z',
     propuesta_en: '2026-07-15T12:00:00Z',
+    ...CALCULADOS,
   };
   const conPropuesta = () => viajeDePrueba({ id: 8, recogida_en: '2026-07-15T13:50:00Z', vuelo: VUELO });
 
@@ -390,13 +399,14 @@ describe('nueva hora de recogida (HU-27)', () => {
     expect(propuesta.textContent).toContain('ahora llega mié 15-07-2026 10:10');
     expect(propuesta.textContent).toContain('propuesta: mié 15-07-2026 10:30');
     expect(propuesta.textContent).toContain('actual: mié 15-07-2026 09:50');
-    expect(screen.getByText('mié 15-07-2026 09:50', { selector: 'dd' })).toBeInTheDocument();
+    // En los datos y como «Recogida actual» de la tarjeta del vuelo (HU-69).
+    expect(screen.getAllByText('mié 15-07-2026 09:50', { selector: 'dd' })).toHaveLength(2);
   });
 
   it('al confirmar cambia la recogida y envía la hora que se vio', async () => {
     const contexto = await abrirDetalle(conPropuesta());
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar nueva hora' }));
-    expect(await screen.findByText('mié 15-07-2026 10:30', { selector: 'dd' })).toBeInTheDocument();
+    expect(await screen.findAllByText('mié 15-07-2026 10:30', { selector: 'dd' })).toHaveLength(2);
     expect(screen.queryByRole('region', { name: 'Cambió la llegada del vuelo' })).not.toBeInTheDocument();
     expect(contexto.viajes.cuerpos.at(-1)?.cuerpo).toEqual({ recogida_propuesta: '2026-07-15T14:30:00Z' });
   });
@@ -405,7 +415,7 @@ describe('nueva hora de recogida (HU-27)', () => {
     await abrirDetalle(conPropuesta());
     await userEvent.click(screen.getByRole('button', { name: 'Mantener la hora actual' }));
     await waitFor(() => expect(screen.queryByRole('region', { name: 'Cambió la llegada del vuelo' })).not.toBeInTheDocument());
-    expect(screen.getByText('mié 15-07-2026 09:50', { selector: 'dd' })).toBeInTheDocument();
+    expect(screen.getAllByText('mié 15-07-2026 09:50', { selector: 'dd' })).toHaveLength(2);
   });
 
   it('si la propuesta cambió mientras se miraba, avisa', async () => {

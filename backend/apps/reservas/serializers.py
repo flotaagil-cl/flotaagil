@@ -41,6 +41,15 @@ class ConvenioResumenSerializer(serializers.Serializer):
 
 
 class VueloSerializer(serializers.ModelSerializer):
+    # HU-69: calculados con la configuración de la empresa (contexto `configuracion`); no consultan la API.
+    internacional = serializers.SerializerMethodField(
+        help_text="Según el aeropuerto de origen; null si la API aún no lo informa (DC-69)."
+    )
+    margen_min = serializers.SerializerMethodField(help_text="Margen de la recogida tras la llegada (RN-17).")
+    recogida_sugerida = serializers.SerializerMethodField(
+        help_text="Llegada (estimada o programada) + margen (RN-17)."
+    )
+
     class Meta:
         model = Vuelo
         fields = [
@@ -53,12 +62,34 @@ class VueloSerializer(serializers.ModelSerializer):
             "origen_icao",
             "recogida_propuesta",
             "propuesta_en",
+            "internacional",
+            "margen_min",
+            "recogida_sugerida",
         ]
         extra_kwargs = {
             "ultima_consulta_en": {
                 "help_text": "Última consulta a la API de vuelos; null = sin verificar (HU-26)."
             }
         }
+
+    def _calculados(self, vuelo) -> dict:
+        from apps.aeropuerto.informacion import datos_del_vuelo
+
+        if not hasattr(self, "_cache_calculados"):
+            configuracion = self.context.get("configuracion") or vuelo.viaje.empresa.configuracion
+            self._cache_calculados = datos_del_vuelo(vuelo, configuracion)
+        return self._cache_calculados
+
+    @extend_schema_field(serializers.BooleanField(allow_null=True))
+    def get_internacional(self, vuelo):
+        return self._calculados(vuelo)["internacional"]
+
+    def get_margen_min(self, vuelo) -> int:
+        return self._calculados(vuelo)["margen_min"]
+
+    @extend_schema_field(serializers.DateTimeField())
+    def get_recogida_sugerida(self, vuelo):
+        return serializers.DateTimeField().to_representation(self._calculados(vuelo)["recogida_sugerida"])
 
 
 class HistorialSerializer(serializers.ModelSerializer):
@@ -90,6 +121,9 @@ class ViajeSerializer(serializers.ModelSerializer):
     vuelo = serializers.SerializerMethodField()
     sin_confirmar = serializers.SerializerMethodField()
     alerta_vuelo = serializers.SerializerMethodField(help_text="Alerta de vuelo sin atender (HU-28)")
+    en_aeropuerto_a_las = serializers.SerializerMethodField(
+        help_text="Salidas: despegue menos la antelación nacional o internacional de la empresa (HU-69)."
+    )
     origen = serializers.SerializerMethodField()
     destino = serializers.SerializerMethodField()
     editable = serializers.SerializerMethodField()
@@ -117,6 +151,7 @@ class ViajeSerializer(serializers.ModelSerializer):
             "convenio",
             "vuelo",
             "alerta_vuelo",
+            "en_aeropuerto_a_las",
             "motivo_cancelacion",
             "origen_cancelacion",
             "creado_en",
@@ -147,7 +182,16 @@ class ViajeSerializer(serializers.ModelSerializer):
     @extend_schema_field(VueloSerializer(allow_null=True))
     def get_vuelo(self, viaje):
         vuelo = getattr(viaje, "vuelo", None)
-        return VueloSerializer(vuelo).data if vuelo else None
+        if vuelo is None:
+            return None
+        return VueloSerializer(vuelo, context={"configuracion": viaje.empresa.configuracion}).data
+
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
+    def get_en_aeropuerto_a_las(self, viaje):
+        from apps.aeropuerto.informacion import en_aeropuerto_a_las
+
+        hora = en_aeropuerto_a_las(viaje, viaje.empresa.configuracion)
+        return serializers.DateTimeField().to_representation(hora) if hora else None
 
     @extend_schema_field(UbicacionSerializer)
     def get_origen(self, viaje):

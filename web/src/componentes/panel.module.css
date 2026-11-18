@@ -621,3 +621,16 @@
   font-weight: 600;
   text-decoration: none;
 }
+
+/* HU-69: propuesta de recogida dentro de la tarjeta de vuelo del detalle. */
+.propuestaIncrustada {
+  margin-top: var(--espacio-3);
+  padding: var(--espacio-3);
+  background: var(--insignia-revision-fondo);
+  border-radius: var(--radio);
+}
+
+.propuestaIncrustada h3 {
+  margin: 0 0 var(--espacio-2);
+  font-size: 1rem;
+}

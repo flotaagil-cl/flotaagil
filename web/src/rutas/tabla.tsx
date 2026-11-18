@@ -75,6 +75,12 @@ export const pantallasDelPanel: RouteObject[] = [
     ],
   },
   {
+    // HU-69: llegadas y salidas del día, con contadores y refresco cada minuto.
+    path: 'vuelos-de-hoy',
+    lazy: async () => ({ Component: (await import('../vuelos/VuelosDeHoy')).VuelosDeHoy }),
+    handle: { titulo: 'Vuelos de hoy', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+  },
+  {
     path: 'mapa',
     lazy: async () => ({ Component: (await import('../mapa/Mapa')).Mapa }),
     handle: { titulo: 'Mapa', menu: true, roles: ROLES_PANEL } satisfies Manejo,

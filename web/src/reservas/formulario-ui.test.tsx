@@ -215,7 +215,7 @@ describe('editar reserva', () => {
       id: 5,
       sentido: 'DESDE_AEROPUERTO',
       recogida_en: '2026-11-02T13:00:00Z',
-      vuelo: { numero: 'LA123', fecha: '2026-11-02', hora_programada: '2026-11-02T12:15:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' },
+      vuelo: { numero: 'LA123', fecha: '2026-11-02', hora_programada: '2026-11-02T12:15:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO', internacional: null, margen_min: 20, recogida_sugerida: '2026-11-02T12:35:00Z' },
     });
 
   async function abrirEdicion(viaje = conVuelo()) {

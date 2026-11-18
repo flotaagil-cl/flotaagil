@@ -51,6 +51,7 @@ export function viajeDePrueba(cambios: Partial<ViajeDetalle> = {}): ViajeDetalle
     empresa_cliente_contacto: null,
     calificacion: null,
     alerta_vuelo: null,
+    en_aeropuerto_a_las: null,
     cierre_forzado: null,
     historial: [
       { estado_anterior: null, estado_nuevo: 'SOLICITADO', actor: 'DESPACHADOR', usuario: 'Diego Despacho', creado_en: '2026-10-30T12:00:00Z' },
@@ -181,7 +182,7 @@ export class ServidorViajesFalso {
       destino: { direccion: datos.destino_dir, lat: -33.4, lon: -70.6 },
       recogida_en: datos.recogida_en,
       vuelo: datos.vuelo
-        ? { numero: datos.vuelo.numero, hora_programada: datos.vuelo.hora_programada, fecha: datos.vuelo.hora_programada.slice(0, 10), hora_estimada: null, estado_vuelo: 'PROGRAMADO' }
+        ? { numero: datos.vuelo.numero, hora_programada: datos.vuelo.hora_programada, fecha: datos.vuelo.hora_programada.slice(0, 10), hora_estimada: null, estado_vuelo: 'PROGRAMADO', internacional: null, margen_min: 20, recogida_sugerida: datos.vuelo.hora_programada }
         : null,
     });
     this.viajes.push(viaje);
@@ -204,7 +205,7 @@ export class ServidorViajesFalso {
     const vuelo =
       cambios.vuelo !== undefined || sentido !== 'DESDE_AEROPUERTO'
         ? cambios.vuelo
-          ? { numero: cambios.vuelo.numero, hora_programada: cambios.vuelo.hora_programada, fecha: cambios.vuelo.hora_programada.slice(0, 10), hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const }
+          ? { numero: cambios.vuelo.numero, hora_programada: cambios.vuelo.hora_programada, fecha: cambios.vuelo.hora_programada.slice(0, 10), hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, internacional: null, margen_min: 20, recogida_sugerida: cambios.vuelo.hora_programada }
           : null
         : viaje.vuelo;
     const final = { ...editado, vuelo };

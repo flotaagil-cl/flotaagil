@@ -451,6 +451,13 @@ class PuntoSerializer(serializers.Serializer):
     lon = serializers.FloatField()
 
 
+class VueloParaLaAppSerializer(serializers.Serializer):
+    numero = serializers.CharField()
+    hora_programada = serializers.DateTimeField()
+    hora_estimada = serializers.DateTimeField(allow_null=True)
+    estado_vuelo = serializers.CharField()
+
+
 class ViajeActivoSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     estado = serializers.CharField()
@@ -459,6 +466,13 @@ class ViajeActivoSerializer(serializers.Serializer):
     origen = PuntoSerializer()
     destino = PuntoSerializer()
     vuelo = serializers.CharField(allow_null=True, help_text="Número de vuelo, si es desde el aeropuerto")
+    detalle_vuelo = VueloParaLaAppSerializer(
+        allow_null=True, help_text="HU-69: el vuelo de llegada con su estado (se lee de la base)"
+    )
+    en_aeropuerto_a_las = serializers.DateTimeField(
+        allow_null=True,
+        help_text="HU-69: en las salidas, cuándo debe estar el pasajero en el aeropuerto",
+    )
     tarifa = serializers.IntegerField(allow_null=True, help_text="Tarifa acordada (CLP), si la hay")
     convenio = serializers.BooleanField(help_text="El viaje pertenece a un convenio")
     hacia = PuntoSerializer(
@@ -490,13 +504,26 @@ class ViajeActivoView(_VistaApp):
     )
     def get(self, request):
         viaje = (
-            Viaje.objects.select_related("pasajero", "vuelo")
+            Viaje.objects.select_related("pasajero", "vuelo", "empresa__configuracion")
             .filter(conductor__usuario=request.user, estado__in=ESTADOS_CON_VIAJE)
             .order_by("recogida_en")
             .first()
         )
         if viaje is None:
             return Response({"viaje": None})
+        from apps.aeropuerto.informacion import en_aeropuerto_a_las
+
+        vuelo = getattr(viaje, "vuelo", None)
+        detalle_vuelo = (
+            None
+            if vuelo is None
+            else {
+                "numero": vuelo.numero,
+                "hora_programada": vuelo.hora_programada,
+                "hora_estimada": vuelo.hora_estimada,
+                "estado_vuelo": vuelo.estado_vuelo,
+            }
+        )
         origen = _punto(viaje.origen_dir, viaje.origen_geo)
         destino = _punto(viaje.destino_dir, viaje.destino_geo)
         return Response(
@@ -508,7 +535,9 @@ class ViajeActivoView(_VistaApp):
                     "recogida_en": viaje.recogida_en,
                     "origen": origen,
                     "destino": destino,
-                    "vuelo": getattr(getattr(viaje, "vuelo", None), "numero", None),
+                    "vuelo": getattr(vuelo, "numero", None),
+                    "detalle_vuelo": detalle_vuelo,
+                    "en_aeropuerto_a_las": en_aeropuerto_a_las(viaje, viaje.empresa.configuracion),
                     "tarifa": viaje.tarifa,
                     "convenio": viaje.convenio_id is not None,
                     "hacia": destino if viaje.estado == EstadoViaje.PASAJERO_A_BORDO else origen,

@@ -1319,6 +1319,29 @@
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
       "label_epica": null
+    },
+    {
+      "id": "HU-69",
+      "titulo": "Información de vuelos en el panel y en la app",
+      "historia": "Como despachador, quiero ver el estado de los vuelos de mis reservas de aeropuerto en el panel y que el conductor lo vea en la app, para anticipar demoras y cancelaciones.",
+      "criterios": "Línea de vuelo en Reservas; tarjeta de vuelo en el detalle con la propuesta de recogida; pantalla «Vuelos de hoy» con contadores, filtros y refresco cada minuto; salidas con la hora en el aeropuerto según la antelación de la empresa; vuelo con estado en la app del conductor. Solo lee la base y la empresa del usuario.",
+      "sp": 5,
+      "reglas": [
+        "RN-02",
+        "RN-13",
+        "RN-17"
+      ],
+      "casos_prueba": [],
+      "depende_de": [
+        "HU-27"
+      ],
+      "prioridad": "Media",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
+      "epica": "Aeropuerto",
+      "label_epica": "epica:aeropuerto"
     }
   ],
   "tareas": [

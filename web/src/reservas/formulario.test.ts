@@ -148,7 +148,7 @@ describe('cuerpo para la API', () => {
       canal: 'WEB',
       sentido: 'DESDE_AEROPUERTO',
       recogida_en: '2026-04-05T03:30:00Z',
-      vuelo: { numero: 'LA123', fecha: '2026-04-04', hora_programada: '2026-04-05T02:45:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' },
+      vuelo: { numero: 'LA123', fecha: '2026-04-04', hora_programada: '2026-04-05T02:45:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO', internacional: null, margen_min: 20, recogida_sugerida: '2026-04-05T03:05:00Z' },
     });
     expect(valoresDeViaje(viaje)).toMatchObject({
       canal: 'TELEFONO',
