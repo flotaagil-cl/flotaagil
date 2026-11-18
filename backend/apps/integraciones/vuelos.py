@@ -41,6 +41,9 @@ class DatosVuelo:
     hora_estimada: datetime | None
     estado: str
     origen_icao: str | None = None
+    # HU-69: como vienen en `origin` de AeroAPI (`city` y `name`); None si no vienen.
+    origen_ciudad: str | None = None
+    origen_aeropuerto: str | None = None
 
 
 class VuelosNoDisponibles(Exception):
@@ -57,6 +60,25 @@ class ConsultorVuelos(Protocol):
 def designador(numero: str) -> str:
     """«la 123» → «LA123»."""
     return "".join(numero.upper().split())
+
+
+# HU-69: solo para el simulador de desarrollo (`simular_vuelo --origen`): ciudad y aeropuerto de algunos
+# códigos OACI, como los entregaría AeroAPI. En producción la ciudad llega de la API; nunca se deduce
+# del código.
+ORIGENES_DESARROLLO = {
+    "SPJC": ("Lima", "Aeropuerto Internacional Jorge Chávez"),
+    "SAEZ": ("Buenos Aires", "Aeropuerto Internacional Ministro Pistarini"),
+    "SBGR": ("São Paulo", "Aeropuerto Internacional de Guarulhos"),
+    "SKBO": ("Bogotá", "Aeropuerto Internacional El Dorado"),
+    "KMIA": ("Miami", "Aeropuerto Internacional de Miami"),
+    "SCFA": ("Antofagasta", "Aeropuerto Andrés Sabella"),
+    "SCIE": ("Concepción", "Aeropuerto Carriel Sur"),
+    "SCTE": ("Puerto Montt", "Aeropuerto El Tepual"),
+}
+
+
+def origen_desarrollo(icao: str | None) -> tuple[str | None, str | None]:
+    return ORIGENES_DESARROLLO.get((icao or "").upper(), (None, None))
 
 
 class ConsultorVuelosDesarrollo:
@@ -145,13 +167,16 @@ class ConsultorFlightAware:
             if programada is None or timezone.localtime(programada).date() != dia:
                 continue
             estimada = _hora(vuelo.get("estimated_in") or vuelo.get("estimated_on"))
+            origen = vuelo.get("origin") or {}
             candidatos.append(
                 DatosVuelo(
                     vuelo.get("ident_iata") or ident,
                     programada,
                     estimada,
                     estado_de(vuelo, programada, estimada),
-                    (vuelo.get("origin") or {}).get("code_icao"),
+                    origen.get("code_icao"),
+                    origen.get("city") or None,
+                    origen.get("name") or None,
                 )
             )
         return candidatos

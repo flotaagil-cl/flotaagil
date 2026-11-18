@@ -116,6 +116,18 @@ describe('línea de vuelo del listado', () => {
     expect(linea.detalle).toEqual([`debe estar en el aeropuerto a las ${debeEstar}`]);
   });
 
+  it('HU-69: con la ciudad que entregó la API, «desde Lima»', () => {
+    const linea = lineaDeVuelo(viaje({ vuelo: vuelo({ origen_ciudad: 'Lima', origen_icao: 'SPJC' }) }), AHORA)!;
+    expect(linea.principal).toBe('Vuelo asociado LA845 · desde Lima · aterriza a las 15:20');
+  });
+
+  it('HU-69: salida con número, y con número pero sin hora (panel)', () => {
+    const conHora = viaje({ sentido: 'HACIA_AEROPUERTO', vuelo: null, vuelo_salida_en: en(240), vuelo_salida_tipo: 'NACIONAL', vuelo_salida_numero: 'LA 601' });
+    expect(lineaDeVuelo(conHora, AHORA)!.principal).toBe('Vuelo de salida LA 601 · despega a las 18:00 (nacional)');
+    const sinHora = viaje({ sentido: 'HACIA_AEROPUERTO', vuelo: null, vuelo_salida_numero: 'LA 601' });
+    expect(lineaDeVuelo(sinHora, AHORA)).toEqual({ principal: 'Vuelo de salida LA 601', estado: null, detalle: [], propuesta: false });
+  });
+
   it('urbano: sin línea', () => {
     expect(lineaDeVuelo(viaje({ sentido: 'URBANO', vuelo: null }), AHORA)).toBeNull();
   });

@@ -208,6 +208,18 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
         viaje?.vuelo && <Aviso>Al guardar con este sentido se quitará el vuelo registrado ({viaje.vuelo.numero}).</Aviso>
       )}
 
+      {sentido === 'HACIA_AEROPUERTO' && (
+        // HU-69: el número del vuelo de salida es opcional y no se monitorea.
+        <fieldset disabled={bloqueado}>
+          <legend>Vuelo de salida (opcional)</legend>
+          <Campo etiqueta="Número del vuelo de salida" error={errors.vuelo_salida_numero?.message}>
+            {(control) => (
+              <input autoComplete="off" autoCapitalize="characters" placeholder="LA601" {...control} {...register('vuelo_salida_numero')} />
+            )}
+          </Campo>
+        </fieldset>
+      )}
+
       <div className={estilos.pie}>
         <button type="submit" className={estilos.boton} disabled={bloqueado || isSubmitting}>
           {isSubmitting ? 'Guardando…' : modo === 'crear' ? 'Guardar reserva' : 'Guardar cambios'}

@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Now
 
-from apps.comun.validadores import validar_no_vacio, validar_rut, validar_telefono_e164
+from apps.comun.validadores import validar_no_vacio, validar_rut, validar_telefono_e164, validar_vuelo_iata
 
 
 class Pasajero(models.Model):
@@ -135,6 +135,10 @@ class Viaje(models.Model):
     # DC-42 (HU-39): vuelo de salida en los viajes al aeropuerto. Solo se guarda; no se monitorea.
     vuelo_salida_en = models.DateTimeField(null=True, blank=True)
     vuelo_salida_tipo = models.CharField(max_length=13, choices=TipoVuelo.choices, null=True, blank=True)
+    # HU-69 (DC-69): número del vuelo de salida, opcional; tampoco se monitorea.
+    vuelo_salida_numero = models.CharField(
+        max_length=8, null=True, blank=True, validators=[validar_vuelo_iata]
+    )
     motivo_cancelacion = models.CharField(max_length=200, null=True, blank=True)
     origen_cancelacion = models.CharField(
         max_length=14, choices=OrigenCancelacion.choices, null=True, blank=True

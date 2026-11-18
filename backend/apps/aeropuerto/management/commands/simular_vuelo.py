@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.aeropuerto import monitoreo
 from apps.aeropuerto.models import EstadoVuelo, Vuelo
-from apps.integraciones.vuelos import DatosVuelo
+from apps.integraciones.vuelos import DatosVuelo, origen_desarrollo
 
 
 class Command(BaseCommand):
@@ -31,7 +31,9 @@ class Command(BaseCommand):
         if vuelo is None:
             raise CommandError(f"El viaje {viaje} no tiene vuelo.")
         eta = vuelo.hora_programada + timedelta(minutes=eta_min)
+        ciudad, aeropuerto = origen_desarrollo(origen)  # HU-69: como si la API los entregara
         vuelo = monitoreo.aplicar(
-            vuelo.pk, DatosVuelo(vuelo.numero, vuelo.hora_programada, eta, estado, origen)
+            vuelo.pk,
+            DatosVuelo(vuelo.numero, vuelo.hora_programada, eta, estado, origen, ciudad, aeropuerto),
         )
         self.stdout.write(f"Vuelo {vuelo.numero}: ETA {eta}; recogida propuesta: {vuelo.recogida_propuesta}")

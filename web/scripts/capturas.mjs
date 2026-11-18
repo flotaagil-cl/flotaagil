@@ -383,6 +383,32 @@ const PANTALLAS = {
     { nombre: 'panel-detalle-vuelo-cancelado', ruta: () => `/reservas/${vuelosHU69().cancelado}`, sesion: 'despacho' },
     { nombre: 'panel-detalle-salida', ruta: () => `/reservas/${vuelosHU69().salida}`, sesion: 'despacho' },
     {
+      nombre: 'panel-nueva-reserva-salida',
+      ruta: '/reservas/nueva',
+      sesion: 'despacho',
+      accion: async (pagina) => {
+        await pagina.getByRole('radio', { name: 'Hacia el aeropuerto' }).check();
+        await pagina.getByLabel('Número del vuelo de salida').fill('LA 601');
+      },
+    },
+    {
+      nombre: 'portal-publico-al-aeropuerto',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByRole('tab', { name: /Al aeropuerto/ }).click();
+        await pagina.getByLabel('Número de vuelo (opcional)').fill('LA 601');
+      },
+    },
+    {
+      nombre: 'portal-cuenta-al-aeropuerto',
+      ruta: '/pedir/al-aeropuerto',
+      sesion: 'activa-hu64@correo.example',
+      accion: async (pagina) => {
+        await pagina.getByLabel('Número de vuelo (opcional)').fill('LA 601');
+      },
+    },
+    {
       nombre: 'app-vuelo',
       ruta: () => (vuelosHU69(), '/'),
       sesion: null,
@@ -441,9 +467,10 @@ const VUELOS_HU69 = [
   'cancelado = viaje("+56900069003", "Josefa Sintética", Sentido.DESDE_AEROPUERTO, 110, "JA131")',
   'salida = viaje("+56900069004", "Matías Sintético", Sentido.HACIA_AEROPUERTO, 300, tipo="INTERNACIONAL")',
   'call_command("simular_vuelo", a_tiempo.pk, "--eta-min", "0", "--estado", "PROGRAMADO", "--origen", "SCFA", stdout=open("/dev/null", "w"))',
-  'if not demorado.vuelo.recogida_propuesta and demorado.conductor_id is None:',
-  '    call_command("simular_vuelo", demorado.pk, "--eta-min", "40", "--estado", "DEMORADO", "--origen", "SAEZ", stdout=open("/dev/null", "w"))',
-  'call_command("simular_vuelo", cancelado.pk, "--eta-min", "0", "--estado", "CANCELADO", stdout=open("/dev/null", "w"))',
+  // La misma ETA no vuelve a proponer: se puede repetir (y así trae la ciudad de origen del simulador).
+  'call_command("simular_vuelo", demorado.pk, "--eta-min", "40", "--estado", "DEMORADO", "--origen", "SAEZ", stdout=open("/dev/null", "w"))',
+  'call_command("simular_vuelo", cancelado.pk, "--eta-min", "0", "--estado", "CANCELADO", "--origen", "SPJC", stdout=open("/dev/null", "w"))',
+  'Viaje.objects.filter(pk=salida.pk).update(vuelo_salida_numero="LA 601")  # HU-69: número de salida opcional',
   `c = Conductor.objects.get(usuario__email="conductor1@${EMPRESA}.example")`,
   'veh = ConductorVehiculo.objects.filter(conductor=c).first().vehiculo',
   'Viaje.objects.filter(pk=demorado.pk).update(conductor=c, vehiculo=veh, estado=EstadoViaje.ACEPTADO)',

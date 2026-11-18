@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
 import { ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
 import { EMPRESA_PORTAL } from '../pruebas/servidorPortalFalso';
-import { armarPedido, erroresDelServidor, horaDe, recogidaSugerida, textoAntelacion, VALORES_INICIALES, type EmpresaPublica } from './pedido';
+import { armarPedido, erroresDelServidor, horaDe, recogidaSugerida, resumenPedido, textoAntelacion, VALORES_INICIALES, type EmpresaPublica } from './pedido';
 
 const EMPRESA: EmpresaPublica = { ...EMPRESA_PORTAL, capacidad_maxima: 4 };
 const json = (estado: number, cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: estado, headers: { 'Content-Type': 'application/json' } });
@@ -81,6 +81,15 @@ describe('HU-39 · armar el pedido', () => {
         vuelo_salida: { hora: '2026-11-20T11:40:00.000Z', tipo: 'INTERNACIONAL' },
       }),
     });
+  });
+
+  it('HU-69: al aeropuerto, el número de vuelo es opcional y va en el resumen', () => {
+    const valores = { ...VALORES_INICIALES, origen: 'Los Leones 100', salidaFecha: '2026-11-20', salidaHora: '08:40', salidaNumero: 'la  601' };
+    const armado = armarPedido('al-aeropuerto', valores, EMPRESA);
+    expect('cuerpo' in armado && armado.cuerpo.vuelo_salida).toEqual({ hora: '2026-11-20T11:40:00.000Z', tipo: 'INTERNACIONAL', numero: 'LA 601' });
+    if ('cuerpo' in armado) expect(resumenPedido('al-aeropuerto', valores, armado.cuerpo, EMPRESA)).toContainEqual(['Vuelo de salida', 'LA 601 · Internacional · vie 20-11-2026 08:40']);
+    expect(armarPedido('al-aeropuerto', { ...valores, salidaNumero: 'ABCDEF' }, EMPRESA)).toEqual({ errores: { salidaNumero: 'Revisa el número: por ejemplo, LA 601.' } });
+    expect(erroresDelServidor({ vuelo_salida: { numero: ['Número inválido.'] } })).toEqual({ salidaNumero: 'Número inválido.' });
   });
 
   it('al aeropuerto: la recogida cambiada se envía; sin datos, errores', () => {

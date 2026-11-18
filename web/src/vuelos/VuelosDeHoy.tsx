@@ -165,7 +165,7 @@ function Fila({ viaje, ahora }: { viaje: Viaje; ahora: number }) {
   return (
     <tr>
       <Celda titulo="Vuelo">
-        <Link to={detalle}>Salida{tipoDeSalida(viaje)}</Link>
+        <Link to={detalle}>{viaje.vuelo_salida_numero ? `Salida ${viaje.vuelo_salida_numero}` : 'Salida'}{tipoDeSalida(viaje)}</Link>
         <span className={estilos.secundario}>Reserva #{viaje.id}</span>
       </Celda>
       <Celda titulo="Programada">{formatearHora(despegue, ahora)}</Celda>

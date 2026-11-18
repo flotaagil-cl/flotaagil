@@ -116,6 +116,9 @@ def aplicar(vuelo_id: int, datos) -> Vuelo:
     vuelo.hora_estimada = datos.hora_estimada
     vuelo.estado_vuelo = datos.estado
     vuelo.origen_icao = datos.origen_icao or vuelo.origen_icao
+    # HU-69: ciudad y aeropuerto de origen, si la API los entregó (una consulta sin ellos no los borra).
+    vuelo.origen_ciudad = datos.origen_ciudad or vuelo.origen_ciudad
+    vuelo.origen_aeropuerto = datos.origen_aeropuerto or vuelo.origen_aeropuerto
     vuelo.ultima_consulta_en = timezone.now()
 
     eta = eta_de(vuelo)

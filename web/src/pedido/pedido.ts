@@ -38,6 +38,8 @@ export interface ValoresPedido {
   salidaFecha: string;
   salidaHora: string;
   salidaTipo: TipoVuelo;
+  /** HU-69: número del vuelo de salida, opcional (no se monitorea). */
+  salidaNumero: string;
   /** Recogida editada a mano (al aeropuerto con «Cambiar», o en la ciudad programado). */
   recogidaFecha: string;
   recogidaHora: string;
@@ -57,6 +59,7 @@ export const VALORES_INICIALES: ValoresPedido = {
   salidaFecha: '',
   salidaHora: '',
   salidaTipo: 'INTERNACIONAL',
+  salidaNumero: '',
   recogidaFecha: '',
   recogidaHora: '',
   cambiarRecogida: false,
@@ -130,6 +133,8 @@ export function armarPedido(tipo: TipoPedido, v: ValoresPedido, empresa: Empresa
     if (!v.salidaHora) errores.salidaHora = 'Indica la hora de salida.';
     const salida = instante(v.salidaFecha, v.salidaHora);
     if (v.salidaFecha && v.salidaHora && salida === null) errores.salidaHora = 'Ingresa una hora válida.';
+    const numeroSalida = v.salidaNumero.toUpperCase().split(/\s+/).filter(Boolean).join(' ');
+    if (numeroSalida && !/^[A-Z0-9]{2} ?\d{1,4}$/.test(numeroSalida)) errores.salidaNumero = 'Revisa el número: por ejemplo, LA 601.';
     let recogida: string | undefined;
     if (v.cambiarRecogida) {
       const ms = instante(v.recogidaFecha, v.recogidaHora);
@@ -143,7 +148,7 @@ export function armarPedido(tipo: TipoPedido, v: ValoresPedido, empresa: Empresa
         sentido: 'HACIA_AEROPUERTO',
         origen_dir: v.origen.trim(),
         destino_dir: AEROPUERTO,
-        vuelo_salida: { hora: aIso(salida), tipo: v.salidaTipo },
+        vuelo_salida: { hora: aIso(salida), tipo: v.salidaTipo, ...(numeroSalida && { numero: numeroSalida }) },
         ...(recogida && { recogida_en: recogida }),
       },
     };
@@ -184,6 +189,7 @@ export function erroresDelServidor(cuerpo: unknown): Errores {
     vueloFecha: primero(vuelo.fecha),
     vueloHora: primero(vuelo.hora_llegada),
     salidaHora: primero(salida.hora) ?? (typeof c.vuelo_salida === 'string' ? c.vuelo_salida : undefined),
+    salidaNumero: primero(salida.numero),
     recogidaHora: primero(c.recogida_en),
   };
   const limpios = Object.fromEntries(Object.entries(errores).filter(([, valor]) => valor)) as Errores;
@@ -200,7 +206,8 @@ export function resumenPedido(tipo: TipoPedido, v: ValoresPedido, cuerpo: Cuerpo
   }
   if (tipo === 'al-aeropuerto' && cuerpo.vuelo_salida) {
     const tipoVuelo = cuerpo.vuelo_salida.tipo === 'INTERNACIONAL' ? 'Internacional' : 'Nacional';
-    filas.push(['Vuelo de salida', `${tipoVuelo} · ${formatearFechaHora(cuerpo.vuelo_salida.hora)}`]);
+    const numero = cuerpo.vuelo_salida.numero ? `${cuerpo.vuelo_salida.numero} · ` : '';
+    filas.push(['Vuelo de salida', `${numero}${tipoVuelo} · ${formatearFechaHora(cuerpo.vuelo_salida.hora)}`]);
     const recogida = cuerpo.recogida_en ? Date.parse(cuerpo.recogida_en) : recogidaSugerida(v, empresa);
     if (recogida !== null) filas.push(['Recogida', formatearFechaHora(new Date(recogida).toISOString())]);
   }

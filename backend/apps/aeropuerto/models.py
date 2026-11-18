@@ -33,6 +33,9 @@ class Vuelo(models.Model):
     ultima_consulta_en = models.DateTimeField(null=True, blank=True)
     # DC-22: monitoreo (HU-27). La propuesta no cambia la recogida hasta que el despachador confirma (RN-02).
     origen_icao = models.CharField(max_length=4, null=True, blank=True)
+    # HU-69 (DC-69): ciudad y aeropuerto de origen tal como los entrega la API al consultar; opcionales.
+    origen_ciudad = models.CharField(max_length=80, null=True, blank=True)
+    origen_aeropuerto = models.CharField(max_length=120, null=True, blank=True)
     eta_referencia = models.DateTimeField(null=True, blank=True)
     recogida_propuesta = models.DateTimeField(null=True, blank=True)
     propuesta_en = models.DateTimeField(null=True, blank=True)

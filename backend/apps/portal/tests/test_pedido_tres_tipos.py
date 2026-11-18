@@ -83,6 +83,19 @@ class TestAlAeropuerto:
         assert viaje.recogida_en == hora - timedelta(minutes=antelacion)
         assert (viaje.vuelo_salida_en, viaje.vuelo_salida_tipo) == (hora, tipo)
 
+    @pytest.mark.parametrize(("numero", "guardado"), [("la 601", "LA 601"), ("", None), (None, None)])
+    def test_numero_de_salida_opcional(self, con_cuenta, numero, guardado):
+        """HU-69: con cuenta y en el formulario público (mismo serializador) va en `vuelo_salida`."""
+        salida = {**self.salida("NACIONAL"), "numero": numero}
+        respuesta = pedir(con_cuenta, sentido="HACIA_AEROPUERTO", recogida_en=None, vuelo_salida=salida)
+        assert respuesta.status_code == 201, respuesta.data
+        assert Viaje.objects.get().vuelo_salida_numero == guardado
+
+    def test_numero_de_salida_invalido(self, con_cuenta):
+        salida = {**self.salida("NACIONAL"), "numero": "ABCDEF"}
+        respuesta = pedir(con_cuenta, sentido="HACIA_AEROPUERTO", recogida_en=None, vuelo_salida=salida)
+        assert respuesta.status_code == 400 and "numero" in respuesta.data["vuelo_salida"]
+
     def test_antelacion_configurable(self, con_cuenta, empresa):
         empresa.configuracion.antelacion_vuelo_internacional_min = 240
         empresa.configuracion.save()

@@ -9,6 +9,7 @@ from apps.comun.validadores import (
 )
 from apps.cuentas.models import Empresa
 from apps.reservas.models import MAX_PASAJEROS, Sentido, TipoVuelo
+from apps.reservas.serializers import normalizar_numero_vuelo, numero_de_salida
 
 
 class EmpresaPublicaSerializer(serializers.ModelSerializer):
@@ -76,6 +77,10 @@ class VueloSalidaSerializer(serializers.Serializer):
 
     hora = serializers.DateTimeField(help_text="Hora de salida del vuelo.")
     tipo = serializers.ChoiceField(choices=TipoVuelo.choices)
+    numero = numero_de_salida()  # HU-69
+
+    def validate_numero(self, valor):
+        return normalizar_numero_vuelo(valor)
 
 
 class SolicitudSerializer(serializers.Serializer):

@@ -192,6 +192,18 @@ describe('vuelo verificado (HU-26)', () => {
     expect(screen.getByText('Con la API de vuelos el mié 15-07-2026 06:00')).toBeInTheDocument();
   });
 
+  it('HU-69: el origen con la ciudad y el aeropuerto que entregó la API', async () => {
+    const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, ...CALCULADOS };
+    const conOrigen = { ...vuelo, internacional: true, origen_icao: 'SPJC', origen_ciudad: 'Lima', origen_aeropuerto: 'Aeropuerto Internacional Jorge Chávez' };
+    await abrirDetalle(viajeDePrueba({ id: 10, sentido: 'DESDE_AEROPUERTO', vuelo: conOrigen }));
+    expect(screen.getByText('Internacional · Lima (Aeropuerto Internacional Jorge Chávez, SPJC)')).toBeInTheDocument();
+  });
+
+  it('HU-69: la salida muestra su número', async () => {
+    await abrirDetalle(viajeDePrueba({ id: 11, sentido: 'HACIA_AEROPUERTO', vuelo_salida_numero: 'LA 601', vuelo_salida_en: '2026-07-15T20:00:00Z', vuelo_salida_tipo: 'NACIONAL' }));
+    expect(screen.getByRole('heading', { name: 'Vuelo de salida LA 601' })).toBeInTheDocument();
+  });
+
   it('o si quedó sin verificar', async () => {
     const vuelo = { numero: 'LA123', fecha: '2026-07-15', hora_programada: '2026-07-15T13:30:00Z', hora_estimada: null, estado_vuelo: 'PROGRAMADO' as const, ultima_consulta_en: null, ...CALCULADOS };
     await abrirDetalle(viajeDePrueba({ id: 9, sentido: 'DESDE_AEROPUERTO', vuelo }));
