@@ -5,25 +5,24 @@
 
 import { App as AppNativa } from '@capacitor/app';
 import { useCallback, useEffect, useState } from 'react';
-import { abrirAjustes } from './gps/rastreo';
+import { manejarAtras } from './atras';
+import type { MensajeChat } from './chat/canal';
+import { alertar, pedirPermisoDeNotificaciones, sonarMensaje } from './conductor/alerta';
+import type { EstadoCanal } from './conductor/canal';
+import type { Accion } from './conductor/ejecucion';
+import { Recarga } from './conductor/recarga';
 import type { EstadoEnvio } from './gps/envio';
+import { abrirAjustes } from './gps/rastreo';
 import type { EstadoRastreo } from './gps/turno';
+import type { ViajeActivo } from './navegacion';
+import type { Pago } from './pantallas/AvanceViaje';
 import { CambiarPassword } from './pantallas/CambiarPassword';
+import { Chat, type ConversacionChat } from './pantallas/Chat';
 import { Consentimiento } from './pantallas/Consentimiento';
 import { Inicio } from './pantallas/Inicio';
 import { Login } from './pantallas/Login';
 import { MiTurno, type ResumenDelTurno } from './pantallas/MiTurno';
-import type { ViajeActivo } from './navegacion';
 import { modoDeRastreo, type Perfil } from './perfil';
-import { alertar, pedirPermisoDeNotificaciones, sonarMensaje } from './conductor/alerta';
-import type { MensajeChat } from './chat/canal';
-import type { Accion } from './conductor/ejecucion';
-import { Recarga } from './conductor/recarga';
-import type { Pago } from './pantallas/AvanceViaje';
-import type { EstadoCanal } from './conductor/canal';
-import { Responder } from './pantallas/Responder';
-import { ViajeAsignado } from './pantallas/ViajeAsignado';
-import { Chat, type ConversacionChat } from './pantallas/Chat';
 import { api, canal, canalChat, cola, rastreador, sesion } from './servicios';
 import { ErrorApi, SinRed, type EstadoSesion } from './sesion/sesion';
 
@@ -38,7 +37,6 @@ export default function App() {
   const [envio, setEnvio] = useState<EstadoEnvio>(cola.estado);
   const [rastreo, setRastreo] = useState<EstadoRastreo>(rastreador.estado);
   const [enVivo, setEnVivo] = useState<EstadoCanal>(canal.estado);
-  const [avisoOculto, setAvisoOculto] = useState<number | null>(null);
   const [enMiTurno, setEnMiTurno] = useState(false);
   const [enChat, setEnChat] = useState(false);
   const [noLeidos, setNoLeidos] = useState(0);
@@ -52,6 +50,15 @@ export default function App() {
   useEffect(() => canal.suscribir(setEnVivo), []);
   // HU-14: alerta sonora y vibración; notificación del sistema si la app no está a la vista.
   useEffect(() => canal.alRecibirAsignacion((asignacion) => void alertar(asignacion, document.hidden)), []);
+  // Botón o gesto físico «Atrás» de Android: vuelve un nivel o minimiza la app si está en el Inicio.
+  useEffect(() => {
+    const escucha = AppNativa.addListener('backButton', () => {
+      if (!manejarAtras()) void AppNativa.minimizeApp();
+    });
+    return () => {
+      void escucha.then((e) => e.remove());
+    };
+  }, []);
   useEffect(() => {
     void sesion.iniciar();
   }, []);
@@ -115,7 +122,7 @@ export default function App() {
   // CC-19: chat en vivo mientras hay sesión; el botón del inicio muestra los no leídos.
   const contarNoLeidos = useCallback(
     () =>
-      void api.pedir<ConversacionChat[]>('GET', '/api/chat/conversaciones/').then(
+      api.pedir<ConversacionChat[]>('GET', '/api/chat/conversaciones/').then(
         (lista) => setNoLeidos(Array.isArray(lista) ? lista.reduce((total, c) => total + c.no_leidos, 0) : 0),
         () => undefined,
       ),
@@ -124,8 +131,8 @@ export default function App() {
   useEffect(() => {
     if (!activa) return;
     canalChat.iniciar();
-    contarNoLeidos();
-    const quitar = canalChat.alEvento(contarNoLeidos);
+    void contarNoLeidos();
+    const quitar = canalChat.alEvento(() => void contarNoLeidos());
     return () => {
       quitar();
       canalChat.detener();
@@ -143,10 +150,13 @@ export default function App() {
     [enChat],
   );
 
-  // Al asignarse un viaje se recarga el perfil (el viaje en curso aparece al aceptarlo, HU-15).
+  // Al asignarse un viaje se vuelve al Inicio (donde aparece la tarjeta prioritaria) y se recarga el perfil.
   const asignacionId = enVivo.asignacion?.asignacion ?? null;
   useEffect(() => {
-    if (asignacionId !== null) void cargarPerfil();
+    if (asignacionId === null) return;
+    setEnMiTurno(false);
+    setEnChat(false);
+    void cargarPerfil();
   }, [asignacionId, cargarPerfil]);
 
   // HU-16: EN_ZONA automático o cancelación desde el panel. Al reconectarse también, por si se perdió el aviso.
@@ -154,6 +164,8 @@ export default function App() {
   useEffect(() => {
     if (enVivo.conectado) void cargarPerfil();
   }, [enVivo.conectado, cargarPerfil]);
+
+  const actualizarTodo = useCallback(() => Promise.all([cargarPerfil(), contarNoLeidos()]), [cargarPerfil, contarNoLeidos]);
 
   const modo = activa ? modoDeRastreo(perfil) : null;
   useEffect(() => {
@@ -248,30 +260,20 @@ export default function App() {
       </main>
     );
   }
-  if (enVivo.asignacion && avisoOculto !== enVivo.asignacion.asignacion) {
-    const id = enVivo.asignacion.asignacion;
-    return (
-      <ViajeAsignado
-        asignacion={enVivo.asignacion}
-        acciones={
-          <Responder
-            asignacion={enVivo.asignacion}
-            responder={(aceptar) => responderAsignacion(id, aceptar)}
-            ocultar={() => {
-              setAvisoOculto(id);
-              canal.olvidar(id);
-            }}
-          />
-        }
-      />
-    );
-  }
   if (!perfil.consentimiento_gps_en) {
     return <Consentimiento alAceptar={async () => setPerfil(await api.pedir<Perfil>('POST', '/api/app/consentimiento/'))} />;
   }
   if (enMiTurno) return <MiTurno cargar={cargarMiTurno} volver={() => setEnMiTurno(false)} />;
   if (enChat) {
-    return <Chat pedir={pedirChat} canal={canalChat} enViaje={viaje !== null} viajeId={viaje?.id ?? null} volver={() => (setEnChat(false), contarNoLeidos())} />;
+    return (
+      <Chat
+        pedir={pedirChat}
+        canal={canalChat}
+        enViaje={viaje !== null}
+        viajeId={viaje?.id ?? null}
+        volver={() => (setEnChat(false), void contarNoLeidos())}
+      />
+    );
   }
   return (
     <Inicio
@@ -280,11 +282,12 @@ export default function App() {
       viaje={viaje}
       avanzar={avanzarViaje}
       asignacion={enVivo.asignacion}
-      verAsignacion={() => setAvisoOculto(null)}
+      responder={responderAsignacion}
+      ocultarAsignacion={(id) => canal.olvidar(id)}
       envio={envio}
       rastreo={rastreo}
       cambiarTurno={cambiarTurno}
-      actualizar={() => void cargarPerfil()}
+      actualizar={actualizarTodo}
       verMiTurno={() => setEnMiTurno(true)}
       verChat={() => (setEnChat(true), setAvisoChat(null))}
       noLeidos={noLeidos}

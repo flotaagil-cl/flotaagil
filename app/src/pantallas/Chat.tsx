@@ -3,9 +3,11 @@
  * curso, el aviso «Evita escribir mientras manejas» (no bloquea). Los cambios llegan por el canal en vivo.
  */
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useAtras } from '../atras';
 import type { CanalChat, MensajeChat } from '../chat/canal';
 import { RAPIDAS } from '../chat/rapidas';
+import { DeslizarParaActualizar } from '../componentes/DeslizarParaActualizar';
 import { fechaYHora } from '../hora';
 import { ErrorApi, SinRed } from '../sesion/sesion';
 
@@ -50,6 +52,14 @@ function mensajeDeError(error: unknown): string {
   return 'No se pudo completar la acción.';
 }
 
+/** Une listas de mensajes sin duplicar por ID, en orden cronológico. */
+function combinarMensajes(actuales: MensajeChat[], nuevos: MensajeChat[]): MensajeChat[] {
+  const porId = new Map<number, MensajeChat>();
+  for (const m of actuales) porId.set(m.id, m);
+  for (const m of nuevos) porId.set(m.id, m);
+  return [...porId.values()].sort((a, b) => a.id - b.id);
+}
+
 type Vista = { tipo: 'lista' } | { tipo: 'hilo'; conversacion: ConversacionChat } | { tipo: 'directo' } | { tipo: 'grupo' };
 
 export function Chat({ pedir, canal, enViaje, volver, viajeId }: Props) {
@@ -71,9 +81,19 @@ export function Chat({ pedir, canal, enViaje, volver, viajeId }: Props) {
   );
 }
 
-function Lista({ pedir, canal, abrir, nuevo, volver, viajeId }: Pick<Props, 'pedir' | 'canal' | 'volver' | 'viajeId'> & { abrir: (c: ConversacionChat) => void; nuevo: (tipo: 'directo' | 'grupo') => void }) {
+function Lista({
+  pedir,
+  canal,
+  abrir,
+  nuevo,
+  volver,
+  viajeId,
+}: Pick<Props, 'pedir' | 'canal' | 'volver' | 'viajeId'> & { abrir: (c: ConversacionChat) => void; nuevo: (tipo: 'directo' | 'grupo') => void }) {
   const [conversaciones, setConversaciones] = useState<ConversacionChat[] | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
+
+  useAtras(volver);
+
   const cargar = useCallback(async () => {
     try {
       setConversaciones(await pedir<ConversacionChat[]>('GET', '/api/chat/conversaciones/'));
@@ -98,7 +118,7 @@ function Lista({ pedir, canal, abrir, nuevo, volver, viajeId }: Pick<Props, 'ped
   }
 
   return (
-    <>
+    <DeslizarParaActualizar alActualizar={cargar}>
       <h1>Chat</h1>
       {falla && (
         <p className="error" role="alert">
@@ -139,7 +159,7 @@ function Lista({ pedir, canal, abrir, nuevo, volver, viajeId }: Pick<Props, 'ped
           Volver al inicio
         </button>
       </div>
-    </>
+    </DeslizarParaActualizar>
   );
 }
 
@@ -150,13 +170,16 @@ function Hilo({ pedir, canal, conversacion, volver }: Pick<Props, 'pedir' | 'can
   const [texto, setTexto] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
+  const finRef = useRef<HTMLDivElement | null>(null);
+  const ultimoVisto = useRef<number | null>(null);
   const base = `/api/chat/conversaciones/${conversacion.id}`;
+
+  useAtras(volver);
 
   const cargar = useCallback(async () => {
     try {
       const pagina = await pedir<Pagina>('GET', `${base}/mensajes/`);
-      // Se conservan los anteriores ya cargados y se reemplaza la última página.
-      setMensajes((actuales) => [...actuales.filter((m) => m.id < (pagina.results[0]?.id ?? Infinity)), ...pagina.results]);
+      setMensajes((actuales) => combinarMensajes(actuales, pagina.results));
       setLeidoHasta(pagina.leido_por_otros_hasta);
       setHayMas((antes) => antes || pagina.hay_mas);
       const ultimo = pagina.results.at(-1);
@@ -169,14 +192,26 @@ function Hilo({ pedir, canal, conversacion, volver }: Pick<Props, 'pedir' | 'can
   useEffect(() => {
     void cargar();
     return canal.alEvento((evento) => {
-      if ((evento.tipo === 'mensaje' && evento.mensaje.conversacion === conversacion.id) || (evento.tipo === 'leido' && evento.conversacion === conversacion.id) || evento.tipo === 'inicial') void cargar();
+      if (evento.tipo === 'mensaje' && evento.mensaje.conversacion === conversacion.id) {
+        setMensajes((actuales) => combinarMensajes(actuales, [evento.mensaje]));
+        if (!evento.mensaje.propio) void pedir('POST', `${base}/leido/`, { hasta: evento.mensaje.id }).catch(() => undefined);
+        return;
+      }
+      if ((evento.tipo === 'leido' && evento.conversacion === conversacion.id) || evento.tipo === 'inicial') void cargar();
     });
-  }, [cargar, canal, conversacion.id]);
+  }, [cargar, canal, conversacion.id, pedir, base]);
+
+  const ultimoId = mensajes.at(-1)?.id ?? null;
+  useEffect(() => {
+    if (ultimoId === null || ultimoId === ultimoVisto.current) return;
+    ultimoVisto.current = ultimoId;
+    finRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'end' });
+  }, [ultimoId]);
 
   async function anteriores() {
     try {
       const pagina = await pedir<Pagina>('GET', `${base}/mensajes/?antes=${mensajes[0].id}`);
-      setMensajes((actuales) => [...pagina.results, ...actuales]);
+      setMensajes((actuales) => combinarMensajes(pagina.results, actuales));
       setHayMas(pagina.hay_mas);
     } catch (error) {
       setFalla(mensajeDeError(error));
@@ -226,6 +261,7 @@ function Hilo({ pedir, canal, conversacion, volver }: Pick<Props, 'pedir' | 'can
           </li>
         ))}
       </ol>
+      <div ref={finRef} />
       {falla && (
         <p className="error" role="alert">
           {falla}
@@ -261,6 +297,8 @@ function Nuevo({ pedir, tipo, abrir, volver }: Pick<Props, 'pedir'> & { tipo: 'd
   const [nombre, setNombre] = useState('');
   const [elegidos, setElegidos] = useState<number[]>([]);
   const [falla, setFalla] = useState<string | null>(null);
+
+  useAtras(volver);
 
   useEffect(() => {
     pedir<Persona[]>('GET', '/api/chat/personal/').then(setPersonal, (error: unknown) => setFalla(mensajeDeError(error)));
