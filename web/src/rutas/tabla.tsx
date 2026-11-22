@@ -15,10 +15,18 @@ import type { Rol } from '../api/auth';
 import { Cargando } from '../componentes/Cargando';
 import { ErrorDeRuta } from '../componentes/ErrorDeRuta';
 
+import type { NombreIcono } from '../diseno/iconos';
+
+export type SeccionMenu = 'operacion' | 'flota' | 'administracion';
+
 export interface Manejo {
   titulo: string;
   /** Aparece en el menú. */
   menu?: boolean;
+  /** Grupo del menú lateral del panel. */
+  seccion?: SeccionMenu;
+  /** Ícono decorativo en el menú lateral. */
+  icono?: NombreIcono;
   /** Roles que pueden verla; sin roles, cualquiera con sesión del panel. */
   roles?: Rol[];
   /** HU-56 (CC-22): solo en el menú de las empresas con el módulo de cuentas (WhatsApp con el pasajero). */
@@ -40,16 +48,22 @@ export function inicioDeRol(rol: Rol): string {
   return '/';
 }
 
-/** Pantallas del panel (con sesión). Las nuevas se agregan aquí. */
+/** Pantallas del panel (con sesión). Las nuevas se agregan aquí, ordenadas por sección del menú. */
 export const pantallasDelPanel: RouteObject[] = [
+  // --- OPERACIÓN ---
   {
     index: true,
     lazy: async () => ({ Component: (await import('../paginas/Inicio')).Inicio }),
-    handle: { titulo: 'Inicio', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Inicio', menu: true, seccion: 'operacion', icono: 'inicio', roles: ROLES_PANEL } satisfies Manejo,
+  },
+  {
+    path: 'mapa',
+    lazy: async () => ({ Component: (await import('../mapa/Mapa')).Mapa }),
+    handle: { titulo: 'Mapa', menu: true, seccion: 'operacion', icono: 'mapa', roles: ROLES_PANEL } satisfies Manejo,
   },
   {
     path: 'reservas',
-    handle: { titulo: 'Reservas', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Reservas', menu: true, seccion: 'operacion', icono: 'calendario', roles: ROLES_PANEL } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../reservas/paginas/Listado')).Listado }) },
       {
@@ -78,16 +92,38 @@ export const pantallasDelPanel: RouteObject[] = [
     // HU-69: llegadas y salidas del día, con contadores y refresco cada minuto.
     path: 'vuelos-de-hoy',
     lazy: async () => ({ Component: (await import('../vuelos/VuelosDeHoy')).VuelosDeHoy }),
-    handle: { titulo: 'Vuelos de hoy', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Vuelos de hoy', menu: true, seccion: 'operacion', icono: 'avion', roles: ROLES_PANEL } satisfies Manejo,
   },
   {
-    path: 'mapa',
-    lazy: async () => ({ Component: (await import('../mapa/Mapa')).Mapa }),
-    handle: { titulo: 'Mapa', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    path: 'chat',
+    handle: { titulo: 'Chat', menu: true, seccion: 'operacion', icono: 'mensaje', roles: ROLES_PANEL } satisfies Manejo,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
+      {
+        path: 'moderacion',
+        lazy: async () => ({ Component: (await import('../chat/paginas/Moderacion')).Moderacion }),
+        handle: { titulo: 'Moderación del chat', roles: ROLES_ADMIN } satisfies Manejo,
+      },
+      { path: ':id', lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
+    ],
   },
+  {
+    path: 'conversaciones',
+    // HU-67 (CC-19): el canal se retiró; queda el historial en solo lectura.
+    handle: { titulo: 'Historial WhatsApp', menu: true, seccion: 'operacion', icono: 'historial', roles: ROLES_PANEL, conModulo: true } satisfies Manejo,
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversaciones')).Conversaciones }) },
+      {
+        path: ':id',
+        lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversacion')).Conversacion }),
+        handle: { titulo: 'Historial WhatsApp', roles: ROLES_PANEL } satisfies Manejo,
+      },
+    ],
+  },
+  // --- FLOTA Y CLIENTES ---
   {
     path: 'vehiculos',
-    handle: { titulo: 'Vehículos', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Vehículos', menu: true, seccion: 'flota', icono: 'auto', roles: ROLES_ADMIN } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Vehiculos')).Vehiculos }) },
       {
@@ -109,7 +145,7 @@ export const pantallasDelPanel: RouteObject[] = [
   },
   {
     path: 'conductores',
-    handle: { titulo: 'Conductores', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Conductores', menu: true, seccion: 'flota', icono: 'volante', roles: ROLES_ADMIN } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Conductores')).Conductores }) },
       {
@@ -130,61 +166,9 @@ export const pantallasDelPanel: RouteObject[] = [
     ],
   },
   {
-    path: 'chat',
-    handle: { titulo: 'Chat', menu: true, roles: ROLES_PANEL } satisfies Manejo,
-    children: [
-      { index: true, lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
-      {
-        path: 'moderacion',
-        lazy: async () => ({ Component: (await import('../chat/paginas/Moderacion')).Moderacion }),
-        handle: { titulo: 'Moderación del chat', roles: ROLES_ADMIN } satisfies Manejo,
-      },
-      { path: ':id', lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
-    ],
-  },
-  {
-    path: 'conversaciones',
-    // HU-67 (CC-19): el canal se retiró; queda el historial en solo lectura.
-    handle: { titulo: 'Historial WhatsApp', menu: true, roles: ROLES_PANEL, conModulo: true } satisfies Manejo,
-    children: [
-      { index: true, lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversaciones')).Conversaciones }) },
-      {
-        path: ':id',
-        lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversacion')).Conversacion }),
-        handle: { titulo: 'Historial WhatsApp', roles: ROLES_PANEL } satisfies Manejo,
-      },
-    ],
-  },
-  {
-    path: 'reportes',
-    lazy: async () => ({ Component: (await import('../reportes/paginas/Reportes')).Reportes }),
-    handle: { titulo: 'Reportes', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
-  },
-  {
-    path: 'mi-convenio',
-    lazy: async () => ({ Component: (await import('../cuentas-web/MiConvenio')).MiConvenio }),
-    handle: { titulo: 'Mi convenio', menu: true, roles: ROLES_CONVENIO } satisfies Manejo,
-  },
-  {
-    path: 'usuarios',
-    lazy: async () => ({ Component: (await import('../usuarios/Usuarios')).Usuarios }),
-    handle: { titulo: 'Usuarios', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
-  },
-  {
-    // DC-68: números de emergencia y parámetros de la reserva pública, solo el administrador.
-    path: 'configuracion',
-    lazy: async () => ({ Component: (await import('../configuracion/Configuracion')).Configuracion }),
-    handle: { titulo: 'Configuración', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
-  },
-  {
-    path: 'caja',
-    lazy: async () => ({ Component: (await import('../caja/Caja')).Caja }),
-    handle: { titulo: 'Cierre de caja', menu: true, roles: ROLES_ADMIN } satisfies Manejo,
-  },
-  {
     path: 'convenios',
     // DC-55 (CC-22): el despachador también revisa los convenios.
-    handle: { titulo: 'Convenios', menu: true, roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Convenios', menu: true, seccion: 'flota', icono: 'convenios', roles: ROLES_PANEL } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../convenios/paginas/Convenios')).Convenios }) },
       {
@@ -193,6 +177,34 @@ export const pantallasDelPanel: RouteObject[] = [
         handle: { titulo: 'Convenio' } satisfies Manejo,
       },
     ],
+  },
+  // --- ADMINISTRACIÓN ---
+  {
+    path: 'caja',
+    lazy: async () => ({ Component: (await import('../caja/Caja')).Caja }),
+    handle: { titulo: 'Cierre de caja', menu: true, seccion: 'administracion', icono: 'caja', roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
+    path: 'reportes',
+    lazy: async () => ({ Component: (await import('../reportes/paginas/Reportes')).Reportes }),
+    handle: { titulo: 'Reportes', menu: true, seccion: 'administracion', icono: 'reportes', roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
+    path: 'usuarios',
+    lazy: async () => ({ Component: (await import('../usuarios/Usuarios')).Usuarios }),
+    handle: { titulo: 'Usuarios', menu: true, seccion: 'administracion', icono: 'usuarios', roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
+    // DC-68: números de emergencia y parámetros de la reserva pública, solo el administrador.
+    path: 'configuracion',
+    lazy: async () => ({ Component: (await import('../configuracion/Configuracion')).Configuracion }),
+    handle: { titulo: 'Configuración', menu: true, seccion: 'administracion', icono: 'configuracion', roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  // --- ROL CONVENIO ---
+  {
+    path: 'mi-convenio',
+    lazy: async () => ({ Component: (await import('../cuentas-web/MiConvenio')).MiConvenio }),
+    handle: { titulo: 'Mi convenio', menu: true, icono: 'convenios', roles: ROLES_CONVENIO } satisfies Manejo,
   },
 ];
 
@@ -325,6 +337,8 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
 export interface EntradaMenu {
   ruta: string;
   titulo: string;
+  seccion?: SeccionMenu;
+  icono?: NombreIcono;
 }
 
 /** Menú generado desde la tabla, filtrado por rol: solo muestra pantallas que existen. */
@@ -333,7 +347,7 @@ export function entradasDeMenu(rutas: RouteObject[], rol: Rol, base = '', conMod
     const camino = ruta.path ? `${base.replace(/\/$/, '')}/${ruta.path.replace(/^\//, '')}` : base || '/';
     const manejo = ruta.handle as Manejo | undefined;
     const visible = manejo?.menu && (!manejo.roles || manejo.roles.includes(rol)) && (conModulo || !manejo.conModulo);
-    const propia = visible ? [{ ruta: camino, titulo: manejo.titulo }] : [];
+    const propia = visible ? [{ ruta: camino, titulo: manejo.titulo, seccion: manejo.seccion, icono: manejo.icono }] : [];
     return [...propia, ...entradasDeMenu(ruta.children ?? [], rol, camino, conModulo)];
   });
 }

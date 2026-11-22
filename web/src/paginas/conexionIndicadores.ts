@@ -7,6 +7,13 @@ import type { CrearSocket, SesionParaMapa, SocketMinimo } from '../mapa/conexion
 
 export type FaseIndicadores = 'conectando' | 'en_vivo' | 'reconectando' | 'sin_sesion';
 
+export const TEXTO_FASE: Record<FaseIndicadores, string> = {
+  conectando: 'Conectando…',
+  en_vivo: 'En vivo',
+  reconectando: 'Reconectando: los datos pueden tener hasta 15 s',
+  sin_sesion: 'La sesión terminó.',
+};
+
 const SIN_SESION = 4401;
 const ESPERA_MAXIMA_MS = 30_000;
 

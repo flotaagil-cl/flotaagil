@@ -61,7 +61,7 @@ describe('menú e Inicio', () => {
     montarPanel('/', { email });
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
     // El administrador ve además Vehículos y Conductores (HU-10, en src/flota/flota.test.tsx).
-    expect(within(menu).getAllByRole('link').map((a) => a.textContent).slice(0, 2)).toEqual(['Inicio', 'Reservas']);
+    expect(within(menu).getAllByRole('link').map((a) => a.textContent).slice(0, 3)).toEqual(['Inicio', 'Mapa', 'Reservas']);
   });
 
   it('«Reservas» queda marcada también en el detalle', async () => {
