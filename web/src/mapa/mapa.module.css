@@ -1,23 +1,191 @@
-/* Mapa en tiempo real (HU-02). */
+/* Mapa en tiempo real (HU-02): cabecera operativa, panel lateral filtrable y altura completa. */
 
-.disposicion {
-  display: grid;
+.paginaMapa {
+  display: flex;
+  flex-direction: column;
   gap: var(--espacio-3);
 }
 
 @media (min-width: 60rem) {
+  .paginaMapa {
+    height: calc(100dvh - 5.75rem);
+    min-height: 34rem;
+  }
+}
+
+/* --- Cabecera operativa --- */
+
+.cabeceraOperativa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  flex: none;
+}
+
+.tituloBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tituloBloque h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+.subtitulo {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.accionesCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.badgeVivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--color-primario-900));
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.badgeVivo[data-fase='reconectando'],
+.badgeVivo[data-fase='sin_sesion'] {
+  background: var(--insignia-peligro-fondo, var(--error-fondo));
+  border-color: var(--error-borde);
+  color: var(--insignia-peligro-texto, var(--error-texto));
+}
+
+.badgeVivo[data-fase='conectando'] {
+  background: var(--insignia-neutra-fondo, var(--suave));
+  color: var(--insignia-neutra-texto, var(--texto-suave));
+}
+
+.puntoVivo {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--exito, var(--acento));
+  box-shadow: 0 0 0 0 rgb(26 127 69 / 0.45);
+  animation: pulsoVivo 2s infinite;
+  flex: none;
+}
+
+@keyframes pulsoVivo {
+  0% {
+    box-shadow: 0 0 0 0 rgb(26 127 69 / 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgb(26 127 69 / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(26 127 69 / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .puntoVivo {
+    animation: none;
+  }
+}
+
+.botonCentrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: var(--radio-boton, 10px);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.botonCentrar:hover:not(:disabled) {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.botonCentrar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --- Disposición mapa + panel lateral --- */
+
+.disposicion {
+  display: grid;
+  gap: var(--espacio-3);
+  flex: 1;
+  min-height: 0;
+}
+
+@media (min-width: 60rem) {
   .disposicion {
-    grid-template-columns: 1fr 20rem;
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) 23rem;
+    align-items: stretch;
+  }
+}
+
+.marcoMapa {
+  position: relative;
+  min-height: 22rem;
+  height: 55dvh;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, 16px);
+  overflow: hidden;
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+@media (min-width: 60rem) {
+  .marcoMapa {
+    height: 100%;
+    min-height: 0;
   }
 }
 
 .mapa {
   display: block;
   width: 100%;
-  height: auto;
-  border: 1px solid var(--borde);
-  border-radius: var(--radio);
+  height: 100%;
+}
+
+/* Leaflet y Google Maps llenan el 100% del alto del contenedor. */
+.mapaGoogle {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+}
+
+@media (min-width: 60rem) {
+  .mapaGoogle {
+    min-height: 0;
+  }
 }
 
 .fondo {
@@ -67,50 +235,346 @@
   stroke-width: 4px;
 }
 
-.lista {
-  display: grid;
+/* --- Panel lateral de conductores --- */
+
+.panelLateral {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, 16px);
+  box-shadow: 0 1px 3px var(--sombra);
+  overflow: hidden;
+}
+
+@media (max-width: 59.99rem) {
+  .panelLateral {
+    max-height: 32rem;
+  }
+}
+
+.panelCabecera {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--espacio-3);
+  border-bottom: 1px solid var(--borde);
+  background: var(--fondo);
+  flex: none;
+}
+
+.panelTituloFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--espacio-2);
+}
+
+.panelTituloFila h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.contadorPanel {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--texto));
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.buscador {
+  width: 100%;
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.buscador:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.chipsFiltro {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chipFiltro {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease;
+}
+
+.chipFiltro:hover {
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.chipFiltro[aria-pressed='true'] {
+  background: var(--color-primario-700, var(--acento));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--sobre-acento);
+}
+
+/* --- Cuerpo scrollable y ficha del seleccionado --- */
+
+.cuerpoPanel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--espacio-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+}
+
+.fichaCompacta {
+  padding: var(--espacio-3);
+  border: 1px solid var(--color-tiffany, var(--borde));
+  border-radius: 12px;
+  background: var(--color-tiffany-50, var(--acento-suave));
+  flex: none;
+}
+
+.fichaCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fichaCabecera h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-primario-900, var(--texto));
+}
+
+.cerrarFicha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.cerrarFicha:hover {
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.fichaDatos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.fichaDatos dt {
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.fichaDatos dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.fichaPosicion {
+  grid-column: 1 / -1;
+}
+
+/* --- Lista y tarjetas de conductores --- */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.lista button {
-  display: grid;
+.tarjetaConductor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   width: 100%;
-  min-height: var(--toque);
-  gap: 2px;
-  padding: var(--espacio-2) var(--espacio-3);
+  padding: 10px 12px;
   border: 1px solid var(--borde);
-  border-radius: var(--radio);
+  border-left-width: 4px;
+  border-left-color: var(--borde-campo, var(--borde));
+  border-radius: 10px;
   background: var(--superficie);
   color: var(--texto);
   font: inherit;
   text-align: left;
   cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease, box-shadow 130ms ease;
 }
 
-.lista button[aria-pressed='true'] {
-  border-color: var(--acento);
-  background: var(--acento-suave);
+.tarjetaConductor[data-senal='activa'] {
+  border-left-color: var(--exito, var(--acento));
 }
 
-.noConfiable {
-  color: var(--error-texto);
-  font-size: 0.8rem;
+.tarjetaConductor[data-senal='antigua'] {
+  border-left-color: var(--insignia-revision-texto);
+}
+
+.tarjetaConductor[data-senal='sin_senal'] {
+  border-left-color: var(--borde-campo, var(--borde));
+}
+
+.tarjetaConductor:hover {
+  background: var(--fondo);
+}
+
+.tarjetaConductor[aria-pressed='true'] {
+  border-color: var(--color-primario-700, var(--acento));
+  background: var(--color-tiffany-50, var(--acento-suave));
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.tarjetaConductor[aria-pressed='true'][data-senal='activa'] {
+  border-left-color: var(--exito, var(--acento));
+}
+
+.tarjetaConductor[aria-pressed='true'][data-senal='antigua'] {
+  border-left-color: var(--insignia-revision-texto);
+}
+
+.tarjetaCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.nombreConductor {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badgeEstado {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.estadoDisponible {
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--color-primario-900));
+}
+
+.estadoEnViaje {
+  background: var(--insignia-info-fondo, var(--color-tiffany));
+  color: var(--insignia-info-texto, var(--texto));
+}
+
+.tarjetaMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  width: 100%;
+}
+
+.patente {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.senalGps {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.79rem;
   font-weight: 600;
 }
 
-.estadoConexion {
-  font-size: 0.9rem;
+.senalActiva {
+  color: var(--insignia-ok-texto, var(--exito));
+}
+
+.senalAlerta {
+  color: var(--insignia-revision-texto, var(--texto-suave));
+}
+
+.senalSin {
   color: var(--texto-suave);
 }
 
-/* Google Maps necesita una altura explícita; la misma proporción del esquemático. */
-.mapaGoogle {
-  width: 100%;
-  aspect-ratio: 1000 / 640;
-  min-height: 280px;
-  border-radius: 8px;
-  overflow: hidden;
+.puntoSenal {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.senalActiva .puntoSenal {
+  background: var(--exito, var(--acento));
+}
+
+.senalAlerta .puntoSenal {
+  background: var(--insignia-revision-texto);
+}
+
+.senalSin .puntoSenal {
+  background: var(--borde-campo, var(--texto-suave));
+}
+
+.vacioLista {
+  margin: var(--espacio-3) 0;
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 0.875rem;
 }

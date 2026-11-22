@@ -11,10 +11,14 @@ interface Props {
   ahora: number;
   /** No se pudo cargar o Google rechazó la clave: quien lo usa vuelve al mapa esquemático. */
   alFallar: () => void;
+  /** Contador incremental para reencuadrar toda la flota con posición válida (`fitBounds`). */
+  reencuadrar?: number;
+  /** Contador incremental para centrar de nuevo en el conductor seleccionado. */
+  enfoque?: number;
 }
 
 /** Adaptador de Google Maps JS (PR-12), con las mismas propiedades que el esquemático. */
-export function MapaGoogle({ clave, conductores, seleccionado, alSeleccionar, ahora, alFallar }: Props) {
+export function MapaGoogle({ clave, conductores, seleccionado, alSeleccionar, ahora, alFallar, reencuadrar = 0, enfoque = 0 }: Props) {
   const elemento = useRef<HTMLDivElement>(null);
   const [lista, setLista] = useState<{ api: GoogleMaps; mapa: MapaGoogleApi } | null>(null);
   const marcadores = useRef(new Map<number, MarcadorGoogle>());
@@ -88,10 +92,22 @@ export function MapaGoogle({ clave, conductores, seleccionado, alSeleccionar, ah
   }, [lista, conductores, seleccionado, ahora]);
 
   useEffect(() => {
+    if (!lista || reencuadrar === 0) return;
+    const conPosicion = ultimos.current.filter((c) => c.posicion);
+    if (!conPosicion.length) return;
+    const { api, mapa } = lista;
+    const zona = encuadre(conPosicion);
+    const limites = new api.LatLngBounds();
+    limites.extend({ lat: zona.latMin, lng: zona.lonMin });
+    limites.extend({ lat: zona.latMax, lng: zona.lonMax });
+    mapa.fitBounds(limites);
+  }, [lista, reencuadrar]);
+
+  useEffect(() => {
     if (!lista || seleccionado === null) return;
     const posicion = ultimos.current.find((c) => c.id === seleccionado)?.posicion;
     if (posicion) lista.mapa.panTo({ lat: posicion.lat, lng: posicion.lon });
-  }, [lista, seleccionado]);
+  }, [lista, seleccionado, enfoque]);
 
   useEffect(() => {
     const creados = marcadores.current;
