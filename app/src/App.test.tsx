@@ -29,6 +29,9 @@ const red = vi.hoisted(() => ({
   llamadas: [] as string[],
   // HU-69: vuelo de llegada del viaje activo (null: sin vuelo).
   vuelo: null as VueloApp | null,
+  /** Listener del botón Atrás de Android y conteo de minimizaciones. */
+  atras: null as (() => void) | null,
+  minimizaciones: 0,
 }));
 
 function viajeActivo(estado: string): ViajeActivo {
@@ -95,6 +98,12 @@ async function httpFalso(url: string, init: RequestInit): Promise<Response> {
     }
     case 'GET /api/chat/conversaciones/':
       return json([{ id: 1, tipo: 'CENTRAL', titulo: 'Central', no_leidos: 2, ultimo: null }]);
+    case 'GET /api/chat/conversaciones/1/mensajes/':
+      return json({ results: [], hay_mas: false, leido_por_otros_hasta: 0 });
+    case 'GET /api/chat/personal/':
+      return json([{ id: 2, nombre: 'Ana Rojas' }]);
+    case 'GET /api/app/mi-turno/':
+      return json({ en_turno: true, inicio: '2026-11-04T12:00:00Z', fin: null, viajes: [], totales: [], total: 0 });
     default:
       return json({ viaje: 8, estado: red.estado });
   }
@@ -142,7 +151,21 @@ vi.mock('./conductor/alerta', () => ({
     red.sonidos += 1;
   },
 }));
-vi.mock('@capacitor/app', () => ({ App: { addListener: async () => ({ remove() {} }) } }));
+vi.mock('@capacitor/app', () => ({
+  App: {
+    addListener: async (evento: string, fn: () => void) => {
+      if (evento === 'backButton') red.atras = fn;
+      return {
+        remove() {
+          if (evento === 'backButton' && red.atras === fn) red.atras = null;
+        },
+      };
+    },
+    minimizeApp: async () => {
+      red.minimizaciones += 1;
+    },
+  },
+}));
 vi.mock('@capacitor/app-launcher', () => ({ AppLauncher: { openUrl: async () => {} } }));
 
 async function avanzar(ms: number) {
@@ -151,7 +174,7 @@ async function avanzar(ms: number) {
   });
 }
 
-async function pulsar(nombre: string) {
+async function pulsar(nombre: string | RegExp) {
   fireEvent.click(screen.getByRole('button', { name: nombre }));
   await avanzar(0);
 }
@@ -184,6 +207,8 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     red.retenidas.length = 0;
     red.llamadas.length = 0;
     red.vuelo = null;
+    red.atras = null;
+    red.minimizaciones = 0;
   });
 
   afterEach(async () => {
@@ -325,5 +350,91 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     expect(screen.getByRole('status').textContent).toContain('Evita escribir mientras manejas');
     await pulsar('Volver al inicio');
     expect(screen.queryByText(/Nuevo mensaje de Central/)).toBeNull();
+  });
+
+  it('muestra la asignación como tarjeta prioritaria en Inicio, compacta Turno/Ubicación y acepta el viaje', async () => {
+    await abrirApp();
+    expect(screen.queryByRole('button', { name: 'Actualizar' })).toBeNull();
+    expect(document.querySelectorAll('.tarjeta.compacta')).toHaveLength(2);
+    expect(document.querySelector('.tarjeta.viaje.prioritaria')).toBeTruthy();
+
+    const vence = new Date(Date.now() + 60_000).toISOString();
+    enviarAlCanal({
+      tipo: 'asignado',
+      asignacion: {
+        asignacion: 42,
+        viaje: 99,
+        pasajero: 'Luis Soto',
+        origen: { direccion: 'Aeropuerto SCL', lat: -33.39, lon: -70.79 },
+        destino: { direccion: 'Las Condes 400', lat: -33.41, lon: -70.57 },
+        recogida_en: '2026-11-03T16:00:00Z',
+        tarifa: 25000,
+        vuelo: null,
+        vence_en: vence,
+      },
+    });
+    await avanzar(50);
+    expect(screen.getByRole('heading', { name: 'Hola, Carla Conductora' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Nuevo viaje asignado' })).toBeTruthy();
+    expect(screen.getByText('Luis Soto')).toBeTruthy();
+
+    red.llamadas.length = 0;
+    await pulsar('Aceptar viaje');
+    await avanzar(50);
+    expect(red.llamadas).toContain('POST /api/app/asignaciones/42/aceptar/');
+  });
+
+  it('pull-to-refresh en Inicio recarga perfil, viaje activo y chats', async () => {
+    await abrirApp();
+    red.llamadas.length = 0;
+    const zona = document.querySelector('.tirar')!;
+    fireEvent.touchStart(zona, { touches: [{ clientY: 0 }] });
+    fireEvent.touchMove(zona, { touches: [{ clientY: 160 }] });
+    fireEvent.touchEnd(zona);
+    await avanzar(50);
+    expect(red.llamadas).toContain('GET /api/app/perfil/');
+    expect(red.llamadas).toContain('GET /api/app/viaje-activo/');
+    expect(red.llamadas).toContain('GET /api/chat/conversaciones/');
+  });
+
+  it('el botón Atrás de Android navega hacia atrás en subpantallas y minimiza solo desde Inicio', async () => {
+    await abrirApp();
+    const presionarAtras = async () => {
+      act(() => red.atras?.());
+      await avanzar(50);
+    };
+
+    // Mi turno → Inicio
+    await pulsar('Mi turno');
+    expect(screen.getByRole('heading', { name: 'Mi turno' })).toBeTruthy();
+    await presionarAtras();
+    expect(screen.getByRole('heading', { name: 'Hola, Carla Conductora' })).toBeTruthy();
+    expect(red.minimizaciones).toBe(0);
+
+    // Chat → Hilo → Lista → Nuevo directo → Lista → Nuevo grupo → Lista → Inicio
+    await pulsar('Chat (2 sin leer)');
+    expect(screen.getByRole('heading', { name: 'Chat' })).toBeTruthy();
+    await pulsar(/Central/);
+    expect(screen.getByRole('heading', { name: 'Central' })).toBeTruthy();
+    await presionarAtras();
+    expect(screen.getByRole('heading', { name: 'Chat' })).toBeTruthy();
+
+    await pulsar('Nuevo directo');
+    expect(screen.getByRole('heading', { name: 'Nuevo directo' })).toBeTruthy();
+    await presionarAtras();
+    expect(screen.getByRole('heading', { name: 'Chat' })).toBeTruthy();
+
+    await pulsar('Nuevo grupo');
+    expect(screen.getByRole('heading', { name: 'Nuevo grupo' })).toBeTruthy();
+    await presionarAtras();
+    expect(screen.getByRole('heading', { name: 'Chat' })).toBeTruthy();
+
+    await presionarAtras();
+    expect(screen.getByRole('heading', { name: 'Hola, Carla Conductora' })).toBeTruthy();
+    expect(red.minimizaciones).toBe(0);
+
+    // Ya en Inicio → minimiza la app
+    await presionarAtras();
+    expect(red.minimizaciones).toBe(1);
   });
 });

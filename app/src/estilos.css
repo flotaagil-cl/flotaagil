@@ -6,6 +6,7 @@
 
 body {
   margin: 0;
+  overscroll-behavior-y: contain;
 }
 
 main {
@@ -209,11 +210,78 @@ summary {
   margin-top: 0.5rem;
 }
 
-/* Aviso de viaje asignado (HU-14): ocupa la pantalla. */
-main.asignado {
-  min-height: 100vh;
-  box-sizing: border-box;
+/* Tarjeta prioritaria de viaje asignado o en curso (HU-14/15/16/17). */
+.tarjeta.prioritaria {
+  border: 2px solid var(--color-primario-700);
+  box-shadow: 0 4px 12px var(--sombra);
+}
+
+.tarjeta.prioritaria.asignado {
   background: var(--grad-destacado);
+}
+
+/* Turno y Ubicación compactos mientras haya un viaje asignado o en curso. */
+.resumen-compacto {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tarjeta.compacta {
+  margin-top: 0;
+  padding: 0.65rem 0.9rem;
+}
+
+.fila-compacta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.fila-compacta h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.etiqueta-compacta {
+  padding: 0.15rem 0.55rem;
+  font-size: 0.85rem;
+}
+
+/* Pull-to-refresh táctil. */
+.tirar {
+  min-height: 100%;
+}
+
+.tirar-indicador {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tirar-indicador.suelto {
+  transition: height 180ms ease-out;
+}
+
+.tirar-giro {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--borde);
+  border-top-color: var(--color-primario-700);
+  border-radius: 50%;
+}
+
+.tirar-giro.girando {
+  animation: girar 700ms linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .cuenta {

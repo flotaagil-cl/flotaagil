@@ -29,7 +29,7 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
   }
 
   return (
-    <div className="tarjeta viaje">
+    <section className="tarjeta viaje prioritaria">
       <h2>Viaje en curso · {ETAPAS[viaje.estado]}</h2>
       <dl>
         <dt>Pasajero</dt>
@@ -63,6 +63,6 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
         </button>
       </div>
       {children}
-    </div>
+    </section>
   );
 }

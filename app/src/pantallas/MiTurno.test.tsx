@@ -75,11 +75,15 @@ describe('Mi turno (HU-18)', () => {
     expect(screen.queryByText('Sin viajes completados en este turno.')).toBeNull();
   });
 
-  it('si falla lo dice, y Actualizar lo reintenta', async () => {
+  it('si falla lo dice, no tiene botón Actualizar y deslizar hacia abajo reintenta', async () => {
     const cargar = vi.fn<() => Promise<ResumenDelTurno>>().mockRejectedValueOnce(new Error('sin red')).mockResolvedValue(resumen());
-    render(<MiTurno cargar={cargar} volver={() => {}} />);
+    const { container } = render(<MiTurno cargar={cargar} volver={() => {}} />);
     expect((await screen.findByRole('alert')).textContent).toBe('No se pudieron cargar tus viajes.');
-    fireEvent.click(screen.getByRole('button', { name: 'Actualizar' }));
+    expect(screen.queryByRole('button', { name: 'Actualizar' })).toBeNull();
+    const zona = container.firstElementChild!;
+    fireEvent.touchStart(zona, { touches: [{ clientY: 0 }] });
+    fireEvent.touchMove(zona, { touches: [{ clientY: 160 }] });
+    fireEvent.touchEnd(zona);
     expect(await screen.findByText('Plaza de Armas')).toBeTruthy();
     expect(screen.queryByRole('alert')).toBeNull();
   });

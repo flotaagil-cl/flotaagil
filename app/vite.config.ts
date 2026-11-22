@@ -21,7 +21,7 @@ export default defineConfig({
     coverage: {
       enabled: true,
       provider: 'v8',
-      include: ['src/http.ts', 'src/conductor/recarga.ts', 'src/conductor/ejecucion.ts', 'src/api.ts', 'src/perfil.ts', 'src/navegacion.ts', 'src/conductor/canal.ts', 'src/sesion/sesion.ts', 'src/gps/envio.ts', 'src/gps/turno.ts', 'src/gps/muestreo.ts'],
+      include: ['src/http.ts', 'src/atras.ts', 'src/conductor/recarga.ts', 'src/conductor/ejecucion.ts', 'src/api.ts', 'src/perfil.ts', 'src/navegacion.ts', 'src/conductor/canal.ts', 'src/sesion/sesion.ts', 'src/gps/envio.ts', 'src/gps/turno.ts', 'src/gps/muestreo.ts'],
       thresholds: MINIMO,
     },
   },

@@ -6,8 +6,8 @@ import { VueloDelViaje } from './VueloDelViaje';
 const pesos = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 
 /**
- * Aviso de viaje asignado (HU-14): ocupa la pantalla, con los datos del viaje y la cuenta regresiva de 60 s.
- * Los botones Aceptar y Rechazar (HU-15) llegan en `acciones`.
+ * Tarjeta prioritaria de viaje asignado (HU-14): aparece en la parte superior del Inicio con los datos del viaje
+ * y la cuenta regresiva de 60 s. Los botones Aceptar viaje y Rechazar (HU-15) llegan en `acciones`.
  */
 export function ViajeAsignado({ asignacion, acciones }: { asignacion: Asignacion; acciones?: ReactNode }) {
   const [ahora, setAhora] = useState(() => Date.now());
@@ -18,12 +18,12 @@ export function ViajeAsignado({ asignacion, acciones }: { asignacion: Asignacion
   const quedan = segundosRestantes(asignacion.vence_en, ahora);
 
   return (
-    <main className="asignado" role="alertdialog" aria-labelledby="titulo-asignado" aria-describedby="datos-asignado">
-      <h1 id="titulo-asignado">Nuevo viaje asignado</h1>
+    <section className="tarjeta prioritaria asignado" aria-labelledby="titulo-asignado" aria-describedby="datos-asignado">
+      <h2 id="titulo-asignado">Nuevo viaje asignado</h2>
       <p className="cuenta" aria-live="assertive">
         {quedan > 0 ? `Responde en ${quedan} s` : 'Se acabó el tiempo para responder'}
       </p>
-      <dl id="datos-asignado" className="tarjeta">
+      <dl id="datos-asignado">
         <dt>Recogida</dt>
         <dd>{horaDeChile(asignacion.recogida_en)}</dd>
         <dt>Origen</dt>
@@ -37,6 +37,6 @@ export function ViajeAsignado({ asignacion, acciones }: { asignacion: Asignacion
         <VueloDelViaje vuelo={asignacion.vuelo} enAeropuerto={asignacion.en_aeropuerto_a_las} />
       </dl>
       {acciones}
-    </main>
+    </section>
   );
 }

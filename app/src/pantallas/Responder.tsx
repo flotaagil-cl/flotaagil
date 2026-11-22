@@ -44,7 +44,7 @@ export function Responder({ asignacion, responder, ocultar }: Props) {
       ) : (
         <div className="responder">
           <button className="principal" type="button" disabled={enviando !== null} onClick={() => void enviar(true)}>
-            {enviando === 'aceptar' ? 'Aceptando…' : 'Aceptar'}
+            {enviando === 'aceptar' ? 'Aceptando…' : 'Aceptar viaje'}
           </button>
           <button className="principal rechazar" type="button" disabled={enviando !== null} onClick={() => void enviar(false)}>
             {enviando === 'rechazar' ? 'Rechazando…' : 'Rechazar'}

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAtras } from '../atras';
+import { DeslizarParaActualizar } from '../componentes/DeslizarParaActualizar';
 import { nombreDelMetodo, type MetodoPago } from '../conductor/ejecucion';
 import { fechaYHora, pesos } from '../hora';
 
@@ -38,6 +40,8 @@ export function MiTurno({ cargar, volver }: Props) {
   const [falla, setFalla] = useState(false);
   const ultima = useRef(0);
 
+  useAtras(volver);
+
   const actualizar = useCallback(async () => {
     const numero = ++ultima.current;
     setFalla(false);
@@ -57,65 +61,64 @@ export function MiTurno({ cargar, volver }: Props) {
   }, [actualizar]);
 
   return (
-    <main>
-      <h1>Mi turno</h1>
-      {falla && (
-        <p className="error" role="alert">
-          No se pudieron cargar tus viajes.
-        </p>
-      )}
-      {!resumen && !falla && <p>Cargando…</p>}
-      {resumen && (
-        <>
-          <p className="secundario">{periodo(resumen)}</p>
-          {resumen.inicio && resumen.viajes.length === 0 && <p>Sin viajes completados en este turno.</p>}
-          {resumen.viajes.map((viaje) => (
-            <div key={viaje.id} className="tarjeta">
-              <h2>{fechaYHora(viaje.finalizado_en)}</h2>
-              {viaje.cerrado_por_central && <p className="aviso">Cerrado por la central</p>}
-              <dl>
-                <dt>Origen</dt>
-                <dd>{viaje.origen}</dd>
-                <dt>Destino</dt>
-                <dd>{viaje.destino}</dd>
-                <dt>Monto</dt>
-                <dd>{pesos(viaje.monto)}</dd>
-                <dt>Pago</dt>
-                <dd>{nombreDelMetodo(viaje.metodo)}</dd>
-              </dl>
-            </div>
-          ))}
-          {resumen.viajes.length > 0 && (
-            <div className="tarjeta">
-              <h2>Totales por método de pago</h2>
-              <dl>
-                {resumen.totales.map((total) => (
-                  <div key={total.metodo} className="fila-total">
-                    <dt>
-                      {nombreDelMetodo(total.metodo)} ({total.viajes})
-                    </dt>
-                    <dd>{pesos(total.monto)}</dd>
+    <DeslizarParaActualizar alActualizar={actualizar}>
+      <main>
+        <h1>Mi turno</h1>
+        {falla && (
+          <p className="error" role="alert">
+            No se pudieron cargar tus viajes.
+          </p>
+        )}
+        {!resumen && !falla && <p>Cargando…</p>}
+        {resumen && (
+          <>
+            <p className="secundario">{periodo(resumen)}</p>
+            {resumen.inicio && resumen.viajes.length === 0 && <p>Sin viajes completados en este turno.</p>}
+            {resumen.viajes.map((viaje) => (
+              <div key={viaje.id} className="tarjeta">
+                <h2>{fechaYHora(viaje.finalizado_en)}</h2>
+                {viaje.cerrado_por_central && <p className="aviso">Cerrado por la central</p>}
+                <dl>
+                  <dt>Origen</dt>
+                  <dd>{viaje.origen}</dd>
+                  <dt>Destino</dt>
+                  <dd>{viaje.destino}</dd>
+                  <dt>Monto</dt>
+                  <dd>{pesos(viaje.monto)}</dd>
+                  <dt>Pago</dt>
+                  <dd>{nombreDelMetodo(viaje.metodo)}</dd>
+                </dl>
+              </div>
+            ))}
+            {resumen.viajes.length > 0 && (
+              <div className="tarjeta">
+                <h2>Totales por método de pago</h2>
+                <dl>
+                  {resumen.totales.map((total) => (
+                    <div key={total.metodo} className="fila-total">
+                      <dt>
+                        {nombreDelMetodo(total.metodo)} ({total.viajes})
+                      </dt>
+                      <dd>{pesos(total.monto)}</dd>
+                    </div>
+                  ))}
+                  <div className="fila-total">
+                    <dt>Total</dt>
+                    <dd>
+                      <strong>{pesos(resumen.total)}</strong>
+                    </dd>
                   </div>
-                ))}
-                <div className="fila-total">
-                  <dt>Total</dt>
-                  <dd>
-                    <strong>{pesos(resumen.total)}</strong>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          )}
-        </>
-      )}
-      <div className="acciones">
-        <button type="button" onClick={volver}>
-          Volver
-        </button>
-        <button type="button" onClick={() => void actualizar()}>
-          Actualizar
-        </button>
-      </div>
-    </main>
+                </dl>
+              </div>
+            )}
+          </>
+        )}
+        <div className="acciones">
+          <button type="button" onClick={volver}>
+            Volver
+          </button>
+        </div>
+      </main>
+    </DeslizarParaActualizar>
   );
 }
