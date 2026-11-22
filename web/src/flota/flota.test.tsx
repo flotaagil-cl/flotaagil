@@ -34,19 +34,22 @@ describe('menú y permisos', () => {
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
     expect(within(menu).getAllByRole('link').map((a) => a.textContent)).toEqual([
       'Inicio',
+      'Mapa',
       'Reservas',
       'Vuelos de hoy',
-      'Mapa',
-      'Vehículos',
-      'Conductores',
       'Chat',
       'Historial WhatsApp',
+      'Vehículos',
+      'Conductores',
+      'Convenios',
+      'Cierre de caja',
       'Reportes',
       'Usuarios',
       'Configuración',
-      'Cierre de caja',
-      'Convenios',
     ]);
+    expect(within(menu).getByRole('group', { name: 'Operación' })).toBeInTheDocument();
+    expect(within(menu).getByRole('group', { name: 'Flota y clientes' })).toBeInTheDocument();
+    expect(within(menu).getByRole('group', { name: 'Administración' })).toBeInTheDocument();
   });
 
   it('el despachador no los ve y si entra por URL ve «sin permiso» sin consultar la API', async () => {

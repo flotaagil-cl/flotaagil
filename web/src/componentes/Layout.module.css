@@ -58,6 +58,7 @@
 .menu {
   grid-area: menu;
   display: none;
+  padding: var(--espacio-3) var(--espacio-2);
   background: var(--superficie);
   border-bottom: 1px solid var(--borde);
 }
@@ -66,33 +67,62 @@
   display: block;
 }
 
+.grupoMenu + .grupoMenu {
+  margin-top: var(--espacio-4);
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--borde);
+}
+
+.tituloGrupo {
+  margin: 0 0 var(--espacio-1);
+  padding: 0 var(--espacio-3);
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .menu ul {
   list-style: none;
   margin: 0;
-  padding: var(--espacio-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .menu a {
   display: flex;
   align-items: center;
-  min-height: var(--toque);
+  gap: 0.65rem;
+  min-height: 40px;
   padding: 0 var(--espacio-3);
   border-radius: var(--radio);
   color: var(--texto);
+  font-weight: 600;
+  font-size: 0.92rem;
   text-decoration: none;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
-.menu a {
-  font-weight: 600;
+.iconoMenu {
+  flex: none;
+  color: var(--texto-suave);
+  transition: color 140ms ease;
 }
 
 .menu a:hover {
   background: var(--suave, var(--acento-suave));
 }
 
+.menu a:hover .iconoMenu {
+  color: var(--color-primario-700, var(--acento));
+}
+
 /* HU-63: no leídos del chat junto a la entrada del menú. */
 .contadorMenu {
-  margin-left: 8px;
+  margin-left: auto;
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--insignia-info-fondo);
@@ -108,6 +138,10 @@
   font-weight: 700;
 }
 
+.menu a[aria-current='page'] .iconoMenu {
+  color: var(--color-primario-700, var(--acento));
+}
+
 .contenido h1 {
   font-weight: 800;
   letter-spacing: -0.4px;
@@ -115,7 +149,7 @@
 
 .contenido {
   grid-area: contenido;
-  padding: var(--espacio-4);
+  padding: var(--espacio-4) var(--espacio-6);
   /* Ocupa todo el ancho junto al menú; min-width: 0 evita que tablas o el mapa ensanchen la columna. */
   min-width: 0;
   width: 100%;
@@ -125,7 +159,7 @@
 /* Escritorio: menú lateral fijo. */
 @media (min-width: 48rem) {
   .marco {
-    grid-template-columns: 14rem minmax(0, 1fr);
+    grid-template-columns: 15.5rem minmax(0, 1fr);
     grid-template-rows: auto 1fr;
     grid-template-areas: 'cabecera cabecera' 'menu contenido';
   }
