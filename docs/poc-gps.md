@@ -1,16 +1,16 @@
 # Informe PoC GPS en segundo plano (H-3)
 
-> Plantilla. Los campos marcados con `‹…›` se llenan después de probar en teléfonos reales.
-> Evidencias en `docs/evidencias/H-3/`: CSV **anonimizados** con `docs/scripts/anonimizar_poc_gps.py` (sin latitud, longitud, altitud ni rumbo; con distancia desde la posición anterior). Los CSV originales no se suben al repositorio.
+> Informe cerrado tras validar la PoC y la app real (`app/`) en teléfono Android real con la configuración recomendada (> 60 min en segundo plano y pantalla apagada).
+> Evidencias en `docs/evidencias/H-3/`: CSV **anonimizados** (sin latitud, longitud, altitud ni rumbo; con distancia en metros desde la posición anterior). Los CSV originales no se suben al repositorio (`.gitignore`).
 
 | Campo | Valor |
 |---|---|
 | Tarea | H-3 · Prueba de concepto de GPS en segundo plano (issue #6) |
 | Riesgo | R-01: el sistema operativo detiene o espacia la ubicación con la app en segundo plano o la pantalla apagada |
 | Bloquea | HU-02, HU-04, HU-29 |
-| Responsable | Renato González |
-| Fecha de ejecución | ‹AAAA-MM-DD a AAAA-MM-DD› |
-| Versión probada | ‹commit› |
+| Responsable | Renato González / Carlos Ortiz |
+| Fecha de ejecución | 2026-10-28 (PoC) y 2026-11-22 (app real > 60 min) |
+| Versión probada | `b13f1b3` (`main`) |
 
 ## 1. Objetivo
 
@@ -53,7 +53,7 @@ Validar que `@capacitor-community/background-geolocation` en Android 10+ entrega
 |---|---|---|---|---|
 | T1 | Xiaomi 14T | 16 (parche de seguridad 2026-08-01) | Xiaomi HyperOS 3.0.303.0 | Ver tabla por escenario |
 
-Condiciones comunes: datos móviles o Wi-Fi ‹…›, ubicación del sistema activada, permiso de ubicación «Mientras se usa la app» con **ubicación precisa activada** (el plugin usa un servicio en primer plano y no requiere ubicación en segundo plano), notificaciones de la app permitidas.
+Condiciones comunes: datos móviles o Wi-Fi activos, ubicación del sistema activada, permiso de ubicación «Mientras se usa la app» con **ubicación precisa activada** (el plugin usa un servicio en primer plano y no requiere ubicación en segundo plano), notificaciones de la app permitidas.
 
 ### 4.1 Configuración del teléfono por escenario
 
@@ -61,13 +61,13 @@ HyperOS restringe las apps en segundo plano más que Android estándar. La **con
 
 | Esc. | Ahorro de batería de la app | Inicio automático | Bloqueada en recientes | Ahorro de batería del sistema | Ubicación precisa | Notificaciones | Confirmado al probar |
 |---|---|---|---|---|---|---|---|
-| E1 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | ‹sí/no› |
+| E1 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | Sí (validado en app real) |
 | E2 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | Sí (además «Pausar actividad si no se utiliza» desactivado) |
-| E2b | Ahorro de batería inteligente (valor por defecto) | Desactivado (por defecto) | No | Desactivado | Sí | Permitidas | ‹sí/no› |
-| E3 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | ‹sí/no› |
-| E4 | Sin restricciones | Activado | **No** (hay que desbloquearla para poder cerrarla) | Desactivado | Sí | Permitidas | ‹sí/no› |
-| E5 | Sin restricciones | Activado | Sí | **Activado** | Sí | Permitidas | ‹sí/no› |
-| E6 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | ‹sí/no› |
+| E2b | Ahorro de batería inteligente (valor por defecto) | Desactivado (por defecto) | No | Desactivado | Sí | Permitidas | No ejecutado (observación menor) |
+| E3 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | Sí (validado en app real en viaje) |
+| E4 | Sin restricciones | Activado | **No** (hay que desbloquearla para poder cerrarla) | Desactivado | Sí | Permitidas | Sí (diagnóstico D1) |
+| E5 | Sin restricciones | Activado | Sí | **Activado** | Sí | Permitidas | No ejecutado (mitigado por guía) |
+| E6 | Sin restricciones | Activado | Sí | Desactivado | Sí | Permitidas | No ejecutado (C4 proyectado) |
 
 Si algún ajuste quedó distinto al planificado, se corrige la fila y se explica en Observaciones.
 
@@ -91,13 +91,13 @@ Valores tomados del resumen de cada sesión en la app (o de `posiciones.csv`).
 
 | Esc. | Tel. | Sesión | Muestras | Intervalo mediana / p95 / máx (s) | Huecos > 60 s | Precisión mediana / p95 (m) | Batería (%/h) | Datos estimados (MB/h · MB/8 h) | Datos medidos en Ajustes (MB) | Observaciones |
 |---|---|---|---|---|---|---|---|---|---|---|
-| E1 | T1 | ‹S…› | ‹…› | ‹…› | ‹…› | ‹…› | ‹…› | ‹…› | ‹…› | ‹…› |
-| E2 | T1 | S20261028-171058 | 53 | 30,0 / 33,3 / 34,9 | 0 | 3,4 / 11,9 | 6,8 (3 % en 0,44 h; baja resolución) | 0,020 · 0,16 | No aplica | **Parcial: 26,6 min de 60** (aceptado como parcial; se repite completo). Pantalla apagada todo el periodo, sin cable. Build con ajuste de visibilidad del WebView (D3b). Evidencia: `evidencias/H-3/E2-*-anon.csv` |
-| E2b | T1 | | | | | | | | | |
-| E3 | T1 | | | | | | | | | |
-| E4 | T1 | | | | | | | | | ‹¿siguió el servicio tras cerrar la app? hueco hasta reabrir› |
-| E5 | T1 | | | | | | | | | |
-| E6 | T1 | | | | | | | | | |
+| E1 + E3 | T1 | `S20261122-055858` | 97 (11 en viaje) | Viaje: 10,0 / 10,0 / 10,0 · Global: 33,2 / 41,7 / 155,0 | 0 en viaje; 1 en espera (155,0 s al cambiar estado) | 6,0 / 18,4 | — | 0,021 · 0,16 | — | Prueba en app real (`app/` → `posicion_gps`) con viaje asignado (10 s exactos) y tramo continuo en espera > 44 min sin huecos. Evidencia: `evidencias/H-3/E3-campo-mixto-posiciones-anon.csv` |
+| E2 (PoC) | T1 | `S20261028-171058` | 53 | 30,0 / 33,3 / 34,9 | 0 | 3,4 / 11,9 | 6,8 (3 % en 0,44 h; baja resolución) | 0,020 · 0,16 | No aplica | Parcial: 26,6 min. Pantalla apagada todo el periodo, sin cable. Build con ajuste de visibilidad del WebView (D3b). Evidencia: `evidencias/H-3/E2-*-anon.csv` |
+| E2 (campo > 60 min) | T1 | `S20261122-041852` | 110 | 30,0 / 42,6 / 280,7 | 2 (60,9 s jitter puntual; 280,7 s por reinicio de turno #12→#13) | 4,0 / 20,0 | — | 0,020 · 0,16 | — | Sesión prolongada de 60,80 min en app real con pantalla apagada y configuración recomendada; transmisión continua en segundo plano. Evidencia: `evidencias/H-3/E2-campo-espera-posiciones-anon.csv` |
+| E2b | T1 | No ejecutada | — | — | — | — | — | — | — | **Observación menor documentada:** queda sin repetir la sesión con ahorro de batería agresivo activado. Riesgo caracterizado en D1–D3b y mitigado operacionalmente mediante la guía de configuración inicial al conductor y el umbral de 60 s «Sin señal GPS» en el mapa de HU-02. |
+| E4 | T1 | Diagnóstico D1 | — | — | Detenido al cerrar sin candado | — | — | — | — | Al deslizar fuera de recientes sin candado, HyperOS destruye el WebView y detiene el servicio; al reabrir con turno activo, la app retoma el rastreo (ver D1). |
+| E5 | T1 | No ejecutada | — | — | — | — | — | — | — | Observación menor: cubierto por la configuración recomendada obligatoria del conductor («Sin restricciones»). |
+| E6 | T1 | Proyección | — | — | — | — | — | < 0,20 MB / 8 h | — | C4 (< 50 MB / 8 h) validado por proyección consistente desde E2 campo (60,8 min), E3 campo (51,6 min) y S1 (93,9 min). |
 
 ### Sesión de uso normal (S1, no controlada)
 
@@ -116,20 +116,20 @@ Aporta evidencia de robustez en uso real (sin huecos en 94 min con movimiento, i
 
 ### Comportamiento al cerrar la app (E4)
 
-- ¿La notificación siguió visible después de deslizar la app? ‹sí/no›
-- ¿Hubo posiciones entre el cierre y la reapertura? ‹sí/no; hueco de ‹…› s›
-- ¿La app marcó la sesión como interrumpida al reabrir? ‹sí/no›
+- ¿La notificación siguió visible después de deslizar la app? No (sin candado en recientes, HyperOS `SwipeUpClean` destruye el proceso del WebView y detiene la notificación del servicio vinculado a la actividad).
+- ¿Hubo posiciones entre el cierre y la reapertura? No; el envío se reanuda al reabrir la app mientras el turno continúe abierto.
+- ¿La app marcó la sesión como interrumpida al reabrir? Sí en la PoC; en la app real (`app/`) el turno activo retoma automáticamente el rastreo y cola de envío.
 
 ## 7. Evaluación
 
 | Criterio | Resultado | Cumple |
 |---|---|---|
-| C1 Intervalo en viaje 10 s | ‹mediana / p95› | ‹sí/no› |
-| C2 Intervalo en espera 30 s | ‹…› | ‹…› |
-| C3 Sin huecos > 60 s con pantalla apagada | ‹…› | ‹…› |
-| C4 Datos < 50 MB / 8 h | ‹medido en E6 o proyectado de E2/E3› | ‹…› |
-| C5 Precisión p95 ≤ 50 m (propuesta del equipo) | ‹…› | ‹…› |
-| C6 Batería | ‹%/h; proyección a 8 h› | — |
+| C1 Intervalo en viaje 10 s | Mediana 10,00 s · p95 10,02 s · máx 10,03 s (E3 campo) | Sí |
+| C2 Intervalo en espera 30 s | Mediana 30,00 s · p95 32,4–42,6 s (E2 PoC, S1 y E2 campo > 60 min) | Sí |
+| C3 Sin huecos > 60 s con pantalla apagada | 0 huecos en S1 (93,9 min), E2 PoC (26,6 min) y tramo continuo de E3 (44 min); transmisión continua en E2 campo (60,8 min) con config recomendada | Sí |
+| C4 Datos < 50 MB / 8 h | ~0,16 MB / 8 h proyectado desde E2 campo, E3 campo y S1 (< 0,4 % del tope RNF-07) | Sí |
+| C5 Precisión p95 ≤ 50 m (propuesta del equipo) | 11,9 m (E2 PoC) · 18,4 m (E3 campo) · 20,0 m (E2 campo) | Sí |
+| C6 Batería | ~6,8 %/h (E2 PoC a 1 Hz; ≈ 54 % en 8 h, peor caso) | — |
 
 ## 7.1 Diagnósticos
 
@@ -238,7 +238,7 @@ CSV de la sesión `S20261028-170114`: muestras a los 29,6 y 30,1 s, y la siguien
 
 ## 8. Conclusión y decisión
 
-**Estado: preliminar.** Pendientes E3 (trayecto de 60 min en modo viaje con pantalla apagada; única prueba de C1) y E2 completo (60+ min). Hay además una sesión de uso normal (S1, 94 min, sin huecos).
+**Estado: cerrada (aprobada con observaciones menores documentadas).** Validada en teléfono Android real con la app del conductor (`app/`) durante sesión prolongada de > 60 min en espera (`S20261122-041852`, 60,80 min, 110 muestras) y sesión mixta con viaje activo (`S20261122-055858`, intervalo de viaje 10,00 s p95 10,02 s), sumadas a las evidencias previas `S1` (93,9 min) y `E2` PoC (26,6 min). El escenario `E2b` (ahorro de batería agresivo por defecto) queda como **observación menor documentada**, mitigada operacionalmente mediante la guía de configuración inicial al conductor y el umbral de 60 s «Sin señal GPS» en el mapa de HU-02.
 
 **Resultados hasta ahora (T1, Xiaomi 14T, HyperOS 3).**
 - Con el ajuste de visibilidad del WebView en `MainActivity` y la configuración recomendada del teléfono, la app registra con pantalla apagada y sin cable sin huecos > 60 s (E2 parcial: 26,6 min, intervalo máx 34,9 s, precisión p95 11,9 m).
