@@ -11,6 +11,7 @@ export const ICONOS = {
   destino: 'M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Zm0-9.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
   derecha: 'm9 6 6 6-6 6',
   atras: 'm15 6-6 6 6 6',
+  abajo: 'm6 9 6 6 6-6',
   mensaje: 'M4 5h16v11H9l-5 4V5Z',
   check: 'm5 12.5 4.5 4.5L19 7.5',
   cerrar: 'M6 6l12 12M18 6 6 18',

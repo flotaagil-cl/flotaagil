@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import { formatearFechaHora } from '../../hora/hora';
-import { useAsignarViaje, useCandidatos, type ViajeDetalle } from '../api';
+import { useAsignarViaje, useCandidatos, type Viaje } from '../api';
 import { mensajeDeErrorApi } from '../errores';
 
 function distancia(metros: number | null): string {
@@ -14,7 +14,7 @@ function distancia(metros: number | null): string {
  * Asignar la reserva a un conductor (HU-14, HU-04). Propone al más apto y deja elegir entre los demás Disponibles sin
  * viaje en ejecución (RN-01, RN-03). Nada se asigna hasta que el despachador lo confirma con el botón (RN-02).
  */
-export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: ViajeDetalle; alCerrar: () => void; alAsignar: (nombre: string) => void }) {
+export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: Viaje; alCerrar: () => void; alAsignar: (nombre: string) => void }) {
   const dialogo = useRef<HTMLDialogElement>(null);
   const candidatos = useCandidatos(viaje.id, true);
   const asignar = useAsignarViaje(viaje.id);
