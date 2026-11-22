@@ -1,16 +1,19 @@
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { LineaVuelo } from '../../vuelos/LineaVuelo';
-import { useAhora } from '../../vuelos/useAhora';
-import { lineaDeVuelo } from '../../vuelos/textos';
-import cv from '../../vuelos/vuelos.module.css';
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Aviso } from '../../componentes/Aviso';
-import { formatearFecha, formatearFechaHora, formatearPared } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
-import { useViajes, type Canal, type EstadoViaje, type Sentido } from '../api';
+import { Aviso } from '../../componentes/Aviso';
+import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
+import { formatearFecha, formatearFechaHora, formatearPared } from '../../hora/hora';
+import { LineaVuelo } from '../../vuelos/LineaVuelo';
+import { lineaDeVuelo } from '../../vuelos/textos';
+import { useAhora } from '../../vuelos/useAhora';
+import cv from '../../vuelos/vuelos.module.css';
+import { useViajes, type Canal, type EstadoViaje, type Sentido, type Viaje } from '../api';
+import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { mensajeDeErrorApi } from '../errores';
-import { CANALES, ESTADOS, ORDEN_ESTADOS, ORDENES, SENTIDOS, type Orden, ALERTAS_VUELO } from '../etiquetas';
+import { ALERTAS_VUELO, CANALES, ESTADOS, ORDEN_ESTADOS, ORDENES, SENTIDOS, type Orden } from '../etiquetas';
 import {
   cambiarFiltros,
   consultaDeFiltros,
@@ -21,10 +24,10 @@ import {
   SIN_FILTROS,
   type Filtros,
 } from '../filtros';
-import campos from '../../formularios/formularios.module.css';
-import estilos from '../../componentes/panel.module.css';
+import s from './Listado.module.css';
 
 const ESPERA_BUSQUEDA_MS = 300;
+const COLUMNAS_TABLA = 8;
 const numero = new Intl.NumberFormat('es-CL');
 
 interface Chip {
@@ -61,6 +64,9 @@ export function Listado() {
   const { consulta, errores } = useMemo(() => consultaDeFiltros(filtros), [filtros]);
   const lista = useViajes(consulta);
   const ahora = useAhora();
+  const refEstados = useRef<HTMLDetailsElement>(null);
+  const [viajeAAsignar, setViajeAAsignar] = useState<Viaje | null>(null);
+  const [avisoAsignacion, setAvisoAsignacion] = useState<string | null>(null);
 
   function aplicar(cambios: Partial<Filtros>, opciones: { replace?: boolean } = {}) {
     setParametros(escribirFiltros(cambiarFiltros(filtros, cambios)), opciones);
@@ -82,144 +88,213 @@ export function Listado() {
     return () => clearTimeout(temporizador);
   }, [busqueda, filtros, setParametros]);
 
+  // Cierra el desplegable multiselect «Estado» al hacer clic fuera o presionar Escape.
+  useEffect(() => {
+    function cerrarAlHacerClicFuera(evento: MouseEvent) {
+      const detalle = refEstados.current;
+      if (!detalle?.open) return;
+      if (evento.target instanceof Node && !detalle.contains(evento.target)) {
+        detalle.open = false;
+      }
+    }
+    function cerrarConEscape(evento: KeyboardEvent) {
+      const detalle = refEstados.current;
+      if (evento.key === 'Escape' && detalle?.open) {
+        detalle.open = false;
+      }
+    }
+    document.addEventListener('mousedown', cerrarAlHacerClicFuera);
+    document.addEventListener('keydown', cerrarConEscape);
+    return () => {
+      document.removeEventListener('mousedown', cerrarAlHacerClicFuera);
+      document.removeEventListener('keydown', cerrarConEscape);
+    };
+  }, []);
+
   // En celular los filtros quedan plegados; en escritorio siempre a la vista (CSS).
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const chips = chipsDe(filtros, errores);
+  const conFiltrosActivos = hayFiltros(filtros);
   const datos = lista.data;
   const paginas = datos ? Math.max(1, Math.ceil(datos.count / POR_PAGINA)) : 1;
   const paginaInexistente = lista.error instanceof ErrorApi && lista.error.estado === 404 && filtros.pagina > 1;
 
+  function limpiarFiltros() {
+    aplicar({ ...SIN_FILTROS, ordenar: filtros.ordenar });
+  }
+
   return (
     <section>
-      <div className={estilos.encabezado}>
+      <div className={s.encabezado}>
         <h1>Reservas</h1>
-        <Link to="/reservas/nueva" className={estilos.boton}>
-          Nueva reserva
-        </Link>
-        <Link to="/reservas/contingencia" className={estilos.botonSecundario}>
-          Reserva de contingencia
-        </Link>
+        <div className={s.accionesEncabezado}>
+          <Link to="/reservas/contingencia" className={estilos.botonSecundario}>
+            Reserva de contingencia
+          </Link>
+          <Link to="/reservas/nueva" className={`${estilos.boton} ${s.botonConIcono}`}>
+            <Icono nombre="mas" tamano={18} />
+            Nueva reserva
+          </Link>
+        </div>
       </div>
 
-      <div className={estilos.filtros}>
+      {avisoAsignacion && <Aviso>{avisoAsignacion}</Aviso>}
+
+      <div className={s.filtros}>
         <button
           type="button"
-          className={estilos.botonFiltros}
+          className={s.botonFiltros}
           aria-expanded={filtrosAbiertos}
           aria-controls="campos-filtro"
           onClick={() => setFiltrosAbiertos((abiertos) => !abiertos)}
         >
-          Filtros{chips.length ? ` (${chips.length})` : ''}
+          <span>Filtros{chips.length ? ` (${chips.length})` : ''}</span>
+          <Icono nombre="abajo" tamano={16} />
         </button>
-        <div id="campos-filtro" className={estilos.camposFiltro} data-abierto={filtrosAbiertos} role="search">
-          <label className={`${campos.campo} ${estilos.busqueda}`}>
-            Buscar
-            <input
-              type="search"
-              placeholder="Pasajero, teléfono, dirección o vuelo"
-              value={busqueda}
-              onChange={(evento) => setBusqueda(evento.target.value)}
-            />
-          </label>
-          <div className={campos.campo}>
-            <span id="filtro-estado">Estado</span>
-            <details className={estilos.estados}>
-              <summary aria-labelledby="filtro-estado">
-                {filtros.estado.length ? `${filtros.estado.length} seleccionados` : 'Todos'}
-              </summary>
-              <div className={estilos.opcionesEstado} role="group" aria-labelledby="filtro-estado">
-                {ORDEN_ESTADOS.map((estado) => (
-                  <label key={estado} className={campos.opcion}>
-                    <input
-                      type="checkbox"
-                      checked={filtros.estado.includes(estado)}
-                      onChange={(evento) =>
-                        aplicar({
-                          estado: evento.target.checked
-                            ? [...filtros.estado, estado]
-                            : filtros.estado.filter((e: EstadoViaje) => e !== estado),
-                        })
-                      }
-                    />
-                    {ESTADOS[estado]}
-                  </label>
-                ))}
-              </div>
-            </details>
+
+        <div id="campos-filtro" className={s.camposFiltro} data-abierto={filtrosAbiertos} role="search">
+          <div className={s.fila1}>
+            <label className={s.campoFiltro}>
+              Buscar
+              <input
+                type="search"
+                className={s.control}
+                placeholder="Pasajero, teléfono, dirección o vuelo"
+                value={busqueda}
+                onChange={(evento) => setBusqueda(evento.target.value)}
+              />
+            </label>
+            <label className={s.checkboxInline}>
+              <input
+                type="checkbox"
+                className={s.checkbox}
+                checked={filtros.sinConfirmar}
+                onChange={(evento) => aplicar({ sinConfirmar: evento.target.checked })}
+              />
+              Solo sin confirmar
+            </label>
           </div>
-          <label className={campos.campo}>
-            Sentido
-            <select
-              value={filtros.sentido ?? ''}
-              onChange={(evento) => aplicar({ sentido: (evento.target.value || null) as Sentido | null })}
-            >
-              <option value="">Todos</option>
-              {Object.entries(SENTIDOS).map(([valor, texto]) => (
-                <option key={valor} value={valor}>
-                  {texto}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={campos.campo}>
-            Canal
-            <select
-              value={filtros.canal ?? ''}
-              onChange={(evento) => aplicar({ canal: (evento.target.value || null) as Canal | null })}
-            >
-              <option value="">Todos</option>
-              {Object.entries(CANALES).map(([valor, texto]) => (
-                <option key={valor} value={valor}>
-                  {texto}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={campos.campo}>
-            <input type="checkbox" checked={filtros.sinConfirmar} onChange={(evento) => aplicar({ sinConfirmar: evento.target.checked })} /> Solo sin
-            confirmar
-          </label>
-          <label className={campos.campo}>
-            Día de recogida
-            <input
-              type="date"
-              value={filtros.fecha ?? ''}
-              onChange={(evento) => aplicar({ fecha: evento.target.value || null })}
-            />
-          </label>
-          <label className={campos.campo}>
-            Desde
-            <input
-              type="datetime-local"
-              step={60}
-              value={filtros.desde ?? ''}
-              aria-invalid={errores.desde ? true : undefined}
-              onChange={(evento) => aplicar({ desde: evento.target.value || null })}
-            />
-          </label>
-          <label className={campos.campo}>
-            Hasta
-            <input
-              type="datetime-local"
-              step={60}
-              value={filtros.hasta ?? ''}
-              aria-invalid={errores.hasta ? true : undefined}
-              onChange={(evento) => aplicar({ hasta: evento.target.value || null })}
-            />
-          </label>
-          <label className={`${campos.campo} ${estilos.doble}`}>
-            Ordenar por
-            <select
-              value={filtros.ordenar ?? 'recogida_en'}
-              onChange={(evento) => aplicar({ ordenar: evento.target.value === 'recogida_en' ? null : (evento.target.value as Orden) })}
-            >
-              {Object.entries(ORDENES).map(([valor, texto]) => (
-                <option key={valor} value={valor}>
-                  {texto}
-                </option>
-              ))}
-            </select>
-          </label>
+
+          <div className={s.fila2}>
+            <div className={s.campoFiltro}>
+              <span id="filtro-estado">Estado</span>
+              <details ref={refEstados} className={s.estados}>
+                <summary aria-labelledby="filtro-estado" className={s.estadoResumen}>
+                  {filtros.estado.length ? `${filtros.estado.length} seleccionados` : 'Todos'}
+                  <Icono nombre="abajo" tamano={16} className={s.estadoFlecha} />
+                </summary>
+                <div className={s.opcionesEstado} role="group" aria-labelledby="filtro-estado">
+                  {ORDEN_ESTADOS.map((estado) => (
+                    <label key={estado} className={s.opcionEstado}>
+                      <input
+                        type="checkbox"
+                        className={s.checkbox}
+                        checked={filtros.estado.includes(estado)}
+                        onChange={(evento) =>
+                          aplicar({
+                            estado: evento.target.checked
+                              ? [...filtros.estado, estado]
+                              : filtros.estado.filter((e: EstadoViaje) => e !== estado),
+                          })
+                        }
+                      />
+                      {ESTADOS[estado]}
+                    </label>
+                  ))}
+                </div>
+              </details>
+            </div>
+
+            <label className={s.campoFiltro}>
+              Sentido
+              <select
+                className={s.control}
+                value={filtros.sentido ?? ''}
+                onChange={(evento) => aplicar({ sentido: (evento.target.value || null) as Sentido | null })}
+              >
+                <option value="">Todos</option>
+                {Object.entries(SENTIDOS).map(([valor, texto]) => (
+                  <option key={valor} value={valor}>
+                    {texto}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={s.campoFiltro}>
+              Canal
+              <select
+                className={s.control}
+                value={filtros.canal ?? ''}
+                onChange={(evento) => aplicar({ canal: (evento.target.value || null) as Canal | null })}
+              >
+                <option value="">Todos</option>
+                {Object.entries(CANALES).map(([valor, texto]) => (
+                  <option key={valor} value={valor}>
+                    {texto}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className={s.campoFiltro}>
+              Ordenar por
+              <select
+                className={s.control}
+                value={filtros.ordenar ?? 'recogida_en'}
+                onChange={(evento) => aplicar({ ordenar: evento.target.value === 'recogida_en' ? null : (evento.target.value as Orden) })}
+              >
+                {Object.entries(ORDENES).map(([valor, texto]) => (
+                  <option key={valor} value={valor}>
+                    {texto}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className={s.fila3}>
+            <label className={s.campoFiltro}>
+              Día de recogida
+              <input
+                type="date"
+                className={s.control}
+                value={filtros.fecha ?? ''}
+                onChange={(evento) => aplicar({ fecha: evento.target.value || null })}
+              />
+            </label>
+
+            <label className={s.campoFiltro}>
+              Desde
+              <input
+                type="datetime-local"
+                className={s.control}
+                step={60}
+                value={filtros.desde ?? ''}
+                aria-invalid={errores.desde ? true : undefined}
+                onChange={(evento) => aplicar({ desde: evento.target.value || null })}
+              />
+            </label>
+
+            <label className={s.campoFiltro}>
+              Hasta
+              <input
+                type="datetime-local"
+                className={s.control}
+                step={60}
+                value={filtros.hasta ?? ''}
+                aria-invalid={errores.hasta ? true : undefined}
+                onChange={(evento) => aplicar({ hasta: evento.target.value || null })}
+              />
+            </label>
+
+            {conFiltrosActivos && (
+              <button type="button" className={s.botonLimpiar} onClick={limpiarFiltros}>
+                <Icono nombre="cerrar" tamano={14} />
+                Limpiar filtros
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -234,7 +309,7 @@ export function Listado() {
             </li>
           ))}
           <li>
-            <button type="button" className={estilos.quitarTodo} onClick={() => aplicar({ ...SIN_FILTROS, ordenar: filtros.ordenar })}>
+            <button type="button" className={estilos.quitarTodo} onClick={limpiarFiltros}>
               Quitar filtros
             </button>
           </li>
@@ -264,17 +339,18 @@ export function Listado() {
         </div>
       ) : datos && datos.results.length === 0 ? (
         <div className={estilos.vacio}>
-          {hayFiltros(filtros) ? (
+          {conFiltrosActivos ? (
             <>
               <p>Ninguna reserva coincide con los filtros.</p>
-              <button type="button" className={estilos.botonSecundario} onClick={() => aplicar({ ...SIN_FILTROS, ordenar: filtros.ordenar })}>
+              <button type="button" className={estilos.botonSecundario} onClick={limpiarFiltros}>
                 Quitar filtros
               </button>
             </>
           ) : (
             <>
               <p>Aún no hay reservas.</p>
-              <Link to="/reservas/nueva" className={estilos.boton}>
+              <Link to="/reservas/nueva" className={`${estilos.boton} ${s.botonConIcono}`}>
+                <Icono nombre="mas" tamano={18} />
                 Nueva reserva
               </Link>
             </>
@@ -289,61 +365,111 @@ export function Listado() {
               </span>
               {lista.isFetching && <span>Actualizando…</span>}
             </p>
-            <table className={estilos.tabla} aria-busy={lista.isPlaceholderData || undefined}>
-              <thead>
-                <tr>
-                  <th scope="col">Recogida</th>
-                  <th scope="col">Pasajero</th>
-                  <th scope="col">Trayecto</th>
-                  <th scope="col">Sentido</th>
-                  <th scope="col">Estado</th>
-                  <th scope="col">Conductor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {datos.results.map((viaje) => {
-                  // HU-69: la línea de vuelo va en su propia fila, pegada a la de la reserva.
-                  const linea = lineaDeVuelo(viaje, ahora);
-                  return (
-                    <Fragment key={viaje.id}>
-                  <tr data-con-vuelo={linea ? 'true' : undefined}>
-                    <Celda titulo="Recogida">
-                      <Link to={`/reservas/${viaje.id}`}>{formatearFechaHora(viaje.recogida_en)}</Link>
-                      <span className={estilos.secundario}>#{viaje.id}</span>
-                    </Celda>
-                    <Celda titulo="Pasajero">
-                      {viaje.pasajero.nombre}
-                      <span className={estilos.secundario}>{viaje.pasajero.telefono ?? 'Sin teléfono'}</span>
-                    </Celda>
-                    <Celda titulo="Trayecto" ancho>
-                      {viaje.origen.direccion}
-                      <span className={estilos.secundario}>→ {viaje.destino.direccion}</span>
-                    </Celda>
-                    <Celda titulo="Sentido">
-                      {viaje.sentido ? SENTIDOS[viaje.sentido] : '—'}
-                      <span className={estilos.secundario}>
-                        {CANALES[viaje.canal]}
-                        {viaje.vuelo ? ` · ${viaje.vuelo.numero}` : ''}
-                      </span>
-                    </Celda>
-                    <Celda titulo="Estado">
-                      <EstadoEtiqueta estado={viaje.estado ?? 'SOLICITADO'} sinConfirmar={viaje.sin_confirmar} />
-                      {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
-                    </Celda>
-                    <Celda titulo="Conductor">{viaje.conductor?.nombre ?? '—'}</Celda>
+            <div className={s.contenedorTabla}>
+              <table className={s.tablaReservas} aria-busy={lista.isPlaceholderData || undefined}>
+                <thead>
+                  <tr>
+                    <th scope="col" className={s.colId}>
+                      N°
+                    </th>
+                    <th scope="col">Recogida</th>
+                    <th scope="col">Pasajero</th>
+                    <th scope="col">Trayecto</th>
+                    <th scope="col">Sentido / Canal</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col">Conductor / Vehículo</th>
+                    <th scope="col" className={s.colAccion}>
+                      Acción
+                    </th>
                   </tr>
-                      {linea && (
-                        <tr className={cv.filaVuelo} aria-label={`Vuelo de la reserva ${viaje.id}`}>
-                          <td colSpan={6}>
-                            <LineaVuelo linea={linea} />
-                          </td>
+                </thead>
+                <tbody>
+                  {datos.results.map((viaje) => {
+                    // HU-69: la línea de vuelo va en su propia fila, pegada a la de la reserva.
+                    const linea = lineaDeVuelo(viaje, ahora);
+                    const estado = viaje.estado ?? 'SOLICITADO';
+                    return (
+                      <Fragment key={viaje.id}>
+                        <tr data-con-vuelo={linea ? 'true' : undefined}>
+                          <Celda titulo="N°" clase={s.colId}>
+                            <strong className={s.numeroId}>#{viaje.id}</strong>
+                          </Celda>
+                          <Celda titulo="Recogida" clase={s.colRecogida}>
+                            <Link to={`/reservas/${viaje.id}`} className={s.enlaceRecogida}>
+                              {formatearFechaHora(viaje.recogida_en)}
+                            </Link>
+                          </Celda>
+                          <Celda titulo="Pasajero">
+                            <span className={s.pasajeroNombre}>{viaje.pasajero.nombre}</span>
+                            <span className={estilos.secundario}>{viaje.pasajero.telefono ?? 'Sin teléfono'}</span>
+                          </Celda>
+                          <Celda titulo="Trayecto" clase={s.colTrayecto}>
+                            {viaje.origen.direccion}
+                            <span className={estilos.secundario}>→ {viaje.destino.direccion}</span>
+                            {(viaje.vuelo || viaje.convenio) && (
+                              <div className={s.insigniasTrayecto}>
+                                {viaje.vuelo && (
+                                  <span className={s.badgeVuelo}>
+                                    <Icono nombre="avion" tamano={13} />
+                                    {viaje.vuelo.numero}
+                                  </span>
+                                )}
+                                {viaje.convenio && (
+                                  <span className={s.badgeConvenio}>
+                                    <Icono nombre="convenios" tamano={13} />
+                                    {viaje.convenio.cliente_nombre}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </Celda>
+                          <Celda titulo="Sentido / Canal" clase={s.colSentido}>
+                            {viaje.sentido ? SENTIDOS[viaje.sentido] : '—'}
+                            <span className={estilos.secundario}>{CANALES[viaje.canal]}</span>
+                          </Celda>
+                          <Celda titulo="Estado" clase={s.colEstado}>
+                            <EstadoEtiqueta estado={estado} sinConfirmar={viaje.sin_confirmar} />
+                            {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
+                          </Celda>
+                          <Celda titulo="Conductor / Vehículo">
+                            {viaje.conductor || viaje.vehiculo ? (
+                              <>
+                                <span>{viaje.conductor?.nombre ?? 'Sin conductor'}</span>
+                                {viaje.vehiculo?.patente && (
+                                  <div>
+                                    <span className={s.patente}>{viaje.vehiculo.patente}</span>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className={s.sinAsignar}>Sin asignar</span>
+                            )}
+                          </Celda>
+                          <Celda titulo="Acción" clase={s.colAccion}>
+                            {estado === 'SOLICITADO' ? (
+                              <button type="button" className={s.botonAsignar} onClick={() => setViajeAAsignar(viaje)}>
+                                Asignar
+                              </button>
+                            ) : (
+                              <Link to={`/reservas/${viaje.id}`} className={s.enlaceDetalle}>
+                                Ver detalle
+                              </Link>
+                            )}
+                          </Celda>
                         </tr>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
+                        {linea && (
+                          <tr className={cv.filaVuelo} aria-label={`Vuelo de la reserva ${viaje.id}`}>
+                            <td colSpan={COLUMNAS_TABLA}>
+                              <LineaVuelo linea={linea} />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             {paginas > 1 && (
               <nav className={estilos.paginacion} aria-label="Paginación">
                 <button
@@ -367,14 +493,26 @@ export function Listado() {
           </>
         )
       )}
+
+      {viajeAAsignar && (
+        <DialogoAsignar
+          viaje={viajeAAsignar}
+          alCerrar={() => setViajeAAsignar(null)}
+          alAsignar={(nombre) => {
+            const idAsignado = viajeAAsignar.id;
+            setViajeAAsignar(null);
+            setAvisoAsignacion(`Reserva #${idAsignado} asignada a ${nombre}. Esperando que acepte en la app (60 s).`);
+          }}
+        />
+      )}
     </section>
   );
 }
 
 /** Celda con su título: en celular la tabla pasa a tarjetas y el título va a la izquierda (CSS). */
-function Celda({ titulo, ancho, children }: { titulo: string; ancho?: boolean; children: ReactNode }) {
+function Celda({ titulo, clase, children }: { titulo: string; clase?: string; children: ReactNode }) {
   return (
-    <td data-titulo={titulo} className={ancho ? estilos.trayecto : undefined}>
+    <td data-titulo={titulo} className={clase}>
       <div>{children}</div>
     </td>
   );
@@ -382,16 +520,18 @@ function Celda({ titulo, ancho, children }: { titulo: string; ancho?: boolean; c
 
 function Esqueleto() {
   return (
-    <table className={estilos.tabla} aria-busy="true" aria-label="Cargando reservas">
-      <tbody>
-        {Array.from({ length: 5 }, (_, i) => (
-          <tr key={i} className={estilos.esqueleto}>
-            <td colSpan={6}>
-              <span />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className={s.contenedorTabla}>
+      <table className={s.tablaReservas} aria-busy="true" aria-label="Cargando reservas">
+        <tbody>
+          {Array.from({ length: 5 }, (_, i) => (
+            <tr key={i} className={estilos.esqueleto}>
+              <td colSpan={COLUMNAS_TABLA}>
+                <span />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

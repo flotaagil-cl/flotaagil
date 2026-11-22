@@ -1,0 +1,535 @@
+/* Estilos de la pantalla de listado de Reservas (paleta verde esmeralda / tokens.css). */
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+.accionesEncabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espacio-2);
+}
+
+.botonConIcono {
+  gap: 6px;
+}
+
+/* --- Panel de filtros --- */
+
+.filtros {
+  margin-bottom: var(--espacio-3);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.botonFiltros {
+  display: none;
+}
+
+.camposFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  padding: var(--espacio-4);
+}
+
+.fila1 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--espacio-3);
+  align-items: end;
+}
+
+.fila2 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--espacio-3);
+  align-items: end;
+}
+
+.fila3 {
+  display: grid;
+  grid-template-columns: minmax(10.5rem, 1fr) minmax(14rem, 1.25fr) minmax(14rem, 1.25fr) auto;
+  gap: var(--espacio-3);
+  align-items: end;
+}
+
+.campoFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.control {
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.control:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--error-borde);
+}
+
+.checkboxInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--texto);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 0;
+  padding: 0;
+  flex: none;
+  accent-color: var(--color-primario-700, var(--acento));
+  cursor: pointer;
+}
+
+/* --- Desplegable multiselect Estado --- */
+
+.estados {
+  position: relative;
+  width: 100%;
+}
+
+.estadoResumen {
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-weight: 400;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: border-color 140ms ease;
+}
+
+.estadoResumen:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.estadoResumen::-webkit-details-marker {
+  display: none;
+}
+
+.estadoFlecha {
+  flex: none;
+  color: var(--texto-suave);
+  transition: transform 150ms ease;
+}
+
+.estados[open] .estadoFlecha {
+  transform: rotate(180deg);
+}
+
+.opcionesEstado {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: max(100%, 15rem);
+  max-height: 19rem;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px var(--sombra);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.opcionEstado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--texto);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.opcionEstado:hover {
+  background: var(--fondo);
+}
+
+.botonLimpiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.botonLimpiar:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-tiffany, var(--borde));
+  color: var(--color-primario-900, var(--texto));
+}
+
+/* --- Tabla de reservas --- */
+
+.contenedorTabla {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  overflow-x: auto;
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.tablaReservas {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--superficie);
+  font-size: 0.9rem;
+}
+
+.tablaReservas[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.tablaReservas th,
+.tablaReservas td {
+  padding: 12px;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tablaReservas th {
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tablaReservas tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.tablaReservas tbody tr:hover {
+  background: var(--color-tiffany-50, var(--fondo));
+}
+
+.tablaReservas tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.colId {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.numeroId {
+  color: var(--color-primario-900, var(--texto));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.colRecogida {
+  white-space: nowrap;
+}
+
+.enlaceRecogida {
+  color: var(--color-primario-700, var(--acento));
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.enlaceRecogida:hover {
+  text-decoration: underline;
+}
+
+.pasajeroNombre {
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.colTrayecto {
+  min-width: 13rem;
+  overflow-wrap: anywhere;
+}
+
+.insigniasTrayecto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.badgeVuelo,
+.badgeConvenio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.badgeVuelo {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--texto));
+  border: 1px solid var(--borde);
+}
+
+.badgeConvenio {
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--texto));
+}
+
+.colSentido,
+.colEstado {
+  white-space: nowrap;
+}
+
+.patente {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 6px;
+  border: 1px solid var(--borde);
+  border-radius: 5px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.sinAsignar {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.colAccion {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.tablaReservas th.colAccion {
+  text-align: right;
+}
+
+.botonAsignar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--grad-boton, var(--acento));
+  color: var(--sobre-acento);
+  font: inherit;
+  font-size: 0.825rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 140ms ease;
+}
+
+.botonAsignar:hover {
+  background: var(--acento-hover);
+}
+
+.enlaceDetalle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--color-primario-700, var(--acento));
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.enlaceDetalle:hover {
+  background: var(--color-tiffany-50, var(--fondo));
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+/* --- Responsive --- */
+
+@media (max-width: 68rem) {
+  .fila2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fila3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 44.99rem) {
+  .accionesEncabezado {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .botonFiltros {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--toque);
+    padding: 0 var(--espacio-3);
+    border: 0;
+    background: transparent;
+    color: var(--texto);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .camposFiltro[data-abierto='false'] {
+    display: none;
+  }
+
+  .fila1,
+  .fila2,
+  .fila3 {
+    grid-template-columns: 1fr;
+  }
+
+  .contenedorTabla {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .tablaReservas,
+  .tablaReservas tbody,
+  .tablaReservas tr,
+  .tablaReservas td {
+    display: block;
+  }
+
+  .tablaReservas {
+    background: transparent;
+  }
+
+  .tablaReservas thead {
+    display: none;
+  }
+
+  .tablaReservas tbody tr {
+    margin-bottom: var(--espacio-2);
+    padding: var(--espacio-2) 0;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+  }
+
+  .tablaReservas td {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: var(--espacio-2);
+    padding: var(--espacio-1) var(--espacio-3);
+    border: 0;
+  }
+
+  .tablaReservas td::before {
+    content: attr(data-titulo);
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .colRecogida,
+  .colSentido,
+  .colEstado,
+  .colId,
+  .colAccion {
+    white-space: normal;
+    width: auto;
+    text-align: left;
+  }
+}

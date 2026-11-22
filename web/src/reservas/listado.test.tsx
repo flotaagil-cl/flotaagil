@@ -179,4 +179,74 @@ describe('listado de reservas', () => {
     servidor.fallar('GET /api/viajes/', 500);
     expect(await screen.findByText(MENSAJES.error_servidor)).toBeInTheDocument();
   });
+
+  it('el desplegable de Estado se cierra al hacer clic fuera o presionar Escape', async () => {
+    montarPanel('/reservas?desde=');
+    await esperarListado();
+    const resumen = screen.getByText('Todos', { selector: 'summary' });
+    const detalle = resumen.closest('details')!;
+
+    await userEvent.click(resumen);
+    expect(detalle).toHaveAttribute('open');
+
+    await userEvent.pointer({ keys: '[MouseLeft]', target: screen.getByRole('heading', { name: 'Reservas' }) });
+    expect(detalle).not.toHaveAttribute('open');
+
+    await userEvent.click(resumen);
+    expect(detalle).toHaveAttribute('open');
+
+    await userEvent.keyboard('{Escape}');
+    expect(detalle).not.toHaveAttribute('open');
+  });
+
+  it('muestra columna N°, conductor/vehículo, convenio y botón Limpiar filtros cuando hay filtros activos', async () => {
+    const { viajes, router } = montarPanel('/reservas?estado=ACEPTADO&ordenar=creado_en');
+    viajes.agregar(
+      viajeDePrueba({
+        id: 13,
+        estado: 'ACEPTADO',
+        pasajero: { id: 1, nombre: 'Laura León', telefono: '+56900000013' },
+        conductor: { id: 4, nombre: 'Carlos Chofer' },
+        vehiculo: { id: 2, patente: 'ABCD12' },
+        convenio: { id: 9, cliente_nombre: 'Hotel Pacífico' },
+      }),
+    );
+    await esperarListado();
+
+    const fila = screen.getByRole('row', { name: /Laura León/ });
+    expect(within(fila).getByText('#13')).toBeInTheDocument();
+    expect(fila).toHaveTextContent('Carlos Chofer');
+    expect(fila).toHaveTextContent('ABCD12');
+    expect(fila).toHaveTextContent('Hotel Pacífico');
+    expect(within(fila).getByRole('link', { name: 'Ver detalle' })).toHaveAttribute('href', '/reservas/13');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?desde=&ordenar=creado_en'));
+  });
+
+  it('acción rápida Asignar en reservas Solicitado abre el diálogo y asigna al conductor', async () => {
+    const { viajes } = montarPanel('/reservas?desde=');
+    viajes.agregar(viajeDePrueba({ id: 21, estado: 'SOLICITADO', pasajero: { id: 2, nombre: 'Mario Soto', telefono: '+56900000021' } }));
+    viajes.candidatos = [
+      {
+        id: 5,
+        nombre: 'Macarena Gutiérrez',
+        patente: 'DMAA10',
+        distancia_m: 450,
+        posicion_en: null,
+        confiable: true,
+        posicion_fila: null,
+        ultimo_viaje_en: null,
+        sugerido: true,
+      },
+    ];
+    await esperarListado();
+
+    const fila = screen.getByRole('row', { name: /Mario Soto/ });
+    await userEvent.click(within(fila).getByRole('button', { name: 'Asignar' }));
+    expect(await screen.findByRole('heading', { name: 'Asignar la reserva #21' })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar a Macarena Gutiérrez' }));
+    expect(await screen.findByText(/Reserva #21 asignada a Macarena Gutiérrez/)).toBeInTheDocument();
+  });
 });
