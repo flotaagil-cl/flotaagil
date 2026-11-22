@@ -116,7 +116,8 @@
 .contenido {
   grid-area: contenido;
   padding: var(--espacio-4);
-  max-width: 72rem;
+  /* Ocupa todo el ancho junto al menú; min-width: 0 evita que tablas o el mapa ensanchen la columna. */
+  min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
@@ -124,7 +125,7 @@
 /* Escritorio: menú lateral fijo. */
 @media (min-width: 48rem) {
   .marco {
-    grid-template-columns: 14rem 1fr;
+    grid-template-columns: 14rem minmax(0, 1fr);
     grid-template-rows: auto 1fr;
     grid-template-areas: 'cabecera cabecera' 'menu contenido';
   }
