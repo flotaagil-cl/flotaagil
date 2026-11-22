@@ -65,10 +65,20 @@ class PerfilConductorSerializer(serializers.ModelSerializer):
     vehiculo_activo = VehiculoDeclaradoSerializer(allow_null=True, read_only=True)
     vehiculos = serializers.SerializerMethodField()
     fila = serializers.SerializerMethodField()
+    asignacion_pendiente = serializers.SerializerMethodField()
 
     class Meta:
         model = Conductor
-        fields = ["id", "nombre", "estado", "vehiculo_activo", "consentimiento_gps_en", "vehiculos", "fila"]
+        fields = [
+            "id",
+            "nombre",
+            "estado",
+            "vehiculo_activo",
+            "consentimiento_gps_en",
+            "vehiculos",
+            "fila",
+            "asignacion_pendiente",
+        ]
         read_only_fields = fields
 
     @staticmethod
@@ -77,6 +87,16 @@ class PerfilConductorSerializer(serializers.ModelSerializer):
         from apps.aeropuerto.fila import estado_de
 
         return estado_de(conductor)
+
+    @staticmethod
+    @extend_schema_field(serializers.DictField(allow_null=True))
+    def get_asignacion_pendiente(conductor):
+        from apps.reservas.asignacion import asignacion_pendiente, datos_para_la_app, vence_en
+
+        asignacion = asignacion_pendiente(conductor)
+        if asignacion is None or vence_en(asignacion) <= timezone.now():
+            return None
+        return datos_para_la_app(asignacion)
 
     @staticmethod
     @extend_schema_field(VehiculoAsociadoSerializer(many=True))

@@ -1,5 +1,6 @@
 /** Perfil del conductor (GET /api/app/perfil/) y cuándo debe correr el GPS (RN-18). */
 
+import type { Asignacion } from './conductor/canal';
 import type { Modo } from './gps/muestreo';
 
 export interface Perfil {
@@ -11,6 +12,8 @@ export interface Perfil {
   vehiculos: { id: number; patente: string; marca_modelo: string }[];
   /** Lugar en la fila del aeropuerto (HU-29). */
   fila?: { posicion: number; total: number; zona: string; ingreso_en: string } | null;
+  /** Asignación pendiente de respuesta (HU-14/15), recuperada también vía HTTP en pull-to-refresh. */
+  asignacion_pendiente?: Asignacion | null;
 }
 
 /** Modo del GPS según el perfil, o null si no debe registrar (fuera de turno o sin consentimiento). */

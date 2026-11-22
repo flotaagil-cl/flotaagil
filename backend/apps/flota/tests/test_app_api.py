@@ -61,6 +61,24 @@ class TestPerfil:
         assert datos["estado"] == "DISPONIBLE"
         assert datos["vehiculo_activo"]["patente"] == "BCDF10"
         assert [v["patente"] for v in datos["vehiculos"]] == ["BCDF10"]
+        assert datos["asignacion_pendiente"] is None
+
+    def test_incluye_asignacion_pendiente_vigente(self, app, chofer, empresa):
+        from apps.cuentas.tests.fabricas import UsuarioFactory
+        from apps.reservas.models import Asignacion, OrigenSugerencia
+
+        despachador = UsuarioFactory(empresa=empresa, rol="DESPACHADOR")
+        viaje = ViajeFactory(empresa=empresa, conductor=chofer, estado=EstadoViaje.ASIGNADO)
+        asignacion = Asignacion.objects.create(
+            viaje=viaje, conductor=chofer, despachador=despachador, origen_sugerencia=OrigenSugerencia.MANUAL
+        )
+        datos = app.get(PERFIL).json()
+        assert datos["asignacion_pendiente"]["asignacion"] == asignacion.pk
+        assert datos["asignacion_pendiente"]["viaje"] == viaje.pk
+
+        # Si ya venció el plazo de 60 s, el perfil no la devuelve aunque el beat no haya corrido.
+        Asignacion.objects.filter(pk=asignacion.pk).update(enviada_en=timezone.now() - timedelta(seconds=61))
+        assert app.get(PERFIL).json()["asignacion_pendiente"] is None
 
 
 @pytest.mark.django_db

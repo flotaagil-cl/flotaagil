@@ -6269,7 +6269,13 @@ components:
           - $ref: '#/components/schemas/LugarEnFila'
           nullable: true
           readOnly: true
+        asignacion_pendiente:
+          type: object
+          additionalProperties: {}
+          nullable: true
+          readOnly: true
       required:
+      - asignacion_pendiente
       - consentimiento_gps_en
       - estado
       - fila

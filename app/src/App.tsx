@@ -39,6 +39,7 @@ export default function App() {
   const [enVivo, setEnVivo] = useState<EstadoCanal>(canal.estado);
   const [enMiTurno, setEnMiTurno] = useState(false);
   const [enChat, setEnChat] = useState(false);
+  const [asignacionOculta, setAsignacionOculta] = useState<number | null>(null);
   const [noLeidos, setNoLeidos] = useState(0);
   const [avisoChat, setAvisoChat] = useState<MensajeChat | null>(null);
   const cargarMiTurno = useCallback(() => api.pedir<ResumenDelTurno>('GET', '/api/app/mi-turno/'), []);
@@ -150,14 +151,21 @@ export default function App() {
     [enChat],
   );
 
-  // Al asignarse un viaje se vuelve al Inicio (donde aparece la tarjeta prioritaria) y se recarga el perfil.
-  const asignacionId = enVivo.asignacion?.asignacion ?? null;
+  // Al asignarse un viaje (por WebSocket o al recargar perfil) se vuelve al Inicio.
+  const asignacionBruta = enVivo.asignacion ?? perfil?.asignacion_pendiente ?? null;
+  const asignacion = asignacionBruta && asignacionOculta !== asignacionBruta.asignacion ? asignacionBruta : null;
+  const asignacionId = asignacion?.asignacion ?? null;
   useEffect(() => {
     if (asignacionId === null) return;
     setEnMiTurno(false);
     setEnChat(false);
-    void cargarPerfil();
-  }, [asignacionId, cargarPerfil]);
+  }, [asignacionId]);
+
+  // Si llega un aviso por WebSocket, recarga el perfil para mantener estado/fila al día.
+  const wsAsignacionId = enVivo.asignacion?.asignacion ?? null;
+  useEffect(() => {
+    if (wsAsignacionId !== null) void cargarPerfil();
+  }, [wsAsignacionId, cargarPerfil]);
 
   // HU-16: EN_ZONA automático o cancelación desde el panel. Al reconectarse también, por si se perdió el aviso.
   useEffect(() => canal.alCambiarViaje(() => void cargarPerfil()), [cargarPerfil]);
@@ -193,6 +201,7 @@ export default function App() {
     try {
       await api.pedir('POST', `/api/app/asignaciones/${id}/${aceptar ? 'aceptar' : 'rechazar'}/`);
       canal.olvidar(id);
+      setPerfil((p) => (p?.asignacion_pendiente?.asignacion === id ? { ...p, asignacion_pendiente: null } : p));
       void cargarPerfil();
       return null;
     } catch (error) {
@@ -201,10 +210,17 @@ export default function App() {
       if (error instanceof SinRed) return 'No se pudo conectar con el servidor. Intenta de nuevo.';
       if (error instanceof ErrorApi && error.estado === 409) {
         canal.olvidar(id);
+        setPerfil((p) => (p?.asignacion_pendiente?.asignacion === id ? { ...p, asignacion_pendiente: null } : p));
         return error.message;
       }
       return 'No se pudo registrar tu respuesta.';
     }
+  }
+
+  function ocultarAsignacion(id: number) {
+    setAsignacionOculta(id);
+    canal.olvidar(id);
+    setPerfil((p) => (p?.asignacion_pendiente?.asignacion === id ? { ...p, asignacion_pendiente: null } : p));
   }
 
   /** HU-16: paso siguiente del viaje en curso. Devuelve el mensaje de error o null. */
@@ -281,9 +297,9 @@ export default function App() {
       perfil={perfil}
       viaje={viaje}
       avanzar={avanzarViaje}
-      asignacion={enVivo.asignacion}
+      asignacion={asignacion}
       responder={responderAsignacion}
-      ocultarAsignacion={(id) => canal.olvidar(id)}
+      ocultarAsignacion={ocultarAsignacion}
       envio={envio}
       rastreo={rastreo}
       cambiarTurno={cambiarTurno}

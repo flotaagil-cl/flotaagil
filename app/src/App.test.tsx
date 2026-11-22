@@ -32,6 +32,8 @@ const red = vi.hoisted(() => ({
   /** Listener del botón Atrás de Android y conteo de minimizaciones. */
   atras: null as (() => void) | null,
   minimizaciones: 0,
+  /** Asignación pendiente devuelta por GET /api/app/perfil/ (fallback HTTP / pull-to-refresh). */
+  asignacionPendiente: null as unknown,
 }));
 
 function viajeActivo(estado: string): ViajeActivo {
@@ -87,6 +89,7 @@ async function httpFalso(url: string, init: RequestInit): Promise<Response> {
         consentimiento_gps_en: '2026-11-01T12:00:00Z',
         vehiculos: [{ id: 1, patente: 'ABCD12', marca_modelo: 'Kia Rio' }],
         fila: red.fila,
+        asignacion_pendiente: red.asignacionPendiente,
       });
     case 'GET /api/app/viaje-activo/': {
       const foto = json({ viaje: viajeActivo(red.estado) });
@@ -209,6 +212,7 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     red.vuelo = null;
     red.atras = null;
     red.minimizaciones = 0;
+    red.asignacionPendiente = null;
   });
 
   afterEach(async () => {
@@ -436,5 +440,31 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     // Ya en Inicio → minimiza la app
     await presionarAtras();
     expect(red.minimizaciones).toBe(1);
+  });
+
+  it('pull-to-refresh muestra la asignación pendiente devuelta por perfil aunque no llegue por WebSocket', async () => {
+    await abrirApp();
+    expect(screen.queryByRole('heading', { name: 'Nuevo viaje asignado' })).toBeNull();
+
+    red.asignacionPendiente = {
+      asignacion: 77,
+      viaje: 88,
+      pasajero: 'Pedro Díaz',
+      origen: { direccion: 'Costanera Center', lat: -33.41, lon: -70.6 },
+      destino: { direccion: 'Aeropuerto SCL', lat: -33.39, lon: -70.79 },
+      recogida_en: '2026-11-03T17:00:00Z',
+      tarifa: 18000,
+      vuelo: null,
+      vence_en: new Date(Date.now() + 60_000).toISOString(),
+    };
+
+    const zona = document.querySelector('.tirar')!;
+    fireEvent.touchStart(zona, { touches: [{ clientY: 0 }] });
+    fireEvent.touchMove(zona, { touches: [{ clientY: 160 }] });
+    fireEvent.touchEnd(zona);
+    await avanzar(50);
+
+    expect(screen.getByRole('heading', { name: 'Nuevo viaje asignado' })).toBeTruthy();
+    expect(screen.getByText('Pedro Díaz')).toBeTruthy();
   });
 });

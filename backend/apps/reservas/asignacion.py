@@ -199,7 +199,7 @@ def asignacion_pendiente(conductor: Conductor) -> Asignacion | None:
         Asignacion.objects.filter(
             conductor=conductor, resultado__isnull=True, viaje__estado=EstadoViaje.ASIGNADO
         )
-        .select_related("viaje__pasajero", "viaje__vuelo")
+        .select_related("viaje__pasajero", "viaje__vuelo", "viaje__empresa__configuracion")
         .first()
     )
 
