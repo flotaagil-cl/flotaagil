@@ -58,6 +58,12 @@ describe('indicadores (HU-01)', () => {
     const solicitado = within(lista).getByRole('link', { name: /Solicitado/ });
     expect(solicitado).toHaveTextContent('2');
     expect(solicitado).toHaveAttribute('href', '/reservas?fecha=2026-07-15&estado=SOLICITADO');
+    expect(solicitado).toHaveAttribute('data-activo', 'true');
+    expect(within(lista).getByRole('link', { name: /Finalizado/ })).toHaveAttribute('data-activo', 'false');
+    expect(screen.getByRole('heading', { name: 'Flujo de reservas hoy' })).toBeInTheDocument();
+    expect(screen.getByText('Módulo de convenios activo')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Sin confirmar/ })).toHaveAttribute('data-alerta', 'peligro');
+    expect(screen.getByRole('link', { name: /Sin asignar/ })).toHaveAttribute('data-alerta', 'aviso');
   });
 
   it('se conecta con el access como subprotocolo', async () => {

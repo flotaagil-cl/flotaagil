@@ -4,12 +4,13 @@ import { AlertasVuelo } from '../alertas/AlertasVuelo';
 import { AlertasLlegada } from '../chat/AlertasLlegada';
 import { ChatEnVivo } from '../chat/EnVivo';
 import { NoLeidosChat } from '../chat/NoLeidos';
-import type { Manejo } from '../rutas/tabla';
-import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
-import { useRutas } from '../rutas/contexto';
-import { SinPermiso } from '../paginas/SinPermiso';
-import { useSesion } from '../sesion/SesionProvider';
+import { Icono } from '../diseno/Icono';
 import '../diseno/tokens.css';
+import { SinPermiso } from '../paginas/SinPermiso';
+import { useRutas } from '../rutas/contexto';
+import type { EntradaMenu, Manejo, SeccionMenu } from '../rutas/tabla';
+import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
+import { useSesion } from '../sesion/SesionProvider';
 import estilos from './Layout.module.css';
 
 const NOMBRE_ROL = {
@@ -20,7 +21,13 @@ const NOMBRE_ROL = {
   PASAJERO: 'Pasajero',
 };
 
-/** Marco del panel: cabecera, menú por rol y guarda por rol (solo UX: el backend responde 403 igual). */
+const SECCIONES: { clave: SeccionMenu; titulo: string }[] = [
+  { clave: 'operacion', titulo: 'Operación' },
+  { clave: 'flota', titulo: 'Flota y clientes' },
+  { clave: 'administracion', titulo: 'Administración' },
+];
+
+/** Marco del panel: cabecera, menú agrupado por rol y guarda por rol (solo UX: el backend responde 403 igual). */
 export function Layout() {
   const { sesion, estado } = useSesion();
   const rutas = useRutas();
@@ -41,9 +48,28 @@ export function Layout() {
   const permitido = !roles || roles.includes(usuario.rol);
   const menu = entradasDeMenu(rutas, usuario.rol, '', usuario.empresa.modulo_cuentas);
 
+  const grupos = SECCIONES.map((s) => ({
+    ...s,
+    entradas: menu.filter((e) => e.seccion === s.clave),
+  })).filter((g) => g.entradas.length > 0);
+  const sinSeccion = menu.filter((e) => !e.seccion);
+
   async function cerrarSesion() {
     await sesion.logout();
     navegar('/login', { replace: true });
+  }
+
+  function renderEnlace(entrada: EntradaMenu) {
+    return (
+      <li key={entrada.ruta}>
+        {/* Inicio solo se marca en «/»; Reservas también en /reservas/42. */}
+        <NavLink to={entrada.ruta} end={entrada.ruta === '/'} onClick={() => setMenuAbierto(false)}>
+          {entrada.icono && <Icono nombre={entrada.icono} tamano={18} className={estilos.iconoMenu} />}
+          <span>{entrada.titulo}</span>
+          {delPanel && entrada.ruta === '/chat' && <NoLeidosChat className={estilos.contadorMenu} />}
+        </NavLink>
+      </li>
+    );
   }
 
   const marco = (
@@ -70,17 +96,15 @@ export function Layout() {
         </div>
       </header>
       <nav id="menu-principal" className={estilos.menu} data-abierto={menuAbierto} aria-label="Menú principal">
-        <ul>
-          {menu.map((entrada) => (
-            <li key={entrada.ruta}>
-              {/* Inicio solo se marca en «/»; Reservas también en /reservas/42. */}
-              <NavLink to={entrada.ruta} end={entrada.ruta === '/'} onClick={() => setMenuAbierto(false)}>
-                {entrada.titulo}
-                {delPanel && entrada.ruta === '/chat' && <NoLeidosChat className={estilos.contadorMenu} />}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+        {grupos.map((grupo) => (
+          <div key={grupo.clave} className={estilos.grupoMenu} role="group" aria-labelledby={`menu-seccion-${grupo.clave}`}>
+            <p id={`menu-seccion-${grupo.clave}`} className={estilos.tituloGrupo}>
+              {grupo.titulo}
+            </p>
+            <ul>{grupo.entradas.map(renderEnlace)}</ul>
+          </div>
+        ))}
+        {sinSeccion.length > 0 && <ul>{sinSeccion.map(renderEnlace)}</ul>}
       </nav>
       <main className={estilos.contenido}>
         {delPanel && <AlertasVuelo />}
