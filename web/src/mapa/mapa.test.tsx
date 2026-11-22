@@ -144,7 +144,7 @@ describe('pantalla del mapa', () => {
     vi.useFakeTimers({ shouldAdvanceTime: true, now: AHORA });
     vi.stubGlobal('WebSocket', SocketFalso);
     montarPanel('/mapa', { email: 'despacho@andes.example' });
-    await screen.findByRole('heading', { name: 'Mapa', level: 1 });
+    await screen.findByRole('heading', { name: 'Mapa de flota en vivo', level: 1 });
     await waitFor(() => expect(SocketFalso.creados).toHaveLength(1));
     expect(SocketFalso.creados[0].url).toMatch(/\/ws\/mapa\/$/);
     act(() => SocketFalso.creados[0].abrir({ tipo: 'inicial', conductores: [conductor(), conductor({ id: 2, nombre: 'Ana Ríos', patente: 'GHJK20', estado: 'EN_VIAJE' })] }));
@@ -232,5 +232,50 @@ describe('pantalla del mapa', () => {
     await waitFor(() => expect(SocketFalso.creados).toHaveLength(1));
     act(() => SocketFalso.creados[0].cerrar(1006));
     expect(await screen.findByText('Se perdió la conexión en vivo. Reintentando…')).toBeInTheDocument();
+  });
+
+  it('filtra por buscador y chips, evita texto redundante sin GPS y habilita Centrar flota', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: AHORA });
+    vi.stubGlobal('WebSocket', SocketFalso);
+    montarPanel('/mapa', { email: 'despacho@andes.example' });
+    await waitFor(() => expect(SocketFalso.creados).toHaveLength(1));
+
+    const centrar = screen.getByRole('button', { name: 'Centrar flota' });
+    expect(centrar).toBeDisabled();
+
+    act(() =>
+      SocketFalso.creados[0].abrir({
+        tipo: 'inicial',
+        conductores: [
+          conductor({ id: 1, nombre: 'Pedro Soto', patente: 'BCDF10', estado: 'DISPONIBLE' }),
+          conductor({ id: 2, nombre: 'Ana Ríos', patente: 'GHJK20', estado: 'EN_VIAJE', posicion: null }),
+        ],
+      }),
+    );
+
+    expect(centrar).toBeEnabled();
+    const lista = screen.getByRole('list', { name: 'Conductores en turno' });
+    const tarjetaAna = within(lista).getByRole('button', { name: /Ana Ríos/ });
+    expect(tarjetaAna).toHaveTextContent('Sin señal GPS');
+    expect(tarjetaAna).not.toHaveTextContent(/sin posición/i);
+
+    // Chips de estado y GPS
+    await userEvent.click(screen.getByRole('button', { name: 'Disponibles' }));
+    expect(within(lista).getAllByRole('button')).toHaveLength(1);
+    expect(within(lista).getByRole('button', { name: /Pedro Soto/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'En viaje' }));
+    expect(within(lista).getAllByRole('button')).toHaveLength(1);
+    expect(within(lista).getByRole('button', { name: /Ana Ríos/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Con GPS' }));
+    expect(within(lista).getAllByRole('button')).toHaveLength(1);
+    expect(within(lista).getByRole('button', { name: /Pedro Soto/ })).toBeInTheDocument();
+
+    // Buscador por patente
+    await userEvent.click(screen.getByRole('button', { name: 'Todos' }));
+    await userEvent.type(screen.getByRole('searchbox', { name: 'Buscar conductor o patente' }), 'ghjk');
+    expect(within(lista).getAllByRole('button')).toHaveLength(1);
+    expect(within(lista).getByRole('button', { name: /Ana Ríos/ })).toBeInTheDocument();
   });
 });

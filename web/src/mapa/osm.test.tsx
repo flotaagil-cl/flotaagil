@@ -128,6 +128,10 @@ describe('mapa en vivo del panel con OpenStreetMap', () => {
     expect(enViaje.quitado).toBe(true);
     expect(leaflet.estado.mapas[0].centrados).toEqual([[-33.4, -70.6]]);
     expect(leaflet.estado.mapas[0].encuadres).toHaveLength(1);
+
+    // Reencuadrar flota ejecuta fitBounds nuevamente.
+    rerender(<MapaOsm {...props} alSeleccionar={alSeleccionar} seleccionado={1} reencuadrar={1} conductores={[conductor(1)]} />);
+    expect(leaflet.estado.mapas[0].encuadres).toHaveLength(2);
   });
 
   it('una posición antigua se ve gris y semitransparente', async () => {
