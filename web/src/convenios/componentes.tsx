@@ -2,10 +2,22 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { Aviso } from '../componentes/Aviso';
 import estilos from '../componentes/panel.module.css';
-import campos from '../formularios/formularios.module.css';
+import { Icono } from '../diseno/Icono';
 import { normalizarRut, rutValido } from '../flota/formularios';
 import { ErrorApi } from '../api/resultado';
 import { mensajeDeErrorApi } from '../reservas/errores';
+import type { ConvenioDetalle } from './api';
+import { ESTADOS_CONVENIO } from './estados';
+import s from './convenios.module.css';
+
+export function BadgeEstado({ estado }: { estado: ConvenioDetalle['estado'] }) {
+  return (
+    <span className={s.badgeEstado} data-estado={estado}>
+      <span className={s.puntoEstado} aria-hidden="true" />
+      {ESTADOS_CONVENIO[estado]}
+    </span>
+  );
+}
 
 export function DialogoPassword({ password, cliente, alCerrar }: { password: string; cliente: string; alCerrar: () => void }) {
   const dialogo = useRef<HTMLDialogElement>(null);
@@ -42,11 +54,14 @@ export function DialogoPassword({ password, cliente, alCerrar }: { password: str
       }}
     >
       <div className={estilos.formularioDialogo}>
-        <h2 id="titulo-password">Contraseña del convenio</h2>
-        <p>
+        <div className={s.dialogoHeader}>
+          <Icono nombre="llave" tamano={20} />
+          <h2 id="titulo-password">Contraseña del convenio</h2>
+        </div>
+        <p className={s.subtitulo}>
           Entrégasela a <strong>{cliente}</strong> por un canal seguro. No se volverá a mostrar: si se pierde, rota la contraseña.
         </p>
-        <p className={estilos.password} aria-label="Contraseña del convenio">
+        <p className={s.cajaPassword} aria-label="Contraseña del convenio">
           {password}
         </p>
         {copiada === true && <Aviso>Copiada.</Aviso>}
@@ -85,11 +100,13 @@ export function FormularioConvenio({
   iniciales,
   textoEnviar,
   volverA,
+  alCancelar,
   enviar,
 }: {
   iniciales: DatosFormulario;
   textoEnviar: string;
   volverA: string;
+  alCancelar?: () => void;
   enviar: (datos: DatosFormulario) => Promise<void>;
 }) {
   const [datos, setDatos] = useState(iniciales);
@@ -119,35 +136,56 @@ export function FormularioConvenio({
   }
 
   return (
-    <form className={estilos.tarjeta} onSubmit={(evento) => void alEnviar(evento)} noValidate>
+    <form className={s.tarjeta} onSubmit={(evento) => void alEnviar(evento)} noValidate>
+      <div className={s.cabeceraTarjeta}>
+        <h2>Editar datos</h2>
+      </div>
       {falla && <Aviso tipo="error">{falla}</Aviso>}
-      <label className={campos.campo}>
-        Cliente
-        <input
-          value={datos.cliente_nombre}
-          maxLength={120}
-          aria-invalid={Boolean(errores.cliente_nombre)}
-          onChange={(evento) => setDatos({ ...datos, cliente_nombre: evento.target.value })}
-        />
-        {errores.cliente_nombre && <span role="alert">{errores.cliente_nombre}</span>}
-      </label>
-      <label className={campos.campo}>
-        RUT
-        <input
-          value={datos.cliente_rut}
-          maxLength={14}
-          aria-invalid={Boolean(errores.cliente_rut)}
-          onChange={(evento) => setDatos({ ...datos, cliente_rut: evento.target.value })}
-        />
-        {errores.cliente_rut && <span role="alert">{errores.cliente_rut}</span>}
-      </label>
+      <div className={s.gridFormulario}>
+        <label className={s.campoFormulario}>
+          Cliente
+          <input
+            className={s.control}
+            value={datos.cliente_nombre}
+            maxLength={120}
+            aria-invalid={Boolean(errores.cliente_nombre)}
+            onChange={(evento) => setDatos({ ...datos, cliente_nombre: evento.target.value })}
+          />
+          {errores.cliente_nombre && (
+            <span className={s.errorCampo} role="alert">
+              {errores.cliente_nombre}
+            </span>
+          )}
+        </label>
+        <label className={s.campoFormulario}>
+          RUT
+          <input
+            className={s.control}
+            value={datos.cliente_rut}
+            maxLength={14}
+            aria-invalid={Boolean(errores.cliente_rut)}
+            onChange={(evento) => setDatos({ ...datos, cliente_rut: evento.target.value })}
+          />
+          {errores.cliente_rut && (
+            <span className={s.errorCampo} role="alert">
+              {errores.cliente_rut}
+            </span>
+          )}
+        </label>
+      </div>
       <div className={estilos.acciones}>
         <button type="submit" className={estilos.boton} disabled={enviando}>
           {enviando ? 'Guardando…' : textoEnviar}
         </button>
-        <Link to={volverA} className={estilos.botonSecundario}>
-          Volver
-        </Link>
+        {alCancelar ? (
+          <button type="button" className={estilos.botonSecundario} onClick={alCancelar} disabled={enviando}>
+            Volver
+          </button>
+        ) : (
+          <Link to={volverA} className={estilos.botonSecundario}>
+            Volver
+          </Link>
+        )}
       </div>
     </form>
   );

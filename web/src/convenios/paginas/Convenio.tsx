@@ -1,10 +1,11 @@
 import { useSesion } from '../../sesion/SesionProvider';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import estilos from '../../componentes/panel.module.css';
-import { Celda, Esqueleto, FallaDeCarga, NoEncontrado, Paginacion } from '../../flota/componentes/comunes';
+import { Icono } from '../../diseno/Icono';
+import { Esqueleto, FallaDeCarga, NoEncontrado, Paginacion } from '../../flota/componentes/comunes';
 import { formatearFechaHora } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
@@ -19,8 +20,8 @@ import {
   useRestablecerPassword,
   type ConvenioDetalle,
 } from '../api';
-import { ESTADOS_CONVENIO } from '../estados';
-import { DialogoPassword, FormularioConvenio } from '../componentes';
+import { BadgeEstado, DialogoPassword, FormularioConvenio } from '../componentes';
+import s from '../convenios.module.css';
 
 const VOLVER = '/convenios';
 const numero = new Intl.NumberFormat('es-CL');
@@ -56,14 +57,15 @@ const ACCIONES_AUDITORIA: Record<string, string> = {
   RECHAZO: 'Rechazo',
 };
 
-
 /** HU-12: solo lectura, del más nuevo al más antiguo (RN-12). */
 function Auditoria({ id }: { id: number }) {
   const [pagina, setPagina] = useState(1);
   const consulta = useAuditoriaConvenio(id, pagina);
   return (
-    <div className={estilos.tarjeta}>
-      <h2>Auditoría</h2>
+    <div className={s.tarjeta}>
+      <div className={s.cabeceraTarjeta}>
+        <h2>Auditoría</h2>
+      </div>
       {consulta.isPending ? (
         <Esqueleto etiqueta="Cargando la auditoría" columnas={3} />
       ) : consulta.isError ? (
@@ -72,24 +74,34 @@ function Auditoria({ id }: { id: number }) {
         <p className={estilos.explicacion}>Aún no hay registros.</p>
       ) : (
         <>
-          <table className={estilos.tabla} aria-label="Auditoría del convenio" aria-busy={consulta.isPlaceholderData || undefined}>
-            <thead>
-              <tr>
-                <th scope="col">Fecha</th>
-                <th scope="col">Acción</th>
-                <th scope="col">Usuario</th>
-              </tr>
-            </thead>
-            <tbody>
-              {consulta.data.results.map((registro) => (
-                <tr key={registro.id}>
-                  <Celda titulo="Fecha">{formatearFechaHora(registro.creado_en)}</Celda>
-                  <Celda titulo="Acción">{ACCIONES_AUDITORIA[registro.accion] ?? registro.accion}</Celda>
-                  <Celda titulo="Usuario">{registro.usuario ?? 'Sin usuario'}</Celda>
+          <div className={s.contenedorTabla}>
+            <table className={s.tablaConvenios} aria-label="Auditoría del convenio" aria-busy={consulta.isPlaceholderData || undefined}>
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Acción</th>
+                  <th scope="col">Usuario</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {consulta.data.results.map((registro) => (
+                  <tr key={registro.id}>
+                    <td data-titulo="Fecha" className={s.fechaAuditoria}>
+                      <div>{formatearFechaHora(registro.creado_en)}</div>
+                    </td>
+                    <td data-titulo="Acción">
+                      <div>
+                        <span className={s.badgeAuditoria}>{ACCIONES_AUDITORIA[registro.accion] ?? registro.accion}</span>
+                      </div>
+                    </td>
+                    <td data-titulo="Usuario">
+                      <div>{registro.usuario ?? 'Sin usuario'}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <Paginacion anterior={Boolean(consulta.data.previous)} siguiente={Boolean(consulta.data.next)} pagina={pagina} ir={setPagina} />
         </>
       )}
@@ -106,9 +118,9 @@ const PREGUNTAS: Record<Exclude<Confirmando, null>, { texto: string; boton: stri
   restablecer: { texto: 'Se generará una contraseña temporal y se cerrarán sus sesiones.', boton: 'Restablecer' },
 };
 
-function Dato({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+function Dato({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
-    <div>
+    <div className={s.datoItem}>
       <dt>{titulo}</dt>
       <dd>{children}</dd>
     </div>
@@ -121,6 +133,12 @@ function leerCorreos(texto: string): string[] {
     .split(/[\s,;]+/)
     .map((c) => c.trim())
     .filter(Boolean);
+}
+
+function tipoAcceso(convenio: ConvenioDetalle): string {
+  if (convenio.tiene_cuenta) return 'Cuenta web';
+  if (convenio.contacto_correo) return 'Solicitud por correo';
+  return 'Solo historial';
 }
 
 function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
@@ -178,137 +196,186 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
 
   return (
     <section>
-      <div className={estilos.encabezado}>
-        <h1>
-          {convenio.cliente_nombre} <span className={estilos.secundario}>{ESTADOS_CONVENIO[convenio.estado]}</span>
-        </h1>
-        <Link to={VOLVER} className={estilos.botonSecundario}>
-          Volver a los convenios
-        </Link>
+      <div className={s.encabezado}>
+        <div className={s.tituloBloque}>
+          <h1>{convenio.cliente_nombre}</h1>
+          <div className={s.metaFicha}>
+            <BadgeEstado estado={convenio.estado} />
+            <span className={s.badgeAcceso} data-cuenta={String(convenio.tiene_cuenta)}>
+              {tipoAcceso(convenio)}
+            </span>
+            <span className={s.metaTexto}>Registrado el {formatearFechaHora(convenio.creado_en)}</span>
+          </div>
+        </div>
+        <div className={s.accionesEncabezado}>
+          <Link to={VOLVER} className={`${estilos.botonSecundario} ${s.botonConIcono}`}>
+            <Icono nombre="atras" tamano={16} />
+            Volver a los convenios
+          </Link>
+        </div>
       </div>
+
       {aviso && <Aviso>{aviso}</Aviso>}
       {falla && <Aviso tipo="error">{falla}</Aviso>}
 
-      {editando ? (
-        <FormularioConvenio
-          iniciales={{ cliente_nombre: convenio.cliente_nombre, cliente_rut: convenio.cliente_rut }}
-          textoEnviar="Guardar"
-          volverA={`/convenios/${convenio.id}`}
-          enviar={async (datos) => {
-            await editar.mutateAsync(datos);
-            setEditando(false);
-            setAviso('Cambios guardados.');
-          }}
-        />
-      ) : (
-        <div className={estilos.tarjeta}>
-          <h2>Datos</h2>
-          <dl className={estilos.datos}>
-            <Dato titulo="RUT">{convenio.cliente_rut}</Dato>
-            <Dato titulo="Dirección">{convenio.direccion || '—'}</Dato>
-            <Dato titulo="Encargado">{convenio.encargado_nombre || '—'}</Dato>
-            <Dato titulo="Correo">{convenio.encargado_email || 'Sin cuenta'}</Dato>
-            <Dato titulo="Teléfono">{convenio.encargado_telefono || '—'}</Dato>
-            {convenio.contacto_correo && <Dato titulo="Correo de contacto">{convenio.contacto_correo}</Dato>}
-            {convenio.viajes_estimados_mes != null && <Dato titulo="Viajes al mes (estimado)">{numero.format(convenio.viajes_estimados_mes)}</Dato>}
-            <Dato titulo="Correos autorizados">{convenio.correos_autorizados.length ? convenio.correos_autorizados.join(', ') : '—'}</Dato>
-            <Dato titulo="Reservas">{numero.format(convenio.reservas)}</Dato>
-            {convenio.revisado_en && (
-              <Dato titulo="Revisado">
-                {formatearFechaHora(convenio.revisado_en)} · {convenio.revisado_por}
-              </Dato>
-            )}
-            {convenio.motivo_rechazo && <Dato titulo="Motivo del rechazo">{convenio.motivo_rechazo}</Dato>}
-          </dl>
-          {esAdmin && (
-            <div className={estilos.acciones}>
-              <button type="button" className={estilos.botonSecundario} onClick={() => setEditando(true)}>
-                Editar
-              </button>
+      <div className={s.cuadriculaFicha}>
+        <div className={s.columnaPrincipal}>
+          {editando ? (
+            <FormularioConvenio
+              iniciales={{ cliente_nombre: convenio.cliente_nombre, cliente_rut: convenio.cliente_rut }}
+              textoEnviar="Guardar"
+              volverA={`/convenios/${convenio.id}`}
+              alCancelar={() => setEditando(false)}
+              enviar={async (datos) => {
+                await editar.mutateAsync(datos);
+                setEditando(false);
+                setAviso('Cambios guardados.');
+              }}
+            />
+          ) : (
+            <div className={s.tarjeta}>
+              <div className={s.cabeceraTarjeta}>
+                <h2>Datos</h2>
+                {esAdmin && (
+                  <button type="button" className={estilos.botonSecundario} onClick={() => setEditando(true)}>
+                    Editar
+                  </button>
+                )}
+              </div>
+              <dl className={s.datosGrid}>
+                <Dato titulo="RUT">
+                  <span className={s.rut}>{convenio.cliente_rut}</span>
+                </Dato>
+                <Dato titulo="Dirección">{convenio.direccion || '—'}</Dato>
+                <Dato titulo="Encargado">{convenio.encargado_nombre || '—'}</Dato>
+                <Dato titulo="Correo">{convenio.encargado_email || 'Sin cuenta'}</Dato>
+                <Dato titulo="Teléfono">{convenio.encargado_telefono || '—'}</Dato>
+                {convenio.contacto_correo && <Dato titulo="Correo de contacto">{convenio.contacto_correo}</Dato>}
+                {convenio.viajes_estimados_mes != null && <Dato titulo="Viajes al mes (estimado)">{numero.format(convenio.viajes_estimados_mes)}</Dato>}
+                <Dato titulo="Correos autorizados">
+                  {convenio.correos_autorizados.length ? (
+                    <div className={s.listaCorreos}>
+                      {convenio.correos_autorizados.map((correo) => (
+                        <span key={correo} className={s.chipCorreo}>
+                          {correo}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    '—'
+                  )}
+                </Dato>
+                <Dato titulo="Reservas">
+                  <span className={s.pillReservas}>{numero.format(convenio.reservas)}</span>
+                </Dato>
+                {convenio.revisado_en && (
+                  <Dato titulo="Revisado">
+                    {formatearFechaHora(convenio.revisado_en)} · {convenio.revisado_por}
+                  </Dato>
+                )}
+              </dl>
+              {convenio.motivo_rechazo && (
+                <div className={s.bloqueRechazo}>
+                  <strong>Motivo del rechazo</strong>
+                  <p>{convenio.motivo_rechazo}</p>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      <div className={estilos.tarjeta}>
-        <h2>Estado y acceso</h2>
-        {convenio.estado === 'EN_REVISION' && <p>La empresa lo solicitó desde el portal y espera tu revisión.</p>}
-        {!convenio.tiene_cuenta && (
-          <p>
-            {convenio.contacto_correo
-              ? 'Sin cuenta (CC-22): sus reservas del portal con el RUT y un correo autorizado quedan en el convenio.'
-              : 'Convenio anterior al registro en el portal, sin cuenta: queda como historial.'}
-          </p>
-        )}
-        {confirmando ? (
-          <div role="alertdialog" aria-labelledby="pregunta-convenio">
-            <p id="pregunta-convenio">{PREGUNTAS[confirmando].texto}</p>
-            {confirmando === 'aprobar' && (
-              <label>
-                Correos autorizados (uno por línea; «@empresa.cl» autoriza todo el dominio)
-                <textarea rows={4} value={correos} onChange={(e) => setCorreos(e.target.value)} />
-              </label>
-            )}
-            <div className={estilos.acciones}>
-              <button type="button" className={estilos.boton} disabled={ocupado} onClick={() => void confirmar()}>
-                {PREGUNTAS[confirmando].boton}
-              </button>
-              <button type="button" className={estilos.botonSecundario} disabled={ocupado} onClick={() => setConfirmando(null)}>
-                Volver
-              </button>
+          {esAdmin && <Auditoria id={convenio.id} />}
+        </div>
+
+        <aside className={s.columnaLateral}>
+          <div className={s.tarjeta}>
+            <div className={s.cabeceraTarjeta}>
+              <h2>Estado y acceso</h2>
+              <BadgeEstado estado={convenio.estado} />
             </div>
-          </div>
-        ) : rechazando ? (
-          <div>
-            <label>
-              Motivo del rechazo
-              <textarea rows={3} maxLength={200} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
-            </label>
-            <div className={estilos.acciones}>
-              <button type="button" className={estilos.botonPeligro} disabled={ocupado} onClick={() => void enviarRechazo()}>
-                Rechazar
-              </button>
-              <button type="button" className={estilos.botonSecundario} disabled={ocupado} onClick={() => setRechazando(false)}>
-                Volver
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className={estilos.acciones}>
             {convenio.estado === 'EN_REVISION' && (
-              <>
-                <button type="button" className={estilos.boton} onClick={() => setConfirmando('aprobar')}>
-                  Aprobar
-                </button>
-                <button type="button" className={estilos.botonSecundario} onClick={() => setRechazando(true)}>
-                  Rechazar…
-                </button>
-              </>
+              <p className={s.notaEstado}>La empresa lo solicitó desde el portal y espera tu revisión.</p>
             )}
-            {esAdmin && convenio.estado === 'APROBADO' && (
-              <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('desactivar')}>
-                Desactivar convenio
-              </button>
+            {!convenio.tiene_cuenta && (
+              <p className={s.notaEstado}>
+                {convenio.contacto_correo
+                  ? 'Sin cuenta (CC-22): sus reservas del portal con el RUT y un correo autorizado quedan en el convenio.'
+                  : 'Convenio anterior al registro en el portal, sin cuenta: queda como historial.'}
+              </p>
             )}
-            {esAdmin && convenio.estado === 'INACTIVO' && convenio.tiene_cuenta && (
-              <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('activar')}>
-                Activar convenio
-              </button>
-            )}
-            {esAdmin && convenio.tiene_cuenta && (
-              <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('restablecer')}>
-                Restablecer contraseña
-              </button>
+            {confirmando ? (
+              <div className={s.panelConfirmacion} role="alertdialog" aria-labelledby="pregunta-convenio">
+                <p id="pregunta-convenio">{PREGUNTAS[confirmando].texto}</p>
+                {confirmando === 'aprobar' && (
+                  <label className={s.campoTextarea}>
+                    Correos autorizados (uno por línea; «@empresa.cl» autoriza todo el dominio)
+                    <textarea className={s.textarea} rows={4} value={correos} onChange={(e) => setCorreos(e.target.value)} />
+                  </label>
+                )}
+                <div className={estilos.acciones}>
+                  <button type="button" className={estilos.boton} disabled={ocupado} onClick={() => void confirmar()}>
+                    {PREGUNTAS[confirmando].boton}
+                  </button>
+                  <button type="button" className={estilos.botonSecundario} disabled={ocupado} onClick={() => setConfirmando(null)}>
+                    Volver
+                  </button>
+                </div>
+              </div>
+            ) : rechazando ? (
+              <div className={s.panelRechazo}>
+                <label className={s.campoTextarea}>
+                  Motivo del rechazo
+                  <textarea className={s.textarea} rows={3} maxLength={200} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+                </label>
+                <div className={estilos.acciones}>
+                  <button type="button" className={estilos.botonPeligro} disabled={ocupado} onClick={() => void enviarRechazo()}>
+                    Rechazar
+                  </button>
+                  <button type="button" className={estilos.botonSecundario} disabled={ocupado} onClick={() => setRechazando(false)}>
+                    Volver
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className={s.accionesColumna}>
+                {convenio.estado === 'EN_REVISION' && (
+                  <>
+                    <button type="button" className={estilos.boton} onClick={() => setConfirmando('aprobar')}>
+                      Aprobar
+                    </button>
+                    <button type="button" className={estilos.botonSecundario} onClick={() => setRechazando(true)}>
+                      Rechazar…
+                    </button>
+                  </>
+                )}
+                {esAdmin && convenio.estado === 'APROBADO' && (
+                  <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('desactivar')}>
+                    Desactivar convenio
+                  </button>
+                )}
+                {esAdmin && convenio.estado === 'INACTIVO' && convenio.tiene_cuenta && (
+                  <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('activar')}>
+                    Activar convenio
+                  </button>
+                )}
+                {esAdmin && convenio.tiene_cuenta && (
+                  <button
+                    type="button"
+                    className={`${estilos.botonSecundario} ${s.botonConIcono}`}
+                    onClick={() => setConfirmando('restablecer')}
+                  >
+                    <Icono nombre="llave" tamano={16} />
+                    Restablecer contraseña
+                  </button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </aside>
       </div>
 
       {password && (
         <DialogoPassword password={password} cliente={convenio.cliente_nombre} alCerrar={() => setPassword(null)} />
       )}
-
-      {esAdmin && <Auditoria id={convenio.id} />}
     </section>
   );
 }

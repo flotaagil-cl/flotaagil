@@ -1,0 +1,727 @@
+/* Estilos UX/UI del módulo Convenios (listado y ficha, usando solo tokens de diseño). */
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
+.tituloBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+.subtitulo {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.925rem;
+  line-height: 1.45;
+}
+
+.metaFicha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.metaTexto {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.accionesEncabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espacio-2);
+}
+
+.botonConIcono {
+  gap: 6px;
+}
+
+/* --- Insignias y valores tipográficos --- */
+
+.badgeEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.puntoEstado {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+.badgeEstado[data-estado='APROBADO'] {
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--texto));
+}
+
+.badgeEstado[data-estado='EN_REVISION'] {
+  background: var(--insignia-revision-fondo, var(--info-fondo));
+  color: var(--insignia-revision-texto, var(--texto));
+}
+
+.badgeEstado[data-estado='RECHAZADO'] {
+  background: var(--insignia-peligro-fondo, var(--error-fondo));
+  color: var(--insignia-peligro-texto, var(--error-texto));
+}
+
+.badgeEstado[data-estado='INACTIVO'] {
+  background: var(--insignia-neutra-fondo, var(--fondo));
+  color: var(--insignia-neutra-texto, var(--texto-suave));
+}
+
+.badgeAcceso {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.badgeAcceso[data-cuenta='true'] {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.badgeAcceso[data-cuenta='false'] {
+  background: var(--fondo);
+  color: var(--texto-suave);
+}
+
+.rut {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.pillReservas {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 2px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 0.825rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- Panel de filtros --- */
+
+.filtros {
+  margin-bottom: var(--espacio-3);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.botonFiltros {
+  display: none;
+}
+
+.camposFiltro {
+  padding: var(--espacio-4);
+}
+
+.filaFiltros {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 15rem) auto;
+  gap: var(--espacio-3);
+  align-items: end;
+}
+
+.campoFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.control {
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.control:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--error-borde);
+}
+
+.botonLimpiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.botonLimpiar:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-tiffany, var(--borde));
+  color: var(--color-primario-900, var(--texto));
+}
+
+/* --- Tablas (listado y auditoría) --- */
+
+.contenedorTabla {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  overflow-x: auto;
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.tablaConvenios {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--superficie);
+  font-size: 0.9rem;
+}
+
+.tablaConvenios[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.tablaConvenios th,
+.tablaConvenios td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tablaConvenios th {
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tablaConvenios tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.tablaConvenios tbody tr:hover {
+  background: var(--color-tiffany-50, var(--fondo));
+}
+
+.tablaConvenios tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.enlaceCliente {
+  color: var(--color-primario-900, var(--texto));
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.enlaceCliente:hover {
+  color: var(--color-primario-700, var(--acento));
+  text-decoration: underline;
+}
+
+.colRut,
+.colAcceso,
+.colReservas,
+.colEstado {
+  white-space: nowrap;
+}
+
+.colAccion {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.tablaConvenios th.colAccion {
+  text-align: right;
+}
+
+.enlaceDetalle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--color-primario-700, var(--acento));
+  font-size: 0.825rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.enlaceDetalle:hover {
+  background: var(--color-tiffany-50, var(--fondo));
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+/* --- Estado vacío --- */
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-6) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  text-align: center;
+}
+
+.vacio p {
+  margin: 0;
+  max-width: 30rem;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.iconoVacio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--acento));
+}
+
+/* --- Ficha de detalle --- */
+
+.cuadriculaFicha {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espacio-4);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .cuadriculaFicha {
+    grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 1fr);
+  }
+}
+
+.columnaPrincipal,
+.columnaLateral {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-4);
+  min-width: 0;
+}
+
+.tarjeta {
+  padding: 20px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.cabeceraTarjeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-3);
+}
+
+.tarjeta h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.cabeceraTarjeta + .contenedorTabla,
+.tarjeta > h2 + .contenedorTabla,
+.tarjeta > h2 + p {
+  margin-top: var(--espacio-3);
+}
+
+.datosGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--espacio-3) var(--espacio-4);
+  margin: 0;
+}
+
+.datoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.datoItem dt {
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.datoItem dd {
+  margin: 0;
+  color: var(--texto);
+  font-size: 0.925rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.listaCorreos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.chipCorreo {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 0.82rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.bloqueRechazo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--espacio-4);
+  padding: var(--espacio-3);
+  border: 1px solid var(--error-borde);
+  border-radius: var(--radio);
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+
+.bloqueRechazo strong {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.bloqueRechazo p {
+  margin: 0;
+  font-size: 0.925rem;
+}
+
+.notaEstado {
+  margin: var(--espacio-3) 0;
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.panelConfirmacion,
+.panelRechazo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  margin-top: var(--espacio-3);
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+}
+
+.panelRechazo {
+  border-color: var(--error-borde);
+  background: var(--error-fondo);
+}
+
+.panelConfirmacion p,
+.panelRechazo p {
+  margin: 0;
+  font-size: 0.925rem;
+  line-height: 1.45;
+  color: var(--texto);
+}
+
+.campoTextarea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.textarea:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.accionesColumna {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-3);
+}
+
+/* --- Auditoría --- */
+
+.badgeAuditoria {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--color-tiffany-50, var(--fondo));
+  color: var(--color-primario-900, var(--texto));
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.fechaAuditoria {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--texto-suave);
+}
+
+/* --- Formulario de edición y Diálogo de contraseña --- */
+
+.gridFormulario {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espacio-3);
+  margin: var(--espacio-3) 0;
+}
+
+@media (min-width: 38rem) {
+  .gridFormulario {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.campoFormulario {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.errorCampo {
+  color: var(--error-texto);
+  font-size: 0.825rem;
+  font-weight: 500;
+}
+
+.dialogoHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  color: var(--color-primario-900, var(--texto));
+}
+
+.cajaPassword {
+  margin: 0;
+  padding: var(--espacio-3);
+  border: 1px dashed var(--borde-campo, var(--borde));
+  border-radius: 10px;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
+/* --- Responsive móvil --- */
+
+@media (max-width: 44.99rem) {
+  .accionesEncabezado {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .botonFiltros {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--toque);
+    padding: 0 var(--espacio-3);
+    border: 0;
+    background: transparent;
+    color: var(--texto);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .camposFiltro[data-abierto='false'] {
+    display: none;
+  }
+
+  .filaFiltros {
+    grid-template-columns: 1fr;
+  }
+
+  .contenedorTabla {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .tablaConvenios,
+  .tablaConvenios tbody,
+  .tablaConvenios tr,
+  .tablaConvenios td {
+    display: block;
+  }
+
+  .tablaConvenios {
+    background: transparent;
+  }
+
+  .tablaConvenios thead {
+    display: none;
+  }
+
+  .tablaConvenios tbody tr {
+    margin-bottom: var(--espacio-2);
+    padding: var(--espacio-2) 0;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-tarjeta, var(--radio));
+  }
+
+  .tablaConvenios td {
+    display: grid;
+    grid-template-columns: 7rem 1fr;
+    gap: var(--espacio-2);
+    padding: var(--espacio-1) var(--espacio-3);
+    border: 0;
+  }
+
+  .tablaConvenios td::before {
+    content: attr(data-titulo);
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .colRut,
+  .colAcceso,
+  .colReservas,
+  .colEstado,
+  .colAccion,
+  .fechaAuditoria {
+    white-space: normal;
+    width: auto;
+    text-align: left;
+  }
+}
