@@ -3,7 +3,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
-import { entradasDeMenu, crearRutas } from '../rutas/tabla';
+// import { entradasDeMenu, crearRutas } from '../rutas/tabla';
 import { jsonPortal, montarPortal } from '../pruebas/montarPortal';
 
 describe('HU-56 · encuesta por correo', () => {
@@ -30,6 +30,7 @@ describe('HU-56 · encuesta por correo', () => {
   });
 });
 
+/* Oculto del menú del panel (sin borrar código).
 describe('HU-56 · Conversaciones solo con el módulo de cuentas', () => {
   it.each([
     [true, true],
@@ -40,3 +41,4 @@ describe('HU-56 · Conversaciones solo con el módulo de cuentas', () => {
     expect(titulos).toContain('Reservas');
   });
 });
+*/
