@@ -207,7 +207,7 @@ export class ServidorAuthFalso {
         const access = peticion.headers.get('Authorization')?.replace('Bearer ', '') ?? '';
         const usuario = this.accessVigentes.get(access);
         if (!usuario) return { estado: 401, cuerpo: { detail: 'Token inválido.', code: 'token_not_valid' } };
-        if (ruta === 'GET /api/auth/yo/') return { estado: 200, cuerpo: publico(usuario) };
+        if (ruta === 'GET /api/auth/yo/') return { estado: 200, cuerpo: publico(this.efectivo(usuario)) };
         if (ruta === 'POST /api/viajes/') return { estado: 201, cuerpo: { recibido: await peticion.json() } };
         return { estado: 200, cuerpo: { count: 0, next: null, previous: null, results: [] } };
       }
@@ -225,9 +225,14 @@ export class ServidorAuthFalso {
   /** DC-44: usuarios que aceptaron el aviso en esta prueba. */
   private privacidad = new Set<number>();
 
+  /** DC-73: permite simular empresa sin módulo de cuentas en pruebas del panel. */
+  moduloCuentas: boolean | null = null;
+
   private efectivo(usuario: UsuarioFalso): UsuarioFalso {
     const aceptada = this.privacidad.has(usuario.id) ? { debe_aceptar_privacidad: false } : {};
-    return { ...usuario, ...this.cambios.get(usuario.id), ...aceptada };
+    const empresa =
+      this.moduloCuentas !== null ? { empresa: { ...usuario.empresa, modulo_cuentas: this.moduloCuentas } } : {};
+    return { ...usuario, ...this.cambios.get(usuario.id), ...aceptada, ...empresa };
   }
 
   private login({ email, password }: { email: string; password: string }): Respuesta {

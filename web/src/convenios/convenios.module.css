@@ -55,6 +55,24 @@
   gap: 6px;
 }
 
+.botonConIcono[data-copiado='copiado'] {
+  border-color: var(--exito);
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--texto));
+}
+
+.botonConIcono[data-copiado='error'] {
+  border-color: var(--error-borde);
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+
+.botonWhatsapp:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
 /* --- Insignias y valores tipográficos --- */
 
 .badgeEstado {
