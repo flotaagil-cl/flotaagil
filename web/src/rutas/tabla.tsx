@@ -110,7 +110,8 @@ export const pantallasDelPanel: RouteObject[] = [
   {
     path: 'conversaciones',
     // HU-67 (CC-19): el canal se retiró; queda el historial en solo lectura.
-    handle: { titulo: 'Historial WhatsApp', menu: true, seccion: 'operacion', icono: 'historial', roles: ROLES_PANEL, conModulo: true } satisfies Manejo,
+    // Oculto del menú del panel (sin borrar código).
+    handle: { titulo: 'Historial WhatsApp', /* menu: true, */ seccion: 'operacion', icono: 'historial', roles: ROLES_PANEL, conModulo: true } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../conversaciones/paginas/Conversaciones')).Conversaciones }) },
       {

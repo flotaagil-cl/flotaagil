@@ -38,7 +38,7 @@ describe('menú y permisos', () => {
       'Reservas',
       'Vuelos de hoy',
       'Chat',
-      'Historial WhatsApp',
+      // 'Historial WhatsApp', // Oculto del menú del panel
       'Vehículos',
       'Conductores',
       'Convenios',

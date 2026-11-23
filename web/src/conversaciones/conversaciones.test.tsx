@@ -44,11 +44,13 @@ describe('historial de WhatsApp', () => {
     expect(await screen.findByRole('link', { name: 'Ana Pérez' })).toBeInTheDocument();
   });
 
+  /* Oculto del menú del panel (sin borrar código).
   it('aparece en el menú como «Historial WhatsApp»', async () => {
     montar('/');
     const menu = await screen.findByRole('navigation', { name: 'Menú principal' });
     expect(within(menu).getByRole('link', { name: 'Historial WhatsApp' })).toBeInTheDocument();
   });
+  */
 });
 
 describe('hilo del historial', () => {
