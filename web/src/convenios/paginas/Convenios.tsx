@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 import estilos from '../../componentes/panel.module.css';
-import campos from '../../formularios/formularios.module.css';
-import { Celda, Esqueleto, FallaDeCarga, Paginacion } from '../../flota/componentes/comunes';
+import { Icono } from '../../diseno/Icono';
+import { Esqueleto, FallaDeCarga, Paginacion } from '../../flota/componentes/comunes';
 import { useFiltrosUrl } from '../../flota/filtrosUrl';
 import { useConvenios, type ConsultaConvenios } from '../api';
+import { BadgeEstado } from '../componentes';
+import s from '../convenios.module.css';
 import { ESTADOS_CONVENIO } from '../estados';
 
 const numero = new Intl.NumberFormat('es-CL');
@@ -12,6 +15,7 @@ const numero = new Intl.NumberFormat('es-CL');
 export function Convenios() {
   const filtros = useFiltrosUrl(['estado'] as const);
   const { estado } = filtros.valores;
+  const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
   const consulta: ConsultaConvenios = {
     ...(filtros.q && { q: filtros.q }),
     ...(estado && { estado: estado as NonNullable<ConsultaConvenios['estado']> }),
@@ -19,40 +23,71 @@ export function Convenios() {
   };
   const lista = useConvenios(consulta);
   const conFiltros = Boolean(filtros.q || estado);
+  const activos = (filtros.q ? 1 : 0) + (estado ? 1 : 0);
 
   return (
     <section>
-      <div className={estilos.encabezado}>
-        <h1>Convenios</h1>
+      <div className={s.encabezado}>
+        <div className={s.tituloBloque}>
+          <h1>Convenios</h1>
+          <p className={s.subtitulo}>Las empresas cliente se registran en el portal y quedan en revisión hasta que las apruebes.</p>
+        </div>
       </div>
-      <p>Las empresas cliente se registran en el portal y quedan en revisión hasta que las apruebes.</p>
 
-      <div className={estilos.filtros}>
-        <div className={estilos.camposFiltro} data-abierto="true">
-          <label className={`${campos.campo} ${estilos.busqueda}`}>
-            Buscar
-            <input type="search" placeholder="Cliente o RUT" value={filtros.busqueda} onChange={(evento) => filtros.setBusqueda(evento.target.value)} />
-          </label>
-          <label className={campos.campo}>
-            Estado
-            <select value={estado} onChange={(evento) => filtros.cambiar({ estado: evento.target.value })}>
-              <option value="">Todos</option>
-              {Object.entries(ESTADOS_CONVENIO).map(([valor, texto]) => (
-                <option key={valor} value={valor}>
-                  {texto}
-                </option>
-              ))}
-            </select>
-          </label>
+      <div className={s.filtros}>
+        <button
+          type="button"
+          className={s.botonFiltros}
+          aria-expanded={filtrosAbiertos}
+          aria-controls="campos-filtro-convenios"
+          onClick={() => setFiltrosAbiertos((abiertos) => !abiertos)}
+        >
+          <span>Filtros{activos ? ` (${activos})` : ''}</span>
+          <Icono nombre="abajo" tamano={16} />
+        </button>
+
+        <div id="campos-filtro-convenios" className={s.camposFiltro} data-abierto={filtrosAbiertos} role="search">
+          <div className={s.filaFiltros}>
+            <label className={s.campoFiltro}>
+              Buscar
+              <input
+                type="search"
+                className={s.control}
+                placeholder="Cliente o RUT"
+                value={filtros.busqueda}
+                onChange={(evento) => filtros.setBusqueda(evento.target.value)}
+              />
+            </label>
+            <label className={s.campoFiltro}>
+              Estado
+              <select className={s.control} value={estado} onChange={(evento) => filtros.cambiar({ estado: evento.target.value })}>
+                <option value="">Todos</option>
+                {Object.entries(ESTADOS_CONVENIO).map(([valor, texto]) => (
+                  <option key={valor} value={valor}>
+                    {texto}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {conFiltros && (
+              <button type="button" className={s.botonLimpiar} onClick={() => filtros.cambiar({ q: '', estado: '' })}>
+                <Icono nombre="cerrar" tamano={15} />
+                Limpiar
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
       {lista.isPending ? (
-        <Esqueleto etiqueta="Cargando convenios" columnas={4} />
+        <Esqueleto etiqueta="Cargando convenios" columnas={6} />
       ) : lista.isError ? (
         <FallaDeCarga error={lista.error} que="la página" reintentar={() => void lista.refetch()} />
       ) : lista.data.results.length === 0 ? (
-        <div className={estilos.vacio}>
+        <div className={s.vacio}>
+          <div className={s.iconoVacio} aria-hidden="true">
+            <Icono nombre="convenios" tamano={24} />
+          </div>
           {conFiltros ? (
             <>
               <p>Ningún convenio coincide con los filtros.</p>
@@ -61,9 +96,7 @@ export function Convenios() {
               </button>
             </>
           ) : (
-            <>
-              <p>Aún no hay convenios. Las empresas cliente se registran desde el portal.</p>
-            </>
+            <p>Aún no hay convenios. Las empresas cliente se registran desde el portal.</p>
           )}
         </div>
       ) : (
@@ -74,28 +107,72 @@ export function Convenios() {
             </span>
             {lista.isFetching && <span>Actualizando…</span>}
           </p>
-          <table className={estilos.tabla} aria-busy={lista.isPlaceholderData || undefined}>
-            <thead>
-              <tr>
-                <th scope="col">Cliente</th>
-                <th scope="col">RUT</th>
-                <th scope="col">Reservas</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lista.data.results.map((convenio) => (
-                <tr key={convenio.id}>
-                  <Celda titulo="Cliente">
-                    <Link to={`/convenios/${convenio.id}`}>{convenio.cliente_nombre}</Link>
-                  </Celda>
-                  <Celda titulo="RUT">{convenio.cliente_rut}</Celda>
-                  <Celda titulo="Reservas">{numero.format(convenio.reservas)}</Celda>
-                  <Celda titulo="Estado">{ESTADOS_CONVENIO[convenio.estado]}</Celda>
+          <div className={s.contenedorTabla}>
+            <table className={s.tablaConvenios} aria-busy={lista.isPlaceholderData || undefined}>
+              <thead>
+                <tr>
+                  <th scope="col">Cliente</th>
+                  <th scope="col" className={s.colRut}>
+                    RUT
+                  </th>
+                  <th scope="col" className={s.colAcceso}>
+                    Acceso
+                  </th>
+                  <th scope="col" className={s.colReservas}>
+                    Reservas
+                  </th>
+                  <th scope="col" className={s.colEstado}>
+                    Estado
+                  </th>
+                  <th scope="col" className={s.colAccion}>
+                    <span className="solo-lector">Acción</span>
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {lista.data.results.map((convenio) => (
+                  <tr key={convenio.id}>
+                    <td data-titulo="Cliente">
+                      <div>
+                        <Link to={`/convenios/${convenio.id}`} className={s.enlaceCliente}>
+                          {convenio.cliente_nombre}
+                        </Link>
+                      </div>
+                    </td>
+                    <td data-titulo="RUT" className={s.colRut}>
+                      <div>
+                        <span className={s.rut}>{convenio.cliente_rut}</span>
+                      </div>
+                    </td>
+                    <td data-titulo="Acceso" className={s.colAcceso}>
+                      <div>
+                        <span className={s.badgeAcceso} data-cuenta={String(convenio.tiene_cuenta)}>
+                          {convenio.tiene_cuenta ? 'Cuenta web' : 'Sin cuenta'}
+                        </span>
+                      </div>
+                    </td>
+                    <td data-titulo="Reservas" className={s.colReservas}>
+                      <div>
+                        <span className={s.pillReservas}>{numero.format(convenio.reservas)}</span>
+                      </div>
+                    </td>
+                    <td data-titulo="Estado" className={s.colEstado}>
+                      <div>
+                        <BadgeEstado estado={convenio.estado} />
+                      </div>
+                    </td>
+                    <td data-titulo="Acción" className={s.colAccion}>
+                      <div>
+                        <Link to={`/convenios/${convenio.id}`} className={s.enlaceDetalle}>
+                          Ver ficha
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <Paginacion
             anterior={Boolean(lista.data.previous)}
             siguiente={Boolean(lista.data.next)}

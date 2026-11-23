@@ -72,6 +72,26 @@ describe('listado', () => {
     expect(await screen.findByText(/Aún no hay convenios. Las empresas cliente se registran desde el portal/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Nuevo convenio' })).not.toBeInTheDocument();
   });
+
+  it('muestra el tipo de acceso, enlace Ver ficha y botón Limpiar cuando hay filtros activos', async () => {
+    const { convenios } = montar('/convenios');
+    convenios.convenios = [
+      convenioDePrueba({ id: 10, cliente_nombre: 'Minera Norte', tiene_cuenta: true }),
+      convenioDePrueba({ id: 11, cliente_nombre: 'Hotel Sur', tiene_cuenta: false, estado: 'EN_REVISION', activo: false }),
+    ];
+    const filaNorte = (await screen.findByRole('link', { name: 'Minera Norte' })).closest('tr')!;
+    const filaSur = screen.getByRole('link', { name: 'Hotel Sur' }).closest('tr')!;
+    expect(within(filaNorte).getByText('Cuenta web')).toBeInTheDocument();
+    expect(within(filaSur).getByText('Sin cuenta')).toBeInTheDocument();
+    expect(within(filaNorte).getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/convenios/10');
+    expect(screen.queryByRole('button', { name: 'Limpiar' })).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Estado' }), 'En revisión');
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Minera Norte' })).not.toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
+    expect(await screen.findByRole('link', { name: 'Minera Norte' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Hotel Sur' })).toBeInTheDocument();
+  });
 });
 
 describe('sin creación', () => {
@@ -163,6 +183,19 @@ describe('ficha', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Guardar' }));
     expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument();
     expect(convenios.convenios[0].cliente_nombre).toBe('Minera Renombrada');
+  });
+
+  it('cancelar la edición vuelve a la ficha sin guardar cambios', async () => {
+    const { convenios } = await abrir();
+    await userEvent.click(screen.getByRole('button', { name: 'Editar' }));
+    const nombre = screen.getByLabelText('Cliente');
+    await userEvent.clear(nombre);
+    await userEvent.type(nombre, 'Cambio Descartado');
+    await userEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    expect(screen.queryByRole('button', { name: 'Guardar' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Editar' })).toBeInTheDocument();
+    expect(convenios.convenios[0].cliente_nombre).toBe('Minera Sintética S.A.');
+    expect(convenios.cuerpos).toHaveLength(0);
   });
 });
 
