@@ -313,6 +313,13 @@ describe('asignar conductor (HU-14)', () => {
     await abrirDetalle(viajeDePrueba({ id: 8, estado: 'PENDIENTE_CONFIRMACION' }));
     expect(screen.queryByRole('button', { name: 'Asignar conductor…' })).not.toBeInTheDocument();
   });
+
+  it('deshabilita Asignar conductor en reservas de días futuros', async () => {
+    const futuro = new Date(Date.now() + 2 * 86_400_000).toISOString();
+    await abrirDetalle(viajeDePrueba({ id: 8, estado: 'SOLICITADO', recogida_en: futuro }));
+    expect(screen.getByRole('button', { name: 'Asignar conductor…' })).toBeDisabled();
+    expect(screen.getByText('Disponible para asignar el día del viaje')).toBeInTheDocument();
+  });
 });
 
 describe('cierre o anulación forzada (HU-05)', () => {

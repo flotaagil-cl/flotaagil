@@ -8,6 +8,7 @@ HU-15).
 """
 
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -53,6 +54,18 @@ class AsignacionNoPermitida(APIException):
     status_code = status.HTTP_409_CONFLICT
     default_code = "asignacion_no_permitida"
     default_detail = "No se puede asignar este viaje ahora."
+
+
+MENSAJE_DIA_FUTURO = "Solo se pueden asignar reservas programadas para el día en curso"
+ZONA_EMPRESA = ZoneInfo("America/Santiago")
+
+
+def _validar_dia_en_curso(viaje: Viaje) -> None:
+    """Despacho Just-in-Time: evita asignar hoy viajes de días futuros (bloqueo RN-03)."""
+    hoy_local = timezone.localtime(timezone.now(), ZONA_EMPRESA).date()
+    fecha_recogida = timezone.localtime(viaje.recogida_en, ZONA_EMPRESA).date()
+    if fecha_recogida > hoy_local:
+        raise AsignacionNoPermitida(MENSAJE_DIA_FUTURO)
 
 
 # HU-04: diferencias de distancia menores a esto se deciden por el tiempo desde el último viaje.
@@ -105,6 +118,7 @@ def candidatos(viaje: Viaje) -> list[dict]:
     """Conductores Disponibles de la empresa sin viaje en ejecución (RN-01, RN-03), los más aptos primero.
     Solo informa: nada se asigna hasta que el despachador lo confirma (RN-02). Con posición no confiable no
     compite ni se sugiere. En recogidas en aeropuerto se propone al primero de la fila (HU-29, RN-16)."""
+    _validar_dia_en_curso(viaje)
     ultima = PosicionGps.objects.filter(conductor=OuterRef("pk")).order_by("-registrada_en")
     conductores = list(
         Conductor.objects.filter(
@@ -227,6 +241,7 @@ def asignar(viaje: Viaje, conductor_id: int, *, usuario) -> Asignacion:
             raise AsignacionNoPermitida(
                 f"Solo se asigna una reserva solicitada; esta está en {viaje.estado}."
             )
+        _validar_dia_en_curso(viaje)
         if not conductor.usuario.activo or conductor.estado != EstadoConductor.DISPONIBLE:
             raise AsignacionNoPermitida(f"{conductor.usuario.nombre} no está Disponible (RN-01).")
         if conductor.vehiculo_activo is None:

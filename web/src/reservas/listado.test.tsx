@@ -249,4 +249,22 @@ describe('listado de reservas', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Asignar a Macarena Gutiérrez' }));
     expect(await screen.findByText(/Reserva #21 asignada a Macarena Gutiérrez/)).toBeInTheDocument();
   });
+
+  it('deshabilita Asignar y muestra aviso en reservas de días futuros', async () => {
+    const futuro = new Date(Date.now() + 2 * 86_400_000).toISOString();
+    const { viajes } = montarPanel('/reservas?desde=');
+    viajes.agregar(
+      viajeDePrueba({
+        id: 22,
+        estado: 'SOLICITADO',
+        recogida_en: futuro,
+        pasajero: { id: 3, nombre: 'Lucía Futura', telefono: '+56900000022' },
+      }),
+    );
+    await esperarListado();
+
+    const fila = screen.getByRole('row', { name: /Lucía Futura/ });
+    expect(within(fila).getByRole('button', { name: 'Asignar' })).toBeDisabled();
+    expect(within(fila).getByText('Disponible para asignar el día del viaje')).toBeInTheDocument();
+  });
 });

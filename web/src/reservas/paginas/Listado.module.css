@@ -414,6 +414,31 @@
   background: var(--acento-hover);
 }
 
+.botonAsignar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--acento);
+}
+
+.accionesFila {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.badgeFuturo {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--insignia-revision-fondo, var(--info-fondo));
+  color: var(--insignia-revision-texto, var(--texto));
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
 .enlaceDetalle {
   display: inline-flex;
   align-items: center;

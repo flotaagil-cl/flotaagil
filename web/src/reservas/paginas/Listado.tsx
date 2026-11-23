@@ -4,7 +4,7 @@ import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import { Icono } from '../../diseno/Icono';
-import { formatearFecha, formatearFechaHora, formatearPared } from '../../hora/hora';
+import { esDiaFuturo, formatearFecha, formatearFechaHora, formatearPared } from '../../hora/hora';
 import { LineaVuelo } from '../../vuelos/LineaVuelo';
 import { lineaDeVuelo } from '../../vuelos/textos';
 import { useAhora } from '../../vuelos/useAhora';
@@ -447,9 +447,19 @@ export function Listado() {
                           </Celda>
                           <Celda titulo="Acción" clase={s.colAccion}>
                             {estado === 'SOLICITADO' ? (
-                              <button type="button" className={s.botonAsignar} onClick={() => setViajeAAsignar(viaje)}>
-                                Asignar
-                              </button>
+                              <div className={s.accionesFila}>
+                                <button
+                                  type="button"
+                                  className={s.botonAsignar}
+                                  disabled={esDiaFuturo(viaje.recogida_en)}
+                                  onClick={() => setViajeAAsignar(viaje)}
+                                >
+                                  Asignar
+                                </button>
+                                {esDiaFuturo(viaje.recogida_en) && (
+                                  <span className={s.badgeFuturo}>Disponible para asignar el día del viaje</span>
+                                )}
+                              </div>
                             ) : (
                               <Link to={`/reservas/${viaje.id}`} className={s.enlaceDetalle}>
                                 Ver detalle

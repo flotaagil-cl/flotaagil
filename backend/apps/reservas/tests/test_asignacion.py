@@ -1,6 +1,7 @@
 """HU-14 · Asignar un viaje y avisar al conductor (RN-01, RN-02, RN-03, RN-13)."""
 
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from asgiref.sync import async_to_sync
@@ -128,6 +129,41 @@ class TestAsignar:
     def test_el_conductor_no_puede_asignar(self, cliente, conductor, solicitado):
         cliente.force_authenticate(conductor)
         assert cliente.post(asignar_url(solicitado), {"conductor": 1}, format="json").status_code == 403
+
+    def test_permite_asignar_reserva_de_hoy(self, api, empresa):
+        hoy = timezone.localtime(timezone.now(), ZoneInfo("America/Santiago"))
+        viaje = ViajeFactory(
+            empresa=empresa,
+            estado=EstadoViaje.SOLICITADO,
+            recogida_en=hoy.replace(hour=23, minute=30, second=0, microsecond=0),
+        )
+        conductor = disponible(empresa)
+        assert api.get(reverse("viaje-candidatos", args=[viaje.pk])).status_code == 200
+        respuesta = api.post(asignar_url(viaje), {"conductor": conductor.pk}, format="json")
+        assert respuesta.status_code == 200
+        viaje.refresh_from_db()
+        assert viaje.estado == EstadoViaje.ASIGNADO
+
+    @pytest.mark.parametrize("dias", [1, 5])
+    def test_rechaza_asignar_reserva_de_dia_futuro(self, api, empresa, dias):
+        manana = timezone.localtime(timezone.now(), ZoneInfo("America/Santiago")) + timedelta(days=dias)
+        viaje = ViajeFactory(
+            empresa=empresa,
+            estado=EstadoViaje.SOLICITADO,
+            recogida_en=manana.replace(hour=9, minute=0, second=0, microsecond=0),
+        )
+        conductor = disponible(empresa)
+        mensaje = "Solo se pueden asignar reservas programadas para el día en curso"
+        resp_candidatos = api.get(reverse("viaje-candidatos", args=[viaje.pk]))
+        assert resp_candidatos.status_code == 409
+        assert mensaje in resp_candidatos.json()["detail"]
+
+        respuesta = api.post(asignar_url(viaje), {"conductor": conductor.pk}, format="json")
+        assert (respuesta.status_code, respuesta.json()["code"]) == (409, "asignacion_no_permitida")
+        assert mensaje in respuesta.json()["detail"]
+        viaje.refresh_from_db()
+        assert viaje.estado == EstadoViaje.SOLICITADO
+        assert viaje.conductor is None
 
 
 @pytest.mark.django_db
