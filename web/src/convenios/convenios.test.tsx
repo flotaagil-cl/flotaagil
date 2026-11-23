@@ -2,14 +2,15 @@
 
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
+import { ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
 import { convenioDePrueba, ServidorConveniosFalso } from '../pruebas/servidorConveniosFalso';
 
 const ADMIN = 'admin@andes.example';
 
-function montar(ruta: string, email = ADMIN) {
-  const contexto = montarPanel(ruta, { email });
+function montar(ruta: string, email = ADMIN, servidor = new ServidorAuthFalso()) {
+  const contexto = montarPanel(ruta, { email, servidor });
   const convenios = new ServidorConveniosFalso(contexto.servidor);
   return { ...contexto, convenios };
 }
@@ -253,5 +254,59 @@ describe('auditoría del convenio (HU-12, CP-24)', () => {
     abrirConvenio();
     const tabla = await screen.findByRole('table', { name: 'Auditoría del convenio' });
     expect(within(tabla).queryByRole('button')).not.toBeInTheDocument();
+  });
+});
+
+describe('compartir enlace del portal (DC-73)', () => {
+  it('el administrador copia la URL de registro-empresa y comparte por WhatsApp', async () => {
+    const portapapeles = { writeText: vi.fn().mockResolvedValue(undefined) };
+    Object.defineProperty(navigator, 'clipboard', { value: portapapeles, configurable: true });
+    montar('/convenios');
+
+    const copiar = await screen.findByRole('button', { name: 'Copiar enlace del portal' });
+    const whatsapp = screen.getByRole('link', { name: 'Compartir por WhatsApp' });
+    const urlEsperada = 'http://localhost:3000/solicitar/transportes-andes/registro-empresa';
+
+    expect(whatsapp).toHaveAttribute('target', '_blank');
+    expect(whatsapp).toHaveAttribute('rel', 'noreferrer');
+    const href = whatsapp.getAttribute('href')!;
+    expect(href).toMatch(/^https:\/\/wa\.me\/\?text=/);
+    expect(decodeURIComponent(href.split('?text=')[1])).toContain(urlEsperada);
+
+    await userEvent.click(copiar);
+    expect(portapapeles.writeText).toHaveBeenCalledWith(urlEsperada);
+    expect(await screen.findByRole('button', { name: 'Enlace copiado' })).toBeInTheDocument();
+  });
+
+  it('el despachador también ve los botones para compartir el enlace del portal', async () => {
+    montar('/convenios', 'despacho@andes.example');
+    expect(await screen.findByRole('button', { name: 'Copiar enlace del portal' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Compartir por WhatsApp' })).toBeInTheDocument();
+  });
+
+  it('sin módulo de cuentas usa la URL pública /convenio', async () => {
+    const portapapeles = { writeText: vi.fn().mockResolvedValue(undefined) };
+    Object.defineProperty(navigator, 'clipboard', { value: portapapeles, configurable: true });
+    const servidor = new ServidorAuthFalso();
+    servidor.moduloCuentas = false;
+    montar('/convenios', ADMIN, servidor);
+
+    const copiar = await screen.findByRole('button', { name: 'Copiar enlace del portal' });
+    const whatsapp = screen.getByRole('link', { name: 'Compartir por WhatsApp' });
+    const urlEsperada = 'http://localhost:3000/solicitar/transportes-andes/convenio';
+
+    expect(decodeURIComponent(whatsapp.getAttribute('href')!.split('?text=')[1])).toContain(urlEsperada);
+    await userEvent.click(copiar);
+    expect(portapapeles.writeText).toHaveBeenCalledWith(urlEsperada);
+  });
+
+  it('si falla el portapapeles, informa que no se pudo copiar', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockRejectedValue(new Error('denegado')) },
+      configurable: true,
+    });
+    montar('/convenios');
+    await userEvent.click(await screen.findByRole('button', { name: 'Copiar enlace del portal' }));
+    expect(await screen.findByRole('button', { name: 'No se pudo copiar' })).toBeInTheDocument();
   });
 });

@@ -1,21 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import estilos from '../../componentes/panel.module.css';
 import { Icono } from '../../diseno/Icono';
+import { useEntorno } from '../../entornoContexto';
 import { Esqueleto, FallaDeCarga, Paginacion } from '../../flota/componentes/comunes';
 import { useFiltrosUrl } from '../../flota/filtrosUrl';
+import { useSesion } from '../../sesion/SesionProvider';
 import { useConvenios, type ConsultaConvenios } from '../api';
 import { BadgeEstado } from '../componentes';
 import s from '../convenios.module.css';
 import { ESTADOS_CONVENIO } from '../estados';
 
 const numero = new Intl.NumberFormat('es-CL');
+const DURACION_FEEDBACK_MS = 2500;
+
+function urlRegistroConvenio(origen: string, empresa: { slug: string; modulo_cuentas?: boolean }): string {
+  const ruta = empresa.modulo_cuentas ? `/solicitar/${empresa.slug}/registro-empresa` : `/solicitar/${empresa.slug}/convenio`;
+  return `${origen}${ruta}`;
+}
 
 /** HU-11: convenios con su volumen de reservas. */
 export function Convenios() {
+  const { estado: sesion } = useSesion();
+  const entorno = useEntorno();
   const filtros = useFiltrosUrl(['estado'] as const);
   const { estado } = filtros.valores;
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  const [estadoCopia, setEstadoCopia] = useState<'inactivo' | 'copiado' | 'error'>('inactivo');
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (temporizador.current) clearTimeout(temporizador.current);
+    },
+    [],
+  );
+
+  const empresa = sesion.fase === 'autenticada' ? sesion.usuario.empresa : null;
+  const urlRegistro = empresa ? urlRegistroConvenio(entorno.origen, empresa) : null;
+  const textoWhatsapp =
+    empresa && urlRegistro
+      ? `Hola, puedes registrar tu empresa en convenio con ${empresa.razon_social} en el siguiente enlace: ${urlRegistro}`
+      : null;
+  const urlWhatsapp = textoWhatsapp ? `https://wa.me/?text=${encodeURIComponent(textoWhatsapp)}` : null;
+
+  async function copiarEnlace() {
+    if (!urlRegistro) return;
+    try {
+      await navigator.clipboard.writeText(urlRegistro);
+      setEstadoCopia('copiado');
+    } catch {
+      setEstadoCopia('error');
+    }
+    if (temporizador.current) clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => setEstadoCopia('inactivo'), DURACION_FEEDBACK_MS);
+  }
+
   const consulta: ConsultaConvenios = {
     ...(filtros.q && { q: filtros.q }),
     ...(estado && { estado: estado as NonNullable<ConsultaConvenios['estado']> }),
@@ -32,6 +72,33 @@ export function Convenios() {
           <h1>Convenios</h1>
           <p className={s.subtitulo}>Las empresas cliente se registran en el portal y quedan en revisión hasta que las apruebes.</p>
         </div>
+        {urlRegistro && urlWhatsapp && (
+          <div className={s.accionesEncabezado}>
+            <button
+              type="button"
+              className={`${estilos.botonSecundario} ${s.botonConIcono}`}
+              data-copiado={estadoCopia === 'inactivo' ? undefined : estadoCopia}
+              aria-live="polite"
+              onClick={() => void copiarEnlace()}
+            >
+              <Icono nombre={estadoCopia === 'copiado' ? 'check' : 'enlace'} tamano={16} />
+              {estadoCopia === 'copiado'
+                ? 'Enlace copiado'
+                : estadoCopia === 'error'
+                  ? 'No se pudo copiar'
+                  : 'Copiar enlace del portal'}
+            </button>
+            <a
+              href={urlWhatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className={`${estilos.botonSecundario} ${s.botonConIcono} ${s.botonWhatsapp}`}
+            >
+              <Icono nombre="mensaje" tamano={16} />
+              Compartir por WhatsApp
+            </a>
+          </div>
+        )}
       </div>
 
       <div className={s.filtros}>
