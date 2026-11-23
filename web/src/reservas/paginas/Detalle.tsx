@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
-import { formatearFechaHora } from '../../hora/hora';
+import { esDiaFuturo, formatearFechaHora } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
 import { useConfirmarPorTelefono, useViaje, type ViajeDetalle } from '../api';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
@@ -59,6 +59,7 @@ function DetalleDe({ id }: { id: number }) {
     );
   }
   const viaje = consulta.data;
+  const recogidaFutura = esDiaFuturo(viaje.recogida_en);
   const historial = [...viaje.historial].sort((a, b) => Date.parse(a.creado_en) - Date.parse(b.creado_en));
 
   return (
@@ -88,9 +89,12 @@ function DetalleDe({ id }: { id: number }) {
         <div className={estilos.acciones}>
           {viaje.estado === 'PENDIENTE_CONFIRMACION' && <ConfirmarPorTelefono id={viaje.id} />}
           {viaje.estado === 'SOLICITADO' && (
-            <button type="button" className={estilos.boton} onClick={() => setAsignando(true)}>
-              Asignar conductor…
-            </button>
+            <>
+              <button type="button" className={estilos.boton} disabled={recogidaFutura} onClick={() => setAsignando(true)}>
+                Asignar conductor…
+              </button>
+              {recogidaFutura && <span className={estilos.explicacion}>Disponible para asignar el día del viaje</span>}
+            </>
           )}
           {viaje.editable && (
             <Link to={`/reservas/${viaje.id}/editar`} className={estilos.boton}>

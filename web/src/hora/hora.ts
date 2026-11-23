@@ -130,6 +130,11 @@ export function hoy(ahora: number = Date.now()): string {
   return escribirFecha(paredDe(ahora));
 }
 
+/** True si la fecha de recogida (en America/Santiago) es posterior al día calendario actual. */
+export function esDiaFuturo(iso: string, ahora: number = Date.now()): boolean {
+  return escribirFecha(paredDe(Date.parse(iso))) > hoy(ahora);
+}
+
 /**
  * Instante en que empieza un día («AAAA-MM-DD») en Santiago. Normalmente las 00:00; el día del salto de
  * septiembre las 00:00 no existen y el día empieza a la 01:00 (el primer minuto después del salto).
