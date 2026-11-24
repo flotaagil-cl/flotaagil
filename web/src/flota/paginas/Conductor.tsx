@@ -89,10 +89,6 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
               <dd>{conductor.telefono}</dd>
             </div>
             <div>
-              <dt>Correo de acceso</dt>
-              <dd>{conductor.email}</dd>
-            </div>
-            <div>
               <dt>Licencia</dt>
               <dd>
                 Clase {LICENCIAS[conductor.licencia_clase]} · vence {formatearFecha(conductor.licencia_vence)}
@@ -125,7 +121,7 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
               Editar datos
             </button>
           </div>
-          <p className={estilos.explicacion}>El correo de acceso no se cambia desde aquí.</p>
+          <p className={estilos.explicacion}>El correo de acceso se cambia en «Acceso a la app».</p>
         </div>
       )}
 

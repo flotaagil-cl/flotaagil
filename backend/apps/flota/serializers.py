@@ -100,6 +100,8 @@ class ConductorSerializer(serializers.ModelSerializer):
     password_temporal_vence = serializers.DateTimeField(
         source="usuario.password_temporal_vence", read_only=True, allow_null=True
     )
+    # HU-74: último ingreso a la app (o al panel, si alguna vez lo tuvo).
+    ultimo_ingreso = serializers.DateTimeField(source="usuario.last_login", read_only=True, allow_null=True)
     vehiculo_activo = VehiculoDeclaradoSerializer(allow_null=True, read_only=True)
     vehiculos = serializers.SerializerMethodField()
 
@@ -120,6 +122,7 @@ class ConductorSerializer(serializers.ModelSerializer):
             "consentimiento_gps_en",
             "acceso",
             "password_temporal_vence",
+            "ultimo_ingreso",
             "vehiculos",
         ]
         read_only_fields = fields
@@ -197,11 +200,31 @@ class ConductorCrearSerializer(ConductorEditarSerializer):
         return valor
 
 
+class CambiarCorreoSerializer(serializers.Serializer):
+    """HU-74 (DC-78): correo de acceso nuevo. La unicidad final la revisa el servicio."""
+
+    email = serializers.EmailField(max_length=120)
+
+    def validate_email(self, valor):
+        return valor.strip().lower()
+
+
 class PasswordTemporalSerializer(serializers.Serializer):
     password_temporal = serializers.CharField(
         help_text="Se muestra una sola vez. No se guarda en texto plano."
     )
     vence_en = serializers.DateTimeField()
+
+
+class ConductorCreadoSerializer(ConductorSerializer):
+    """HU-74 (DC-78): el alta devuelve la ficha con la temporal, que se muestra una sola vez."""
+
+    password_temporal = serializers.CharField(read_only=True, help_text="Se muestra una sola vez")
+    vence_en = serializers.DateTimeField(read_only=True)
+
+    class Meta(ConductorSerializer.Meta):
+        fields = [*ConductorSerializer.Meta.fields, "password_temporal", "vence_en"]
+        read_only_fields = fields
 
 
 class AsociarVehiculoSerializer(serializers.Serializer):

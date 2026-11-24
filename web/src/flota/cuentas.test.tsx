@@ -30,10 +30,13 @@ async function llenarAlta(correo = 'Rosa@Flota.example') {
 }
 
 describe('alta', () => {
-  it('valida, normaliza y abre la ficha pidiendo generar la contraseña', async () => {
+  it('valida, normaliza, muestra la temporal una vez y abre la ficha lista para ingresar (HU-74)', async () => {
     const { flota } = montar('/conductores/nuevo');
     await llenarAlta();
-    expect(await screen.findByText(/Conductor registrado. Genera su contraseña temporal/)).toBeInTheDocument();
+    const dialogo = await screen.findByRole('dialog', { name: 'Contraseña temporal' });
+    const temporal = flota.ultimaTemporal!;
+    expect(within(dialogo).getByLabelText('Contraseña temporal')).toHaveTextContent(temporal);
+    expect(within(dialogo).getByText('rosa@flota.example')).toBeInTheDocument();
     expect(cuerpos(flota, 'POST /api/conductores/')).toEqual([
       {
         nombre: 'Rosa Pérez',
@@ -44,7 +47,12 @@ describe('alta', () => {
         licencia_vence: `${ANIO + 2}-06-30`,
       },
     ]);
-    expect(screen.getByText('Sin contraseña: todavía no puede ingresar a la app.')).toBeInTheDocument();
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Listo' }));
+    expect(await screen.findByText(/Conductor registrado. Ya puede ingresar a la app/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Acceso a la app' })).toBeInTheDocument();
+    expect(screen.getByText(/Con contraseña temporal: debe cambiarla/)).toBeInTheDocument();
+    expect(screen.queryByText(temporal)).not.toBeInTheDocument();
+    expect(JSON.stringify({ ...localStorage, ...sessionStorage })).not.toContain(temporal);
   });
 
   it('el correo repetido queda en su campo', async () => {
@@ -60,6 +68,52 @@ describe('alta', () => {
     await llenarAlta('rosa@');
     expect(await screen.findByText('Correo inválido.')).toBeInTheDocument();
     expect(cuerpos(flota, 'POST /api/conductores/')).toEqual([]);
+  });
+});
+
+describe('acceso a la app (HU-74)', () => {
+  it('muestra correo, estado y último ingreso', async () => {
+    const { flota } = montar('/conductores/40');
+    flota.conductores.push(conductorDePrueba({ id: 40, ultimo_ingreso: null }));
+    const tarjeta = (await screen.findByRole('heading', { name: 'Acceso a la app' })).parentElement!;
+    expect(within(tarjeta).getByText('conductor1@andes.example')).toBeInTheDocument();
+    expect(within(tarjeta).getByText('Con contraseña propia.')).toBeInTheDocument();
+    expect(within(tarjeta).getByText('Todavía no ingresa')).toBeInTheDocument();
+  });
+
+  it('cambia el correo de acceso: valida, envía normalizado y avisa que se cerraron las sesiones', async () => {
+    const { flota } = montar('/conductores/40');
+    flota.conductores.push(conductorDePrueba({ id: 40 }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Cambiar correo' }));
+    const formulario = screen.getByRole('form', { name: 'Cambiar correo de acceso' });
+    await userEvent.type(within(formulario).getByLabelText('Correo de acceso nuevo'), 'pedro@');
+    await userEvent.click(within(formulario).getByRole('button', { name: 'Cambiar correo' }));
+    expect(within(formulario).getByText('Ingresa un correo válido.')).toBeInTheDocument();
+    expect(cuerpos(flota, 'POST /api/conductores/40/correo/')).toEqual([]);
+    await userEvent.clear(within(formulario).getByLabelText('Correo de acceso nuevo'));
+    await userEvent.type(within(formulario).getByLabelText('Correo de acceso nuevo'), ' Pedro.Soto@Andes.example');
+    await userEvent.click(within(formulario).getByRole('button', { name: 'Cambiar correo' }));
+    expect(await screen.findByText(/Sus sesiones se cerraron: debe entrar con pedro.soto@andes.example/)).toBeInTheDocument();
+    expect(cuerpos(flota, 'POST /api/conductores/40/correo/')).toEqual([{ email: 'pedro.soto@andes.example' }]);
+    expect(screen.getByText('pedro.soto@andes.example')).toBeInTheDocument();
+  });
+
+  it('correo usado queda en su campo', async () => {
+    const { flota } = montar('/conductores/40');
+    flota.conductores.push(conductorDePrueba({ id: 40 }), conductorDePrueba({ id: 41, email: 'otro@andes.example' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Cambiar correo' }));
+    await userEvent.type(screen.getByLabelText('Correo de acceso nuevo'), 'otro@andes.example');
+    await userEvent.click(within(screen.getByRole('form', { name: 'Cambiar correo de acceso' })).getByRole('button', { name: 'Cambiar correo' }));
+    expect(await screen.findByText('Este correo ya tiene una cuenta.')).toBeInTheDocument();
+  });
+
+  it('en viaje muestra el 409', async () => {
+    const { flota } = montar('/conductores/40');
+    flota.conductores.push(conductorDePrueba({ id: 40, estado: 'EN_VIAJE' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Cambiar correo' }));
+    await userEvent.type(screen.getByLabelText('Correo de acceso nuevo'), 'nuevo@andes.example');
+    await userEvent.click(within(screen.getByRole('form', { name: 'Cambiar correo de acceso' })).getByRole('button', { name: 'Cambiar correo' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('El conductor está en viaje');
   });
 });
 

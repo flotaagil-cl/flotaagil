@@ -40,6 +40,7 @@ export function conductorDePrueba(cambios: Partial<Conductor> = {}): Conductor {
     consentimiento_gps_en: null,
     acceso: 'ACTIVA',
     password_temporal_vence: null,
+    ultimo_ingreso: null,
     vehiculos: [],
     ...cambios,
   };
@@ -100,9 +101,10 @@ export class ServidorFlotaFalso {
       if (peticion.method === 'PATCH') return this.editarVehiculo(encontrado, cuerpo as VehiculoEditar);
       return { estado: 200, cuerpo: encontrado };
     }
-    const conductor = /^\/api\/conductores\/(\d+)\/(?:vehiculos\/(?:(\d+)\/)?|(password|deshabilitar|habilitar|terminar-turno)\/)?$/.exec(url.pathname);
+    const conductor = /^\/api\/conductores\/(\d+)\/(?:vehiculos\/(?:(\d+)\/)?|(password|deshabilitar|habilitar|terminar-turno|correo)\/)?$/.exec(url.pathname);
     const encontrado = conductor && this.conductores.find((c) => c.id === Number(conductor[1]));
     if (!conductor || !encontrado) return NO_ENCONTRADO;
+    if (conductor[3] === 'correo') return this.cambiarCorreo(encontrado, (cuerpo as { email: string }).email);
     if (conductor[3]) return this.cuenta(encontrado, conductor[3]);
     if (url.pathname.includes('/vehiculos/')) {
       if (peticion.method === 'POST') return this.asociar(encontrado, (cuerpo as { vehiculo: number }).vehiculo);
@@ -122,9 +124,24 @@ export class ServidorFlotaFalso {
     if (this.conductores.some((c) => c.email === datos.email)) {
       return { estado: 400, cuerpo: { email: ['Este correo ya tiene una cuenta.'] } };
     }
-    const conductor = conductorDePrueba({ ...datos, acceso: 'SIN_PASSWORD' });
+    // HU-74 (DC-78): el alta trae la temporal; la ficha queda TEMPORAL.
+    const vence = '2026-11-06T15:00:00Z';
+    const conductor = conductorDePrueba({ ...datos, acceso: 'TEMPORAL', password_temporal_vence: vence });
     this.conductores.push(conductor);
-    return { estado: 201, cuerpo: conductor };
+    this.ultimaTemporal = `Tmp${++siguienteId}abcdEFGH`;
+    return { estado: 201, cuerpo: { ...conductor, password_temporal: this.ultimaTemporal, vence_en: vence } };
+  }
+
+  /** HU-74 (DC-78): 400 si otro usa el correo, 409 en viaje. */
+  private cambiarCorreo(conductor: Conductor, email: string): Respuesta {
+    if (this.conductores.some((c) => c.email === email && c.id !== conductor.id)) {
+      return { estado: 400, cuerpo: { email: ['Este correo ya tiene una cuenta.'] } };
+    }
+    if (conductor.estado === 'EN_VIAJE') {
+      return { estado: 409, cuerpo: { detail: 'El conductor está en viaje: no se puede cambiar su correo de acceso hasta que termine.', code: 'conductor_en_viaje' } };
+    }
+    Object.assign(conductor, { email });
+    return { estado: 200, cuerpo: conductor };
   }
 
   private cuenta(conductor: Conductor, accion: string): Respuesta {

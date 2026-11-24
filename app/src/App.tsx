@@ -17,7 +17,7 @@ import { abrirAjustes } from './gps/rastreo';
 import type { EstadoRastreo } from './gps/turno';
 import type { ViajeActivo } from './navegacion';
 import type { Pago } from './pantallas/AvanceViaje';
-import { CambiarPassword } from './pantallas/CambiarPassword';
+import { CambiarMiPassword, CambiarPassword } from './pantallas/CambiarPassword';
 import { Chat, type ConversacionChat } from './pantallas/Chat';
 import { Consentimiento } from './pantallas/Consentimiento';
 import { Inicio } from './pantallas/Inicio';
@@ -39,6 +39,8 @@ export default function App() {
   const [rastreo, setRastreo] = useState<EstadoRastreo>(rastreador.estado);
   const [enVivo, setEnVivo] = useState<EstadoCanal>(canal.estado);
   const [enMiTurno, setEnMiTurno] = useState(false);
+  // HU-74 (DC-78): cambiar la contraseña desde el menú.
+  const [enPassword, setEnPassword] = useState(false);
   const [enChat, setEnChat] = useState(false);
   const [asignacionOculta, setAsignacionOculta] = useState<number | null>(null);
   const [noLeidos, setNoLeidos] = useState(0);
@@ -160,6 +162,7 @@ export default function App() {
     if (asignacionId === null) return;
     setEnMiTurno(false);
     setEnChat(false);
+    setEnPassword(false);
   }, [asignacionId]);
 
   // Si llega un aviso por WebSocket, recarga el perfil para mantener estado/fila al día.
@@ -265,6 +268,7 @@ export default function App() {
     setPerfil(null);
     setViaje(null);
     setEnMiTurno(false);
+    setEnPassword(false);
     await sesion.logout();
   }
 
@@ -308,6 +312,7 @@ export default function App() {
     return <Consentimiento alAceptar={async () => setPerfil(await api.pedir<Perfil>('POST', '/api/app/consentimiento/'))} />;
   }
   if (enMiTurno) return <MiTurno cargar={cargarMiTurno} volver={() => setEnMiTurno(false)} />;
+  if (enPassword) return <CambiarMiPassword sesion={sesion} volver={() => setEnPassword(false)} />;
   if (enChat) {
     return (
       <Chat
@@ -333,6 +338,7 @@ export default function App() {
       cambiarTurno={cambiarTurno}
       actualizar={actualizarTodo}
       verMiTurno={() => setEnMiTurno(true)}
+      verPassword={() => setEnPassword(true)}
       verChat={() => (setEnChat(true), setAvisoChat(null))}
       noLeidos={noLeidos}
       avisoChat={avisoChat}

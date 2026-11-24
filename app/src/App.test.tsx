@@ -105,6 +105,14 @@ async function httpFalso(url: string, init: RequestInit): Promise<Response> {
       return json({ results: [], hay_mas: false, leido_por_otros_hasta: 0 });
     case 'GET /api/chat/personal/':
       return json([{ id: 2, nombre: 'Ana Rojas' }]);
+    case 'POST /api/auth/password/': {
+      // HU-74: 400 si la actual no calza; si calza, tokens nuevos.
+      const cuerpo = JSON.parse(String(init.body)) as { password_actual: string };
+      if (cuerpo.password_actual !== 'actual-correcta') {
+        return new Response(JSON.stringify({ password_actual: ['La contraseña actual no es correcta.'] }), { status: 400 });
+      }
+      return json({ access: 'A2', refresh: 'R2' });
+    }
     case 'GET /api/app/mi-turno/':
       return json({ en_turno: true, inicio: '2026-11-04T12:00:00Z', fin: null, viajes: [], totales: [], total: 0 });
     default:
@@ -399,6 +407,40 @@ describe('la pantalla se corrige sola cuando una respuesta no llega (HU-16)', ()
     expect(red.llamadas).toContain('GET /api/app/perfil/');
     expect(red.llamadas).toContain('GET /api/app/viaje-activo/');
     expect(red.llamadas).toContain('GET /api/chat/conversaciones/');
+  });
+
+  it('cambia la contraseña desde el menú pidiendo la actual (HU-74)', async () => {
+    await abrirApp();
+    await pulsar('Contraseña');
+    expect(screen.getByRole('heading', { name: 'Cambiar contraseña' })).toBeTruthy();
+    const escribir = (etiqueta: string, valor: string) =>
+      fireEvent.change(screen.getByLabelText(etiqueta), { target: { value: valor } });
+    escribir('Contraseña actual', 'mala-clave-123');
+    escribir('Nueva contraseña', 'Nueva-Clave-2026');
+    escribir('Repite la nueva contraseña', 'Otra-Clave-2026');
+    await pulsar('Cambiar contraseña');
+    expect(screen.getByText('No coincide con la nueva contraseña.')).toBeTruthy();
+    expect(red.llamadas).not.toContain('POST /api/auth/password/');
+
+    escribir('Repite la nueva contraseña', 'Nueva-Clave-2026');
+    await pulsar('Cambiar contraseña');
+    await avanzar(50);
+    expect(screen.getByText('La contraseña actual no es correcta.')).toBeTruthy();
+
+    escribir('Contraseña actual', 'actual-correcta');
+    await pulsar('Cambiar contraseña');
+    await avanzar(50);
+    expect(screen.getByRole('status').textContent).toContain('tu contraseña cambió');
+    await pulsar('Volver al inicio');
+    expect(screen.getByRole('heading', { name: 'Hola, Carla Conductora' })).toBeTruthy();
+  });
+
+  it('Atrás de Android vuelve desde Cambiar contraseña', async () => {
+    await abrirApp();
+    await pulsar('Contraseña');
+    act(() => red.atras?.());
+    await avanzar(50);
+    expect(screen.getByRole('heading', { name: 'Hola, Carla Conductora' })).toBeTruthy();
   });
 
   it('el botón Atrás de Android navega hacia atrás en subpantallas y minimiza solo desde Inicio', async () => {

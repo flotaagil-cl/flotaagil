@@ -24,3 +24,12 @@ export function avisoLicencia(vence: string, hoy: string): string | null {
   if (dias <= 30) return dias === 1 ? 'Vence mañana' : `Vence en ${dias} días`;
   return null;
 }
+
+/** HU-74 (DC-78): acceso a la app del conductor, en el listado y en la ficha. */
+export const ACCESOS_APP: Record<'SIN_PASSWORD' | 'TEMPORAL' | 'TEMPORAL_VENCIDA' | 'ACTIVA' | 'DESHABILITADA', string> = {
+  SIN_PASSWORD: 'Sin contraseña',
+  TEMPORAL: 'Temporal',
+  TEMPORAL_VENCIDA: 'Temporal vencida',
+  ACTIVA: 'Contraseña propia',
+  DESHABILITADA: 'Deshabilitado',
+};

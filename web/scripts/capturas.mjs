@@ -110,6 +110,47 @@ const PANTALLAS = {
       destino: /^\/reservas\/\d+$/,
     },
   ],
+  // HU-74 (CC-24): acceso del conductor a la app. CAPTURAS_CONDUCTOR: un conductor de transportes-andes. La temporal
+  // del alta no se captura (se mostraría una contraseña). Las de la app (app-*) se corren con CAPTURAS_URL en la app
+  // y CAPTURAS_SOLO=app-cambiar-contrasena.
+  'HU-74': [
+    { nombre: 'panel-conductores-acceso', ruta: '/conductores', sesion: 'admin' },
+    {
+      nombre: 'panel-conductor-acceso-app',
+      ruta: () => `/conductores/${process.env.CAPTURAS_CONDUCTOR ?? '0'}`,
+      sesion: 'admin',
+      destino: /^\/conductores\/\d+$/,
+    },
+    {
+      nombre: 'panel-cambiar-correo',
+      ruta: () => `/conductores/${process.env.CAPTURAS_CONDUCTOR ?? '0'}`,
+      sesion: 'admin',
+      destino: /^\/conductores\/\d+$/,
+      accion: async (pagina) => {
+        await pagina.getByRole('button', { name: 'Cambiar correo' }).click();
+        await pagina.getByRole('form', { name: 'Cambiar correo de acceso' }).waitFor();
+      },
+    },
+    {
+      nombre: 'app-menu-contrasena',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('button', { name: 'Contraseña', exact: true }).waitFor();
+      },
+    },
+    {
+      nombre: 'app-cambiar-contrasena',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarApp(pagina);
+        await pagina.getByRole('button', { name: 'Contraseña', exact: true }).click();
+        await pagina.getByRole('heading', { name: 'Cambiar contraseña' }).waitFor();
+      },
+    },
+  ],
   // HU-72 (CC-23): clave del convenio en la ficha (solo el administrador; la clave nunca se muestra).
   // CAPTURAS_CONVENIO_CLAVE: un convenio aprobado sin cuenta de taxi-pacifico.
   'HU-72': [
@@ -250,7 +291,7 @@ const PANTALLAS = {
       sesion: null,
       accion: async (pagina) => {
         await pagina.getByLabel('Correo').fill('conductor1@transportes-andes.example');
-        await pagina.getByLabel('Contraseña').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+        await pagina.getByLabel('Contraseña', { exact: true }).fill(process.env.DATOS_DEMO_PASSWORD ?? '');
         await pagina.getByRole('button', { name: 'Ingresar' }).click();
         await pagina.getByRole('heading', { name: /Hola|ubicación|Consentimiento|contraseña/i }).first().waitFor();
       },
@@ -381,7 +422,7 @@ const PANTALLAS = {
       accion: async (pagina) => {
         tokenHU64();
         await pagina.getByLabel('Correo').fill('pendiente-hu64@correo.example');
-        await pagina.getByLabel('Contraseña').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+        await pagina.getByLabel('Contraseña', { exact: true }).fill(process.env.DATOS_DEMO_PASSWORD ?? '');
         await pagina.getByRole('button', { name: 'Continuar' }).click();
         await pagina.getByRole('list', { name: 'Activación de tu cuenta' }).waitFor();
       },
@@ -685,7 +726,7 @@ async function ingresarApp(pagina) {
   // Las pantallas sin sesión comparten el contexto del ancho: si la app ya quedó con la sesión, no hay login.
   if (!(await pagina.getByLabel('Correo').isVisible({ timeout: 3000 }).catch(() => false))) return;
   await pagina.getByLabel('Correo').fill('conductor1@transportes-andes.example');
-  await pagina.getByLabel('Contraseña').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+  await pagina.getByLabel('Contraseña', { exact: true }).fill(process.env.DATOS_DEMO_PASSWORD ?? '');
   await pagina.getByRole('button', { name: 'Ingresar' }).click();
 }
 

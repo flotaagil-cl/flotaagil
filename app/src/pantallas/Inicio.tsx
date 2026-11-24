@@ -31,6 +31,8 @@ interface Props {
   cambiarTurno: (estado: 'DISPONIBLE' | 'NO_DISPONIBLE', vehiculo?: number) => Promise<string | null>;
   actualizar: () => Promise<unknown>;
   verMiTurno: () => void;
+  /** HU-74: cambiar la contraseña. */
+  verPassword: () => void;
   /** CC-19: abre el chat; `noLeidos` se muestra en el botón. */
   verChat: () => void;
   noLeidos: number;
@@ -54,6 +56,7 @@ export function Inicio({
   cambiarTurno,
   actualizar,
   verMiTurno,
+  verPassword,
   verChat,
   noLeidos,
   avisoChat,
@@ -347,6 +350,12 @@ export function Inicio({
                 <Icono nombre="caja" tamano={22} />
               </span>
               <span className="nav-texto">Mi turno</span>
+            </button>
+            <button type="button" className="nav-item" onClick={verPassword}>
+              <span className="nav-icono">
+                <Icono nombre="llave" tamano={22} />
+              </span>
+              <span className="nav-texto">Contraseña</span>
             </button>
             <button
               type="button"

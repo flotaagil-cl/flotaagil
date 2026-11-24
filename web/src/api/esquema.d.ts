@@ -738,7 +738,7 @@ export interface paths {
         put?: never;
         /**
          * Registrar un conductor con su cuenta
-         * @description La cuenta (rol CONDUCTOR) queda sin contraseña utilizable: el administrador genera una temporal con `password/`.
+         * @description HU-74 (DC-78): crea la cuenta (rol CONDUCTOR) con su contraseña temporal (DC-14), que se muestra una sola vez en esta respuesta y vence a las PASSWORD_TEMPORAL_HORAS. Al ingresar a la app debe cambiarla. Queda en auditoría.
          */
         post: operations["conductores_create"];
         delete?: never;
@@ -773,6 +773,26 @@ export interface paths {
          * @description Nombre, RUT, teléfono y licencia. El email y la contraseña no se editan aquí.
          */
         patch: operations["conductores_partial_update"];
+        trace?: never;
+    };
+    "/api/conductores/{id}/correo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cambiar el correo de acceso del conductor
+         * @description HU-74 (DC-78): solo el administrador. Cierra todas las sesiones del conductor, que debe volver a entrar con el correo nuevo. Queda en auditoría (CAMBIAR_CORREO).
+         */
+        post: operations["conductores_correo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/conductores/{id}/deshabilitar/": {
@@ -2335,6 +2355,11 @@ export interface components {
         CalificacionRegistrada: {
             puntaje: number;
         };
+        /** @description HU-74 (DC-78): correo de acceso nuevo. La unicidad final la revisa el servicio. */
+        CambiarCorreoRequest: {
+            /** Format: email */
+            email: string;
+        };
         CambiarPasswordRequest: {
             password_actual: string;
             password_nueva: string;
@@ -2460,11 +2485,43 @@ export interface components {
             readonly acceso: components["schemas"]["AccesoEnum"];
             /** Format: date-time */
             readonly password_temporal_vence: string | null;
+            /** Format: date-time */
+            readonly ultimo_ingreso: string | null;
             readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
         };
         ConductorContingencia: {
             id: number;
             nombre: string;
+        };
+        /** @description HU-74 (DC-78): el alta devuelve la ficha con la temporal, que se muestra una sola vez. */
+        ConductorCreado: {
+            readonly id: number;
+            readonly nombre: string;
+            /** Format: email */
+            readonly email: string;
+            /** @description Cuenta habilitada */
+            readonly activo: boolean;
+            readonly rut: string;
+            readonly telefono: string;
+            readonly licencia_clase: components["schemas"]["LicenciaClaseEnum"];
+            /** Format: date */
+            readonly licencia_vence: string;
+            readonly licencia_vigente: boolean;
+            readonly estado: components["schemas"]["EstadoConductorEnum"];
+            readonly vehiculo_activo: components["schemas"]["VehiculoDeclarado"] | null;
+            /** Format: date-time */
+            readonly consentimiento_gps_en: string | null;
+            /** @description SIN_PASSWORD (recién creada), TEMPORAL (debe cambiarla), TEMPORAL_VENCIDA o ACTIVA. */
+            readonly acceso: components["schemas"]["AccesoEnum"];
+            /** Format: date-time */
+            readonly password_temporal_vence: string | null;
+            /** Format: date-time */
+            readonly ultimo_ingreso: string | null;
+            readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
+            /** @description Se muestra una sola vez */
+            readonly password_temporal: string;
+            /** Format: date-time */
+            readonly vence_en: string;
         };
         /** @description Alta: los datos del conductor más el correo de acceso. La cuenta queda sin contraseña utilizable. */
         ConductorCrearRequest: {
@@ -5427,7 +5484,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Conductor"];
+                    "application/json": components["schemas"]["ConductorCreado"];
                 };
             };
         };
@@ -5479,6 +5536,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Conductor"];
                 };
+            };
+        };
+    };
+    conductores_correo_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este conductor. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CambiarCorreoRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CambiarCorreoRequest"];
+                "multipart/form-data": components["schemas"]["CambiarCorreoRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Conductor"];
+                };
+            };
+            /** @description Correo inválido o ya usado */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `conductor_en_viaje`: el conductor está en viaje. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

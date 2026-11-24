@@ -8,18 +8,23 @@ import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 import { hoy } from '../../hora/hora';
 import { useCrearConductor } from '../api';
+import { DialogoPassword } from '../componentes/CuentaConductor';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 import { LICENCIAS } from '../etiquetas';
 import { CONDUCTOR_VACIO, esquemaConductorNuevo, type DatosConductorNuevo, type ValoresConductorNuevo } from '../formularios';
 
 const CAMPOS = ['nombre', 'email', 'rut', 'telefono', 'licencia_clase', 'licencia_vence'] as const;
 
-/** Alta del conductor con su cuenta. La contraseña se genera después, desde la ficha. */
+/**
+ * Alta del conductor con su acceso a la app (HU-74, DC-78): la contraseña temporal llega en la misma respuesta, se
+ * muestra una sola vez y solo vive en el estado de esta pantalla hasta cerrar el diálogo.
+ */
 export function ConductorNuevo() {
   const crear = useCrearConductor();
   const navegar = useNavigate();
   const esquema = useMemo(() => esquemaConductorNuevo(hoy()), []);
   const [falla, setFalla] = useState<string[]>([]);
+  const [creado, setCreado] = useState<{ id: number; password: string; vence: string; correo: string } | null>(null);
   const {
     register,
     handleSubmit,
@@ -31,10 +36,7 @@ export function ConductorNuevo() {
     setFalla([]);
     try {
       const conductor = await crear.mutateAsync(datos);
-      navegar(`/conductores/${conductor.id}`, {
-        replace: true,
-        state: { aviso: 'Conductor registrado. Genera su contraseña temporal para que pueda ingresar a la app.' },
-      });
+      setCreado({ id: conductor.id, password: conductor.password_temporal, vence: conductor.vence_en, correo: conductor.email });
     } catch (error) {
       if (error instanceof ErrorApi && error.estado === 400) {
         const { campos, generales } = erroresDelBackend(error.cuerpo, CAMPOS);
@@ -96,6 +98,19 @@ export function ConductorNuevo() {
           </Link>
         </div>
       </form>
+      {creado && (
+        <DialogoPassword
+          password={creado.password}
+          vence={creado.vence}
+          correo={creado.correo}
+          alCerrar={() =>
+            navegar(`/conductores/${creado.id}`, {
+              replace: true,
+              state: { aviso: 'Conductor registrado. Ya puede ingresar a la app con su correo y la contraseña temporal.' },
+            })
+          }
+        />
+      )}
     </section>
   );
 }
