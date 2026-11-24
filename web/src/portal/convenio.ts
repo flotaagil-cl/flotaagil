@@ -122,12 +122,11 @@ const limpia = (p: Persona) => ({
   correo: p.correo.trim(),
 });
 
-/** Campos que se suman al cuerpo de la reserva pública cuando se pide con el pase. */
-export function cuerpoConvenio(d: DatosConvenio, pase: string) {
+/** Quién viaja: los mismos campos con el pase (CC-23) y con la cuenta del convenio (CC-25). */
+export function cuerpoPersonas(d: DatosConvenio) {
   const acompanantes = d.acompanado ? d.acompanantes.map(limpia) : [];
   const otro = d.para === 'OTRO' ? limpia(d.pasajero) : null;
   return {
-    pase,
     para: d.para,
     pasajero_nombre: otro?.nombre ?? '',
     pasajero_cargo: otro?.cargo ?? '',
@@ -136,8 +135,12 @@ export function cuerpoConvenio(d: DatosConvenio, pase: string) {
     acompanantes,
     vehiculos: acompanantes.length ? d.vehiculos : ('MISMO' as Vehiculos),
     declara_informados: d.declara_informados,
-    es_empresa: false,
   };
+}
+
+/** Campos que se suman al cuerpo de la reserva pública cuando se pide con el pase. */
+export function cuerpoConvenio(d: DatosConvenio, pase: string) {
+  return { pase, ...cuerpoPersonas(d), es_empresa: false };
 }
 
 /** Errores del servidor (400) a la forma de `validarConvenio`. */

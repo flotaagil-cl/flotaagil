@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from apps.comun.permisos import ConModuloCuentas, con_roles
 from apps.cuentas.models import Rol
-from apps.portal.serializers import SolicitudConvenioSerializer, SolicitudRespuestaSerializer
+from apps.portal.serializers import SolicitudConvenioRespuestaSerializer, SolicitudConvenioSerializer
 from apps.reservas.models import Viaje
 
 from . import cuenta
@@ -72,18 +72,19 @@ class SolicitudMiConvenioView(APIView):
         summary="Pedir un viaje a nombre del convenio",
         request=SolicitudConvenioSerializer,
         responses={
-            201: SolicitudRespuestaSerializer,
+            201: SolicitudConvenioRespuestaSerializer,
             409: OpenApiResponse(description="`convenio_no_aprobado`: en revisión o rechazado"),
         },
-        description="RN-07: queda SOLICITADO sin verificación por WhatsApp. La declaración de avisos queda "
-        "ligada al usuario que reserva (DC-35).",
+        description="RN-07: los viajes quedan SOLICITADO sin enlace de confirmación. CC-25: para sí o para "
+        "otra persona, con acompañantes, en el mismo vehículo o un viaje por persona (mismo `grupo`). La "
+        "declaración de avisos queda ligada al usuario que reserva (DC-35).",
     )
     def post(self, request):
         convenio = cuenta.del_usuario(request.user)
         entrada = SolicitudConvenioSerializer(data=request.data, context={"empresa": convenio.empresa})
         entrada.is_valid(raise_exception=True)
         _, respuesta = cuenta.crear_solicitud(convenio, entrada.validated_data, usuario=request.user)
-        return Response(SolicitudRespuestaSerializer(respuesta).data, status=status.HTTP_201_CREATED)
+        return Response(SolicitudConvenioRespuestaSerializer(respuesta).data, status=status.HTTP_201_CREATED)
 
 
 class ReservasMiConvenioView(ListAPIView):

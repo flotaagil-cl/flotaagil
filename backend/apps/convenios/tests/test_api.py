@@ -14,7 +14,7 @@ from apps.convenios.models import Convenio, EstadoConvenio
 from apps.cuentas.models import Rol, Usuario
 from apps.cuentas.tests.fabricas import CLAVE_PRUEBA, UsuarioFactory
 from apps.reservas.models import Actor, Canal, HistorialEstado, Viaje
-from apps.reservas.tests.fabricas import ConvenioFactory, ViajeFactory
+from apps.reservas.tests.fabricas import ConvenioFactory, VehiculoFactory, ViajeFactory
 
 LISTA = reverse("convenio-list")
 RUT = "76543210-3"
@@ -319,13 +319,132 @@ class TestCuentaDelConvenio:
         historial = HistorialEstado.objects.get(viaje=viaje)
         assert (historial.actor, historial.usuario) == (Actor.PASAJERO, convenio.usuario)
 
-    def test_exige_la_declaracion(self, empresa):
+    def test_exige_la_declaracion_por_los_terceros(self, empresa):
+        convenio = con_cuenta(empresa)
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(declara_informados=False, **self.otra_persona()),
+            format="json",
+        )
+        assert respuesta.status_code == 400
+        assert "declara_informados" in respuesta.data
+        assert not Viaje.objects.exists()
+
+    def test_para_mi_sin_acompanantes_no_pide_la_declaracion(self, empresa):
         convenio = con_cuenta(empresa)
         respuesta = como(convenio.usuario).post(
             reverse("mi-convenio-solicitudes"), self.solicitud(declara_informados=False), format="json"
         )
+        assert respuesta.status_code == 201, respuesta.data
+        viaje = Viaje.objects.get()
+        assert (viaje.pasajero.nombre, viaje.solicitante_nombre) == (
+            "Pasajero Sintético",
+            "Pasajero Sintético",
+        )
+        assert viaje.terceros_informados_en is None and viaje.pasajero.privacidad_aceptada_en is not None
+
+    @staticmethod
+    def otra_persona():
+        return {
+            "para": "OTRO",
+            "pasajero_nombre": "Invitada Sintética",
+            "pasajero_cargo": "Gerente",
+            "pasajero_telefono": "+56900008010",
+        }
+
+    @staticmethod
+    def acompanantes(cantidad, telefono=True):
+        return [
+            {
+                "nombre": f"Acompañante {i}",
+                "cargo": "Analista",
+                "telefono": f"+5690000802{i}" if telefono else "",
+            }
+            for i in range(1, cantidad + 1)
+        ]
+
+    def test_cp67_otra_persona_con_acompanantes_en_el_mismo_vehiculo(self, empresa):
+        """CP-67 (CC-25): quien pide queda como solicitante; viaja la otra persona con sus acompañantes."""
+        VehiculoFactory(empresa=empresa, capacidad=4)
+        convenio = con_cuenta(empresa)
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(**self.otra_persona(), acompanantes=self.acompanantes(2, telefono=False)),
+            format="json",
+        )
+        assert respuesta.status_code == 201, respuesta.data
+        assert (respuesta.data["estado"], respuesta.data["viajes"]) == ("SOLICITADO", 1)
+        viaje = Viaje.objects.get()
+        assert (viaje.pasajero.nombre, viaje.pasajero_cargo, viaje.pasajeros) == (
+            "Invitada Sintética",
+            "Gerente",
+            3,
+        )
+        assert (viaje.solicitante_nombre, viaje.solicitante_telefono) == (
+            "Pasajero Sintético",
+            "+56900008003",
+        )
+        assert [a["nombre"] for a in viaje.acompanantes] == ["Acompañante 1", "Acompañante 2"]
+        assert viaje.grupo is None and viaje.terceros_informados_en is not None
+        assert viaje.autorizacion_avisos_por == convenio.usuario
+        # Por los terceros solo declara: la otra persona no queda con el aviso aceptado.
+        assert viaje.pasajero.privacidad_aceptada_en is None
+
+    def test_cp67_respeta_la_capacidad_de_la_flota(self, empresa):
+        VehiculoFactory(empresa=empresa, capacidad=4)
+        convenio = con_cuenta(empresa)
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(acompanantes=self.acompanantes(4, telefono=False)),
+            format="json",
+        )
         assert respuesta.status_code == 400
-        assert "aviso de privacidad" in str(respuesta.data["declara_informados"][0])
+        assert "Vehículos separados" in str(respuesta.data["acompanantes"])
+        assert not Viaje.objects.exists()
+
+    def test_cp68_vehiculos_separados_un_viaje_por_persona_con_el_mismo_grupo(self, empresa):
+        """CP-68 (CC-25): un viaje por persona, todos SOLICITADO y con el mismo grupo."""
+        VehiculoFactory(empresa=empresa, capacidad=4)
+        convenio = con_cuenta(empresa)
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(acompanantes=self.acompanantes(5), vehiculos="SEPARADOS", maletas=2),
+            format="json",
+        )
+        assert respuesta.status_code == 201, respuesta.data
+        assert respuesta.data["viajes"] == 6
+        viajes = list(Viaje.objects.order_by("pk"))
+        assert {v.estado for v in viajes} == {"SOLICITADO"}
+        assert len({v.grupo for v in viajes}) == 1 and viajes[0].grupo is not None
+        assert [v.pasajeros for v in viajes] == [1] * 6
+        assert [v.maletas for v in viajes] == [2, 0, 0, 0, 0, 0]
+        assert all(v.acompanantes == [] and v.solicitante_nombre == "Pasajero Sintético" for v in viajes)
+
+    def test_cp68_separados_exige_el_telefono_de_cada_persona_y_es_todo_o_nada(self, empresa):
+        convenio = con_cuenta(empresa)
+        acompanantes = self.acompanantes(2)
+        acompanantes[1]["telefono"] = ""
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(acompanantes=acompanantes, vehiculos="SEPARADOS"),
+            format="json",
+        )
+        assert respuesta.status_code == 400
+        assert respuesta.data["acompanantes"][1]["telefono"]
+        assert not Viaje.objects.exists()
+
+    def test_cp68_tope_de_personas_por_solicitud(self, empresa):
+        empresa.configuracion.convenio_max_personas = 3
+        empresa.configuracion.save()
+        convenio = con_cuenta(empresa)
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(acompanantes=self.acompanantes(3), vehiculos="SEPARADOS"),
+            format="json",
+        )
+        assert respuesta.status_code == 400
+        assert "hasta 3 personas" in str(respuesta.data["acompanantes"])
+        assert not Viaje.objects.exists()
 
     def test_sin_whatsapp_ni_aceptacion_repetida(self, empresa):
         """HU-46 (CC-19, DC-80): la cuenta no acepta avisos por WhatsApp ni vuelve a aceptar el aviso de
