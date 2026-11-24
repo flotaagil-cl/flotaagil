@@ -31,10 +31,14 @@ interface Props {
   erroresIniciales?: Errores;
   /** HU-42: con los datos válidos se pasa a revisar; el envío ocurre al confirmar. */
   alRevisar: (valores: ValoresPedido, cuerpo: CuerpoPedido) => void;
+  /** CC-23: con pase de convenio, los pasajeros salen de los acompañantes del paso siguiente. */
+  sinPasajeros?: boolean;
+  /** Texto del botón (por defecto, «Pedir mi traslado»). */
+  textoBoton?: string;
 }
 
 /** HU-39: datos de cada tipo de viaje, con pasajeros y maletas. */
-export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar }: Props) {
+export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar, sinPasajeros = false, textoBoton }: Props) {
   const [v, setV] = useState<ValoresPedido>(iniciales ?? VALORES_INICIALES);
   const [errores, setErrores] = useState<Errores>(erroresIniciales ?? {});
   // La API de vuelos no respondió: el servidor pidió la hora de llegada para no inventarla.
@@ -67,7 +71,9 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
 
   const contadores = (
     <div className={e.filaContadores}>
-      <Contador etiqueta="Pasajeros" unidad="un pasajero" valor={v.pasajeros} min={1} max={maximo} onCambiar={(n) => cambiar('pasajeros', n)} error={errores.pasajeros} />
+      {!sinPasajeros && (
+        <Contador etiqueta="Pasajeros" unidad="un pasajero" valor={v.pasajeros} min={1} max={maximo} onCambiar={(n) => cambiar('pasajeros', n)} error={errores.pasajeros} />
+      )}
       <Contador etiqueta="Maletas" unidad="una maleta" valor={v.maletas} min={0} max={20} onCambiar={(n) => cambiar('maletas', n)} error={errores.maletas} />
     </div>
   );
@@ -181,7 +187,7 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
       )}
 
       <Boton type="submit" ancho>
-        Pedir mi traslado
+        {textoBoton ?? 'Pedir mi traslado'}
       </Boton>
       <p className={e.nota}>
         Sigue tu viaje en «Mis viajes»; también te avisamos por notificación o correo si lo activas. Tus datos se tratan según el{' '}

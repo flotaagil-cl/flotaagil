@@ -165,6 +165,18 @@ class Viaje(models.Model):
     # DC-59 (HU-60): quién autorizó por el convenio y cuándo (no es un PASAJERO).
     autorizado_por_correo = models.EmailField(max_length=254, null=True, blank=True)
     autorizado_en = models.DateTimeField(null=True, blank=True)
+    # CC-23 (DC-76): reserva con pase de convenio. El viaje queda a nombre de quien lo pide (solicitante, D7);
+    # `pasajero` es quien viaja. Acompañantes del mismo vehículo: [{nombre, cargo, telefono, correo}] sin
+    # padrón.
+    # Vehículos separados: un viaje por persona con el mismo `grupo`, que se confirma con un solo enlace.
+    solicitante_nombre = models.CharField(max_length=80, null=True, blank=True)
+    solicitante_telefono = models.CharField(max_length=16, null=True, blank=True)
+    pasajero_cargo = models.CharField(max_length=80, null=True, blank=True)
+    pasajero_correo = models.EmailField(max_length=254, null=True, blank=True)
+    acompanantes = models.JSONField(default=list, blank=True)
+    grupo = models.UUIDField(null=True, blank=True, db_index=True)
+    # El solicitante declaró que informó del aviso de privacidad a las personas que viajan (Ley 21.719).
+    terceros_informados_en = models.DateTimeField(null=True, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

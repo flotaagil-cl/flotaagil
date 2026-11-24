@@ -4,7 +4,7 @@ import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import { esDiaFuturo, formatearFechaHora } from '../../hora/hora';
 import { ErrorApi } from '../../api/resultado';
-import { useConfirmarPorTelefono, useViaje, type ViajeDetalle } from '../api';
+import { useConfirmarPorTelefono, useViaje, useViajes, type ViajeDetalle } from '../api';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { DialogoCancelar } from '../componentes/DialogoCancelar';
 import { DialogoForzar } from '../componentes/DialogoForzar';
@@ -139,9 +139,35 @@ function DetalleDe({ id }: { id: number }) {
           <div>
             <dt>Pasajero</dt>
             <dd>
-              {viaje.pasajero.nombre} · <ContactoPasajero telefono={viaje.pasajero.telefono} />
+              {viaje.pasajero.nombre}
+              {viaje.pasajero_cargo ? ` (${viaje.pasajero_cargo})` : ''} · <ContactoPasajero telefono={viaje.pasajero.telefono} />
+              {viaje.pasajero_correo ? ` · ${viaje.pasajero_correo}` : ''}
             </dd>
           </div>
+          {viaje.solicitante_nombre && (
+            <div>
+              <dt>Solicitado por</dt>
+              <dd>
+                {viaje.solicitante_nombre} · <ContactoPasajero telefono={viaje.solicitante_telefono} />
+                {viaje.contacto_correo ? ` · ${viaje.contacto_correo}` : ''}
+              </dd>
+            </div>
+          )}
+          {viaje.acompanantes.length > 0 && (
+            <div>
+              <dt>Acompañantes</dt>
+              <dd>
+                <ul className={estilos.listaSimple}>
+                  {viaje.acompanantes.map((a, i) => (
+                    <li key={i}>
+                      {[a.nombre, a.cargo, a.telefono, a.correo].filter(Boolean).join(' · ')}
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )}
+          {viaje.grupo && <ViajesDelGrupo grupo={viaje.grupo} actual={viaje.id} />}
           <div>
             <dt>Origen</dt>
             <dd>{viaje.origen.direccion}</dd>
@@ -260,5 +286,39 @@ function ConfirmarPorTelefono({ id }: { id: number }) {
     <button type="button" className={estilos.boton} disabled={confirmar.isPending} onClick={() => confirmar.mutate()}>
       {confirmar.isPending ? 'Confirmando…' : 'Confirmar por teléfono'}
     </button>
+  );
+}
+
+/** CC-23 (DC-76): los viajes de una misma solicitud en vehículos separados, juntos. Cada uno se despacha aparte. */
+function ViajesDelGrupo({ grupo, actual }: { grupo: string; actual: number }) {
+  const consulta = useViajes({ grupo, ordenar: ['recogida_en'] });
+  return (
+    <div id="grupo">
+      <dt>Misma solicitud</dt>
+      <dd>
+        {consulta.isPending ? (
+          'Cargando…'
+        ) : consulta.isError ? (
+          'No se pudo cargar.'
+        ) : (
+          <ul className={estilos.listaSimple}>
+            {consulta.data.results.map((otro) => (
+              <li key={otro.id}>
+                {otro.id === actual ? (
+                  <strong>
+                    N.º {otro.id} · {otro.pasajero.nombre} (esta)
+                  </strong>
+                ) : (
+                  <Link to={`/reservas/${otro.id}`}>
+                    N.º {otro.id} · {otro.pasajero.nombre}
+                  </Link>
+                )}{' '}
+                · {ESTADOS[otro.estado ?? 'SOLICITADO']}
+              </li>
+            ))}
+          </ul>
+        )}
+      </dd>
+    </div>
   );
 }

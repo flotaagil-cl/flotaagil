@@ -1,18 +1,25 @@
 """HU-51 (CC-22): reserva pública sin cuenta, para las empresas sin el módulo de cuentas (DC-51).
 
+CC-23 (HU-72): con un pase de convenio (`pase.py`) la reserva es del convenio y queda a nombre del solicitante
+(`crear_con_pase`). Sigue la misma confirmación por correo (D3); en vehículos separados, un solo enlace
+confirma todos los viajes del `grupo`.
+
 El viaje nace en PENDIENTE_CONFIRMACION y se envía por correo un enlace firmado (`TimestampSigner`).
 Vale hasta `confirmar_hasta` (DC-53) y una sola vez: solo confirma mientras el viaje sigue pendiente (DC-56).
 """
 
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
 from django.core import signing
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models import CharField
+from django.db.models.functions import Cast, Coalesce
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import APIException, Throttled
+from rest_framework.exceptions import APIException, Throttled, ValidationError
 
 from apps.convenios.models import Convenio, EstadoConvenio
 from apps.cuentas.tareas import al_confirmar_correo
@@ -21,7 +28,8 @@ from apps.reservas import servicios as reservas
 from apps.reservas.models import Actor, Canal, EstadoViaje, OrigenCancelacion, Pasajero, Viaje
 from apps.reservas.tipos_aviso import AVISO_CONFIRMACION
 
-from .servicios import validar_capacidad, vuelo_y_recogida
+from . import pase as pases
+from .servicios import capacidad_maxima, validar_capacidad, vuelo_y_recogida
 
 SAL_CONFIRMAR = "reserva-publica-confirmar"
 SAL_AUTORIZAR = "reserva-publica-autorizar"  # HU-54: el contacto del convenio autoriza o rechaza
@@ -101,12 +109,21 @@ def _verificar_limite_correo(empresa, correo: str, datos: dict) -> None:
         convenio = _convenio_aprobado(empresa, datos.get("empresa_rut") or "")
         if convenio is not None and convenio.autoriza(correo):
             maximo = config.reserva_publica_max_convenio_hora
-    desde = timezone.now() - timedelta(hours=1)
-    recientes = Viaje.objects.filter(
-        empresa=empresa, contacto_correo__iexact=correo, creado_en__gte=desde
-    ).count()
-    if recientes >= maximo:
+    if solicitudes_recientes(empresa, correo) >= maximo:
         raise LimiteCorreo(wait=3600)
+
+
+def solicitudes_recientes(empresa, correo: str) -> int:
+    """Solicitudes de la última hora con este correo. CC-23: los viajes de un mismo `grupo` cuentan una
+    vez."""
+    desde = timezone.now() - timedelta(hours=1)
+    return (
+        Viaje.objects.filter(empresa=empresa, contacto_correo__iexact=correo, creado_en__gte=desde)
+        .annotate(solicitud=Coalesce(Cast("grupo", CharField()), Cast("pk", CharField())))
+        .values("solicitud")
+        .distinct()
+        .count()
+    )
 
 
 def texto_solicitud(viaje: Viaje, url: str) -> str:
@@ -180,6 +197,174 @@ def crear(empresa, datos: dict, ip: str | None = None) -> Viaje:
     return viaje
 
 
+def _personas(datos: dict) -> list[dict]:
+    """El pasajero principal (quien pide, o la otra persona) y luego los acompañantes."""
+    if datos["para"] == "OTRO":
+        principal = {
+            "nombre": datos["pasajero_nombre"],
+            "cargo": datos["pasajero_cargo"],
+            "telefono": datos["pasajero_telefono"],
+            "correo": datos.get("pasajero_correo") or "",
+        }
+    else:
+        principal = {"nombre": datos["nombre"], "cargo": "", "telefono": datos["telefono"], "correo": ""}
+    return [principal, *datos["acompanantes"]]
+
+
+def _validar_personas(empresa, datos: dict, personas: list[dict]) -> None:
+    config = empresa.configuracion
+    if len(personas) > config.convenio_max_personas:
+        raise ValidationError(
+            {
+                "acompanantes": [
+                    f"Puedes pedir para hasta {config.convenio_max_personas} personas por solicitud."
+                ]
+            }
+        )
+    if datos["vehiculos"] == "MISMO" and len(personas) > capacidad_maxima(empresa):
+        raise ValidationError(
+            {
+                "acompanantes": [
+                    f"Podemos llevar hasta {capacidad_maxima(empresa)} pasajeros en un vehículo. "
+                    "Elige «Vehículos separados» para el resto."
+                ]
+            }
+        )
+
+
+def crear_con_pase(empresa, datos: dict, ip: str | None = None) -> list[Viaje]:
+    """CC-23 (HU-72): reserva de convenio con pase. Todo o nada: crea uno o varios viajes en una transacción.
+
+    - Quien pide (D7) queda en `solicitante_*` y `contacto_correo` = el correo del pase: confirma y
+      recibe avisos.
+    - `pasajero` es quien viaja: el propio solicitante (MI) o la otra persona (OTRO, teléfono obligatorio,
+      D4).
+    - MISMO: un viaje con `acompanantes` (sin padrón). SEPARADOS: un viaje por persona con el mismo `grupo`.
+    - Nace en PENDIENTE_CONFIRMACION con el plazo de DC-53 y un solo enlace al correo del pase (D3).
+    """
+    convenio, correo = pases.validar(empresa, datos["pase"])
+    personas = _personas(datos)
+    _validar_personas(empresa, datos, personas)
+    _verificar_limite_ip(empresa, ip)
+    if solicitudes_recientes(empresa, correo) >= empresa.configuracion.reserva_publica_max_convenio_hora:
+        raise LimiteCorreo(wait=3600)
+    vuelo, recogida = vuelo_y_recogida(empresa, datos)
+    ahora = timezone.now()
+    separados = datos["vehiculos"] == "SEPARADOS" and len(personas) > 1
+    viajantes = personas if separados else personas[:1]
+    grupo = uuid.uuid4() if separados else None
+    viajes = []
+    with transaction.atomic():
+        for indice, persona in enumerate(viajantes):
+            viaje = reservas.crear_viaje(
+                empresa=empresa,
+                datos={
+                    "pasajero": {"nombre": persona["nombre"], "telefono": persona["telefono"]},
+                    "convenio": convenio,
+                    "sentido": datos["sentido"],
+                    "origen_dir": datos["origen_dir"],
+                    "destino_dir": datos["destino_dir"],
+                    "origen_coordenadas": datos.get("origen_coordenadas"),
+                    "destino_coordenadas": datos.get("destino_coordenadas"),
+                    "recogida_en": recogida,
+                    "vuelo": vuelo,
+                    "pasajeros": 1 if separados else len(personas),
+                    "maletas": datos.get("maletas", 0) if indice == 0 else 0,
+                    "vuelo_salida": datos.get("vuelo_salida"),
+                },
+                canal=Canal.CONVENIO,
+                estado_inicial=EstadoViaje.PENDIENTE_CONFIRMACION,
+                actor=Actor.PASAJERO,
+            )
+            viaje.contacto_correo = correo
+            viaje.privacidad_version = settings.AVISO_PRIVACIDAD_VERSION
+            viaje.confirmar_hasta = plazo_confirmacion(empresa.configuracion, viaje.recogida_en, ahora)
+            viaje.solicitante_nombre = datos["nombre"]
+            viaje.solicitante_telefono = datos["telefono"]
+            viaje.pasajero_cargo = persona["cargo"] or None
+            viaje.pasajero_correo = persona["correo"] or None
+            viaje.acompanantes = [] if separados else [_acompanante(a) for a in personas[1:]]
+            viaje.grupo = grupo
+            if len(personas) > 1 or datos["para"] == "OTRO":
+                viaje.terceros_informados_en = ahora
+            viaje.save()
+            viajes.append(viaje)
+        if datos["para"] == "MI":
+            # Ley 21.719: quien pide para sí acepta el aviso; por los demás solo declara que les informó.
+            Pasajero.objects.filter(pk=viajes[0].pasajero_id).update(privacidad_aceptada_en=ahora)
+        avisar_solicitud_pase(viajes, convenio, personas, separados)
+    return viajes
+
+
+def _acompanante(persona: dict) -> dict:
+    return {campo: persona.get(campo) or "" for campo in ("nombre", "cargo", "telefono", "correo")}
+
+
+def _resumen(viaje: Viaje) -> str:
+    texto = (
+        f"{viaje.origen_dir} → {viaje.destino_dir}, {timezone.localtime(viaje.recogida_en):%d-%m-%Y %H:%M}"
+    )
+    vuelo = getattr(viaje, "vuelo", None)
+    if vuelo is not None:
+        texto += f", vuelo {vuelo.numero}"
+    elif viaje.vuelo_salida_numero:
+        texto += f", vuelo {viaje.vuelo_salida_numero}"
+    return texto
+
+
+def avisar_solicitud_pase(viajes: list[Viaje], convenio: Convenio, personas: list[dict], separados: bool):
+    """D3/D7: un solo enlace al solicitante; aviso informativo (sin enlace) a quienes dejaron correo y, si
+    quien pide no es el contacto del convenio, al contacto."""
+    primero = viajes[0]
+    empresa = primero.empresa
+    url = enlace(empresa, "confirmar", token_de(primero))
+    numeros = ", ".join(f"N.º {v.pk}" for v in viajes)
+    detalle = "\n".join(f"- N.º {v.pk}: {v.pasajero.nombre}" for v in viajes) if separados else ""
+    acompanan = ", ".join(p["nombre"] for p in personas[1:])
+    texto = (
+        f"Hola {primero.solicitante_nombre}:\n\nRecibimos tu solicitud de traslado ({numeros}) con "
+        f"{empresa.razon_social}, a nombre del convenio de {convenio.cliente_nombre}: "
+        f"{_resumen(primero)}.\n\n"
+        + (f"Un vehículo por persona:\n{detalle}\n\n" if separados else "")
+        + (
+            f"Pasajero: {primero.pasajero.nombre}" + (f", con {acompanan}" if acompanan else "") + ".\n\n"
+            if not separados
+            else ""
+        )
+        + f"Para confirmar{' todos los viajes' if separados else ''}, abre este enlace antes del "
+        f"{timezone.localtime(primero.confirmar_hasta):%d-%m-%Y %H:%M}:\n{url}\n\n"
+        "Si no fuiste tú, ignora este correo."
+    )
+    al_confirmar_correo(
+        primero.contacto_correo,
+        f"Confirma tu reserva {numeros} · {empresa.razon_social}",
+        texto,
+    )
+    informados = {primero.contacto_correo}
+    for persona in personas:
+        destino = (persona.get("correo") or "").lower()
+        if destino and destino not in informados:
+            informados.add(destino)
+            al_confirmar_correo(
+                destino,
+                f"Tu traslado con {empresa.razon_social}",
+                f"Hola {persona['nombre']}:\n\n{primero.solicitante_nombre} pidió un traslado para ti con "
+                f"{empresa.razon_social} ({convenio.cliente_nombre}): {_resumen(primero)}.\n\n"
+                "Este correo es solo informativo: la reserva la confirma quien la pidió.",
+            )
+    contacto = (convenio.contacto_correo or "").lower()
+    if contacto and contacto != primero.contacto_correo:
+        al_confirmar_correo(
+            contacto,
+            f"Nueva reserva con el convenio de {convenio.cliente_nombre}",
+            f"Hola {convenio.encargado_nombre or ''}:\n\n{primero.solicitante_nombre} "
+            f"({primero.contacto_correo}) pidió con la clave del convenio {len(viajes)} "
+            f"{'traslados' if len(viajes) > 1 else 'traslado'} ({numeros}): {_resumen(primero)}.\n\n"
+            "Es solo un aviso: no necesitas hacer nada. Si no lo reconoces, pide a "
+            f"{empresa.razon_social} que regenere la clave.",
+        )
+
+
 def _convenio_aprobado(empresa, rut: str) -> Convenio | None:
     return (
         Convenio.objects.select_related("usuario")
@@ -205,8 +390,14 @@ def avisar_solicitud(viaje: Viaje) -> None:
 
 
 def confirmar(empresa, token: str) -> Viaje:
-    """El pasajero abre el enlace: la reserva pasa a SOLICITADO, una sola vez y dentro del plazo."""
+    """El pasajero abre el enlace: la reserva pasa a SOLICITADO, una sola vez y dentro del plazo.
+
+    CC-23 (DC-76): si el viaje es de un `grupo` (vehículos separados), el mismo enlace confirma todos los
+    viajes del grupo que siguen pendientes, en una transacción; los cancelados o ya confirmados no se tocan.
+    """
     viaje = viaje_del_token(empresa, token)
+    if viaje.grupo:
+        return _confirmar_grupo(empresa, viaje)
     if viaje.estado != EstadoViaje.PENDIENTE_CONFIRMACION or viaje.confirma_convenio:
         raise EnlaceUsado()
     if viaje.confirmar_hasta and viaje.confirmar_hasta < timezone.now():
@@ -219,6 +410,35 @@ def confirmar(empresa, token: str) -> Viaje:
         raise EnlaceUsado() from error
     avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-56
     return viaje
+
+
+def _confirmar_grupo(empresa, viaje: Viaje) -> Viaje:
+    with transaction.atomic():
+        pendientes = list(
+            Viaje.objects.select_for_update()
+            .filter(empresa=empresa, grupo=viaje.grupo, estado=EstadoViaje.PENDIENTE_CONFIRMACION)
+            .order_by("pk")
+        )
+        if not pendientes:
+            raise EnlaceUsado()
+        if any(v.confirmar_hasta and v.confirmar_hasta < timezone.now() for v in pendientes):
+            raise EnlaceVencido()
+        confirmados = []
+        for pendiente in pendientes:
+            try:
+                confirmados.append(
+                    estados.transicionar(
+                        pendiente,
+                        EstadoViaje.SOLICITADO,
+                        desde=EstadoViaje.PENDIENTE_CONFIRMACION,
+                        actor=Actor.PASAJERO,
+                    )
+                )
+            except estados.TransicionInvalida as error:
+                raise EnlaceUsado() from error
+    for confirmado in confirmados:
+        avisos.programar(confirmado.pk, AVISO_CONFIRMACION)  # HU-56
+    return next((c for c in confirmados if c.pk == viaje.pk), confirmados[0])
 
 
 def _pedir_autorizacion(viaje: Viaje) -> None:

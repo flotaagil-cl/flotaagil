@@ -1408,6 +1408,35 @@
       "responsable": "Renato",
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)"
+    },
+    {
+      "id": "HU-73",
+      "titulo": "Reserva de convenio con pase en el formulario público",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como persona de una empresa con convenio, quiero pedir en el formulario público con el pase del convenio, para mí o para otras personas, en el mismo vehículo o en vehículos separados.",
+      "criterios": "Sin el módulo, «¿Quién pide?» con el paso de correo y clave y el enlace «Mi empresa no tiene convenio»; la casilla de RUT de HU-54 queda solo con el módulo. Para mí o para otra persona (nombre, cargo y teléfono); acompañantes con teléfono opcional en el mismo vehículo y obligatorio en separados; declaración de privacidad para terceros. Mismo vehículo con la capacidad; separados crea un viaje por persona con un solo enlace de confirmación y tope por solicitud. Panel con solicitante, acompañantes y viajes del grupo; la app solo ve los nombres. Pase vencido vuelve a la clave.",
+      "sp": 8,
+      "reglas": [
+        "RN-06",
+        "RN-07",
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-60",
+        "CP-61",
+        "CP-62",
+        "CP-63"
+      ],
+      "depende_de": [
+        "HU-72",
+        "HU-51"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)"
     }
   ],
   "tareas": [

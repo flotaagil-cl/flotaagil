@@ -27,6 +27,10 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
         source="configuracion.antelacion_vuelo_internacional_min",
         help_text="Al aeropuerto: minutos antes de un vuelo internacional para la recogida sugerida (DC-42).",
     )
+    convenio_max_personas = serializers.IntegerField(
+        source="configuracion.convenio_max_personas",
+        help_text="CC-23: personas por solicitud con pase de convenio (vehículos separados).",
+    )
     capacidad_maxima = serializers.SerializerMethodField(
         help_text="Pasajeros por viaje: el vehículo más grande de la empresa; 4 sin vehículos (DC-43)."
     )
@@ -43,6 +47,7 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
             "antelacion_vuelo_nacional_min",
             "antelacion_vuelo_internacional_min",
             "capacidad_maxima",
+            "convenio_max_personas",
         ]
 
     def get_capacidad_maxima(self, empresa) -> int:
@@ -231,11 +236,111 @@ class CrearCuentaSerializer(serializers.Serializer):
         return telefono
 
 
-class ReservaPublicaSerializer(SolicitudSerializer):
-    """HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55)."""
+def _texto_obligatorio(datos: dict, campo: str, mensaje: str, errores: dict, largo: int = 80) -> None:
+    datos[campo] = (datos.get(campo) or "").strip()[:largo]
+    if not datos[campo]:
+        errores[campo] = mensaje
+
+
+class PersonaConvenioSerializer(serializers.Serializer):
+    """CC-23 (DC-76): acompañante o pasajero de una reserva con pase. Sin padrón de empleados."""
+
+    nombre = serializers.CharField(max_length=80)
+    cargo = serializers.CharField(max_length=80)
+    telefono = serializers.CharField(
+        max_length=24, required=False, allow_blank=True, help_text="Obligatorio en vehículos separados."
+    )
+    correo = serializers.EmailField(max_length=254, required=False, allow_blank=True)
+
+    def validate_nombre(self, valor):
+        valor = valor.strip()
+        if not valor:
+            raise serializers.ValidationError("Ingresa el nombre.")
+        return valor
+
+    def validate_cargo(self, valor):
+        valor = valor.strip()
+        if not valor:
+            raise serializers.ValidationError("Ingresa el cargo.")
+        return valor
+
+    def validate_telefono(self, valor):
+        telefono = normalizar_telefono(valor or "")
+        if telefono:
+            validar_telefono_e164(telefono)
+        return telefono
+
+    def validate_correo(self, valor):
+        return (valor or "").strip().lower()
+
+
+class ReservaConPaseMixin(serializers.Serializer):
+    """CC-23 (HU-72): con `pase` la reserva es del convenio y queda a nombre de quien la pide (D7)."""
+
+    pase = serializers.CharField(
+        max_length=300, required=False, allow_blank=True, help_text="Pase de `convenio/pase/` (CC-23)."
+    )
+    para = serializers.ChoiceField(
+        choices=[("MI", "Para mí"), ("OTRO", "Para otra persona")], required=False, default="MI"
+    )
+    pasajero_nombre = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    pasajero_cargo = serializers.CharField(max_length=80, required=False, allow_blank=True)
+    pasajero_telefono = serializers.CharField(max_length=24, required=False, allow_blank=True)
+    pasajero_correo = serializers.EmailField(max_length=254, required=False, allow_blank=True)
+    acompanantes = PersonaConvenioSerializer(many=True, required=False, default=list)
+    vehiculos = serializers.ChoiceField(
+        choices=[("MISMO", "Mismo vehículo"), ("SEPARADOS", "Vehículos separados")],
+        required=False,
+        default="MISMO",
+    )
+    declara_informados = serializers.BooleanField(
+        required=False,
+        default=False,
+        help_text="Quien pide declara que informó del aviso de privacidad a las personas que viajan.",
+    )
+
+    def validar_pase(self, datos: dict) -> dict:
+        errores: dict = {}
+        if datos.get("es_empresa"):
+            errores["es_empresa"] = "Con el pase de convenio no se informan RUT ni razón social."
+        if datos["para"] == "OTRO":
+            _texto_obligatorio(datos, "pasajero_nombre", "Ingresa el nombre del pasajero.", errores)
+            _texto_obligatorio(datos, "pasajero_cargo", "Ingresa el cargo del pasajero.", errores)
+            telefono = normalizar_telefono(datos.get("pasajero_telefono") or "")
+            try:
+                validar_telefono_e164(telefono)
+            except Exception:
+                errores["pasajero_telefono"] = "Ingresa el teléfono del pasajero (+56912345678)."
+            datos["pasajero_telefono"] = telefono
+            datos["pasajero_correo"] = (datos.get("pasajero_correo") or "").strip().lower()
+        else:
+            for campo in ("pasajero_nombre", "pasajero_cargo", "pasajero_telefono", "pasajero_correo"):
+                datos[campo] = ""
+        if datos["vehiculos"] == "SEPARADOS":
+            faltan = [i for i, a in enumerate(datos["acompanantes"]) if not a.get("telefono")]
+            if faltan:
+                # D4: en vehículos separados cada persona es el Pasajero de su viaje.
+                falta = {"telefono": ["En vehículos separados el teléfono es obligatorio."]}
+                errores["acompanantes"] = [
+                    falta if i in faltan else {} for i in range(len(datos["acompanantes"]))
+                ]
+        terceros = datos["para"] == "OTRO" or bool(datos["acompanantes"])
+        if terceros and not datos.get("declara_informados"):
+            errores["declara_informados"] = "Declara que informaste a las personas que viajan."
+        if errores:
+            raise serializers.ValidationError(errores)
+        datos["pasajeros"] = 1 + len(datos["acompanantes"]) if datos["vehiculos"] == "MISMO" else 1
+        return datos
+
+
+class ReservaPublicaSerializer(ReservaConPaseMixin, SolicitudSerializer):
+    """HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55). Con `pase`, reserva de
+    convenio del portal base (CC-23, ver `ReservaConPaseMixin`)."""
 
     acepta_whatsapp = None
-    correo = serializers.EmailField(max_length=254)
+    correo = serializers.EmailField(
+        max_length=254, required=False, help_text="Obligatorio sin `pase`; con pase manda el correo del pase."
+    )
     es_empresa = serializers.BooleanField(required=False, default=False)
     empresa_razon_social = serializers.CharField(max_length=120, required=False, allow_blank=True)
     empresa_rut = serializers.CharField(max_length=12, required=False, allow_blank=True)
@@ -243,6 +348,10 @@ class ReservaPublicaSerializer(SolicitudSerializer):
 
     def validate(self, datos):
         datos = super().validate(datos)
+        if datos.get("pase"):
+            return self.validar_pase(datos)
+        if not datos.get("correo"):
+            raise serializers.ValidationError({"correo": "Ingresa tu correo."})
         if datos.get("es_empresa"):
             errores = {}
             for campo, texto in (
@@ -270,6 +379,9 @@ class ReservaPublicaRespuestaSerializer(serializers.Serializer):
     confirmar_hasta = serializers.DateTimeField()
     confirma_convenio = serializers.BooleanField(
         default=False, help_text="HU-54: la confirma el contacto del convenio, no el pasajero"
+    )
+    viajes = serializers.IntegerField(
+        default=1, help_text="CC-23: viajes creados (vehículos separados crea uno por persona)."
     )
     mensaje = serializers.CharField()
 

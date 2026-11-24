@@ -21,7 +21,9 @@ async function llenarViaje() {
 
 describe('HU-51 · reserva pública', () => {
   it('pide el viaje, luego los datos de contacto, y avisa que revise el correo', async () => {
-    const { peticiones } = montarPortal('/solicitar/transportes-andes', {
+    // CC-23 (DC-77): la casilla de RUT (HU-54) queda solo con el módulo de cuentas.
+    const { peticiones } = montarPortal('/solicitar/transportes-andes/reservar', {
+      modulo: true,
       responder: (_p, ruta) => (ruta === 'POST /api/portal/transportes-andes/reservas/' ? jsonPortal(201, RESPUESTA) : undefined),
     });
     await llenarViaje();

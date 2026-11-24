@@ -37,6 +37,8 @@ export interface ViajeActivo {
   id: number;
   estado: 'ACEPTADO' | 'EN_CAMINO' | 'EN_ZONA' | 'PASAJERO_A_BORDO';
   pasajero: string;
+  /** CC-23: nombres de quienes viajan con el pasajero en el mismo vehículo (sin cargos ni teléfonos). */
+  acompanantes?: string[];
   recogida_en: string;
   origen: Punto;
   destino: Punto;

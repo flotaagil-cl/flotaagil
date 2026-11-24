@@ -61,3 +61,16 @@ describe('botones de navegación (DC-30)', () => {
     expect((await screen.findByRole('alert')).textContent).toBe('No se pudo abrir la navegación.');
   });
 });
+
+describe('CC-23 · acompañantes del convenio', () => {
+  it('muestra solo los nombres de los acompañantes', () => {
+    render(<ViajeEnCurso viaje={{ ...viaje('DIRECCION'), convenio: true, acompanantes: ['Laura Díaz', 'Pedro Soto'] }} />);
+    expect(screen.getByText('Acompañantes')).toBeTruthy();
+    expect(screen.getByText('Laura Díaz, Pedro Soto')).toBeTruthy();
+  });
+
+  it('sin acompañantes no muestra la fila', () => {
+    render(<ViajeEnCurso viaje={viaje('DIRECCION')} />);
+    expect(screen.queryByText('Acompañantes')).toBeNull();
+  });
+});

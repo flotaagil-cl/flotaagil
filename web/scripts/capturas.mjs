@@ -130,6 +130,43 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-73 (CC-23): reserva de convenio con correo + clave en el portal base (taxi-pacifico, sin el módulo).
+  // CAPTURAS_CLAVE_CONVENIO: la clave sintética de un convenio aprobado (no se imprime ni se captura escrita);
+  // CAPTURAS_VIAJE_GRUPO: un viaje de una solicitud en vehículos separados.
+  'HU-73': [
+    {
+      nombre: 'portal-quien-pide',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByRole('radio', { name: 'Empresa con convenio' }).click();
+        await pagina.getByLabel('Clave del convenio').waitFor();
+      },
+    },
+    {
+      nombre: 'portal-quien-viaja',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByRole('radio', { name: 'Empresa con convenio' }).click();
+        await pagina.getByLabel('Correo de la empresa').fill('ana@minera.example');
+        await pagina.getByLabel('Clave del convenio').fill(process.env.CAPTURAS_CLAVE_CONVENIO ?? '');
+        await pagina.getByRole('button', { name: 'Continuar' }).click();
+        await pagina.getByLabel('Origen').fill('Av. Providencia 1208, Providencia');
+        await pagina.getByLabel('Destino').fill('Plaza de Armas, Santiago');
+        await pagina.getByRole('button', { name: 'Siguiente: quién viaja' }).click();
+        await pagina.getByRole('heading', { name: 'Quién viaja' }).waitFor();
+        await pagina.getByRole('radio', { name: 'Acompañado' }).click();
+        await pagina.getByRole('radio', { name: 'Vehículos separados' }).click();
+      },
+    },
+    {
+      nombre: 'panel-reserva-grupo',
+      ruta: () => `/reservas/${process.env.CAPTURAS_VIAJE_GRUPO ?? '0'}`,
+      sesion: 'despacho@taxi-pacifico.example',
+      destino: /^\/reservas\/\d+$/,
+    },
+  ],
   // HU-53 (CC-22): solicitud pública de convenio y su revisión por el despachador. CAPTURAS_CONVENIO: una en revisión.
   'HU-53': [
     { nombre: 'portal-solicitud-convenio', ruta: '/solicitar/taxi-pacifico/convenio', sesion: null },

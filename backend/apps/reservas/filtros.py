@@ -23,6 +23,7 @@ class ViajeFiltro(django_filters.FilterSet):
     sin_confirmar = django_filters.BooleanFilter(
         method="filtrar_sin_confirmar", help_text="CC-22: pendientes con el plazo para confirmar vencido"
     )
+    grupo = django_filters.UUIDFilter(help_text="CC-23: viajes de una misma solicitud en vehículos separados")
     ordenar = django_filters.OrderingFilter(fields=["recogida_en", "creado_en"])
 
     class Meta:
@@ -44,4 +45,5 @@ class ViajeFiltro(django_filters.FilterSet):
             | Q(origen_dir__icontains=valor)
             | Q(destino_dir__icontains=valor)
             | Q(vuelo__numero__icontains=valor)
+            | Q(solicitante_nombre__icontains=valor)  # CC-23
         )
