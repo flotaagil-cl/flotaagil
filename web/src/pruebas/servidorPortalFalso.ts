@@ -1,12 +1,12 @@
 /**
- * Backend falso del portal público: GET /api/portal/{slug}/ y POST /api/portal/{slug}/solicitudes/.
+ * Backend falso del portal público: GET /api/portal/{slug}/ y POST /api/portal/{slug}/registro-empresa/.
  *
- * Imita las respuestas del backend (201 con recogida calculada como llegada + margen si no viene, 404 de
- * empresa inexistente, 429 con `code`) y permite programar la próxima respuesta del POST, fallas de red y
- * respuestas retenidas. Cualquier llamada a /api/auth/ hace fallar la prueba: el portal no tiene sesión.
+ * Imita las respuestas del backend (404 de empresa inexistente, fallas al cargar) y permite programar la
+ * próxima respuesta del registro. Cualquier llamada a /api/auth/ hace fallar la prueba: el portal no tiene
+ * sesión. HU-46: el formulario de invitado de HU-19 ya no existe (CC-18), y con él su POST de solicitudes.
  */
 
-import type { EmpresaPublica, Solicitud, SolicitudRespuesta } from '../portal/api';
+import type { EmpresaPublica } from '../portal/api';
 
 export const AHORA_PORTAL = Date.parse('2026-10-30T15:00:00Z'); // vie 30-10-2026 12:00 en Santiago
 
@@ -21,6 +21,7 @@ export const EMPRESA_PORTAL: EmpresaPublica = {
   antelacion_vuelo_internacional_min: 180,
   capacidad_maxima: 6,
   convenio_max_personas: 10,
+  central: { telefono: null, whatsapp: null }, // HU-49
 };
 
 interface Programada {
@@ -31,28 +32,18 @@ interface Programada {
 export class ServidorPortalFalso {
   empresas: Record<string, EmpresaPublica> = { [EMPRESA_PORTAL.slug]: EMPRESA_PORTAL };
   llamadas: string[] = [];
-  cuerpos: Solicitud[] = [];
   /** HU-34: registros de empresas recibidos. */
   registros: Record<string, string>[] = [];
   /** Llamadas prohibidas (p. ej. a /api/auth/): la prueba las revisa. */
   prohibidas: string[] = [];
   fallaEmpresa: number | 'red' | null = null;
   private programadas: Programada[] = [];
-  private retenidas: (() => void)[] = [];
-  retenerEnvios = false;
-  /** Teléfonos verificados hace poco (DC-31): su solicitud queda SOLICITADO sin plazo. */
-  verificados = new Set<string>();
 
   constructor(readonly ahora = AHORA_PORTAL) {}
 
-  /** La próxima solicitud responde esto (o falla por red). */
+  /** El próximo registro responde esto (o falla por red). */
   siguiente(respuesta: Programada) {
     this.programadas.push(respuesta);
-  }
-
-  /** Entrega el primer envío retenido. */
-  entregar() {
-    this.retenidas.shift()?.();
   }
 
   fetch = async (entrada: Request | string, init?: RequestInit): Promise<Response> => {
@@ -79,42 +70,7 @@ export class ServidorPortalFalso {
       if (programada) return json(programada.estado, programada.cuerpo ?? {});
       return json(201, { estado: 'EN_REVISION', mensaje: 'Recibimos el registro.' });
     }
-    const cuerpo = (await peticion.json()) as Solicitud;
-    this.cuerpos.push(cuerpo);
-    const responder = (): Response => {
-      const programada = this.programadas.shift();
-      if (programada?.estado === 'red') throw new TypeError('Failed to fetch');
-      if (programada) return json(programada.estado, programada.cuerpo ?? {});
-      if (!empresa) return json(404, { detail: 'No encontrado.' });
-      const recogida = cuerpo.recogida_en
-        ? Date.parse(cuerpo.recogida_en)
-        : Date.parse(cuerpo.vuelo!.hora_llegada!) + empresa.margen_nacional_min * 60_000;
-      const verificado = this.verificados.has(cuerpo.telefono);
-      const respuesta: SolicitudRespuesta = verificado
-        ? {
-            estado: 'SOLICITADO',
-            recogida_en: new Date(recogida).toISOString(),
-            expira_en: null,
-            mensaje: 'Tu solicitud quedó registrada. Te avisaremos por WhatsApp cuando la central asigne un conductor.',
-          }
-        : {
-            estado: 'PENDIENTE_CONFIRMACION',
-            recogida_en: new Date(recogida).toISOString(),
-            expira_en: new Date(this.ahora + empresa.expiracion_verificacion_min * 60_000).toISOString(),
-            mensaje: 'Recibimos tu solicitud. Te enviaremos un WhatsApp para confirmarla.',
-          };
-      return json(201, respuesta);
-    };
-    if (!this.retenerEnvios) return responder();
-    return new Promise((resolver, rechazar) => {
-      this.retenidas.push(() => {
-        try {
-          resolver(responder());
-        } catch (error) {
-          rechazar(error);
-        }
-      });
-    });
+    return json(404, { detail: 'No encontrado.' });
   };
 }
 

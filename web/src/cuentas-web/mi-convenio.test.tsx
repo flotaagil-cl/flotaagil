@@ -1,6 +1,6 @@
-/** HU-34: cuenta del convenio en la web y registro público de la empresa. */
+/** HU-34 y HU-46: cuenta del convenio en la web (marco del portal) y registro público de la empresa. */
 
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '@testing-library/react';
 import { createMemoryRouter } from 'react-router';
@@ -25,7 +25,7 @@ const CONVENIO = {
   empresa_slug: 'transportes-andes',
 };
 
-function instalar(auth: ServidorAuthFalso, convenio: Record<string, unknown>) {
+function instalar(auth: ServidorAuthFalso, convenio: Record<string, unknown>, central = { telefono: null as string | null, whatsapp: null as string | null }) {
   const anterior = auth.api;
   const recibidas: unknown[] = [];
   auth.api = async (peticion: Request, url: URL): Promise<Respuesta> => {
@@ -37,11 +37,11 @@ function instalar(auth: ServidorAuthFalso, convenio: Record<string, unknown>) {
           count: 1,
           next: null,
           previous: null,
-          results: [{ id: 3, estado: 'SOLICITADO', estado_texto: 'Solicitado', pasajero: 'Pedro Pasajero', origen_dir: 'A', destino_dir: 'B', recogida_en: '2026-10-30T17:00:00Z' }],
+          results: [{ id: 3, estado: 'SOLICITADO', estado_texto: 'Solicitado', pasajero: 'Pedro Pasajero', sentido: 'URBANO', origen_dir: 'A', destino_dir: 'B', recogida_en: '2030-10-30T17:00:00Z' }],
         },
       };
     }
-    if (url.pathname === '/api/portal/transportes-andes/') return { estado: 200, cuerpo: EMPRESA_PORTAL };
+    if (url.pathname === '/api/portal/transportes-andes/') return { estado: 200, cuerpo: { ...EMPRESA_PORTAL, central } };
     if (url.pathname === '/api/mi-convenio/solicitudes/') {
       recibidas.push(await peticion.json());
       return { estado: 201, cuerpo: { estado: 'SOLICITADO', recogida_en: '2026-10-30T17:00:00Z', expira_en: null, mensaje: 'Recibimos la solicitud.' } };
@@ -51,27 +51,67 @@ function instalar(auth: ServidorAuthFalso, convenio: Record<string, unknown>) {
   return recibidas;
 }
 
-describe('cuenta del convenio', () => {
-  it('en revisión: ve el aviso y no el formulario', async () => {
+describe('cuenta del convenio (HU-46)', () => {
+  it('en revisión: tarjeta con la insignia, sin formulario y con el contacto de la central', async () => {
     const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
-    instalar(servidor, { ...CONVENIO, estado: 'EN_REVISION' });
+    instalar(servidor, { ...CONVENIO, estado: 'EN_REVISION' }, { telefono: '+56999900001', whatsapp: null });
     expect(await screen.findByText(/Tu registro está en revisión/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Solicitar viaje/ })).not.toBeInTheDocument();
+    expect(screen.getByText('En revisión')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Siguiente: quién viaja/ })).not.toBeInTheDocument();
+    // HU-49 (DC-80): sin WhatsApp propio, el botón usa el teléfono de la central.
+    expect(await screen.findByRole('link', { name: 'WhatsApp de la central' })).toHaveAttribute('href', 'https://wa.me/56999900001');
   });
 
-  it('rechazado: ve el motivo', async () => {
+  it('rechazado: insignia y motivo', async () => {
     const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
     instalar(servidor, { ...CONVENIO, estado: 'RECHAZADO', motivo_rechazo: 'RUT no corresponde' });
-    expect(await screen.findByText(/Motivo: RUT no corresponde/)).toBeInTheDocument();
+    expect(await screen.findByText('Motivo: RUT no corresponde')).toBeInTheDocument();
+    expect(screen.getByText('Rechazado')).toBeInTheDocument();
   });
 
-  it('aprobado: ve sus reservas y el formulario con la declaración, sin nombre de supervisor', async () => {
+  it('usa el marco del portal (sin el menú del panel) y nada de WhatsApp en el pedido', async () => {
     const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
     instalar(servidor, CONVENIO);
-    expect(await screen.findByRole('table', { name: 'Reservas del convenio' })).toBeInTheDocument();
-    expect(screen.getByText('Pedro Pasajero')).toBeInTheDocument();
-    expect(await screen.findByLabelText(/Declaro que el pasajero autorizó/)).toBeInTheDocument();
-    expect(screen.queryByLabelText('Nombre del supervisor')).not.toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: '¿A dónde llevamos a tu equipo?' })).toBeInTheDocument();
+    const principal = screen.getByRole('navigation', { name: 'Principal' });
+    expect(within(principal).getByRole('link', { name: 'Viajes del convenio' })).toHaveAttribute('href', '/mi-convenio/viajes');
+    expect(screen.queryByText(/WhatsApp/)).not.toBeInTheDocument();
+  });
+
+  it('pide: viaje, quién viaja con la declaración de privacidad y pedido recibido', async () => {
+    const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
+    const recibidas = instalar(servidor, CONVENIO);
+    await userEvent.click(await screen.findByRole('tab', { name: 'En la ciudad' }));
+    await userEvent.type(await screen.findByLabelText('Origen'), 'Av. Providencia 1208');
+    await userEvent.type(screen.getByLabelText('Destino'), 'Plaza de Armas');
+    await userEvent.click(screen.getByRole('button', { name: 'Siguiente: quién viaja' }));
+    expect(await screen.findByRole('heading', { name: 'Quién viaja' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+    expect(screen.getByLabelText('Nombre del pasajero')).toHaveAccessibleDescription('Escribe el nombre del pasajero.');
+    expect(recibidas).toHaveLength(0);
+    await userEvent.type(screen.getByLabelText('Nombre del pasajero'), 'Pedro Pasajero');
+    await userEvent.type(screen.getByLabelText('Teléfono del pasajero'), '+56900008003');
+    await userEvent.click(screen.getByLabelText(/Declaro que informé al pasajero/));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+    expect(await screen.findByRole('heading', { name: '¡Listo! Recibimos el pedido' })).toBeInTheDocument();
+    expect(recibidas[0]).toMatchObject({ nombre: 'Pedro Pasajero', telefono: '+56900008003', declara_informados: true, sentido: 'URBANO' });
+    expect(recibidas[0]).not.toHaveProperty('acepta_whatsapp');
+    expect(screen.getByRole('link', { name: 'Ver los viajes del convenio' })).toHaveAttribute('href', '/mi-convenio/viajes');
+  });
+
+  it('viajes del convenio: tarjetas con el pasajero, la insignia y el número', async () => {
+    const { servidor } = montarPanel('/mi-convenio/viajes', { email: 'convenio@andes.example' });
+    instalar(servidor, CONVENIO);
+    const proximos = await screen.findByRole('region', { name: 'Próximos' });
+    expect(within(proximos).getByText('A → B')).toBeInTheDocument();
+    expect(within(proximos).getByText(/Pedro Pasajero · .* · N\.º 3/)).toBeInTheDocument();
+    expect(within(proximos).getByText('Buscando conductor')).toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('otro rol no entra a la cuenta del convenio', async () => {
+    const { router } = montarPanel('/mi-convenio', { email: 'pasajero@andes.example' });
+    await waitFor(() => expect(router.state.location.pathname).toBe('/pedir'));
   });
 });
 

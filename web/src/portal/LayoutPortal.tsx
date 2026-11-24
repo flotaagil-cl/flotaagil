@@ -5,7 +5,9 @@ import { ErrorApi } from '../api/resultado';
 import { MENSAJES } from '../api/errores';
 import { MarcoPortal } from '../diseno/MarcoPortal';
 import { useEntorno } from '../entornoContexto';
+import { ContactoDeError } from '../componentes/ContactoDeError';
 import { crearClientePortal, useEmpresa, type ClientePortal } from './api';
+import { guardarCentral } from '../componentes/central';
 import type { ContextoPortal } from './contexto';
 import { NoDisponible } from './NoDisponible';
 import estilos from './portal.module.css';
@@ -30,7 +32,9 @@ export function LayoutPortal() {
 
 function ContenidoPortal({ api }: { api: ClientePortal }) {
   const { slug = '' } = useParams();
+  const { almacen } = useEntorno();
   const empresa = useEmpresa(api, slug);
+  const central = empresa.data?.central;
   const razonSocial = empresa.data?.razon_social;
   const matches = useMatches();
   const manejo = matches.at(-1)?.handle as
@@ -39,6 +43,11 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
   // DC-51 (CC-22): crear cuenta, activarla y registrar empresa existen solo con el módulo de cuentas.
   const sinModulo = empresa.data !== undefined && !empresa.data.modulo_cuentas;
   const barraMovil = manejo?.barraMovil ?? 'normal';
+
+  // HU-49 (DC-80): los números de la central quedan guardados para cuando el servidor no responda.
+  useEffect(() => {
+    if (central) guardarCentral(almacen, slug, central);
+  }, [almacen, slug, central]);
 
   useEffect(() => {
     document.title = razonSocial ? `Solicitar un viaje · ${razonSocial}` : 'Solicitar un viaje';
@@ -66,6 +75,7 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
           <button type="button" className={estilos.botonPrincipal} onClick={() => void empresa.refetch()}>
             Reintentar
           </button>
+          <ContactoDeError />
         </section>
       );
   } else if ((sinModulo && manejo?.requiereModulo) || (empresa.data?.modulo_cuentas && manejo?.soloSinModulo)) {

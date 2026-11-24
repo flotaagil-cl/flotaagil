@@ -2413,8 +2413,16 @@ export interface components {
             /** @description El más apto (HU-04). No asigna: lo confirma el despachador */
             sugerido: boolean;
         };
-        /** @description HU-66 (DC-62): botones de emergencia; null si la empresa no lo configuró. */
+        /**
+         * @description HU-66 (DC-62): botones de emergencia; null si la empresa no lo configuró. HU-49 (DC-80): sin WhatsApp,
+         *     el del teléfono de la central.
+         */
         Central: {
+            telefono: string | null;
+            whatsapp: string | null;
+        };
+        /** @description HU-49 (DC-62, DC-80): «Llamar a la central» y «WhatsApp de la central»; null si no hay número. */
+        CentralPublica: {
             telefono: string | null;
             whatsapp: string | null;
         };
@@ -2741,6 +2749,8 @@ export interface components {
             readonly capacidad_maxima: number;
             /** @description CC-23: personas por solicitud con pase de convenio (vehículos separados). */
             convenio_max_personas: number;
+            /** @description HU-49 (DC-80): contacto de la central para las pantallas de error del portal. */
+            readonly central: components["schemas"]["CentralPublica"];
         };
         EmpresaResumen: {
             readonly id: number;
@@ -3555,6 +3565,7 @@ export interface components {
             estado?: components["schemas"]["EstadoViajeEnum"];
             estado_texto: string;
             pasajero: string;
+            sentido?: components["schemas"]["SentidoEnum"];
             origen_dir: string;
             destino_dir: string;
             /** Format: date-time */
@@ -3730,8 +3741,9 @@ export interface components {
             mensaje: string;
         };
         /**
-         * @description HU-34: la cuenta del convenio pide a nombre del pasajero y declara que este autorizó los avisos. La
-         *     declaración queda ligada al usuario que reserva (DC-35).
+         * @description HU-34: la cuenta del convenio pide a nombre del pasajero. HU-46 (DC-80): sin WhatsApp (CC-19); quien
+         *     pide declara que informó al pasajero del aviso de privacidad, y la declaración queda ligada al usuario
+         *     que reserva (DC-35). La cuenta aceptó el aviso al registrarse: aquí no se vuelve a pedir.
          */
         SolicitudConvenioRequest: {
             nombre: string;
@@ -3765,11 +3777,10 @@ export interface components {
             /** @description Titular más acompañantes; no supera la capacidad de la flota (DC-43). */
             pasajeros?: number;
             maletas?: number;
-            acepta_privacidad: boolean;
-            acepta_whatsapp: boolean;
+            acepta_privacidad?: boolean;
             sitio_web?: string;
-            /** @description Declaro que el pasajero autorizó recibir avisos por WhatsApp */
-            declara_autorizacion: boolean;
+            /** @description Declaro que informé al pasajero del aviso de privacidad (Ley 21.719). */
+            declara_informados: boolean;
         };
         /**
          * @description Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no

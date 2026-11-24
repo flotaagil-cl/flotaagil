@@ -144,6 +144,12 @@ class ConfiguracionEmpresa(models.Model):
     def __str__(self):
         return f"Configuración de {self.empresa}"
 
+    def numeros_central(self) -> dict:
+        """HU-49 (DC-80): números de la central para los botones de contacto. El WhatsApp vacío usa el
+        teléfono de la central, que es un celular (decisión de Renato del 2026-11-24). Sin número, null."""
+        telefono = self.telefono_central or None
+        return {"telefono": telefono, "whatsapp": self.whatsapp_central or telefono}
+
     def contiene(self, lat: float, lon: float) -> bool:
         """¿El punto está dentro de la zona de operación de la empresa?"""
         return float(self.zona_lat_min) <= lat <= float(self.zona_lat_max) and float(

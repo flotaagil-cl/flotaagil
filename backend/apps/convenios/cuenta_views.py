@@ -43,7 +43,17 @@ class ReservaDelConvenioSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Viaje
-        fields = ["id", "estado", "estado_texto", "pasajero", "origen_dir", "destino_dir", "recogida_en"]
+        # HU-46: `sentido` para el ícono de la tarjeta, como en «Mis viajes».
+        fields = [
+            "id",
+            "estado",
+            "estado_texto",
+            "pasajero",
+            "sentido",
+            "origen_dir",
+            "destino_dir",
+            "recogida_en",
+        ]
 
 
 class MiConvenioView(APIView):

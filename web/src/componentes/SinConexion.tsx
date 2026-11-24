@@ -1,4 +1,5 @@
 import type { MotivoFalla } from '../api/errores';
+import { ContactoDeError } from './ContactoDeError';
 import estilos from './SinConexion.module.css';
 
 const TITULO: Record<MotivoFalla, string> = {
@@ -21,6 +22,7 @@ export function SinConexion({ motivo, alReintentar }: { motivo: MotivoFalla; alR
         <button type="button" className={estilos.boton} onClick={alReintentar}>
           Reintentar
         </button>
+        <ContactoDeError />
       </section>
     </main>
   );
