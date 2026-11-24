@@ -2037,8 +2037,10 @@ paths:
   /api/mi-convenio/solicitudes/:
     post:
       operationId: mi_convenio_solicitudes_create
-      description: 'RN-07: queda SOLICITADO sin verificación por WhatsApp. La declaración
-        de avisos queda ligada al usuario que reserva (DC-35).'
+      description: 'RN-07: los viajes quedan SOLICITADO sin enlace de confirmación.
+        CC-25: para sí o para otra persona, con acompañantes, en el mismo vehículo
+        o un viaje por persona (mismo `grupo`). La declaración de avisos queda ligada
+        al usuario que reserva (DC-35).'
       summary: Pedir un viaje a nombre del convenio
       tags:
       - mi-convenio
@@ -2061,7 +2063,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SolicitudRespuesta'
+                $ref: '#/components/schemas/SolicitudConvenioRespuesta'
           description: ''
         '409':
           description: '`convenio_no_aprobado`: en revisión o rechazado'
@@ -7482,10 +7484,44 @@ components:
     SolicitudConvenioRequest:
       type: object
       description: |-
-        HU-34: la cuenta del convenio pide a nombre del pasajero. HU-46 (DC-80): sin WhatsApp (CC-19); quien
-        pide declara que informó al pasajero del aviso de privacidad, y la declaración queda ligada al usuario
-        que reserva (DC-35). La cuenta aceptó el aviso al registrarse: aquí no se vuelve a pedir.
+        HU-34 y HU-47: la cuenta del convenio pide a nombre de quien pide (`nombre`, `telefono`). CC-25: como
+        en CC-23, para sí o para otra persona, con acompañantes y en el mismo vehículo o en vehículos separados.
+        HU-46 (DC-80): sin WhatsApp (CC-19); por los terceros declara que les informó del aviso de privacidad, y
+        la declaración queda ligada al usuario que reserva (DC-35). La cuenta aceptó el aviso al registrarse.
       properties:
+        para:
+          allOf:
+          - $ref: '#/components/schemas/ParaEnum'
+          default: MI
+        pasajero_nombre:
+          type: string
+          maxLength: 80
+        pasajero_cargo:
+          type: string
+          maxLength: 80
+        pasajero_telefono:
+          type: string
+          maxLength: 24
+        pasajero_correo:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        acompanantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonaConvenioRequest'
+        vehiculos:
+          allOf:
+          - $ref: '#/components/schemas/VehiculosEnum'
+          default: MISMO
+        declara_informados:
+          type: boolean
+          default: false
+          description: Quien pide declara que informó del aviso de privacidad a las
+            personas que viajan.
         nombre:
           type: string
           minLength: 1
@@ -7555,16 +7591,36 @@ components:
         sitio_web:
           type: string
           writeOnly: true
-        declara_informados:
-          type: boolean
-          description: Declaro que informé al pasajero del aviso de privacidad (Ley
-            21.719).
       required:
-      - declara_informados
       - destino_dir
       - nombre
       - origen_dir
       - telefono
+    SolicitudConvenioRespuesta:
+      type: object
+      properties:
+        estado:
+          type: string
+        recogida_en:
+          type: string
+          format: date-time
+        expira_en:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono
+            ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.'
+        mensaje:
+          type: string
+        viajes:
+          type: integer
+          description: 'CC-25: viajes creados (uno por persona en vehículos separados).'
+      required:
+      - estado
+      - expira_en
+      - mensaje
+      - recogida_en
+      - viajes
     SolicitudCuentaRequest:
       type: object
       description: |-
@@ -7644,27 +7700,6 @@ components:
       required:
       - destino_dir
       - origen_dir
-    SolicitudRespuesta:
-      type: object
-      properties:
-        estado:
-          type: string
-        recogida_en:
-          type: string
-          format: date-time
-        expira_en:
-          type: string
-          format: date-time
-          nullable: true
-          description: 'Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono
-            ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.'
-        mensaje:
-          type: string
-      required:
-      - estado
-      - expira_en
-      - mensaje
-      - recogida_en
     Sugerencia:
       type: object
       properties:

@@ -191,26 +191,6 @@ class SolicitudSerializer(serializers.Serializer):
         return datos
 
 
-class SolicitudConvenioSerializer(SolicitudSerializer):
-    """HU-34: la cuenta del convenio pide a nombre del pasajero. HU-46 (DC-80): sin WhatsApp (CC-19); quien
-    pide declara que informó al pasajero del aviso de privacidad, y la declaración queda ligada al usuario
-    que reserva (DC-35). La cuenta aceptó el aviso al registrarse: aquí no se vuelve a pedir."""
-
-    acepta_whatsapp = None
-    acepta_privacidad = serializers.BooleanField(required=False)
-    declara_informados = serializers.BooleanField(
-        help_text="Declaro que informé al pasajero del aviso de privacidad (Ley 21.719)."
-    )
-
-    def validate_acepta_privacidad(self, valor):
-        return valor
-
-    def validate_declara_informados(self, valor):
-        if not valor:
-            raise serializers.ValidationError("Declara que informaste al pasajero del aviso de privacidad.")
-        return valor
-
-
 class SolicitudRespuestaSerializer(serializers.Serializer):
     estado = serializers.CharField()
     recogida_en = serializers.DateTimeField()
@@ -353,6 +333,29 @@ class ReservaConPaseMixin(serializers.Serializer):
             raise serializers.ValidationError(errores)
         datos["pasajeros"] = 1 + len(datos["acompanantes"]) if datos["vehiculos"] == "MISMO" else 1
         return datos
+
+
+class SolicitudConvenioSerializer(ReservaConPaseMixin, SolicitudSerializer):
+    """HU-34 y HU-47: la cuenta del convenio pide a nombre de quien pide (`nombre`, `telefono`). CC-25: como
+    en CC-23, para sí o para otra persona, con acompañantes y en el mismo vehículo o en vehículos separados.
+    HU-46 (DC-80): sin WhatsApp (CC-19); por los terceros declara que les informó del aviso de privacidad, y
+    la declaración queda ligada al usuario que reserva (DC-35). La cuenta aceptó el aviso al registrarse."""
+
+    pase = None
+    acepta_whatsapp = None
+    acepta_privacidad = serializers.BooleanField(required=False)
+
+    def validate_acepta_privacidad(self, valor):
+        return valor
+
+    def validate(self, datos):
+        return self.validar_pase(super().validate(datos))
+
+
+class SolicitudConvenioRespuestaSerializer(SolicitudRespuestaSerializer):
+    viajes = serializers.IntegerField(
+        help_text="CC-25: viajes creados (uno por persona en vehículos separados)."
+    )
 
 
 class ReservaPublicaSerializer(ReservaConPaseMixin, SolicitudSerializer):

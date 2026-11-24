@@ -1311,7 +1311,7 @@ export interface paths {
         put?: never;
         /**
          * Pedir un viaje a nombre del convenio
-         * @description RN-07: queda SOLICITADO sin verificación por WhatsApp. La declaración de avisos queda ligada al usuario que reserva (DC-35).
+         * @description RN-07: los viajes quedan SOLICITADO sin enlace de confirmación. CC-25: para sí o para otra persona, con acompañantes, en el mismo vehículo o un viaje por persona (mismo `grupo`). La declaración de avisos queda ligada al usuario que reserva (DC-35).
          */
         post: operations["mi_convenio_solicitudes_create"];
         delete?: never;
@@ -3741,11 +3741,26 @@ export interface components {
             mensaje: string;
         };
         /**
-         * @description HU-34: la cuenta del convenio pide a nombre del pasajero. HU-46 (DC-80): sin WhatsApp (CC-19); quien
-         *     pide declara que informó al pasajero del aviso de privacidad, y la declaración queda ligada al usuario
-         *     que reserva (DC-35). La cuenta aceptó el aviso al registrarse: aquí no se vuelve a pedir.
+         * @description HU-34 y HU-47: la cuenta del convenio pide a nombre de quien pide (`nombre`, `telefono`). CC-25: como
+         *     en CC-23, para sí o para otra persona, con acompañantes y en el mismo vehículo o en vehículos separados.
+         *     HU-46 (DC-80): sin WhatsApp (CC-19); por los terceros declara que les informó del aviso de privacidad, y
+         *     la declaración queda ligada al usuario que reserva (DC-35). La cuenta aceptó el aviso al registrarse.
          */
         SolicitudConvenioRequest: {
+            /** @default MI */
+            para: components["schemas"]["ParaEnum"];
+            pasajero_nombre?: string;
+            pasajero_cargo?: string;
+            pasajero_telefono?: string;
+            pasajero_correo?: string;
+            acompanantes?: components["schemas"]["PersonaConvenioRequest"][];
+            /** @default MISMO */
+            vehiculos: components["schemas"]["VehiculosEnum"];
+            /**
+             * @description Quien pide declara que informó del aviso de privacidad a las personas que viajan.
+             * @default false
+             */
+            declara_informados: boolean;
             nombre: string;
             /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
             telefono: string;
@@ -3779,8 +3794,19 @@ export interface components {
             maletas?: number;
             acepta_privacidad?: boolean;
             sitio_web?: string;
-            /** @description Declaro que informé al pasajero del aviso de privacidad (Ley 21.719). */
-            declara_informados: boolean;
+        };
+        SolicitudConvenioRespuesta: {
+            estado: string;
+            /** Format: date-time */
+            recogida_en: string;
+            /**
+             * Format: date-time
+             * @description Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.
+             */
+            expira_en: string | null;
+            mensaje: string;
+            /** @description CC-25: viajes creados (uno por persona en vehículos separados). */
+            viajes: number;
         };
         /**
          * @description Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
@@ -3820,17 +3846,6 @@ export interface components {
             acepta_privacidad?: boolean;
             acepta_whatsapp?: boolean;
             sitio_web?: string;
-        };
-        SolicitudRespuesta: {
-            estado: string;
-            /** Format: date-time */
-            recogida_en: string;
-            /**
-             * Format: date-time
-             * @description Plazo para confirmar por WhatsApp (RN-06). NULL si el teléfono ya estaba verificado (DC-31): la reserva queda SOLICITADO sin pedir confirmación.
-             */
-            expira_en: string | null;
-            mensaje: string;
         };
         Sugerencia: {
             texto: string;
@@ -6370,7 +6385,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SolicitudRespuesta"];
+                    "application/json": components["schemas"]["SolicitudConvenioRespuesta"];
                 };
             };
             /** @description `convenio_no_aprobado`: en revisión o rechazado */

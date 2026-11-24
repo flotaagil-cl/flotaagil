@@ -281,8 +281,8 @@ def crear_con_pase(empresa, datos: dict, ip: str | None = None) -> list[Viaje]:
             viaje.confirmar_hasta = plazo_confirmacion(empresa.configuracion, viaje.recogida_en, ahora)
             viaje.solicitante_nombre = datos["nombre"]
             viaje.solicitante_telefono = datos["telefono"]
-            viaje.pasajero_cargo = persona["cargo"] or None
-            viaje.pasajero_correo = persona["correo"] or None
+            viaje.pasajero_cargo = persona.get("cargo") or None
+            viaje.pasajero_correo = persona.get("correo") or None
             viaje.acompanantes = [] if separados else [_acompanante(a) for a in personas[1:]]
             viaje.grupo = grupo
             if len(personas) > 1 or datos["para"] == "OTRO":

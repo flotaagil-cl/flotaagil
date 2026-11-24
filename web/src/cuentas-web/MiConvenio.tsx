@@ -6,7 +6,7 @@ import { ErrorApi, resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
 import { Boton } from '../diseno/Boton';
-import { Campo, Casilla } from '../diseno/Campo';
+import { Campo } from '../diseno/Campo';
 import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
 import { Icono } from '../diseno/Icono';
@@ -19,6 +19,8 @@ import { FormularioPedido } from '../pedido/FormularioPedido';
 import { erroresDelServidor, resumenPedido, TIPOS, type CuerpoPedido, type Errores, type TipoPedido, type ValoresPedido } from '../pedido/pedido';
 import { guardarCentral } from '../componentes/central';
 import { inicioDeRol } from '../rutas/tabla';
+import { cuerpoPersonas, DATOS_CONVENIO, erroresConvenioDelServidor, validarConvenio, type DatosConvenio, type ErroresConvenio } from '../portal/convenio';
+import { PersonasConvenio } from '../portal/PersonasConvenio';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import { BotonesCentral } from '../componentes/BotonesCentral';
 import { esAnterior, INSIGNIA, tramo } from '../viajes/viaje';
@@ -85,7 +87,8 @@ function useGuardaConvenio(): ReactNode | null {
 
 /**
  * HU-34 y HU-46: la cuenta de la empresa cliente. En revisión o rechazada ve una tarjeta con su estado; aprobada
- * pide traslados: el viaje (el mismo formulario del pasajero), quién viaja y el pedido recibido.
+ * pide traslados: el viaje (el mismo formulario del pasajero), quién viaja y el pedido recibido. HU-47 (CC-25):
+ * quien pide, para sí o para otra persona, con acompañantes en el mismo vehículo o en vehículos separados.
  */
 export function MiConvenio() {
   const guarda = useGuardaConvenio();
@@ -139,17 +142,17 @@ function TarjetaEstado({ convenio }: { convenio: MiConvenioDatos }) {
 type Etapa =
   | { fase: 'formulario'; valores?: ValoresPedido; errores?: Errores }
   | { fase: 'quien'; tipo: TipoPedido; valores: ValoresPedido; cuerpo: CuerpoPedido }
-  | { fase: 'recibido'; mensaje: string };
+  | { fase: 'recibido'; mensaje: string; viajes: number };
 
-interface Pasajero {
+/** Quien pide (CC-25): queda como solicitante de los viajes. */
+interface Solicitante {
   nombre: string;
   telefono: string;
-  declara_informados: boolean;
 }
 
-type ErroresPasajero = Partial<Record<keyof Pasajero | 'general', string>>;
+type ErroresSolicitante = Partial<Record<keyof Solicitante | 'general', string>>;
 
-const PASAJERO: Pasajero = { nombre: '', telefono: '', declara_informados: false };
+const SOLICITANTE: Solicitante = { nombre: '', telefono: '' };
 
 function primero(valor: unknown): string | undefined {
   return Array.isArray(valor) ? String(valor[0]) : typeof valor === 'string' ? valor : undefined;
@@ -160,15 +163,19 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
   const empresa = useEmpresa(convenio.empresa_slug);
   const [tipo, setTipo] = useState<TipoPedido>('desde-aeropuerto');
   const [etapa, setEtapa] = useState<Etapa>({ fase: 'formulario' });
-  const [pasajero, setPasajero] = useState<Pasajero>(PASAJERO);
-  const [errores, setErrores] = useState<ErroresPasajero>({});
+  const [solicitante, setSolicitante] = useState<Solicitante>(SOLICITANTE);
+  const [personas, setPersonas] = useState<DatosConvenio>(DATOS_CONVENIO);
+  const [errores, setErrores] = useState<ErroresSolicitante>({});
+  const [erroresPersonas, setErroresPersonas] = useState<ErroresConvenio>({});
   const pedir = useMutation({
-    mutationFn: (cuerpo: CuerpoPedido) =>
-      resultado(
+    mutationFn: (cuerpo: CuerpoPedido) => {
+      // CC-25: las mismas personas que CC-23, sin pase ni datos de empresa.
+      return resultado(
         api.POST('/api/mi-convenio/solicitudes/', {
-          body: { ...cuerpo, nombre: pasajero.nombre.trim(), telefono: pasajero.telefono.trim(), declara_informados: pasajero.declara_informados },
+          body: { ...cuerpo, ...cuerpoPersonas(personas), nombre: solicitante.nombre.trim(), telefono: solicitante.telefono.trim() },
         }),
-      ),
+      );
+    },
   });
 
   if (empresa.isPending) return <Cargando />;
@@ -180,7 +187,7 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
         <span className={e.recibidoMarca} aria-hidden="true">
           <Icono nombre="check" tamano={36} />
         </span>
-        <h1 className={e.tituloPagina}>¡Listo! Recibimos el pedido</h1>
+        <h1 className={e.tituloPagina}>{etapa.viajes > 1 ? `¡Listo! Recibimos ${etapa.viajes} viajes` : '¡Listo! Recibimos el pedido'}</h1>
         <p className={e.subtituloPagina}>{etapa.mensaje}</p>
         <Link to="/mi-convenio/viajes" className={claseBoton('principal', true)}>
           Ver los viajes del convenio
@@ -189,7 +196,8 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
           type="button"
           className={e.botonEnlace}
           onClick={() => {
-            setPasajero(PASAJERO);
+            setSolicitante(SOLICITANTE);
+            setPersonas(DATOS_CONVENIO);
             setEtapa({ fase: 'formulario' });
           }}
         >
@@ -201,24 +209,30 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
 
   if (etapa.fase === 'quien') {
     const actual = TIPOS.find((t) => t.id === etapa.tipo)!;
-    const cambiar = <K extends keyof Pasajero>(campo: K, valor: Pasajero[K]) => setPasajero((p) => ({ ...p, [campo]: valor }));
+    const cambiar = <K extends keyof Solicitante>(campo: K, valor: Solicitante[K]) => setSolicitante((p) => ({ ...p, [campo]: valor }));
+    const capacidad = empresa.data.capacidad_maxima;
+    const tope = empresa.data.convenio_max_personas;
     const enviar = async (evento: FormEvent) => {
       evento.preventDefault();
-      const encontrados: ErroresPasajero = {};
-      if (!pasajero.nombre.trim()) encontrados.nombre = 'Escribe el nombre del pasajero.';
-      if (!pasajero.telefono.trim()) encontrados.telefono = 'Escribe el teléfono del pasajero.';
-      if (!pasajero.declara_informados) encontrados.declara_informados = 'Declara que informaste al pasajero del aviso de privacidad.';
+      const encontrados: ErroresSolicitante = {};
+      if (!solicitante.nombre.trim()) encontrados.nombre = 'Escribe tu nombre.';
+      if (!solicitante.telefono.trim()) encontrados.telefono = 'Escribe tu teléfono.';
+      const deGrupo = validarConvenio(personas, capacidad, tope);
       setErrores(encontrados);
-      if (Object.keys(encontrados).length > 0) return;
+      setErroresPersonas(deGrupo);
+      if (Object.keys(encontrados).length > 0 || Object.keys(deGrupo).length > 0) return;
       try {
         const respuesta = await pedir.mutateAsync(etapa.cuerpo);
-        setEtapa({ fase: 'recibido', mensaje: respuesta.mensaje });
+        setEtapa({ fase: 'recibido', mensaje: respuesta.mensaje, viajes: respuesta.viajes });
       } catch (error) {
         if (error instanceof ErrorApi && error.estado === 400) {
           const c = (error.cuerpo ?? {}) as Record<string, unknown>;
-          const propios: ErroresPasajero = { nombre: primero(c.nombre), telefono: primero(c.telefono), declara_informados: primero(c.declara_informados) };
-          if (Object.values(propios).some(Boolean)) setErrores(propios);
-          else setEtapa({ fase: 'formulario', valores: etapa.valores, errores: erroresDelServidor(error.cuerpo) });
+          const propios: ErroresSolicitante = { nombre: primero(c.nombre), telefono: primero(c.telefono) };
+          const delGrupo = erroresConvenioDelServidor(error.cuerpo);
+          if (Object.values(propios).some(Boolean) || Object.keys(delGrupo).length > 0) {
+            setErrores(propios);
+            setErroresPersonas(delGrupo);
+          } else setEtapa({ fase: 'formulario', valores: etapa.valores, errores: erroresDelServidor(error.cuerpo) });
         } else if (error instanceof ErrorApi && error.estado === 409) setErrores({ general: 'Tu convenio ya no está aprobado: no puedes pedir traslados.' });
         else setErrores({ general: 'No se pudo enviar el pedido. Revisa tu conexión e intenta de nuevo.' });
       }
@@ -229,12 +243,16 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
         <section className={e.resumen} aria-label="Tu viaje">
           <h2 className={e.resumenTitulo}>{actual.titulo}</h2>
           <dl className={e.resumenFilas}>
-            {resumenPedido(etapa.tipo, etapa.valores, etapa.cuerpo, empresa.data).map(([etiqueta, valor]) => (
-              <div key={etiqueta}>
-                <dt>{etiqueta}</dt>
-                <dd>{valor}</dd>
-              </div>
-            ))}
+            {resumenPedido(etapa.tipo, etapa.valores, etapa.cuerpo, empresa.data).map(([etiqueta, texto]) => {
+              // HU-47: cuántos viajan sale de esta etapa; del viaje solo quedan las maletas.
+              const [fila, valor] = etiqueta === 'Pasajeros' ? ['Maletas', String(etapa.cuerpo.maletas ?? 0)] : [etiqueta, texto];
+              return (
+                <div key={fila}>
+                  <dt>{fila}</dt>
+                  <dd>{valor}</dd>
+                </div>
+              );
+            })}
           </dl>
           <button type="button" className={e.botonEnlace} onClick={() => setEtapa({ fase: 'formulario', valores: etapa.valores })}>
             Editar el viaje
@@ -242,24 +260,29 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
         </section>
         <form className={e.formulario} onSubmit={(ev) => void enviar(ev)} noValidate aria-label="Quién viaja">
           {errores.general && <Aviso tipo="error">{errores.general}</Aviso>}
-          <Campo etiqueta="Nombre del pasajero" autoComplete="off" value={pasajero.nombre} error={errores.nombre} onChange={(ev) => cambiar('nombre', ev.target.value)} />
-          <Campo
-            etiqueta="Teléfono del pasajero"
-            type="tel"
-            autoComplete="off"
-            placeholder="+56912345678"
-            value={pasajero.telefono}
-            error={errores.telefono}
-            ayuda="El conductor y la central lo usan para coordinar la recogida."
-            onChange={(ev) => cambiar('telefono', ev.target.value)}
+          <Tarjeta como="section" className={e.formulario}>
+            <h2 className={e.resumenTitulo}>Quién pide</h2>
+            <Campo etiqueta="Tu nombre" autoComplete="name" value={solicitante.nombre} error={errores.nombre} onChange={(ev) => cambiar('nombre', ev.target.value)} />
+            <Campo
+              etiqueta="Tu teléfono"
+              type="tel"
+              autoComplete="tel"
+              placeholder="+56912345678"
+              value={solicitante.telefono}
+              error={errores.telefono}
+              ayuda="La central te llama si hay que coordinar algo."
+              onChange={(ev) => cambiar('telefono', ev.target.value)}
+            />
+          </Tarjeta>
+          <PersonasConvenio
+            slug={convenio.empresa_slug}
+            datos={personas}
+            errores={erroresPersonas}
+            capacidad={capacidad}
+            tope={tope}
+            ayudaSeparados="Un vehículo por persona, con el mismo origen, destino y hora. Todos quedan solicitados de inmediato."
+            onCambiar={setPersonas}
           />
-          <Casilla checked={pasajero.declara_informados} error={errores.declara_informados} onChange={(ev) => cambiar('declara_informados', ev.target.checked)}>
-            Declaro que informé al pasajero del{' '}
-            <Link to={`/solicitar/${convenio.empresa_slug}/privacidad`} target="_blank">
-              aviso de privacidad
-            </Link>{' '}
-            (Ley 21.719).
-          </Casilla>
           <Boton type="submit" ancho cargando={pedir.isPending}>
             {pedir.isPending ? 'Enviando…' : 'Confirmar pedido'}
           </Boton>
@@ -282,6 +305,7 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
           empresa={empresa.data}
           iniciales={borrador.valores}
           erroresIniciales={borrador.errores}
+          sinPasajeros
           textoBoton="Siguiente: quién viaja"
           nota={<>Sigue los pedidos en «Viajes del convenio».</>}
           alRevisar={(valores, cuerpo) => {

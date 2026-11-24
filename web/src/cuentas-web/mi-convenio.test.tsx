@@ -1,4 +1,4 @@
-/** HU-34 y HU-46: cuenta del convenio en la web (marco del portal) y registro público de la empresa. */
+/** HU-34, HU-46 y HU-47 (CC-25): cuenta del convenio en la web (marco del portal) y registro público de la empresa. */
 
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -43,8 +43,10 @@ function instalar(auth: ServidorAuthFalso, convenio: Record<string, unknown>, ce
     }
     if (url.pathname === '/api/portal/transportes-andes/') return { estado: 200, cuerpo: { ...EMPRESA_PORTAL, central } };
     if (url.pathname === '/api/mi-convenio/solicitudes/') {
-      recibidas.push(await peticion.json());
-      return { estado: 201, cuerpo: { estado: 'SOLICITADO', recogida_en: '2026-10-30T17:00:00Z', expira_en: null, mensaje: 'Recibimos la solicitud.' } };
+      const cuerpo = (await peticion.json()) as { vehiculos?: string; acompanantes?: unknown[] };
+      recibidas.push(cuerpo);
+      const viajes = cuerpo.vehiculos === 'SEPARADOS' ? 1 + (cuerpo.acompanantes?.length ?? 0) : 1;
+      return { estado: 201, cuerpo: { estado: 'SOLICITADO', recogida_en: '2026-10-30T17:00:00Z', expira_en: null, viajes, mensaje: 'Recibimos la solicitud.' } };
     }
     return anterior!(peticion, url);
   };
@@ -78,25 +80,87 @@ describe('cuenta del convenio (HU-46)', () => {
     expect(screen.queryByText(/WhatsApp/)).not.toBeInTheDocument();
   });
 
-  it('pide: viaje, quién viaja con la declaración de privacidad y pedido recibido', async () => {
-    const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
-    const recibidas = instalar(servidor, CONVENIO);
+  async function hastaQuienViaja() {
     await userEvent.click(await screen.findByRole('tab', { name: 'En la ciudad' }));
     await userEvent.type(await screen.findByLabelText('Origen'), 'Av. Providencia 1208');
     await userEvent.type(screen.getByLabelText('Destino'), 'Plaza de Armas');
     await userEvent.click(screen.getByRole('button', { name: 'Siguiente: quién viaja' }));
     expect(await screen.findByRole('heading', { name: 'Quién viaja' })).toBeInTheDocument();
+  }
+
+  async function quienPide() {
+    await userEvent.type(screen.getByLabelText('Tu nombre'), 'Clara Cliente');
+    await userEvent.type(screen.getByLabelText('Tu teléfono'), '+56900008001');
+  }
+
+  it('pide para sí: quién pide, sin declaración y pedido recibido', async () => {
+    const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
+    const recibidas = instalar(servidor, CONVENIO);
+    await hastaQuienViaja();
+    // HU-47: el número de pasajeros sale de quién viaja, no del formulario del viaje.
+    expect(screen.queryByText(/Declaro que informé/)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
-    expect(screen.getByLabelText('Nombre del pasajero')).toHaveAccessibleDescription('Escribe el nombre del pasajero.');
+    expect(screen.getByLabelText('Tu nombre')).toHaveAccessibleDescription('Escribe tu nombre.');
     expect(recibidas).toHaveLength(0);
-    await userEvent.type(screen.getByLabelText('Nombre del pasajero'), 'Pedro Pasajero');
-    await userEvent.type(screen.getByLabelText('Teléfono del pasajero'), '+56900008003');
-    await userEvent.click(screen.getByLabelText(/Declaro que informé al pasajero/));
+    await quienPide();
     await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
     expect(await screen.findByRole('heading', { name: '¡Listo! Recibimos el pedido' })).toBeInTheDocument();
-    expect(recibidas[0]).toMatchObject({ nombre: 'Pedro Pasajero', telefono: '+56900008003', declara_informados: true, sentido: 'URBANO' });
+    expect(recibidas[0]).toMatchObject({ nombre: 'Clara Cliente', telefono: '+56900008001', para: 'MI', acompanantes: [], vehiculos: 'MISMO', sentido: 'URBANO' });
     expect(recibidas[0]).not.toHaveProperty('acepta_whatsapp');
+    expect(recibidas[0]).not.toHaveProperty('pase');
     expect(screen.getByRole('link', { name: 'Ver los viajes del convenio' })).toHaveAttribute('href', '/mi-convenio/viajes');
+  });
+
+  it('CP-67: para otra persona con un acompañante en el mismo vehículo, con la declaración', async () => {
+    const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
+    const recibidas = instalar(servidor, CONVENIO);
+    await hastaQuienViaja();
+    await quienPide();
+    await userEvent.click(screen.getByRole('radio', { name: 'Para otra persona' }));
+    const pasajero = screen.getByRole('heading', { name: 'Pasajero' }).closest('section')!;
+    await userEvent.type(within(pasajero).getByLabelText('Nombre y apellido'), 'Inés Invitada');
+    await userEvent.type(within(pasajero).getByLabelText('Cargo'), 'Gerente');
+    await userEvent.type(within(pasajero).getByLabelText('Teléfono'), '+56900008010');
+    await userEvent.click(screen.getByRole('radio', { name: 'Acompañado' }));
+    const acompanante = screen.getByRole('heading', { name: 'Acompañante 1' }).closest('section')!;
+    await userEvent.type(within(acompanante).getByLabelText('Nombre y apellido'), 'Ana Acompañante');
+    await userEvent.type(within(acompanante).getByLabelText('Cargo'), 'Analista');
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+    expect(screen.getByText('Declara que informaste a las personas que viajan.')).toBeInTheDocument();
+    expect(recibidas).toHaveLength(0);
+    await userEvent.click(screen.getByLabelText(/Declaro que informé a las personas que viajan/));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+    expect(await screen.findByRole('heading', { name: '¡Listo! Recibimos el pedido' })).toBeInTheDocument();
+    expect(recibidas[0]).toMatchObject({
+      nombre: 'Clara Cliente',
+      para: 'OTRO',
+      pasajero_nombre: 'Inés Invitada',
+      pasajero_cargo: 'Gerente',
+      vehiculos: 'MISMO',
+      acompanantes: [{ nombre: 'Ana Acompañante', cargo: 'Analista', telefono: '', correo: '' }],
+      declara_informados: true,
+    });
+  });
+
+  it('CP-68: vehículos separados exige el teléfono de cada persona y muestra cuántos viajes quedaron', async () => {
+    const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
+    const recibidas = instalar(servidor, CONVENIO);
+    await hastaQuienViaja();
+    await quienPide();
+    await userEvent.click(screen.getByRole('radio', { name: 'Acompañado' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Vehículos separados' }));
+    expect(screen.getByText(/Todos quedan solicitados de inmediato/)).toBeInTheDocument();
+    const acompanante = screen.getByRole('heading', { name: 'Acompañante 1' }).closest('section')!;
+    await userEvent.type(within(acompanante).getByLabelText('Nombre y apellido'), 'Ana Acompañante');
+    await userEvent.type(within(acompanante).getByLabelText('Cargo'), 'Analista');
+    await userEvent.click(screen.getByLabelText(/Declaro que informé a las personas que viajan/));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+    expect(within(acompanante).getByLabelText('Teléfono')).toHaveAccessibleDescription(/Escribe el teléfono/);
+    expect(recibidas).toHaveLength(0);
+    await userEvent.type(within(acompanante).getByLabelText('Teléfono'), '+56900008021');
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar pedido' }));
+    expect(await screen.findByRole('heading', { name: '¡Listo! Recibimos 2 viajes' })).toBeInTheDocument();
+    expect(recibidas[0]).toMatchObject({ vehiculos: 'SEPARADOS', acompanantes: [{ nombre: 'Ana Acompañante', telefono: '+56900008021' }] });
   });
 
   it('viajes del convenio: tarjetas con el pasajero, la insignia y el número', async () => {

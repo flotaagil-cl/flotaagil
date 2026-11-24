@@ -20,6 +20,8 @@ interface Props {
   errores: ErroresConvenio;
   capacidad: number;
   tope: number;
+  /** CC-25: con la cuenta del convenio no hay correo de confirmación. */
+  ayudaSeparados?: string;
   onCambiar: (datos: DatosConvenio) => void;
 }
 
@@ -58,8 +60,10 @@ function DatosPersona({ titulo, persona, prefijo, errores, telefonoObligatorio, 
 
 const AYUDA_CORREO = 'Le enviamos los datos del viaje, sin enlace de confirmación.';
 
-/** CC-23 (HU-73): quién viaja en una reserva con pase de convenio (D4, D6, D7). */
-export function PersonasConvenio({ slug, datos, errores, capacidad, tope, onCambiar }: Props) {
+const AYUDA_SEPARADOS = 'Un vehículo por persona, con el mismo origen, destino y hora. Un solo correo confirma todos los viajes.';
+
+/** CC-23 (HU-73) y CC-25 (HU-47): quién viaja en una reserva de convenio (D4, D6, D7). */
+export function PersonasConvenio({ slug, datos, errores, capacidad, tope, ayudaSeparados = AYUDA_SEPARADOS, onCambiar }: Props) {
   const cambiar = <K extends keyof DatosConvenio>(campo: K, valor: DatosConvenio[K]) => onCambiar({ ...datos, [campo]: valor });
   const maximo = maximoAcompanantes(datos, capacidad, tope);
   const cantidad = (n: number) => {
@@ -120,9 +124,7 @@ export function PersonasConvenio({ slug, datos, errores, capacidad, tope, onCamb
             onCambiar={(valor) => cambiar('vehiculos', valor)}
           />
           <p className={e.ayuda}>
-            {separados
-              ? 'Un vehículo por persona, con el mismo origen, destino y hora. Un solo correo confirma todos los viajes.'
-              : `En un vehículo caben ${capacidad} personas en total.`}
+            {separados ? ayudaSeparados : `En un vehículo caben ${capacidad} personas en total.`}
           </p>
           <Contador
             etiqueta="Acompañantes"
