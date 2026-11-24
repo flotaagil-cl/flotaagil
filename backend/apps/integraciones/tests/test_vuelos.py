@@ -3,7 +3,7 @@
 import io
 import json
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -64,6 +64,42 @@ class TestDesarrollo:
 
     def test_zz_no_existe(self):
         assert ConsultorVuelosDesarrollo().consultar("ZZ999", INFORMADA) is None
+
+    def test_la3_nacional_a_tiempo(self):
+        datos = ConsultorVuelosDesarrollo().consultar("LA 310", INFORMADA)
+        assert datos is not None
+        assert (datos.numero, datos.estado, datos.hora_estimada, datos.origen_icao, datos.origen_ciudad) == (
+            "LA310",
+            EstadoVuelo.PROGRAMADO,
+            None,
+            "SCFA",
+            "Antofagasta",
+        )
+
+    def test_la4_demorado_mas_25_min(self):
+        datos = ConsultorVuelosDesarrollo().consultar("LA 450", INFORMADA)
+        assert datos is not None
+        assert (datos.numero, datos.estado, datos.hora_estimada, datos.origen_icao) == (
+            "LA450",
+            EstadoVuelo.DEMORADO,
+            INFORMADA + timedelta(minutes=25),
+            "SCFA",
+        )
+
+    def test_la8_internacional_a_tiempo(self):
+        datos = ConsultorVuelosDesarrollo().consultar("LA 800", INFORMADA)
+        assert datos is not None
+        assert (datos.numero, datos.estado, datos.hora_estimada, datos.origen_icao, datos.origen_ciudad) == (
+            "LA800",
+            EstadoVuelo.PROGRAMADO,
+            None,
+            "KMIA",
+            "Miami",
+        )
+
+    def test_xx_simula_api_no_disponible(self):
+        with pytest.raises(VuelosNoDisponibles):
+            ConsultorVuelosDesarrollo().consultar("XX999", INFORMADA)
 
 
 class TestFlightAware:

@@ -12,6 +12,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
+from apps.aeropuerto import monitoreo
 from apps.aeropuerto.models import EstadoVuelo, Vuelo
 from apps.auditoria import servicios as auditoria
 from apps.auditoria.models import Entidad
@@ -22,7 +23,7 @@ from apps.integraciones.geocodificador import (
     Zona,
     obtener_geocodificador,
 )
-from apps.integraciones.vuelos import VuelosNoDisponibles, obtener_consultor_vuelos
+from apps.integraciones.vuelos import DatosVuelo, VuelosNoDisponibles, obtener_consultor_vuelos
 
 from . import estados, tareas
 from .models import EstadoViaje, MetodoPago, OrigenCancelacion, PagoViaje, Pasajero, Sentido, Viaje
@@ -118,6 +119,9 @@ def verificar_vuelo(vuelo: dict, consultor=None) -> dict:
         "hora_programada": datos.hora_programada,
         "hora_estimada": datos.hora_estimada,
         "estado_vuelo": datos.estado,
+        "origen_icao": datos.origen_icao,
+        "origen_ciudad": datos.origen_ciudad,
+        "origen_aeropuerto": datos.origen_aeropuerto,
         "ultima_consulta_en": timezone.now(),
         "verificado": True,
     }
@@ -134,11 +138,31 @@ def _guardar_vuelo(viaje: Viaje, vuelo: dict | None) -> None:
             hora_programada=hora,
             hora_estimada=vuelo.get("hora_estimada"),
             estado_vuelo=vuelo.get("estado_vuelo") or EstadoVuelo.PROGRAMADO,
+            origen_icao=vuelo.get("origen_icao"),
+            origen_ciudad=vuelo.get("origen_ciudad"),
+            origen_aeropuerto=vuelo.get("origen_aeropuerto"),
             ultima_consulta_en=vuelo.get("ultima_consulta_en"),
         )
         if creado.ultima_consulta_en is None:
             # La API no respondió al registrarlo: se reintenta en segundo plano.
             tareas.al_confirmar(tareas.consultar_vuelo, creado.pk)
+        elif creado.hora_estimada is not None or creado.estado_vuelo in (
+            EstadoVuelo.CANCELADO,
+            EstadoVuelo.DESVIADO,
+        ):
+            # Si ya viene con ETA/cambio al crearse, evalúa propuesta de recogida y alertas (RN-02).
+            monitoreo.aplicar(
+                creado.pk,
+                DatosVuelo(
+                    creado.numero,
+                    creado.hora_programada,
+                    creado.hora_estimada,
+                    creado.estado_vuelo,
+                    creado.origen_icao,
+                    creado.origen_ciudad,
+                    creado.origen_aeropuerto,
+                ),
+            )
 
 
 def obtener_pasajero(empresa, *, nombre: str, telefono: str) -> Pasajero:

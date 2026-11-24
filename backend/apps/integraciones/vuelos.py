@@ -1,7 +1,12 @@
 """Consulta de vuelos detrás de un adaptador (HU-26; después la usa el monitoreo de HU-27).
 
-- `ConsultorVuelosDesarrollo`: no llama a ningún servicio. Todo vuelo existe con la hora informada, salvo los
-  que empiezan con «ZZ» (sirve para probar el caso «no existe»).
+- `ConsultorVuelosDesarrollo`: no llama a ningún servicio. Simula escenarios determinísticos de prueba:
+  - `ZZ*`: vuelo inexistente (devuelve `None`).
+  - `XX*` (p. ej. `XX999`): error temporal de la API (lanza `VuelosNoDisponibles`).
+  - `LA3*` (p. ej. `LA310`): nacional (`SCFA`) a tiempo (`PROGRAMADO`).
+  - `LA4*` (p. ej. `LA450`): nacional (`SCFA`) demorado con ETA +25 min (`DEMORADO`).
+  - `LA8*` (p. ej. `LA800`): internacional (`KMIA`) a tiempo (`PROGRAMADO`).
+  - Resto: vuelo `PROGRAMADO` con la hora informada.
 - `ConsultorFlightAware`: FlightAware AeroAPI v4. Se usa cuando `FLIGHTAWARE_API_KEY` está definida. Los
   vuelos de los próximos 2 días se consultan en `/flights/{ident}`, con estado y ETA (`start` y `end` no
   pueden pasar de 2 días en el futuro). Los más lejanos, en `/schedules/{inicio}/{fin}`, que solo da el
@@ -81,11 +86,34 @@ def origen_desarrollo(icao: str | None) -> tuple[str | None, str | None]:
     return ORIGENES_DESARROLLO.get((icao or "").upper(), (None, None))
 
 
+ESCENARIOS_DESARROLLO = {
+    "LA3": ("SCFA", EstadoVuelo.PROGRAMADO, 0),
+    "LA4": ("SCFA", EstadoVuelo.DEMORADO, 25),
+    "LA8": ("KMIA", EstadoVuelo.PROGRAMADO, 0),
+}
+
+
 class ConsultorVuelosDesarrollo:
     def consultar(self, numero: str, llegada_informada: datetime) -> DatosVuelo | None:
-        if designador(numero).startswith("ZZ"):
+        ident = designador(numero)
+        if ident.startswith("ZZ"):
             return None
-        return DatosVuelo(designador(numero), llegada_informada, None, EstadoVuelo.PROGRAMADO)
+        if ident.startswith("XX"):
+            raise VuelosNoDisponibles("Error simulado de consulta de vuelo (desarrollo).")
+        for prefijo, (origen_icao, estado, demora_min) in ESCENARIOS_DESARROLLO.items():
+            if ident.startswith(prefijo):
+                ciudad, aeropuerto = origen_desarrollo(origen_icao)
+                estimada = llegada_informada + timedelta(minutes=demora_min) if demora_min else None
+                return DatosVuelo(
+                    ident,
+                    llegada_informada,
+                    estimada,
+                    estado,
+                    origen_icao,
+                    ciudad,
+                    aeropuerto,
+                )
+        return DatosVuelo(ident, llegada_informada, None, EstadoVuelo.PROGRAMADO)
 
 
 def _hora(valor) -> datetime | None:

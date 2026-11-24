@@ -105,6 +105,9 @@ def consultar_vuelo(self, vuelo_id: int) -> None:
         hora_programada=datos.hora_programada,
         hora_estimada=datos.hora_estimada,
         estado_vuelo=datos.estado,
+        origen_icao=datos.origen_icao,
+        origen_ciudad=datos.origen_ciudad,
+        origen_aeropuerto=datos.origen_aeropuerto,
         ultima_consulta_en=timezone.now(),
     )
 
