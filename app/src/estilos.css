@@ -699,3 +699,855 @@ button.principal.rechazar {
   line-height: 1.45;
   color: var(--texto-suave);
 }
+
+/* ---------- Shell de app Android (Inicio, Chat, Mi turno) ---------- */
+.app-pantalla {
+  max-width: none;
+  min-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--fondo);
+}
+
+.app-pantalla-interna {
+  flex: 1;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: calc(max(0.75rem, env(safe-area-inset-top)) + 0.25rem) 1rem 0.9rem;
+  background: var(--grad-hero);
+  color: var(--sobre-oscuro);
+  box-shadow: 0 2px 12px var(--sombra);
+}
+
+.barra-atras {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--toque);
+  height: var(--toque);
+  min-height: var(--toque);
+  margin-left: -0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--velo);
+  color: var(--sobre-oscuro);
+  cursor: pointer;
+}
+
+.barra-atras:active {
+  opacity: 0.8;
+}
+
+.barra-marca {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.barra-logo {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--velo);
+  border: 1px solid color-mix(in srgb, var(--sobre-oscuro) 28%, transparent);
+  color: var(--sobre-oscuro);
+}
+
+.barra-titulos {
+  min-width: 0;
+  flex: 1;
+}
+
+.barra-titulos h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barra-subtitulo {
+  margin: 0.1rem 0 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barra-estado {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primario-900) 20%, transparent);
+}
+
+.barra-estado-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--texto-suave);
+}
+
+.barra-estado[data-estado='DISPONIBLE'] {
+  background: var(--insignia-ok-fondo);
+  color: var(--insignia-ok-texto);
+}
+
+.barra-estado[data-estado='DISPONIBLE'] .barra-estado-punto {
+  background: var(--exito);
+}
+
+.barra-estado[data-estado='EN_VIAJE'] {
+  background: var(--insignia-info-fondo);
+  color: var(--insignia-info-texto);
+}
+
+.barra-estado[data-estado='EN_VIAJE'] .barra-estado-punto {
+  background: var(--color-primario-900);
+}
+
+.app-cuerpo {
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.app-cuerpo .tarjeta,
+.app-cuerpo .resumen-compacto {
+  margin-top: 0;
+}
+
+.app-cuerpo .tarjeta p {
+  margin: 0.35rem 0 0;
+}
+
+.tarjeta-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.7rem;
+}
+
+.tarjeta-cabecera h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.tarjeta-icono {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-700);
+}
+
+.tarjeta-destacada {
+  border-color: var(--color-tiffany);
+  background: var(--grad-destacado);
+}
+
+.tarjeta-dato-principal {
+  margin: 0;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.nota-turno {
+  margin-top: 0.75rem;
+}
+
+.dato-gps {
+  margin-top: 0.5rem;
+}
+
+/* ---------- Alertas y advertencias UX/UI ---------- */
+.alerta-bloque {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0.65rem 0 0;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--radio-boton);
+  border-left: 4px solid currentColor;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.app-cuerpo > .alerta-bloque {
+  margin-top: 0;
+}
+
+.alerta-bloque.ok {
+  border-left-color: var(--exito);
+}
+
+.alerta-bloque.aviso {
+  border-left-color: var(--insignia-revision-texto);
+}
+
+.alerta-bloque.error {
+  border-left-color: var(--peligro);
+}
+
+.alerta-bloque > svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.alerta-cuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.alerta-texto {
+  margin: 0;
+}
+
+.alerta-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: var(--toque);
+  padding: 0.45rem 0.95rem;
+  border: 1px solid currentColor;
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.alerta-compacta {
+  margin-top: 0.55rem;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+/* Guía plegable GPS */
+.gps-guia {
+  margin-top: 0.85rem;
+  padding: 0.25rem 0.85rem 0.75rem;
+  border-radius: var(--radio-boton);
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+}
+
+.gps-guia summary {
+  gap: 0.55rem;
+  font-size: 0.9rem;
+  color: var(--texto);
+  list-style: none;
+}
+
+.gps-guia summary::-webkit-details-marker {
+  display: none;
+}
+
+.gps-guia summary > svg:first-child {
+  flex: none;
+  color: var(--color-primario-700);
+}
+
+.gps-guia summary > span {
+  flex: 1;
+}
+
+.gps-guia-flecha {
+  flex: none;
+  color: var(--texto-suave);
+  transition: transform 160ms ease;
+}
+
+.gps-guia[open] .gps-guia-flecha {
+  transform: rotate(90deg);
+}
+
+.gps-pasos {
+  margin: 0.35rem 0 0.85rem;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+.boton-secundario-ancho {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1.5px solid var(--color-primario-700);
+  background: var(--superficie);
+  color: var(--color-primario-900);
+  cursor: pointer;
+}
+
+/* ---------- Barra inferior fija de navegación (Inicio) ---------- */
+.barra-inferior {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--superficie);
+  border-top: 1px solid var(--borde);
+  box-shadow: 0 -4px 16px var(--sombra);
+  padding: 0.35rem 0.5rem max(0.45rem, env(safe-area-inset-bottom));
+}
+
+.barra-inferior-grid {
+  max-width: 40rem;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 54px;
+  padding: 0.35rem 0.25rem;
+  border: 0;
+  border-radius: var(--radio-boton);
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nav-item:active {
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+}
+
+.nav-item.nav-peligro {
+  background: var(--insignia-peligro-fondo);
+  color: var(--insignia-peligro-texto);
+}
+
+.nav-icono {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-primario-700);
+  color: var(--sobre-oscuro);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+.nav-texto {
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* ---------- Barra inferior fija en cuadro para acciones (Chat, Nuevo grupo) ---------- */
+.app-pie-barra {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  background: var(--superficie);
+  border-top: 1px solid var(--borde);
+  box-shadow: 0 -4px 16px var(--sombra);
+  padding: 0.75rem 1rem max(0.85rem, env(safe-area-inset-bottom));
+  display: grid;
+  gap: 0.6rem;
+}
+
+.app-pie-barra > * {
+  width: 100%;
+  max-width: 40rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.pie-doble {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.pie-boton-principal {
+  margin-top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 52px;
+  cursor: pointer;
+}
+
+.pie-boton-secundario {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 48px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-boton);
+  background: var(--fondo);
+  color: var(--color-primario-900);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pie-boton-secundario:active {
+  background: var(--color-tiffany-50);
+  border-color: var(--color-primario-700);
+}
+
+/* ---------- Chat y listas estilo app Android ---------- */
+.chat-aviso-manejo {
+  margin: 0;
+}
+
+.conversaciones {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.conversacion {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 64px;
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  box-shadow: 0 1px 3px var(--sombra);
+  text-align: left;
+  cursor: pointer;
+}
+
+.conversacion:active {
+  background: var(--color-tiffany-50);
+  border-color: var(--color-primario-700);
+}
+
+.chat-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.chat-avatar-central {
+  background: var(--color-primario-700);
+  color: var(--sobre-oscuro);
+}
+
+.chat-avatar-grupo {
+  background: var(--suave);
+  color: var(--color-primario-900);
+}
+
+.chat-avatar-chico {
+  width: 34px;
+  height: 34px;
+  font-size: 0.78rem;
+}
+
+.chat-avatar-chico::before {
+  content: attr(data-iniciales);
+}
+
+.conversacion-texto {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.conversacion-texto strong {
+  color: var(--texto);
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversacion-ultimo {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.conversacion-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.lista-flecha {
+  flex: none;
+  color: var(--texto-suave);
+}
+
+.contacto-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+/* Hilo de chat */
+.chat-hilo .app-barra .chat-avatar {
+  width: 38px;
+  height: 38px;
+  background: var(--velo);
+  color: var(--sobre-oscuro);
+  border: 1px solid color-mix(in srgb, var(--sobre-oscuro) 25%, transparent);
+}
+
+.chat-anteriores {
+  align-self: center;
+  min-height: 40px;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--color-primario-900);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.mensajes {
+  margin: 0;
+  padding: 0;
+  gap: 0.65rem;
+}
+
+.estado-vacio-item {
+  list-style: none;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.mensajes .ajeno,
+.mensajes .propio {
+  max-width: 84%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px var(--sombra);
+}
+
+.mensajes .ajeno {
+  border-bottom-left-radius: 4px;
+}
+
+.mensajes .propio {
+  background: var(--color-tiffany-50);
+  border-color: var(--color-tiffany);
+  border-bottom-right-radius: 4px;
+}
+
+.mensaje-autor {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--color-primario-900);
+}
+
+.mensaje-meta {
+  display: block;
+  margin-top: 0.25rem;
+  text-align: right;
+  font-size: 0.74rem;
+  color: var(--texto-suave);
+}
+
+.chat-compositor {
+  gap: 0.55rem;
+}
+
+.rapidas {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 0.45rem;
+  margin: 0;
+  padding-bottom: 0.2rem;
+  scrollbar-width: none;
+}
+
+.rapidas::-webkit-scrollbar {
+  display: none;
+}
+
+.chip-rapida {
+  flex: none;
+  min-height: 38px;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-tiffany);
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-form-envio {
+  margin: 0;
+}
+
+.chat-caja-texto {
+  border: 1.5px solid var(--borde-campo);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  padding: 0.5rem 0.65rem;
+}
+
+.chat-caja-texto:focus-within {
+  border-color: var(--color-primario-700);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-tiffany) 40%, transparent);
+}
+
+.chat-caja-texto textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 0;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--texto);
+}
+
+.chat-caja-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.chat-enviar {
+  width: auto;
+  min-height: var(--toque);
+  margin-top: 0;
+  padding: 0.45rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.chat-solo-lectura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.4rem 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Nuevo grupo */
+.chat-form-pantalla {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.grupo-tarjeta {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.grupo-integrantes {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.grupo-integrantes legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+  font-size: var(--texto-etiqueta);
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.grupo-opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 52px;
+  margin-top: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-boton);
+  background: var(--fondo);
+  font-size: var(--texto-base);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grupo-opcion input {
+  min-height: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--color-primario-700);
+}
+
+.grupo-opcion-nombre {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- Mi turno y datos ---------- */
+.turno-resumen {
+  background: var(--grad-destacado);
+  border-color: var(--color-tiffany);
+}
+
+.turno-periodo {
+  margin: 0;
+  font-weight: 700;
+  color: var(--color-primario-900);
+}
+
+.turno-cantidad {
+  margin: 0.25rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.estado-vacio {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.45rem;
+  padding: 1.75rem 1.25rem;
+}
+
+.estado-vacio-icono {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-700);
+  margin-bottom: 0.25rem;
+}
+
+.estado-vacio-titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.lista-datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 0.9rem;
+  margin: 0;
+  align-items: baseline;
+}
+
+.lista-datos dt {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.lista-datos dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.viaje-turno h2,
+.totales-turno h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}

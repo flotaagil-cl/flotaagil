@@ -3,11 +3,12 @@
  * curso, el aviso «Evita escribir mientras manejas» (no bloquea). Los cambios llegan por el canal en vivo.
  */
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useAtras } from '../atras';
 import type { CanalChat, MensajeChat } from '../chat/canal';
 import { RAPIDAS } from '../chat/rapidas';
 import { DeslizarParaActualizar } from '../componentes/DeslizarParaActualizar';
+import { Icono } from '../componentes/Icono';
 import { fechaYHora } from '../hora';
 import { ErrorApi, SinRed } from '../sesion/sesion';
 
@@ -60,23 +61,60 @@ function combinarMensajes(actuales: MensajeChat[], nuevos: MensajeChat[]): Mensa
   return [...porId.values()].sort((a, b) => a.id - b.id);
 }
 
+/** Devuelve hasta 2 iniciales en mayúsculas para avatares circulares. */
+function iniciales(texto: string): string {
+  return texto
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function AvatarConversacion({ tipo, titulo }: { tipo: ConversacionChat['tipo']; titulo: string }) {
+  if (tipo === 'CENTRAL') {
+    return (
+      <span className="chat-avatar chat-avatar-central" aria-hidden="true">
+        <Icono nombre="auto" tamano={18} />
+      </span>
+    );
+  }
+  if (tipo === 'GRUPO') {
+    return (
+      <span className="chat-avatar chat-avatar-grupo" aria-hidden="true">
+        <Icono nombre="usuarios" tamano={18} />
+      </span>
+    );
+  }
+  return (
+    <span className="chat-avatar" aria-hidden="true">
+      {iniciales(titulo)}
+    </span>
+  );
+}
+
 type Vista = { tipo: 'lista' } | { tipo: 'hilo'; conversacion: ConversacionChat } | { tipo: 'directo' } | { tipo: 'grupo' };
 
 export function Chat({ pedir, canal, enViaje, volver, viajeId }: Props) {
   const [vista, setVista] = useState<Vista>({ tipo: 'lista' });
   const abrir = (conversacion: ConversacionChat) => setVista({ tipo: 'hilo', conversacion });
   const aLista = () => setVista({ tipo: 'lista' });
+  const avisoManejo = enViaje ? (
+    <div className="aviso alerta-bloque chat-aviso-manejo" role="status">
+      <Icono nombre="alerta" tamano={18} />
+      <span>Evita escribir mientras manejas. Usa las respuestas rápidas o detente en un lugar seguro.</span>
+    </div>
+  ) : null;
 
   return (
-    <main>
-      {enViaje && (
-        <p className="aviso" role="status">
-          Evita escribir mientras manejas. Usa las respuestas rápidas o detente en un lugar seguro.
-        </p>
+    <main className="app-pantalla">
+      {vista.tipo === 'lista' && (
+        <Lista pedir={pedir} canal={canal} avisoManejo={avisoManejo} abrir={abrir} nuevo={(tipo) => setVista({ tipo })} volver={volver} viajeId={viajeId} />
       )}
-      {vista.tipo === 'lista' && <Lista pedir={pedir} canal={canal} abrir={abrir} nuevo={(tipo) => setVista({ tipo })} volver={volver} viajeId={viajeId} />}
-      {vista.tipo === 'hilo' && <Hilo pedir={pedir} canal={canal} conversacion={vista.conversacion} volver={aLista} />}
-      {(vista.tipo === 'directo' || vista.tipo === 'grupo') && <Nuevo pedir={pedir} tipo={vista.tipo} abrir={abrir} volver={aLista} />}
+      {vista.tipo === 'hilo' && <Hilo pedir={pedir} canal={canal} avisoManejo={avisoManejo} conversacion={vista.conversacion} volver={aLista} />}
+      {(vista.tipo === 'directo' || vista.tipo === 'grupo') && (
+        <Nuevo pedir={pedir} tipo={vista.tipo} avisoManejo={avisoManejo} abrir={abrir} volver={aLista} />
+      )}
     </main>
   );
 }
@@ -84,11 +122,16 @@ export function Chat({ pedir, canal, enViaje, volver, viajeId }: Props) {
 function Lista({
   pedir,
   canal,
+  avisoManejo,
   abrir,
   nuevo,
   volver,
   viajeId,
-}: Pick<Props, 'pedir' | 'canal' | 'volver' | 'viajeId'> & { abrir: (c: ConversacionChat) => void; nuevo: (tipo: 'directo' | 'grupo') => void }) {
+}: Pick<Props, 'pedir' | 'canal' | 'volver' | 'viajeId'> & {
+  avisoManejo: ReactNode;
+  abrir: (c: ConversacionChat) => void;
+  nuevo: (tipo: 'directo' | 'grupo') => void;
+}) {
   const [conversaciones, setConversaciones] = useState<ConversacionChat[] | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
 
@@ -119,51 +162,87 @@ function Lista({
 
   return (
     <DeslizarParaActualizar alActualizar={cargar}>
-      <h1>Chat</h1>
-      {falla && (
-        <p className="error" role="alert">
-          {falla}{' '}
-          <button type="button" onClick={() => void cargar()}>
-            Reintentar
+      <div className="app-pantalla-interna">
+        <header className="app-barra">
+          <button type="button" className="barra-atras" aria-label="Volver al inicio" onClick={volver}>
+            <Icono nombre="atras" tamano={22} />
           </button>
-        </p>
-      )}
-      {conversaciones === null ? (
-        !falla && <p>Cargando…</p>
-      ) : (
-        <ul className="conversaciones" aria-label="Conversaciones">
-          {conversaciones.map((c) => (
-            <li key={c.id}>
-              <button type="button" className="conversacion" onClick={() => abrir(c)}>
-                <strong>{c.titulo}</strong>
-                {c.ultimo && <span className="secundario">{`${c.ultimo.autor}: ${c.ultimo.texto}`}</span>}
-                {c.no_leidos > 0 && <span className="insignia">{`${c.no_leidos} sin leer`}</span>}
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="acciones">
-        {viajeId && (
-          <button type="button" className="principal" onClick={() => void conPasajero(viajeId)}>
-            Chat con el pasajero
-          </button>
-        )}
-        <button type="button" onClick={() => nuevo('directo')}>
-          Nuevo directo
-        </button>
-        <button type="button" onClick={() => nuevo('grupo')}>
-          Nuevo grupo
-        </button>
-        <button type="button" onClick={volver}>
-          Volver al inicio
-        </button>
+          <div className="barra-titulos">
+            <h1>Chat</h1>
+            <p className="barra-subtitulo">Conversaciones del equipo</p>
+          </div>
+        </header>
+
+        <div className="app-cuerpo">
+          {avisoManejo}
+          {falla && (
+            <div className="error alerta-bloque" role="alert">
+              <Icono nombre="alerta" tamano={18} />
+              <div className="alerta-cuerpo">
+                <p className="alerta-texto">{falla}</p>
+                <button type="button" className="alerta-accion" onClick={() => void cargar()}>
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          )}
+          {conversaciones === null ? (
+            !falla && (
+              <div className="tarjeta estado-vacio">
+                <p className="secundario">Cargando…</p>
+              </div>
+            )
+          ) : (
+            <ul className="conversaciones" aria-label="Conversaciones">
+              {conversaciones.map((c) => (
+                <li key={c.id}>
+                  <button type="button" className="conversacion" onClick={() => abrir(c)}>
+                    <AvatarConversacion tipo={c.tipo} titulo={c.titulo} />
+                    <span className="conversacion-texto">
+                      <strong>{c.titulo}</strong>
+                      {c.ultimo && <span className="conversacion-ultimo">{`${c.ultimo.autor}: ${c.ultimo.texto}`}</span>}
+                    </span>
+                    <span className="conversacion-meta">
+                      {c.no_leidos > 0 && <span className="insignia">{`${c.no_leidos} sin leer`}</span>}
+                      <Icono nombre="derecha" tamano={18} className="lista-flecha" />
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <footer className="app-pie-barra">
+          {viajeId && (
+            <button type="button" className="principal pie-boton-principal" onClick={() => void conPasajero(viajeId)}>
+              <Icono nombre="mensaje" tamano={18} />
+              <span>Chat con el pasajero</span>
+            </button>
+          )}
+          <div className="pie-doble">
+            <button type="button" className="pie-boton-secundario" onClick={() => nuevo('directo')}>
+              <Icono nombre="usuario" tamano={18} />
+              <span>Nuevo directo</span>
+            </button>
+            <button type="button" className="pie-boton-secundario" onClick={() => nuevo('grupo')}>
+              <Icono nombre="usuarios" tamano={18} />
+              <span>Nuevo grupo</span>
+            </button>
+          </div>
+        </footer>
       </div>
     </DeslizarParaActualizar>
   );
 }
 
-function Hilo({ pedir, canal, conversacion, volver }: Pick<Props, 'pedir' | 'canal'> & { conversacion: ConversacionChat; volver: () => void }) {
+function Hilo({
+  pedir,
+  canal,
+  avisoManejo,
+  conversacion,
+  volver,
+}: Pick<Props, 'pedir' | 'canal'> & { avisoManejo: ReactNode; conversacion: ConversacionChat; volver: () => void }) {
   const [mensajes, setMensajes] = useState<MensajeChat[]>([]);
   const [hayMas, setHayMas] = useState(false);
   const [leidoHasta, setLeidoHasta] = useState(0);
@@ -238,61 +317,99 @@ function Hilo({ pedir, canal, conversacion, volver }: Pick<Props, 'pedir' | 'can
   }
 
   return (
-    <>
-      <h1>{conversacion.titulo}</h1>
-      <button type="button" onClick={volver}>
-        Volver a las conversaciones
-      </button>
-      {hayMas && mensajes.length > 0 && (
-        <button type="button" onClick={() => void anteriores()}>
-          Ver mensajes anteriores
+    <div className="app-pantalla-interna chat-hilo">
+      <header className="app-barra">
+        <button type="button" className="barra-atras" aria-label="Volver a las conversaciones" onClick={volver}>
+          <Icono nombre="atras" tamano={22} />
         </button>
-      )}
-      <ol className="mensajes" aria-label="Mensajes">
-        {mensajes.length === 0 && <li className="secundario">Aún no hay mensajes.</li>}
-        {mensajes.map((m) => (
-          <li key={m.id} className={m.propio ? 'propio' : 'ajeno'}>
-            {!m.propio && <strong>{m.autor}</strong>}
-            <p>{m.texto}</p>
-            <span className="secundario">
-              {fechaYHora(m.creado_en)}
-              {m.propio && ` · ${m.id <= leidoHasta ? 'Leído' : 'Enviado'}`}
-            </span>
-          </li>
-        ))}
-      </ol>
-      <div ref={finRef} />
-      {falla && (
-        <p className="error" role="alert">
-          {falla}
-        </p>
-      )}
-      {conversacion.puede_escribir === false ? (
-        <p className="secundario">El viaje terminó: este chat queda en solo lectura.</p>
-      ) : (
-        <>
-          <div className="rapidas" role="group" aria-label="Respuestas rápidas">
-            {RAPIDAS.map((r) => (
-              <button key={r.codigo} type="button" disabled={enviando} onClick={() => void enviar({ rapida: r.codigo })}>
-                {r.texto}
-              </button>
-            ))}
+        <div className="barra-marca">
+          <AvatarConversacion tipo={conversacion.tipo} titulo={conversacion.titulo} />
+          <div className="barra-titulos">
+            <h1>{conversacion.titulo}</h1>
           </div>
-          <form onSubmit={alEnviar} className="campo">
-            <label htmlFor="mensaje-chat">Mensaje</label>
-            <textarea id="mensaje-chat" maxLength={MAX_TEXTO} value={texto} onChange={(e) => setTexto(e.target.value)} />
-            <span className="secundario">{`${texto.length}/${MAX_TEXTO}`}</span>
-            <button className="principal" type="submit" disabled={enviando || !texto.trim()}>
-              Enviar
-            </button>
-          </form>
-        </>
-      )}
-    </>
+        </div>
+      </header>
+
+      <div className="app-cuerpo chat-hilo-cuerpo">
+        {avisoManejo}
+        {hayMas && mensajes.length > 0 && (
+          <button type="button" className="chat-anteriores" onClick={() => void anteriores()}>
+            Ver mensajes anteriores
+          </button>
+        )}
+        <ol className="mensajes" aria-label="Mensajes">
+          {mensajes.length === 0 && <li className="estado-vacio-item secundario">Aún no hay mensajes.</li>}
+          {mensajes.map((m) => (
+            <li key={m.id} className={m.propio ? 'propio' : 'ajeno'}>
+              {!m.propio && <strong className="mensaje-autor">{m.autor}</strong>}
+              <p>{m.texto}</p>
+              <span className="mensaje-meta">
+                {fechaYHora(m.creado_en)}
+                {m.propio && ` · ${m.id <= leidoHasta ? 'Leído' : 'Enviado'}`}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div ref={finRef} />
+        {falla && (
+          <div className="error alerta-bloque" role="alert">
+            <Icono nombre="alerta" tamano={18} />
+            <span>{falla}</span>
+          </div>
+        )}
+      </div>
+
+      <footer className="app-pie-barra chat-compositor">
+        {conversacion.puede_escribir === false ? (
+          <p className="chat-solo-lectura">
+            <Icono nombre="candado" tamano={16} />
+            <span>El viaje terminó: este chat queda en solo lectura.</span>
+          </p>
+        ) : (
+          <>
+            <div className="rapidas" role="group" aria-label="Respuestas rápidas">
+              {RAPIDAS.map((r) => (
+                <button key={r.codigo} type="button" className="chip-rapida" disabled={enviando} onClick={() => void enviar({ rapida: r.codigo })}>
+                  {r.texto}
+                </button>
+              ))}
+            </div>
+            <form onSubmit={alEnviar} className="chat-form-envio">
+              <label htmlFor="mensaje-chat" className="solo-lector">
+                Mensaje
+              </label>
+              <div className="chat-caja-texto">
+                <textarea
+                  id="mensaje-chat"
+                  rows={2}
+                  placeholder="Escribe un mensaje…"
+                  maxLength={MAX_TEXTO}
+                  value={texto}
+                  onChange={(e) => setTexto(e.target.value)}
+                />
+                <div className="chat-caja-pie">
+                  <span className="secundario">{`${texto.length}/${MAX_TEXTO}`}</span>
+                  <button className="principal chat-enviar" type="submit" disabled={enviando || !texto.trim()}>
+                    <Icono nombre="enviar" tamano={16} />
+                    <span>Enviar</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </>
+        )}
+      </footer>
+    </div>
   );
 }
 
-function Nuevo({ pedir, tipo, abrir, volver }: Pick<Props, 'pedir'> & { tipo: 'directo' | 'grupo'; abrir: (c: ConversacionChat) => void; volver: () => void }) {
+function Nuevo({
+  pedir,
+  tipo,
+  avisoManejo,
+  abrir,
+  volver,
+}: Pick<Props, 'pedir'> & { tipo: 'directo' | 'grupo'; avisoManejo: ReactNode; abrir: (c: ConversacionChat) => void; volver: () => void }) {
   const [personal, setPersonal] = useState<Persona[] | null>(null);
   const [nombre, setNombre] = useState('');
   const [elegidos, setElegidos] = useState<number[]>([]);
@@ -327,48 +444,99 @@ function Nuevo({ pedir, tipo, abrir, volver }: Pick<Props, 'pedir'> & { tipo: 'd
   }
 
   return (
-    <>
-      <h1>{tipo === 'directo' ? 'Nuevo directo' : 'Nuevo grupo'}</h1>
-      {falla && (
-        <p className="error" role="alert">
-          {falla}
-        </p>
-      )}
-      {personal === null ? (
-        !falla && <p>Cargando…</p>
-      ) : tipo === 'directo' ? (
-        <ul className="conversaciones" aria-label="Personal">
-          {personal.map((p) => (
-            <li key={p.id}>
-              <button type="button" className="conversacion" onClick={() => void directo(p)}>
-                {`Escribir a ${p.nombre}`}
-              </button>
-            </li>
-          ))}
-        </ul>
+    <div className="app-pantalla-interna">
+      <header className="app-barra">
+        <button type="button" className="barra-atras" aria-label="Volver a las conversaciones" onClick={volver}>
+          <Icono nombre="atras" tamano={22} />
+        </button>
+        <div className="barra-titulos">
+          <h1>{tipo === 'directo' ? 'Nuevo directo' : 'Nuevo grupo'}</h1>
+          <p className="barra-subtitulo">{tipo === 'directo' ? 'Elige a una persona del equipo' : 'Define un nombre y elige integrantes'}</p>
+        </div>
+      </header>
+
+      {tipo === 'directo' ? (
+        <div className="app-cuerpo">
+          {avisoManejo}
+          {falla && (
+            <div className="error alerta-bloque" role="alert">
+              <Icono nombre="alerta" tamano={18} />
+              <span>{falla}</span>
+            </div>
+          )}
+          {personal === null ? (
+            !falla && (
+              <div className="tarjeta estado-vacio">
+                <p className="secundario">Cargando…</p>
+              </div>
+            )
+          ) : (
+            <ul className="conversaciones" aria-label="Personal">
+              {personal.map((p) => (
+                <li key={p.id}>
+                  <button type="button" className="conversacion" aria-label={`Escribir a ${p.nombre}`} onClick={() => void directo(p)}>
+                    <span className="chat-avatar" aria-hidden="true">
+                      {iniciales(p.nombre)}
+                    </span>
+                    <span className="contacto-nombre">{p.nombre}</span>
+                    <Icono nombre="derecha" tamano={18} className="lista-flecha" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       ) : (
-        <form onSubmit={(e) => void grupo(e)}>
-          <div className="campo">
-            <label htmlFor="nombre-grupo">Nombre del grupo</label>
-            <input id="nombre-grupo" maxLength={60} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <form className="chat-form-pantalla" onSubmit={(e) => void grupo(e)}>
+          <div className="app-cuerpo">
+            {avisoManejo}
+            {falla && (
+              <div className="error alerta-bloque" role="alert">
+                <Icono nombre="alerta" tamano={18} />
+                <span>{falla}</span>
+              </div>
+            )}
+            {personal === null ? (
+              !falla && (
+                <div className="tarjeta estado-vacio">
+                  <p className="secundario">Cargando…</p>
+                </div>
+              )
+            ) : (
+              <div className="tarjeta grupo-tarjeta">
+                <div className="login-campo">
+                  <label htmlFor="nombre-grupo">Nombre del grupo</label>
+                  <div className="campo-entrada">
+                    <Icono nombre="usuarios" tamano={18} className="campo-entrada-icono" />
+                    <input id="nombre-grupo" placeholder="Ej: Turno noche" maxLength={60} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                  </div>
+                </div>
+                <fieldset className="grupo-integrantes">
+                  <legend>Integrantes</legend>
+                  {personal.map((p) => (
+                    <label key={p.id} className="grupo-opcion">
+                      <input
+                        type="checkbox"
+                        checked={elegidos.includes(p.id)}
+                        onChange={(e) => setElegidos((a) => (e.target.checked ? [...a, p.id] : a.filter((x) => x !== p.id)))}
+                      />
+                      <span className="chat-avatar chat-avatar-chico" data-iniciales={iniciales(p.nombre)} aria-hidden="true" />
+                      <span className="grupo-opcion-nombre">{p.nombre}</span>
+                    </label>
+                  ))}
+                </fieldset>
+              </div>
+            )}
           </div>
-          <fieldset className="vehiculos">
-            <legend>Integrantes</legend>
-            {personal.map((p) => (
-              <label key={p.id} className="opcion">
-                <input type="checkbox" checked={elegidos.includes(p.id)} onChange={(e) => setElegidos((a) => (e.target.checked ? [...a, p.id] : a.filter((x) => x !== p.id)))} />
-                {p.nombre}
-              </label>
-            ))}
-          </fieldset>
-          <button className="principal" type="submit">
-            Crear grupo
-          </button>
+          {personal !== null && (
+            <footer className="app-pie-barra">
+              <button className="principal pie-boton-principal" type="submit">
+                Crear grupo
+              </button>
+            </footer>
+          )}
         </form>
       )}
-      <button type="button" onClick={volver}>
-        Volver a las conversaciones
-      </button>
-    </>
+    </div>
   );
 }
