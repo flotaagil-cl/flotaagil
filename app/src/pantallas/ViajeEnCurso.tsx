@@ -1,5 +1,6 @@
 import { AppLauncher } from '@capacitor/app-launcher';
 import { useState, type ReactNode } from 'react';
+import { Icono } from '../componentes/Icono';
 import { horaDeChile } from '../hora';
 import { enlaceGoogleMaps, enlaceWaze, type ViajeActivo } from '../navegacion';
 import { VueloDelViaje } from './VueloDelViaje';
@@ -11,13 +12,27 @@ const ETAPAS = {
   PASAJERO_A_BORDO: 'Pasajero a bordo',
 } as const;
 
+const PASOS_BARRA = [
+  { etiqueta: 'En camino', minimo: 0 },
+  { etiqueta: 'En zona', minimo: 1 },
+  { etiqueta: 'A bordo', minimo: 2 },
+  { etiqueta: 'Finalizado', minimo: 3 },
+] as const;
+
+function indicePaso(estado: ViajeActivo['estado']): number {
+  if (estado === 'PASAJERO_A_BORDO') return 2;
+  if (estado === 'EN_ZONA') return 1;
+  return 0;
+}
+
 /**
- * Viaje en curso con los botones para navegar (HU-17): al origen hasta subir el pasajero, luego al destino. Debajo,
- * el avance del viaje (HU-16).
+ * Viaje en curso con barra de 4 etapas y botones para navegar (HU-17): al origen hasta subir el pasajero,
+ * luego al destino. Debajo, el avance del viaje (HU-16).
  */
 export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children?: ReactNode }) {
   const [falla, setFalla] = useState(false);
   const aBordo = viaje.estado === 'PASAJERO_A_BORDO';
+  const pasoActual = indicePaso(viaje.estado);
 
   async function abrir(url: string) {
     setFalla(false);
@@ -30,8 +45,18 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
 
   return (
     <section className="tarjeta viaje prioritaria">
+      <div className="viaje-pasos" aria-hidden="true">
+        {PASOS_BARRA.map((paso) => (
+          <div key={paso.etiqueta} className={pasoActual >= paso.minimo ? 'viaje-paso activo' : 'viaje-paso'}>
+            <span className="viaje-paso-barra" />
+            <span className="viaje-paso-texto">{paso.etiqueta}</span>
+          </div>
+        ))}
+      </div>
+
       <h2>Viaje en curso · {ETAPAS[viaje.estado]}</h2>
-      <dl>
+
+      <dl className="lista-datos viaje-datos">
         <dt>Pasajero</dt>
         <dd>{viaje.pasajero}</dd>
         <dt>Recogida</dt>
@@ -46,19 +71,26 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
         <dt>Destino</dt>
         <dd>{viaje.destino.direccion}</dd>
       </dl>
-      <p className="secundario">
-        Navegar {aBordo ? 'al destino' : 'al punto de recogida'}: {viaje.hacia.direccion}
-      </p>
+
+      <div className="viaje-destino-barra">
+        <Icono nombre="ubicacion" tamano={18} />
+        <p className="secundario">
+          Navegar {aBordo ? 'al destino' : 'al punto de recogida'}: <strong>{viaje.hacia.direccion}</strong>
+        </p>
+      </div>
+
       {falla && (
-        <p className="error" role="alert">
-          No se pudo abrir la navegación.
+        <p className="error alerta-bloque" role="alert">
+          <Icono nombre="alerta" tamano={18} />
+          <span>No se pudo abrir la navegación.</span>
         </p>
       )}
+
       <div className="navegar">
-        <button type="button" className="principal" onClick={() => void abrir(enlaceGoogleMaps(viaje.hacia, viaje.navegar_con))}>
+        <button type="button" className="principal boton-navegar" onClick={() => void abrir(enlaceGoogleMaps(viaje.hacia, viaje.navegar_con))}>
           Google Maps
         </button>
-        <button type="button" className="principal" onClick={() => void abrir(enlaceWaze(viaje.hacia, viaje.navegar_con))}>
+        <button type="button" className="principal secundaria boton-navegar" onClick={() => void abrir(enlaceWaze(viaje.hacia, viaje.navegar_con))}>
           Waze
         </button>
       </div>

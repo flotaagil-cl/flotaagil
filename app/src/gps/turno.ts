@@ -57,6 +57,13 @@ export class Rastreador {
     }
   }
 
+  /** Reinicia el watcher si había fallado (p. ej. tras activar permisos o ubicación en Ajustes). */
+  async reintentar(): Promise<void> {
+    if (!this.estadoActual.error) return;
+    await this.detener();
+    await this.iniciar(this.modo);
+  }
+
   async detener(): Promise<void> {
     if (!this.watcher) return;
     const id = this.watcher;
@@ -67,6 +74,9 @@ export class Rastreador {
   }
 
   private recibir(posicion: Location) {
+    if (!this.estadoActual.activo || this.estadoActual.error !== null) {
+      this.publicar({ activo: true, error: null });
+    }
     const ahora = this.ahora();
     if (!debeRegistrar(this.ultimaMs, ahora, INTERVALO_OBJETIVO_S[this.modo])) return;
     this.ultimaMs = ahora;
