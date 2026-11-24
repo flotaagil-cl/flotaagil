@@ -939,8 +939,8 @@
         "HU-37"
       ],
       "estado_cambio": "Nueva (rediseño del portal)",
-      "estado": "Pendiente",
-      "estado_evidencia": ""
+      "estado": "Hecha",
+      "estado_evidencia": "DC-80: Mi convenio con el marco del portal (CC-20), tarjeta de estado y sin WhatsApp (CC-19)."
     },
     {
       "id": "HU-47",
@@ -1004,8 +1004,8 @@
         "HU-37"
       ],
       "estado_cambio": "Nueva (rediseño del portal)",
-      "estado": "Pendiente",
-      "estado_evidencia": ""
+      "estado": "Hecha",
+      "estado_evidencia": "DC-80: 404 y sesión expirada ya existían; el error de servidor ofrece el teléfono y el WhatsApp de la central."
     },
     {
       "id": "HU-50",

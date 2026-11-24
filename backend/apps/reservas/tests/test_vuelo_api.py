@@ -117,7 +117,9 @@ class TestPanel:
         respuesta = api.post(LISTA, reserva(llegada()), format="json")
         assert Vuelo.objects.get(viaje_id=respuesta.data["id"]).ultima_consulta_en is not None
 
-    def test_escenarios_desarrollo_nacional_demorado_internacional_y_sin_verificar(self, api, settings):
+    def test_escenarios_desarrollo_nacional_demorado_internacional_y_sin_verificar(
+        self, api, settings, monkeypatch
+    ):
         settings.FLIGHTAWARE_API_KEY = ""
         hora = llegada()
 
@@ -146,6 +148,9 @@ class TestPanel:
             "KMIA",
             "Miami",
         )
+        # «Hoy» es el día de la llegada: después de las 20:00 la llegada (+4 h) cae mañana en hora local.
+        localdate = timezone.localdate
+        monkeypatch.setattr(timezone, "localdate", lambda valor=None, tz=None: localdate(valor or hora, tz))
         hoy = api.get(reverse("vuelos-de-hoy")).json()["viajes"]
         por_id = {item["id"]: item for item in hoy}
         assert por_id[r_internacional.data["id"]]["vuelo"]["internacional"] is True

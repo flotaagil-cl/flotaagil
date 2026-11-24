@@ -297,9 +297,7 @@ class TestCuentaDelConvenio:
             "origen_dir": "Av. Providencia 1234, Providencia",
             "destino_dir": "Plaza de Armas, Santiago",
             "recogida_en": (timezone.now() + timedelta(hours=2)).isoformat(),
-            "acepta_privacidad": True,
-            "acepta_whatsapp": True,
-            "declara_autorizacion": True,
+            "declara_informados": True,
         }
         datos.update(cambios)
         return datos
@@ -324,9 +322,31 @@ class TestCuentaDelConvenio:
     def test_exige_la_declaracion(self, empresa):
         convenio = con_cuenta(empresa)
         respuesta = como(convenio.usuario).post(
-            reverse("mi-convenio-solicitudes"), self.solicitud(declara_autorizacion=False), format="json"
+            reverse("mi-convenio-solicitudes"), self.solicitud(declara_informados=False), format="json"
         )
         assert respuesta.status_code == 400
+        assert "aviso de privacidad" in str(respuesta.data["declara_informados"][0])
+
+    def test_sin_whatsapp_ni_aceptacion_repetida(self, empresa):
+        """HU-46 (CC-19, DC-80): la cuenta no acepta avisos por WhatsApp ni vuelve a aceptar el aviso de
+        privacidad; si vienen, se ignoran."""
+        convenio = con_cuenta(empresa)
+        respuesta = como(convenio.usuario).post(
+            reverse("mi-convenio-solicitudes"),
+            self.solicitud(acepta_whatsapp=False, acepta_privacidad=False),
+            format="json",
+        )
+        assert respuesta.status_code == 201, respuesta.data
+
+    def test_reservas_traen_el_sentido(self, empresa):
+        convenio = con_cuenta(empresa)
+        cliente = como(convenio.usuario)
+        assert (
+            cliente.post(reverse("mi-convenio-solicitudes"), self.solicitud(), format="json").status_code
+            == 201
+        )
+        fila = cliente.get(reverse("mi-convenio-reservas")).data["results"][0]
+        assert fila["sentido"] == "URBANO"
 
     @pytest.mark.parametrize("estado", [EstadoConvenio.EN_REVISION, EstadoConvenio.RECHAZADO])
     def test_en_revision_o_rechazado_entra_pero_no_reserva(self, empresa, estado):

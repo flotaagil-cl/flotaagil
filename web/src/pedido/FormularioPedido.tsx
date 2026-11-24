@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Boton } from '../diseno/Boton';
 import { Campo, DatoFijo } from '../diseno/Campo';
@@ -37,10 +37,12 @@ interface Props {
   textoBoton?: string;
   /** Formulario público (sin cuenta): la nota no habla de «Mis viajes» ni de un aviso ya aceptado. */
   publico?: boolean;
+  /** HU-46: nota propia bajo el botón (la cuenta del convenio no tiene «Mis viajes»). */
+  nota?: ReactNode;
 }
 
 /** HU-39: datos de cada tipo de viaje, con pasajeros y maletas. */
-export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar, sinPasajeros = false, textoBoton, publico = false }: Props) {
+export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar, sinPasajeros = false, textoBoton, publico = false, nota }: Props) {
   const [v, setV] = useState<ValoresPedido>(iniciales ?? VALORES_INICIALES);
   const [errores, setErrores] = useState<Errores>(erroresIniciales ?? {});
   // La API de vuelos no respondió: el servidor pidió la hora de llegada para no inventarla.
@@ -191,7 +193,9 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
       <Boton type="submit" ancho>
         {textoBoton ?? 'Pedir mi traslado'}
       </Boton>
-      {publico ? (
+      {nota ? (
+        <p className={e.nota}>{nota}</p>
+      ) : publico ? (
         <p className={e.nota}>
           Te enviaremos un enlace por correo para confirmar tu reserva. Antes de enviarla, en el paso siguiente, aceptas el{' '}
           <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link>.

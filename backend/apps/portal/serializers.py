@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.comun.validadores import (
@@ -10,6 +11,13 @@ from apps.comun.validadores import (
 from apps.cuentas.models import Empresa
 from apps.reservas.models import MAX_PASAJEROS, Sentido, TipoVuelo
 from apps.reservas.serializers import coordenadas_de_sugerencia, normalizar_numero_vuelo, numero_de_salida
+
+
+class CentralPublicaSerializer(serializers.Serializer):
+    """HU-49 (DC-62, DC-80): «Llamar a la central» y «WhatsApp de la central»; null si no hay número."""
+
+    telefono = serializers.CharField(allow_null=True)
+    whatsapp = serializers.CharField(allow_null=True)
 
 
 class EmpresaPublicaSerializer(serializers.ModelSerializer):
@@ -34,6 +42,9 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
     capacidad_maxima = serializers.SerializerMethodField(
         help_text="Pasajeros por viaje: el vehículo más grande de la empresa; 4 sin vehículos (DC-43)."
     )
+    central = serializers.SerializerMethodField(
+        help_text="HU-49 (DC-80): contacto de la central para las pantallas de error del portal."
+    )
 
     class Meta:
         model = Empresa
@@ -48,7 +59,12 @@ class EmpresaPublicaSerializer(serializers.ModelSerializer):
             "antelacion_vuelo_internacional_min",
             "capacidad_maxima",
             "convenio_max_personas",
+            "central",
         ]
+
+    @extend_schema_field(CentralPublicaSerializer)
+    def get_central(self, empresa) -> dict:
+        return empresa.configuracion.numeros_central()
 
     def get_capacidad_maxima(self, empresa) -> int:
         from .servicios import capacidad_maxima
@@ -176,16 +192,22 @@ class SolicitudSerializer(serializers.Serializer):
 
 
 class SolicitudConvenioSerializer(SolicitudSerializer):
-    """HU-34: la cuenta del convenio pide a nombre del pasajero y declara que este autorizó los avisos. La
-    declaración queda ligada al usuario que reserva (DC-35)."""
+    """HU-34: la cuenta del convenio pide a nombre del pasajero. HU-46 (DC-80): sin WhatsApp (CC-19); quien
+    pide declara que informó al pasajero del aviso de privacidad, y la declaración queda ligada al usuario
+    que reserva (DC-35). La cuenta aceptó el aviso al registrarse: aquí no se vuelve a pedir."""
 
-    declara_autorizacion = serializers.BooleanField(
-        help_text="Declaro que el pasajero autorizó recibir avisos por WhatsApp"
+    acepta_whatsapp = None
+    acepta_privacidad = serializers.BooleanField(required=False)
+    declara_informados = serializers.BooleanField(
+        help_text="Declaro que informé al pasajero del aviso de privacidad (Ley 21.719)."
     )
 
-    def validate_declara_autorizacion(self, valor):
+    def validate_acepta_privacidad(self, valor):
+        return valor
+
+    def validate_declara_informados(self, valor):
         if not valor:
-            raise serializers.ValidationError("Debes declarar que el pasajero autorizó los avisos.")
+            raise serializers.ValidationError("Declara que informaste al pasajero del aviso de privacidad.")
         return valor
 
 

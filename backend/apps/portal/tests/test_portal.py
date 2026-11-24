@@ -53,7 +53,21 @@ class TestEmpresaPublica:
             "antelacion_vuelo_internacional_min": 180,
             "capacidad_maxima": 4,
             "convenio_max_personas": 10,  # CC-23
+            "central": {"telefono": None, "whatsapp": None},  # HU-49
         }
+
+    def test_central_sin_whatsapp_usa_el_telefono(self, cliente, empresa):
+        """HU-49 (DC-80): el teléfono de la central es un celular; sin WhatsApp propio, el botón usa ese
+        número."""
+        configuracion = empresa.configuracion
+        configuracion.telefono_central = "+56999900001"
+        configuracion.save()
+        respuesta = cliente.get(reverse("portal-empresa", args=[empresa.slug]))
+        assert respuesta.data["central"] == {"telefono": "+56999900001", "whatsapp": "+56999900001"}
+        configuracion.whatsapp_central = "+56999900002"
+        configuracion.save()
+        respuesta = cliente.get(reverse("portal-empresa", args=[empresa.slug]))
+        assert respuesta.data["central"] == {"telefono": "+56999900001", "whatsapp": "+56999900002"}
 
     def test_margen_configurable(self, cliente, empresa):
         empresa.configuracion.margen_nacional_min = 45

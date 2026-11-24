@@ -13,12 +13,6 @@ import type { components, paths } from '../api/esquema';
 import { resultado } from '../api/resultado';
 
 export type EmpresaPublica = components['schemas']['EmpresaPublica'];
-export type SolicitudConvenio = components['schemas']['SolicitudConvenioRequest'];
-/** Datos del viaje que envía el formulario (los mismos del convenio, sin su declaración). */
-export type Solicitud = Omit<SolicitudConvenio, 'declara_autorizacion'>;
-/** El formulario sirve a los dos: la declaración solo existe en la cuenta del convenio (HU-34). */
-export type CuerpoSolicitud = Solicitud & Partial<Pick<SolicitudConvenio, 'declara_autorizacion'>>;
-export type SolicitudRespuesta = components['schemas']['SolicitudRespuesta'];
 export type Sentido = components['schemas']['SentidoEnum'];
 export type ClientePortal = Client<paths>;
 

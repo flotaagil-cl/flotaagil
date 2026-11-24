@@ -203,12 +203,6 @@ export const pantallasDelPanel: RouteObject[] = [
     lazy: async () => ({ Component: (await import('../configuracion/Configuracion')).Configuracion }),
     handle: { titulo: 'Configuración', menu: true, seccion: 'administracion', icono: 'configuracion', roles: ROLES_PANEL, modulo: 'CONFIGURACION' } satisfies Manejo,
   },
-  // --- ROL CONVENIO ---
-  {
-    path: 'mi-convenio',
-    lazy: async () => ({ Component: (await import('../cuentas-web/MiConvenio')).MiConvenio }),
-    handle: { titulo: 'Mi convenio', menu: true, icono: 'convenios', roles: ROLES_CONVENIO } satisfies Manejo,
-  },
 ];
 
 export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteObject[] {
@@ -244,6 +238,12 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
             { path: '/mi-perfil', lazy: async () => ({ Component: (await import('../perfil/MiPerfil')).MiPerfil }) },
             // La pantalla «Mis reservas» de HU-35 era una lista de viajes: la reemplaza «Mis viajes» (HU-44).
             { path: '/mis-reservas', element: <Navigate to="/mis-viajes" replace /> },
+            // HU-46: la cuenta del convenio con el marco del portal (fuera del marco del panel).
+            { path: '/mi-convenio', lazy: async () => ({ Component: (await import('../cuentas-web/MiConvenio')).MiConvenio }) },
+            {
+              path: '/mi-convenio/viajes',
+              lazy: async () => ({ Component: (await import('../cuentas-web/MiConvenio')).ViajesDelConvenio }),
+            },
             // HU-39: inicio y pedido del pasajero con el marco del portal (fuera del marco del panel).
             { path: '/pedir/:tipo?', lazy: async () => ({ Component: (await import('../pedido/Pedir')).Pedir }) },
             {

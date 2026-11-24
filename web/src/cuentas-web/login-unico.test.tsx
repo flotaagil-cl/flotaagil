@@ -38,7 +38,8 @@ describe('destino por rol', () => {
   it('el convenio entra por el mismo login y llega a «Mi convenio»', async () => {
     const { router } = montarLogin();
     await entrar('convenio@andes.example');
-    expect(await screen.findByRole('heading', { name: 'Mi convenio' })).toBeInTheDocument();
+    // HU-46: «Mi convenio» usa el marco del portal, con su navegación.
+    expect(await screen.findByRole('link', { name: 'Viajes del convenio' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/mi-convenio');
   });
 
@@ -84,7 +85,8 @@ describe('marco por rol', () => {
 
   it('en «/» el convenio va a su vista', async () => {
     const { router } = montarPanel('/', { email: 'convenio@andes.example' });
-    expect(await screen.findByRole('heading', { name: 'Mi convenio' })).toBeInTheDocument();
+    // HU-46: «Mi convenio» usa el marco del portal, con su navegación.
+    expect(await screen.findByRole('link', { name: 'Viajes del convenio' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/mi-convenio');
   });
 

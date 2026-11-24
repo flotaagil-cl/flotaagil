@@ -23,7 +23,8 @@ SOLO_PASAJERO = [con_roles(Rol.PASAJERO), ConModuloCuentas]  # DC-51
 
 
 class CentralSerializer(serializers.Serializer):
-    """HU-66 (DC-62): botones de emergencia; null si la empresa no lo configuró."""
+    """HU-66 (DC-62): botones de emergencia; null si la empresa no lo configuró. HU-49 (DC-80): sin WhatsApp,
+    el del teléfono de la central."""
 
     telefono = serializers.CharField(allow_null=True)
     whatsapp = serializers.CharField(allow_null=True)
@@ -45,11 +46,7 @@ class MiCuentaSerializer(serializers.Serializer):
 
     @extend_schema_field(CentralSerializer)
     def get_central(self, cuenta):
-        configuracion = cuenta.empresa.configuracion
-        return {
-            "telefono": configuracion.telefono_central or None,
-            "whatsapp": configuracion.whatsapp_central or None,
-        }
+        return cuenta.empresa.configuracion.numeros_central()
 
     @extend_schema_field(serializers.DateTimeField(allow_null=True))
     def get_password_cambiada_en(self, cuenta):
