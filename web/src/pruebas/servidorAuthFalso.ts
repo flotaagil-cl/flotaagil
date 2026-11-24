@@ -21,17 +21,20 @@ interface UsuarioFalso extends Usuario {
 }
 
 const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes', modulo_cuentas: true };
+/** HU-75: el administrador tiene todos; el despachador, los de siempre; los demás roles, ninguno. */
+export const TODOS_LOS_MODULOS: Usuario['modulos'] = ['MAPA', 'RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS', 'VEHICULOS', 'CONDUCTORES', 'CAJA', 'REPORTES', 'CONFIGURACION'];
+export const MODULOS_DESPACHADOR: Usuario['modulos'] = ['MAPA', 'RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS'];
 
 export const USUARIOS: UsuarioFalso[] = [
-  { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
-  { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
-  { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
-  { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'clave', bloqueado: true, debe_cambiar_password: false, debe_aceptar_privacidad: false },
-  { id: 5, nombre: 'Clara Cliente', email: 'convenio@andes.example', rol: 'CONVENIO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
-  { id: 7, nombre: 'Tomás Temporal', email: 'temporal@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, password: 'Temporal123', debe_cambiar_password: true, debe_aceptar_privacidad: false },
-  { id: 6, nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', empresa: EMPRESA, modulos: TODOS_LOS_MODULOS, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, modulos: MODULOS_DESPACHADOR, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 3, nombre: 'Carla Conductora', email: 'conductor@andes.example', rol: 'CONDUCTOR', empresa: EMPRESA, modulos: [], password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 4, nombre: 'Berta Bloqueada', email: 'bloqueada@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, modulos: MODULOS_DESPACHADOR, password: 'clave', bloqueado: true, debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 5, nombre: 'Clara Cliente', email: 'convenio@andes.example', rol: 'CONVENIO', empresa: EMPRESA, modulos: [], password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
+  { id: 7, nombre: 'Tomás Temporal', email: 'temporal@andes.example', rol: 'DESPACHADOR', empresa: EMPRESA, modulos: MODULOS_DESPACHADOR, password: 'Temporal123', debe_cambiar_password: true, debe_aceptar_privacidad: false },
+  { id: 6, nombre: 'Pablo Pasajero', email: 'pasajero@andes.example', rol: 'PASAJERO', empresa: EMPRESA, modulos: [], password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: false },
   // DC-44: cuenta antigua, sin el consentimiento registrado.
-  { id: 8, nombre: 'Olga Antigua', email: 'antigua@andes.example', rol: 'PASAJERO', empresa: EMPRESA, password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: true },
+  { id: 8, nombre: 'Olga Antigua', email: 'antigua@andes.example', rol: 'PASAJERO', empresa: EMPRESA, modulos: [], password: 'clave', debe_cambiar_password: false, debe_aceptar_privacidad: true },
 ];
 
 interface Pendiente {
@@ -228,11 +231,15 @@ export class ServidorAuthFalso {
   /** DC-73: permite simular empresa sin módulo de cuentas en pruebas del panel. */
   moduloCuentas: boolean | null = null;
 
+  /** HU-75: módulos del despachador en esta prueba, por id de usuario. */
+  modulos = new Map<number, Usuario['modulos']>();
+
   private efectivo(usuario: UsuarioFalso): UsuarioFalso {
     const aceptada = this.privacidad.has(usuario.id) ? { debe_aceptar_privacidad: false } : {};
     const empresa =
       this.moduloCuentas !== null ? { empresa: { ...usuario.empresa, modulo_cuentas: this.moduloCuentas } } : {};
-    return { ...usuario, ...this.cambios.get(usuario.id), ...aceptada, ...empresa };
+    const modulos = this.modulos.has(usuario.id) ? { modulos: this.modulos.get(usuario.id)! } : {};
+    return { ...usuario, ...this.cambios.get(usuario.id), ...aceptada, ...empresa, ...modulos };
   }
 
   private login({ email, password }: { email: string; password: string }): Respuesta {
@@ -267,6 +274,6 @@ export class ServidorAuthFalso {
 }
 
 function publico(usuario: UsuarioFalso): Usuario {
-  const { id, nombre, email, rol, empresa, debe_cambiar_password, debe_aceptar_privacidad } = usuario;
-  return { id, nombre, email, rol, empresa, debe_cambiar_password, debe_aceptar_privacidad };
+  const { id, nombre, email, rol, empresa, debe_cambiar_password, debe_aceptar_privacidad, modulos } = usuario;
+  return { id, nombre, email, rol, empresa, debe_cambiar_password, debe_aceptar_privacidad, modulos };
 }

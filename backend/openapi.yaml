@@ -3108,8 +3108,9 @@ paths:
           description: ''
     patch:
       operationId: usuarios_partial_update
-      description: Cambiar el rol cierra las sesiones del usuario. Queda en auditoría.
-      summary: Editar nombre o rol
+      description: Cambiar el rol o los módulos del despachador (HU-75) cierra las
+        sesiones del usuario. Queda en auditoría.
+      summary: Editar nombre, rol o módulos
       parameters:
       - in: path
         name: id
@@ -5923,6 +5924,30 @@ components:
       - total
       - totales
       - viajes
+    ModulosEnum:
+      enum:
+      - MAPA
+      - RESERVAS
+      - VUELOS
+      - CHAT
+      - CONVENIOS
+      - VEHICULOS
+      - CONDUCTORES
+      - CAJA
+      - REPORTES
+      - CONFIGURACION
+      type: string
+      description: |-
+        * `MAPA` - Mapa
+        * `RESERVAS` - Reservas
+        * `VUELOS` - Vuelos de hoy
+        * `CHAT` - Chat
+        * `CONVENIOS` - Convenios
+        * `VEHICULOS` - Vehículos
+        * `CONDUCTORES` - Conductores
+        * `CAJA` - Cierre de caja
+        * `REPORTES` - Reportes
+        * `CONFIGURACION` - Configuración
     MotivoEnum:
       enum:
       - CAMBIO_DE_PLANES
@@ -6531,6 +6556,12 @@ components:
           maxLength: 80
         rol:
           $ref: '#/components/schemas/RolPanelEnum'
+        modulos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModulosEnum'
+          description: 'HU-75 (DC-79): módulos activos del despachador. Usuarios no
+            es un módulo: es solo del administrador.'
     PatchedVehiculoEditarRequest:
       type: object
       description: 'La patente no se edita: otra patente es otro vehículo.'
@@ -7967,6 +7998,12 @@ components:
           readOnly: true
           nullable: true
           title: Último inicio de sesión
+        modulos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModulosEnum'
+          readOnly: true
+          description: 'HU-75: los que puede usar (todos si es administrador).'
         password_temporal:
           type: string
           readOnly: true
@@ -7981,6 +8018,7 @@ components:
       - email
       - id
       - last_login
+      - modulos
       - nombre
       - password_temporal
       - rol
@@ -8015,12 +8053,19 @@ components:
           readOnly: true
           nullable: true
           title: Último inicio de sesión
+        modulos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModulosEnum'
+          readOnly: true
+          description: 'HU-75: los que puede usar (todos si es administrador).'
       required:
       - acceso
       - activo
       - email
       - id
       - last_login
+      - modulos
       - nombre
       - rol
     UsuarioPanelCrearRequest:
@@ -8037,6 +8082,12 @@ components:
           maxLength: 120
         rol:
           $ref: '#/components/schemas/RolPanelEnum'
+        modulos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModulosEnum'
+          description: 'HU-75 (DC-79): módulos activos del despachador. Usuarios no
+            es un módulo: es solo del administrador.'
       required:
       - email
       - nombre
@@ -8068,12 +8119,21 @@ components:
           readOnly: true
           description: 'DC-44: pasajero con cuenta que debe aceptar el aviso de privacidad
             vigente.'
+        modulos:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModulosEnum'
+          readOnly: true
+          description: 'HU-75 (DC-79): módulos del panel que puede usar. Todos para
+            el administrador; los activos para el despachador; ninguno para los demás
+            roles.'
       required:
       - debe_aceptar_privacidad
       - debe_cambiar_password
       - email
       - empresa
       - id
+      - modulos
       - nombre
       - rol
     Vehiculo:

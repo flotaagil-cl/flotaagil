@@ -17,8 +17,8 @@ from rest_framework.views import APIView
 
 from apps.auditoria.models import Entidad
 from apps.auditoria.servicios import registrar
-from apps.comun.permisos import con_roles
-from apps.cuentas.models import Rol, Usuario
+from apps.comun.permisos import con_modulo, con_roles
+from apps.cuentas.models import Modulo, Rol, Usuario
 
 from . import servicios
 from .models import MAX_TEXTO, Conversacion, Mensaje, Participante, TipoConversacion
@@ -27,8 +27,8 @@ from .permisos import (
     ROLES_PERSONAL,
     es_equipo,
     es_pasajero_con_modulo,
-    es_personal,
     puede_escribir,
+    usa_el_chat,
     viajes_del_pasajero,
     visibles,
 )
@@ -47,7 +47,16 @@ from .serializers import (
 
 T = TipoConversacion
 POR_PAGINA = 30
-DelPersonal = con_roles(*ROLES_PERSONAL)
+
+
+class DelPersonal(BasePermission):
+    """El personal de la empresa con el chat activo (HU-75: el despachador, si tiene el módulo Chat)."""
+
+    def has_permission(self, request, view):
+        usuario = request.user
+        return bool(usuario and usuario.is_authenticated and usa_el_chat(usuario))
+
+
 RELACIONADOS = ("conductor__usuario", "viaje__pasajero", "viaje__conductor__usuario", "pasajero_usuario")
 
 
@@ -57,7 +66,7 @@ class ChatPermitido(BasePermission):
     def has_permission(self, request, view):
         usuario = request.user
         return bool(
-            usuario and usuario.is_authenticated and (es_personal(usuario) or es_pasajero_con_modulo(usuario))
+            usuario and usuario.is_authenticated and (usa_el_chat(usuario) or es_pasajero_con_modulo(usuario))
         )
 
 
@@ -480,7 +489,8 @@ class ViajeChatView(APIView):
 class LecturaViajeView(APIView):
     """HU-66 (CP-55): la central lee el chat del viaje en solo lectura y cada lectura queda en auditoría."""
 
-    permission_classes = [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)]
+    # HU-75: se abre desde la reserva o desde el chat.
+    permission_classes = [con_modulo(Modulo.RESERVAS, Modulo.CHAT)]
 
     @extend_schema(responses=PaginaMensajesSerializer, summary="Leer el chat del viaje (auditado)")
     def get(self, request, viaje_id):

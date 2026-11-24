@@ -12,7 +12,7 @@ from apps.cuentas.models import Rol
 from apps.cuentas.ws_auth import SUBPROTOCOLO
 from apps.flota.consumers import SIN_PERMISO, SIN_SESION
 
-from .permisos import ROLES_PERSONAL
+from .permisos import usa_el_chat
 from .servicios import grupo_usuario
 
 
@@ -26,7 +26,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             return
         # HU-65: el pasajero con cuenta (módulo de cuentas) recibe aquí los cambios de su viaje.
         pasajero = usuario.rol == Rol.PASAJERO and usuario.empresa.modulo_cuentas
-        if usuario.rol not in ROLES_PERSONAL and not pasajero:
+        # HU-75 (DC-79): el despachador sin el módulo Chat no se conecta.
+        if not usa_el_chat(usuario) and not pasajero:
             await self.close(code=SIN_PERMISO)
             return
         self.grupo = grupo_usuario(usuario.pk)

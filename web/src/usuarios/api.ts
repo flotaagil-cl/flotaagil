@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '../api/esquema';
+import type { Modulo } from '../api/auth';
 import { resultado } from '../api/resultado';
 import { useApi } from '../sesion/SesionProvider';
 
@@ -24,7 +25,7 @@ export function useCrearUsuario() {
   const api = useApi();
   const refrescar = useRefrescar();
   return useMutation({
-    mutationFn: (datos: { nombre: string; email: string; rol: RolPanel }) => resultado(api.POST('/api/usuarios/', { body: datos })),
+    mutationFn: (datos: { nombre: string; email: string; rol: RolPanel; modulos?: Modulo[] }) => resultado(api.POST('/api/usuarios/', { body: datos })),
     onSuccess: refrescar,
   });
 }
@@ -33,7 +34,7 @@ export function useEditarUsuario() {
   const api = useApi();
   const refrescar = useRefrescar();
   return useMutation({
-    mutationFn: ({ id, ...cambios }: { id: number; nombre?: string; rol?: RolPanel }) =>
+    mutationFn: ({ id, ...cambios }: { id: number; nombre?: string; rol?: RolPanel; modulos?: Modulo[] }) =>
       resultado(api.PATCH('/api/usuarios/{id}/', { params: { path: { id } }, body: cambios })),
     onSuccess: refrescar,
   });

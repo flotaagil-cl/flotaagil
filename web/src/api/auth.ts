@@ -9,6 +9,8 @@ import type { components } from './esquema';
 
 export type Usuario = components['schemas']['UsuarioSesion'];
 export type Rol = components['schemas']['RolEnum'];
+/** HU-75 (DC-79): módulo del panel que el administrador activa a cada despachador. */
+export type Modulo = components['schemas']['ModulosEnum'];
 type SesionPanel = components['schemas']['SesionPanel'];
 type Access = components['schemas']['Access'];
 

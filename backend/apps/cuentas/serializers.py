@@ -1,6 +1,7 @@
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from .models import Empresa, Usuario
+from .models import Empresa, Modulo, Usuario, modulos_efectivos
 
 
 class ErrorSerializer(serializers.Serializer):
@@ -24,6 +25,10 @@ class UsuarioSesionSerializer(serializers.ModelSerializer):
     debe_aceptar_privacidad = serializers.SerializerMethodField(
         help_text="DC-44: pasajero con cuenta que debe aceptar el aviso de privacidad vigente."
     )
+    modulos = serializers.SerializerMethodField(
+        help_text="HU-75 (DC-79): módulos del panel que puede usar. Todos para el administrador; los activos "
+        "para el despachador; ninguno para los demás roles."
+    )
 
     class Meta:
         model = Usuario
@@ -35,8 +40,14 @@ class UsuarioSesionSerializer(serializers.ModelSerializer):
             "empresa",
             "debe_cambiar_password",
             "debe_aceptar_privacidad",
+            "modulos",
         ]
         read_only_fields = ["debe_cambiar_password"]
+
+    @staticmethod
+    @extend_schema_field(serializers.ListField(child=serializers.ChoiceField(choices=Modulo.choices)))
+    def get_modulos(usuario):
+        return modulos_efectivos(usuario)
 
     def get_debe_aceptar_privacidad(self, usuario) -> bool:
         from apps.reservas.cuentas_pasajero import debe_aceptar_privacidad

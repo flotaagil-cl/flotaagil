@@ -151,6 +151,21 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-75 (CC-24): módulos del despachador. Para «panel-despachador-menu-reducido», antes deja en Usuarios al despachador
+  // demo con Mapa, Reservas y Reportes (y al terminar vuelve a marcarle los cinco del despachador).
+  'HU-75': [
+    {
+      nombre: 'panel-usuarios-modulos',
+      ruta: '/usuarios',
+      sesion: 'admin',
+      accion: async (pagina) => {
+        const fila = pagina.getByRole('row').filter({ hasText: `despacho@${EMPRESA}.example` });
+        await fila.getByRole('button', { name: 'Editar' }).click();
+        await pagina.getByRole('group', { name: 'Módulos' }).waitFor();
+      },
+    },
+    { nombre: 'panel-despachador-menu-reducido', ruta: '/', sesion: 'despacho' },
+  ],
   // HU-72 (CC-23): clave del convenio en la ficha (solo el administrador; la clave nunca se muestra).
   // CAPTURAS_CONVENIO_CLAVE: un convenio aprobado sin cuenta de taxi-pacifico.
   'HU-72': [

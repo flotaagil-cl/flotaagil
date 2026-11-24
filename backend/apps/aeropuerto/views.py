@@ -7,8 +7,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
-from apps.cuentas.models import Rol
+from apps.comun.permisos import AisladoPorEmpresaMixin, con_modulo
+from apps.cuentas.models import Modulo
 from apps.reservas.models import Sentido
 from apps.reservas.serializers import ViajeSerializer
 
@@ -31,7 +31,7 @@ class AlertaVueloViewSet(AisladoPorEmpresaMixin, mixins.ListModelMixin, viewsets
 
     queryset = AlertaVuelo.objects.select_related("atendida_por").order_by("-creada_en", "-id")
     serializer_class = AlertaVueloSerializer
-    permission_classes = [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)]
+    permission_classes = [con_modulo(Modulo.RESERVAS)]  # HU-75: alertas de vuelo de las reservas
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -62,7 +62,7 @@ class VuelosDeHoySerializer(serializers.Serializer):
 class VuelosDeHoyView(APIView):
     """HU-69: viajes de aeropuerto del día de la empresa del usuario. Solo lee la base (sin API de vuelos)."""
 
-    permission_classes = [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)]
+    permission_classes = [con_modulo(Modulo.VUELOS)]  # HU-75
 
     @extend_schema(
         summary="Vuelos de hoy (llegadas y salidas)",

@@ -9,8 +9,8 @@ from rest_framework.response import Response
 
 from apps.aeropuerto import monitoreo
 from apps.aeropuerto.models import AlertaVuelo
-from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
-from apps.cuentas.models import Rol
+from apps.comun.permisos import AisladoPorEmpresaMixin, con_modulo
+from apps.cuentas.models import Modulo
 
 from . import asignacion, avisos, contingencia, servicios
 from .estados import actor_de
@@ -46,7 +46,8 @@ class ViajeViewSet(
     queryset = Viaje.objects.select_related(
         "pasajero", "conductor__usuario", "vehiculo", "convenio", "vuelo", "empresa__configuracion"
     )
-    permission_classes = [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)]
+    # HU-75 (DC-79): módulo Reservas.
+    permission_classes = [con_modulo(Modulo.RESERVAS)]
     filterset_class = ViajeFiltro
     http_method_names = ["get", "post", "patch", "head", "options"]
 

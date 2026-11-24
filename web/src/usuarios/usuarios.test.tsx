@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { montarPanel } from '../pruebas/montar';
 import type { Respuesta, ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
 
-const ADMIN = { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', activo: true, acceso: 'ACTIVA', last_login: null };
-const DESPACHO = { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', activo: true, acceso: 'ACTIVA', last_login: null };
+const ADMIN = { id: 1, nombre: 'Ana Admin', email: 'admin@andes.example', rol: 'ADMINISTRADOR', activo: true, acceso: 'ACTIVA', last_login: null, modulos: ['MAPA', 'RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS', 'VEHICULOS', 'CONDUCTORES', 'CAJA', 'REPORTES', 'CONFIGURACION'] };
+const DESPACHO = { id: 2, nombre: 'Diego Despacho', email: 'despacho@andes.example', rol: 'DESPACHADOR', activo: true, acceso: 'ACTIVA', last_login: null, modulos: ['MAPA', 'RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS'] };
 
 function instalar(auth: ServidorAuthFalso, programada?: Respuesta) {
   const anterior = auth.api;
@@ -128,5 +128,72 @@ describe('usuarios del panel', () => {
     await userEvent.click(within(fila).getByRole('button', { name: 'Restablecer contraseña' }));
     await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Restablecer' }));
     expect(within(await screen.findByRole('dialog')).getByText('OtraTmp45')).toBeInTheDocument();
+  });
+
+  describe('HU-75: módulos del despachador', () => {
+    it('la lista muestra cuántos módulos tiene cada despachador', async () => {
+      const { servidor } = montar();
+      instalar(servidor);
+      const fila = (await screen.findByText('Diego Despacho')).closest('tr')!;
+      expect(within(fila).getByText(/5 de 10 módulos/)).toBeInTheDocument();
+      const propia = screen.getByText(/Ana Admin \(tú\)/).closest('tr')!;
+      expect(within(propia).queryByText(/módulos/)).not.toBeInTheDocument();
+    });
+
+    it('el despachador nuevo parte con los módulos por defecto y Usuarios no es una casilla', async () => {
+      const { servidor } = montar();
+      const llamadas = instalar(servidor);
+      await userEvent.click(await screen.findByRole('button', { name: 'Nuevo usuario' }));
+      const formulario = screen.getByRole('form', { name: 'Nuevo usuario' });
+      expect(within(formulario).getByRole('checkbox', { name: 'Reservas' })).toBeChecked();
+      expect(within(formulario).getByRole('checkbox', { name: 'Reportes' })).not.toBeChecked();
+      expect(within(formulario).queryByRole('checkbox', { name: 'Usuarios' })).not.toBeInTheDocument();
+      await userEvent.type(within(formulario).getByLabelText('Nombre'), 'Sara Sintética');
+      await userEvent.type(within(formulario).getByLabelText('Correo'), 'sara@andes.example');
+      await userEvent.click(within(formulario).getByRole('checkbox', { name: 'Reportes' }));
+      await userEvent.click(within(formulario).getByRole('checkbox', { name: 'Chat' }));
+      await userEvent.click(within(formulario).getByRole('button', { name: 'Crear usuario' }));
+      await screen.findByRole('dialog');
+      expect(llamadas.find((l) => l.ruta === 'POST /api/usuarios/')?.cuerpo).toEqual({
+        nombre: 'Sara Sintética',
+        email: 'sara@andes.example',
+        rol: 'DESPACHADOR',
+        modulos: ['MAPA', 'RESERVAS', 'VUELOS', 'CONVENIOS', 'REPORTES'],
+      });
+    });
+
+    it('al editar un despachador se envían los módulos cambiados y se avisa que sus sesiones se cerraron', async () => {
+      const { servidor } = montar();
+      const llamadas = instalar(servidor);
+      const fila = (await screen.findByText('Diego Despacho')).closest('tr')!;
+      await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
+      const formulario = screen.getByRole('form', { name: 'Editar usuario' });
+      await userEvent.click(within(formulario).getByRole('checkbox', { name: 'Mapa' }));
+      await userEvent.click(within(formulario).getByRole('checkbox', { name: 'Conductores' }));
+      await userEvent.click(within(formulario).getByRole('button', { name: 'Guardar' }));
+      expect(await screen.findByText(/sus sesiones se cerraron para aplicar los permisos/)).toBeInTheDocument();
+      expect(llamadas.find((l) => l.ruta === 'PATCH /api/usuarios/2/')?.cuerpo).toEqual({
+        nombre: 'Diego Despacho',
+        modulos: ['RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS', 'CONDUCTORES'],
+      });
+    });
+
+    it('sin cambios en los módulos no los envía', async () => {
+      const { servidor } = montar();
+      const llamadas = instalar(servidor);
+      const fila = (await screen.findByText('Diego Despacho')).closest('tr')!;
+      await userEvent.click(within(fila).getByRole('button', { name: 'Editar' }));
+      await userEvent.click(within(screen.getByRole('form', { name: 'Editar usuario' })).getByRole('button', { name: 'Guardar' }));
+      expect(await screen.findByText('Cambios guardados.')).toBeInTheDocument();
+      expect(llamadas.find((l) => l.ruta === 'PATCH /api/usuarios/2/')?.cuerpo).toEqual({ nombre: 'Diego Despacho' });
+    });
+
+    it('el administrador no tiene casillas de módulos', async () => {
+      const { servidor } = montar();
+      instalar(servidor);
+      const propia = (await screen.findByText(/Ana Admin \(tú\)/)).closest('tr')!;
+      await userEvent.click(within(propia).getByRole('button', { name: 'Editar' }));
+      expect(screen.queryByRole('group', { name: 'Módulos' })).not.toBeInTheDocument();
+    });
   });
 });

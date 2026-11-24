@@ -12,7 +12,7 @@
 from django.db.models import Exists, OuterRef, Q
 
 from apps.cuentas.autenticacion import ROLES_PANEL
-from apps.cuentas.models import Rol
+from apps.cuentas.models import Modulo, Rol
 
 from .models import Conversacion, Participante, TipoConversacion
 
@@ -30,6 +30,12 @@ def es_equipo(usuario) -> bool:
 
 def es_personal(usuario) -> bool:
     return usuario.rol in ROLES_PERSONAL
+
+
+def usa_el_chat(usuario) -> bool:
+    """HU-75 (DC-79): el personal con el chat activo. El despachador lo necesita como módulo; el administrador
+    y el conductor, siempre."""
+    return es_personal(usuario) and (usuario.rol != Rol.DESPACHADOR or usuario.tiene_modulo(Modulo.CHAT))
 
 
 def es_pasajero_con_modulo(usuario) -> bool:

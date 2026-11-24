@@ -25,9 +25,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.auditoria.models import Auditoria, Entidad
-from apps.comun.permisos import con_roles
+from apps.comun.permisos import con_modulo
 from apps.convenios.models import Convenio
-from apps.cuentas.models import Rol
+from apps.cuentas.models import Modulo
 from apps.flota.models import Conductor
 
 from .models import Canal, EstadoViaje, MetodoPago, OrigenCancelacion, Viaje
@@ -367,7 +367,7 @@ TIPO = OpenApiParameter(
 
 
 class _VistaReporte(APIView):
-    permission_classes = [con_roles(Rol.ADMINISTRADOR)]
+    permission_classes = [con_modulo(Modulo.REPORTES)]  # HU-75
 
     def _filtros(self, request, tipo: str) -> dict:
         if tipo not in COLUMNAS:

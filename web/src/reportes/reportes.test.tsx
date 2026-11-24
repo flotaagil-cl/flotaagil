@@ -28,9 +28,9 @@ describe('permisos', () => {
     expect(within(menu).getByRole('link', { name: 'Reportes' })).toBeInTheDocument();
   });
 
-  it('el despachador no, y por URL ve «sin permiso» sin consultar la API', async () => {
+  it('el despachador sin el módulo no, y por URL vuelve a Inicio con un aviso, sin consultar la API', async () => {
     const { servidor } = montar('/reportes', 'despacho@andes.example');
-    expect(await screen.findByRole('heading', { name: /permiso/i })).toBeInTheDocument();
+    expect(await screen.findByText(/No tienes acceso a este módulo/)).toBeInTheDocument();
     expect(servidor.urls.some((u) => u.includes('/api/reportes/'))).toBe(false);
   });
 });

@@ -9,7 +9,7 @@ import '../diseno/tokens.css';
 import { SinPermiso } from '../paginas/SinPermiso';
 import { useRutas } from '../rutas/contexto';
 import type { EntradaMenu, Manejo, SeccionMenu } from '../rutas/tabla';
-import { entradasDeMenu, inicioDeRol, ROLES_PANEL } from '../rutas/tabla';
+import { entradasDeMenu, inicioDeRol, ROLES_PANEL, tieneModulo } from '../rutas/tabla';
 import { useSesion } from '../sesion/SesionProvider';
 import estilos from './Layout.module.css';
 
@@ -46,7 +46,14 @@ export function Layout() {
     .filter((r) => r !== undefined)
     .at(-1);
   const permitido = !roles || roles.includes(usuario.rol);
-  const menu = entradasDeMenu(rutas, usuario.rol, '', usuario.empresa.modulo_cuentas);
+  // HU-75 (DC-79): el módulo de la pantalla (de la ruta o de su sección); el backend responde 403 igual.
+  const modulo = coincidencias
+    .map((c) => (c.handle as Manejo | undefined)?.modulo)
+    .filter((m) => m !== undefined)
+    .at(0);
+  const conElModulo = tieneModulo(usuario.modulos, modulo);
+  const usaChat = tieneModulo(usuario.modulos, 'CHAT');
+  const menu = entradasDeMenu(rutas, usuario.rol, '', usuario.empresa.modulo_cuentas, delPanel ? usuario.modulos : undefined);
 
   const grupos = SECCIONES.map((s) => ({
     ...s,
@@ -66,7 +73,7 @@ export function Layout() {
         <NavLink to={entrada.ruta} end={entrada.ruta === '/'} onClick={() => setMenuAbierto(false)}>
           {entrada.icono && <Icono nombre={entrada.icono} tamano={18} className={estilos.iconoMenu} />}
           <span>{entrada.titulo}</span>
-          {delPanel && entrada.ruta === '/chat' && <NoLeidosChat className={estilos.contadorMenu} />}
+          {delPanel && usaChat && entrada.ruta === '/chat' && <NoLeidosChat className={estilos.contadorMenu} />}
         </NavLink>
       </li>
     );
@@ -107,12 +114,20 @@ export function Layout() {
         {sinSeccion.length > 0 && <ul>{sinSeccion.map(renderEnlace)}</ul>}
       </nav>
       <main className={estilos.contenido}>
-        {delPanel && <AlertasVuelo />}
-        {delPanel && <AlertasLlegada />}
-        {permitido ? <Outlet /> : <SinPermiso />}
+        {delPanel && tieneModulo(usuario.modulos, 'RESERVAS') && <AlertasVuelo />}
+        {delPanel && usaChat && <AlertasLlegada />}
+        {!permitido ? (
+          <SinPermiso />
+        ) : conElModulo ? (
+          <Outlet />
+        ) : (
+          // HU-75: un módulo apagado (p. ej., un enlace viejo) lleva a Inicio con el aviso.
+          <Navigate to="/" replace state={{ aviso: 'No tienes acceso a este módulo. Pídeselo al administrador.' }} />
+        )}
       </main>
     </div>
   );
   // CC-19: el canal del chat corre en todo el panel (el convenio y el pasajero no usan el chat de trabajo).
-  return delPanel ? <ChatEnVivo>{marco}</ChatEnVivo> : marco;
+  // HU-75: salvo para el despachador sin el módulo Chat.
+  return delPanel && usaChat ? <ChatEnVivo>{marco}</ChatEnVivo> : marco;
 }

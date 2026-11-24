@@ -10,10 +10,11 @@ from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 
-from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
-from apps.cuentas.models import Rol
+from apps.comun.permisos import AisladoPorEmpresaMixin, con_modulo
+from apps.cuentas.models import Modulo
 
 from . import importacion, servicios, turnos
 from .filtros import ConductorFiltro, VehiculoFiltro
@@ -37,7 +38,11 @@ EN_VIAJE = OpenApiResponse(description="`conductor_en_viaje`: el conductor está
 EN_USO = OpenApiResponse(
     description="`flota_en_uso`: el vehículo está declarado en un turno o tiene un viaje en curso."
 )
-SOLO_ADMIN = [con_roles(Rol.ADMINISTRADOR)]
+# HU-75 (DC-79): Vehículos y Conductores son módulos que el administrador puede activar al despachador.
+# La ficha del conductor busca vehículos para asociar: con Conductores también se pueden leer.
+CON_VEHICULOS = [con_modulo(Modulo.VEHICULOS)]
+LEER_VEHICULOS = [con_modulo(Modulo.VEHICULOS, Modulo.CONDUCTORES)]
+CON_CONDUCTORES = [con_modulo(Modulo.CONDUCTORES)]
 
 
 def _importar(request, formato, crear):
@@ -89,8 +94,14 @@ class VehiculoViewSet(
         Prefetch("asociaciones", queryset=ConductorVehiculo.objects.select_related("conductor__usuario"))
     )
     serializer_class = VehiculoSerializer
-    permission_classes = SOLO_ADMIN
+    permission_classes = CON_VEHICULOS
     filterset_class = VehiculoFiltro
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return [permiso() for permiso in LEER_VEHICULOS]
+        return super().get_permissions()
+
     http_method_names = ["get", "post", "patch", "head", "options"]
 
     def _detalle(self, vehiculo, codigo=status.HTTP_200_OK):
@@ -146,7 +157,7 @@ class ConductorViewSet(
     )
     campo_empresa = "usuario__empresa"
     serializer_class = ConductorSerializer
-    permission_classes = SOLO_ADMIN
+    permission_classes = CON_CONDUCTORES
     filterset_class = ConductorFiltro
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
 

@@ -16,10 +16,10 @@ from rest_framework.views import APIView
 
 from apps.auditoria.models import Entidad
 from apps.auditoria.servicios import registrar
-from apps.comun.permisos import con_roles
+from apps.comun.permisos import con_modulo
 from apps.comun.validadores import normalizar_telefono, validar_telefono_e164
 
-from .models import ConfiguracionEmpresa, Rol
+from .models import ConfiguracionEmpresa, Modulo
 
 # DC-68: (mínimo, máximo) de cada parámetro numérico.
 RANGOS = {
@@ -105,7 +105,7 @@ class ConfiguracionEmpresaSerializer(serializers.ModelSerializer):
 
 
 class ConfiguracionEmpresaView(APIView):
-    permission_classes = [con_roles(Rol.ADMINISTRADOR)]
+    permission_classes = [con_modulo(Modulo.CONFIGURACION)]  # HU-75
 
     def _configuracion(self, request) -> ConfiguracionEmpresa:
         return ConfiguracionEmpresa.objects.select_for_update().get(empresa_id=request.user.empresa_id)
