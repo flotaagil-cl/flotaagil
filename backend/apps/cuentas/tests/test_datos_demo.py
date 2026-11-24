@@ -24,7 +24,8 @@ class TestDatosDemo:
         call_command("datos_demo", password="clave-demo-123")
         nombres = list(Usuario.objects.order_by("email").values_list("nombre", flat=True))
         call_command("datos_demo", password="clave-demo-123")
-        assert Usuario.objects.count() == 14  # HU-34: una cuenta de convenio por empresa
+        # HU-34: cuenta de convenio solo en la empresa con módulo de cuentas; la otra usa la clave (CC-23).
+        assert Usuario.objects.count() == 13
         assert list(Usuario.objects.order_by("email").values_list("nombre", flat=True)) == nombres
 
     def test_base_anterior_a_hu34_recibe_la_cuenta_del_convenio(self, settings):
@@ -51,6 +52,60 @@ class TestDatosDemo:
         # Una cuenta que ya existe no cambia de clave.
         encargada = Usuario.objects.get(email="convenio@transportes-andes.example")
         assert encargada.check_password("clave-demo-123")
+
+    def test_sin_modulo_el_convenio_demo_pide_con_clave(self, settings, capsys):
+        """CC-23: el convenio demo de la empresa sin módulo no tiene cuenta y su clave es la de los datos
+        demo, guardada solo como hash; la salida del comando no la muestra."""
+        from apps.convenios.models import Convenio
+        from apps.convenios.servicios import admite_clave, clave_correcta
+
+        settings.DEBUG = True
+        call_command("datos_demo", password="clave-demo-123")
+        convenio = Convenio.objects.get(empresa__slug="taxi-pacifico")
+        assert convenio.usuario is None
+        assert convenio.contacto_correo == "convenio@taxi-pacifico.example"
+        assert admite_clave(convenio)
+        assert clave_correcta(convenio, "clave-demo-123")
+        assert "clave-demo-123" not in convenio.clave_hash
+        assert not Usuario.objects.filter(email="convenio@taxi-pacifico.example").exists()
+        salida = capsys.readouterr().out
+        assert "convenio@taxi-pacifico.example (clave del convenio = DATOS_DEMO_PASSWORD)" in salida
+        assert "clave-demo-123" not in salida
+        # Idempotente: una clave que ya existe (p. ej. regenerada por el administrador) no cambia.
+        version = convenio.clave_version
+        call_command("datos_demo", password="otra-clave-456")
+        convenio.refresh_from_db()
+        assert convenio.clave_version == version
+        assert clave_correcta(convenio, "clave-demo-123")
+        assert Convenio.objects.filter(empresa__slug="taxi-pacifico").count() == 1
+
+    def test_base_anterior_quita_la_cuenta_del_convenio_sin_modulo(self, settings):
+        """Una base cargada antes trae el convenio de Taxi Pacífico con cuenta: queda sin cuenta, con clave, y
+        la cuenta queda inactiva (no se borra)."""
+        from apps.convenios.models import Convenio
+        from apps.convenios.servicios import clave_correcta
+
+        settings.DEBUG = True
+        call_command("datos_demo", password="clave-demo-123")
+        convenio = Convenio.objects.get(empresa__slug="taxi-pacifico")
+        cuenta = Usuario.objects.create_user(
+            "convenio@taxi-pacifico.example",
+            "clave-demo-123",
+            empresa=convenio.empresa,
+            nombre="Encargada Demo 2",
+            rol=Rol.CONVENIO,
+        )
+        Convenio.objects.filter(pk=convenio.pk).update(
+            usuario=cuenta, contacto_correo=None, clave_hash=None, clave_version=0, clave_generada_en=None
+        )
+        call_command("datos_demo", password="clave-demo-123")
+        convenio.refresh_from_db()
+        cuenta.refresh_from_db()
+        assert convenio.usuario is None
+        assert convenio.contacto_correo == "convenio@taxi-pacifico.example"
+        assert clave_correcta(convenio, "clave-demo-123")
+        assert cuenta.activo is False
+        assert Convenio.objects.filter(empresa__slug="taxi-pacifico").count() == 1
 
     def test_carga_flota_y_viajes_en_todos_los_estados(self, settings):
         from apps.aeropuerto.models import Vuelo

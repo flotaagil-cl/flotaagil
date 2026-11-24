@@ -121,3 +121,5 @@ class Command(BaseCommand):
             self.stdout.write(f"  {datos['razon_social']}  →  /solicitar/{datos['slug']}")
             for rol, alias in USUARIOS_POR_EMPRESA:
                 self.stdout.write(f"    {rol:<14} {email_demo(datos['slug'], alias)}")
+            acceso = "cuenta" if datos["modulo_cuentas"] else "clave del convenio = DATOS_DEMO_PASSWORD"
+            self.stdout.write(f"    {'CONVENIO':<14} convenio@{datos['slug']}.example ({acceso})")

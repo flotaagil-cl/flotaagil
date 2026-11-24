@@ -41,6 +41,7 @@ docker compose -f infra/docker-compose.dev.yml exec backend python manage.py dat
 
 - API: http://localhost:8000/api/ · Swagger (solo con DEBUG): http://localhost:8000/api/docs/
 - Usuarios demo: `admin@`, `despacho@`, `conductor1@`…`conductor4@` en `transportes-andes.example` y `taxi-pacifico.example`; contraseña: `DATOS_DEMO_PASSWORD` del `.env`.
+- Convenio demo: en Transportes Andes (con `modulo_cuentas`) entra con la cuenta `convenio@transportes-andes.example`; en Taxi Pacífico (sin el módulo) no tiene cuenta y pide en `/solicitar/taxi-pacifico` → «Empresa con convenio» con `convenio@taxi-pacifico.example` y la clave del convenio, que en los datos demo es `DATOS_DEMO_PASSWORD` (solo se guarda su hash). Una base cargada antes deja inactiva la cuenta de convenio de Taxi Pacífico.
 - Admin de mantenimiento interno: `python manage.py createsuperuser` y http://localhost:8000/admin/.
 
 Comandos frecuentes (prefijo `docker compose -f infra/docker-compose.dev.yml`):

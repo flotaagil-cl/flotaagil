@@ -3,10 +3,12 @@ los estados. Los cambios de estado pasan por la máquina de estados, así el his
 
 from datetime import timedelta
 
+from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 
 from apps.comun.validadores import digito_verificador
 from apps.convenios.models import Convenio, EstadoConvenio
+from apps.convenios.servicios import normalizar_clave
 from apps.cuentas.models import Rol, Usuario
 
 from . import estados, servicios
@@ -83,6 +85,8 @@ def asegurar_convenio(empresa, numero_empresa: int, password: str) -> Convenio:
     `convenio@<slug>.example` ya tiene su convenio, no toca nada (tampoco su clave). Una base cargada antes de
     HU-34 tiene el convenio demo sin cuenta: se le asigna una en vez de crear otro."""
     email = f"convenio@{empresa.slug}.example"
+    if not empresa.modulo_cuentas:
+        return _asegurar_convenio_con_clave(empresa, numero_empresa, password, email)
     existente = Convenio.objects.filter(empresa=empresa, usuario__email=email).first()
     if existente is not None:
         return existente
@@ -112,6 +116,43 @@ def asegurar_convenio(empresa, numero_empresa: int, password: str) -> Convenio:
         estado=EstadoConvenio.APROBADO,
         usuario=usuario,
     )
+
+
+def _asegurar_convenio_con_clave(empresa, numero_empresa: int, password: str, email: str) -> Convenio:
+    """CC-23: sin el módulo de cuentas, el convenio demo no tiene cuenta: pide en el formulario público con
+    `convenio@<slug>.example` y la clave del convenio, que en los datos demo es `DATOS_DEMO_PASSWORD` (solo se
+    guarda su hash, como al aprobar). Idempotente: una clave que ya existe no cambia (el administrador pudo
+    regenerarla). Una base cargada antes tiene el convenio con cuenta: se le quita la cuenta y esta queda
+    inactiva (no se borra)."""
+    convenio = (
+        Convenio.objects.filter(empresa=empresa, contacto_correo=email).first()
+        or Convenio.objects.filter(empresa=empresa, usuario__email=email).first()
+    )
+    if convenio is None:
+        cuerpo = str(96000000 + numero_empresa)
+        convenio = Convenio.objects.create(
+            empresa=empresa,
+            cliente_nombre=f"Minera Demo {numero_empresa + 1} S.A.",
+            cliente_rut=f"{cuerpo}-{digito_verificador(cuerpo)}",
+            direccion="Av. Apoquindo 3000, Las Condes",
+            encargado_nombre=f"Encargada Demo {numero_empresa + 1}",
+            encargado_telefono=f"+5690002{numero_empresa}001",
+            estado=EstadoConvenio.APROBADO,
+            contacto_correo=email,
+        )
+    elif convenio.usuario_id is not None:
+        cuenta = convenio.usuario
+        convenio.usuario = None
+        convenio.contacto_correo = email
+        convenio.save(update_fields=["usuario", "contacto_correo"])
+        cuenta.activo = False
+        cuenta.save(update_fields=["activo"])
+    if not convenio.clave_hash:
+        convenio.clave_hash = make_password(normalizar_clave(password))
+        convenio.clave_version += 1
+        convenio.clave_generada_en = timezone.now()
+        convenio.save(update_fields=["clave_hash", "clave_version", "clave_generada_en"])
+    return convenio
 
 
 def cargar(empresa, numero_empresa: int, conductores, faker, password: str) -> int:
