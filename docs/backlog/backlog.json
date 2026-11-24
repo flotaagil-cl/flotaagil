@@ -15,7 +15,9 @@
       "reglas": [],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Sin cambios (reubicada a S4)"
+      "estado_cambio": "Sin cambios (reubicada a S4)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-02",
@@ -36,7 +38,9 @@
       "depende_de": [
         "H-3"
       ],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-03",
@@ -56,7 +60,9 @@
         "CP-06"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (sentido y vuelo)"
+      "estado_cambio": "Modificada (sentido y vuelo)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-04",
@@ -80,7 +86,9 @@
       "depende_de": [
         "H-3"
       ],
-      "estado_cambio": "Modificada (regla de sugerencia; 13→8 SP)"
+      "estado_cambio": "Modificada (regla de sugerencia; 13→8 SP)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-05",
@@ -99,7 +107,9 @@
       ],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-06",
@@ -118,7 +128,9 @@
         "CP-25"
       ],
       "depende_de": [],
-      "estado_cambio": "Fusiona HU-06, 07, 08 y 09 (23→8 SP)"
+      "estado_cambio": "Fusiona HU-06, 07, 08 y 09 (23→8 SP)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-10",
@@ -138,7 +150,9 @@
         "CP-02"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (carga CSV)"
+      "estado_cambio": "Modificada (carga CSV)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-11",
@@ -159,7 +173,9 @@
         "CP-22"
       ],
       "depende_de": [],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Retirada",
+      "estado_evidencia": "DC-35 (CC-16, HU-34): el autoregistro con aprobación reemplazó el link con token y contraseña. CC-23 agregó una clave nueva, sin revivir el link."
     },
     {
       "id": "HU-12",
@@ -180,7 +196,9 @@
         "CP-24"
       ],
       "depende_de": [],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-13",
@@ -204,7 +222,9 @@
         "CP-04"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (consentimiento GPS)"
+      "estado_cambio": "Modificada (consentimiento GPS)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-14",
@@ -223,7 +243,9 @@
         "CP-13"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (datos de vuelo)"
+      "estado_cambio": "Modificada (datos de vuelo)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-15",
@@ -246,7 +268,9 @@
         "CP-14"
       ],
       "depende_de": [],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-16",
@@ -269,7 +293,9 @@
         "CP-16"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (estado EN_ZONA)"
+      "estado_cambio": "Modificada (estado EN_ZONA)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-17",
@@ -286,7 +312,9 @@
       "reglas": [],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Sin cambios (reubicada a S1)"
+      "estado_cambio": "Sin cambios (reubicada a S1)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-18",
@@ -303,7 +331,9 @@
       "reglas": [],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-19",
@@ -322,7 +352,9 @@
         "CP-07"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (vuelo, aviso de privacidad)"
+      "estado_cambio": "Modificada (vuelo, aviso de privacidad)",
+      "estado": "Hecha",
+      "estado_evidencia": "CC-18 (DC-41) retiró el formulario sin cuenta y CC-22 lo volvió a traer en la base (HU-51)."
     },
     {
       "id": "HU-20",
@@ -345,7 +377,9 @@
         "CP-09"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (SMS OTP → WhatsApp; 8→5 SP)"
+      "estado_cambio": "Modificada (SMS OTP → WhatsApp; 8→5 SP)",
+      "estado": "Retirada",
+      "estado_evidencia": "CC-19 (DC-61, DC-63; HU-64, HU-67): sin Twilio; la cuenta se activa por correo y el teléfono queda sin verificación."
     },
     {
       "id": "HU-21",
@@ -367,7 +401,9 @@
         "CP-17"
       ],
       "depende_de": [],
-      "estado_cambio": "Modificada (SMS → WhatsApp; 8→5 SP)"
+      "estado_cambio": "Modificada (SMS → WhatsApp; 8→5 SP)",
+      "estado": "Retirada",
+      "estado_evidencia": "CC-19 (DC-63; HU-56, HU-65): sin Twilio; los avisos van por correo y Web Push."
     },
     {
       "id": "HU-24",
@@ -386,7 +422,9 @@
       ],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Modificada (canal WhatsApp)"
+      "estado_cambio": "Modificada (canal WhatsApp)",
+      "estado": "Hecha",
+      "estado_evidencia": "La encuesta va por correo (DC-55, HU-56); WhatsApp se retiró con CC-19."
     },
     {
       "id": "HU-25",
@@ -410,7 +448,9 @@
       "depende_de": [
         "HU-11"
       ],
-      "estado_cambio": "Sin cambios"
+      "estado_cambio": "Sin cambios",
+      "estado": "Retirada",
+      "estado_evidencia": "DC-35 (CC-16, HU-34): el link protegido se retiró; el convenio entra con su cuenta (HU-34) o con correo + clave en el portal base (CC-23, HU-72)."
     },
     {
       "id": "HU-26",
@@ -429,7 +469,9 @@
         "CP-11"
       ],
       "depende_de": [],
-      "estado_cambio": "Nueva (CC-02)"
+      "estado_cambio": "Nueva (CC-02)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-27",
@@ -453,7 +495,9 @@
       "depende_de": [
         "HU-26"
       ],
-      "estado_cambio": "Nueva (CC-02)"
+      "estado_cambio": "Nueva (CC-02)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-28",
@@ -474,7 +518,9 @@
       "depende_de": [
         "HU-26"
       ],
-      "estado_cambio": "Nueva (CC-02)"
+      "estado_cambio": "Nueva (CC-02)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-29",
@@ -499,7 +545,9 @@
         "HU-02",
         "H-3"
       ],
-      "estado_cambio": "Nueva (CC-02)"
+      "estado_cambio": "Nueva (CC-02)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-30",
@@ -520,7 +568,9 @@
       "depende_de": [
         "HU-20"
       ],
-      "estado_cambio": "Nueva (reemplaza HU-22 y HU-23)"
+      "estado_cambio": "Nueva (reemplaza HU-22 y HU-23)",
+      "estado": "Retirada",
+      "estado_evidencia": "CC-19 (HU-61 a HU-68): el chat interno reemplazó Conversaciones; el historial de WhatsApp queda en solo lectura."
     },
     {
       "id": "HU-31",
@@ -545,7 +595,9 @@
         "HU-18",
         "HU-05"
       ],
-      "estado_cambio": "Nueva (CC-12)"
+      "estado_cambio": "Nueva (CC-12)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-32",
@@ -571,7 +623,9 @@
         "HU-06",
         "HU-31"
       ],
-      "estado_cambio": "Nueva (CC-15)"
+      "estado_cambio": "Nueva (CC-15)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-33",
@@ -590,7 +644,9 @@
       ],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Nueva (CC-16)"
+      "estado_cambio": "Nueva (CC-16)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-34",
@@ -613,7 +669,9 @@
       "depende_de": [
         "HU-33"
       ],
-      "estado_cambio": "Nueva (CC-16); reemplaza el link de HU-11 y HU-25"
+      "estado_cambio": "Nueva (CC-16); reemplaza el link de HU-11 y HU-25",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-35",
@@ -636,7 +694,9 @@
         "HU-33",
         "HU-20"
       ],
-      "estado_cambio": "Nueva (CC-16)"
+      "estado_cambio": "Nueva (CC-16)",
+      "estado": "Hecha",
+      "estado_evidencia": "CC-18 (HU-40) volvió obligatoria la cuenta y CC-22 (DC-51) la dejó en el módulo pagado `modulo_cuentas`; desde CC-19 se activa por correo (HU-64)."
     },
     {
       "id": "HU-36",
@@ -659,7 +719,9 @@
         "HU-10",
         "HU-33"
       ],
-      "estado_cambio": "Nueva (CC-17)"
+      "estado_cambio": "Nueva (CC-17)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-37",
@@ -676,7 +738,9 @@
       "reglas": [],
       "casos_prueba": [],
       "depende_de": [],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-38",
@@ -695,7 +759,9 @@
       "depende_de": [
         "HU-37"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-39",
@@ -717,7 +783,9 @@
         "HU-37",
         "HU-40"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-40",
@@ -738,7 +806,9 @@
       "depende_de": [
         "HU-35"
       ],
-      "estado_cambio": "Nueva (rediseño del portal, CC-18)"
+      "estado_cambio": "Nueva (rediseño del portal, CC-18)",
+      "estado": "Hecha",
+      "estado_evidencia": "CC-22 (DC-51): la cuenta obligatoria rige solo con `modulo_cuentas`; sin el módulo se pide con el formulario público (HU-51)."
     },
     {
       "id": "HU-41",
@@ -757,7 +827,9 @@
       "depende_de": [
         "HU-37"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-42",
@@ -776,7 +848,9 @@
       "depende_de": [
         "HU-39"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-43",
@@ -795,7 +869,9 @@
       "depende_de": [
         "HU-39"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-44",
@@ -816,7 +892,9 @@
       "depende_de": [
         "HU-43"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-45",
@@ -837,7 +915,9 @@
       "depende_de": [
         "HU-37"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-46",
@@ -858,7 +938,9 @@
       "depende_de": [
         "HU-37"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Pendiente",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-47",
@@ -879,7 +961,9 @@
       "depende_de": [
         "HU-39"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Pendiente",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-48",
@@ -898,7 +982,9 @@
       "depende_de": [
         "HU-47"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Desistida",
+      "estado_evidencia": "Decisión de Renato del 2026-11-24: no se construye (sin CC que la pida)."
     },
     {
       "id": "HU-49",
@@ -917,7 +1003,9 @@
       "depende_de": [
         "HU-37"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)"
+      "estado_cambio": "Nueva (rediseño del portal)",
+      "estado": "Pendiente",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-50",
@@ -938,7 +1026,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-51",
@@ -962,7 +1052,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-52",
@@ -986,7 +1078,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-53",
@@ -1008,7 +1102,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-54",
@@ -1034,7 +1130,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-55",
@@ -1051,7 +1149,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-56",
@@ -1074,7 +1174,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-22)"
+      "estado_cambio": "Nueva (CC-22)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-57",
@@ -1093,7 +1195,9 @@
       "reglas": [],
       "casos_prueba": [],
       "epica": "Sistema visual",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-58",
@@ -1112,7 +1216,9 @@
       "reglas": [],
       "casos_prueba": [],
       "epica": "Sistema visual",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-59",
@@ -1131,7 +1237,9 @@
       "reglas": [],
       "casos_prueba": [],
       "epica": "Sistema visual",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-60",
@@ -1153,7 +1261,9 @@
         "HU-54",
         "HU-56"
       ],
-      "estado_cambio": "Nueva (CC-22, DC-59)"
+      "estado_cambio": "Nueva (CC-22, DC-59)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-61",
@@ -1173,7 +1283,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-62",
@@ -1194,7 +1306,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-63",
@@ -1213,7 +1327,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-64",
@@ -1232,7 +1348,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-65",
@@ -1251,7 +1369,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-66",
@@ -1273,7 +1393,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-67",
@@ -1296,7 +1418,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-68",
@@ -1318,7 +1442,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-19)",
       "epica": "Comunicación",
-      "label_epica": null
+      "label_epica": null,
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-69",
@@ -1341,7 +1467,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
       "epica": "Aeropuerto",
-      "label_epica": "epica:aeropuerto"
+      "label_epica": "epica:aeropuerto",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-70",
@@ -1360,7 +1488,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
       "epica": "Gestión y despacho",
-      "label_epica": "epica:gestion-despacho"
+      "label_epica": "epica:gestion-despacho",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-71",
@@ -1381,7 +1511,9 @@
       "en_pareja": false,
       "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
       "epica": "Gestión y despacho",
-      "label_epica": "epica:gestion-despacho"
+      "label_epica": "epica:gestion-despacho",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-72",
@@ -1407,7 +1539,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)"
+      "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-73",
@@ -1436,7 +1570,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)"
+      "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-74",
@@ -1460,7 +1596,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)"
+      "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     },
     {
       "id": "HU-75",
@@ -1485,7 +1623,9 @@
       "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
-      "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)"
+      "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     }
   ],
   "tareas": [
@@ -1495,7 +1635,9 @@
       "tipo": "tarea",
       "sprint": "Sprint 1",
       "responsable": "Renato",
-      "descripcion": "Hito H-3, riesgo R-01. Primera tarea del Sprint 1: validar Capacitor + background-geolocation en Android 10+ con la pantalla apagada y la app en segundo plano. Resultado: informe técnico corto en docs/ con teléfonos probados, frecuencia lograda, consumo de batería y datos. Bloquea HU-02, HU-04 y HU-29."
+      "descripcion": "Hito H-3, riesgo R-01. Primera tarea del Sprint 1: validar Capacitor + background-geolocation en Android 10+ con la pantalla apagada y la app en segundo plano. Resultado: informe técnico corto en docs/ con teléfonos probados, frecuencia lograda, consumo de batería y datos. Bloquea HU-02, HU-04 y HU-29.",
+      "estado": "Hecha",
+      "estado_evidencia": ""
     }
   ]
 }
