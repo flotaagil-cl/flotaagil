@@ -274,6 +274,18 @@ class ReservaPublicaRespuestaSerializer(serializers.Serializer):
     mensaje = serializers.CharField()
 
 
+class PaseConvenioSerializer(serializers.Serializer):
+    correo = serializers.EmailField(max_length=254)
+    clave = serializers.CharField(max_length=64, write_only=True, trim_whitespace=True)
+
+
+class PaseConvenioRespuestaSerializer(serializers.Serializer):
+    pase = serializers.CharField()
+    cliente_nombre = serializers.CharField()
+    correo = serializers.CharField(help_text="El correo del pase, enmascarado")
+    vence_en = serializers.DateTimeField()
+
+
 class TokenSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=200)
 

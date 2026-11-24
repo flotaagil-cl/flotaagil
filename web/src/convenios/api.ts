@@ -58,12 +58,15 @@ export function useEditarConvenio(id: number) {
   });
 }
 
-type Accion = 'aprobar' | 'desactivar' | 'activar';
+type Accion = 'aprobar' | 'desactivar' | 'activar' | 'regenerar-clave' | 'revocar-clave';
 
 const RUTAS_ACCION = {
   aprobar: '/api/convenios/{id}/aprobar/',
   desactivar: '/api/convenios/{id}/desactivar/',
   activar: '/api/convenios/{id}/activar/',
+  // CC-23 (DC-74): solo el administrador; la clave nueva va al correo de contacto, nunca al panel.
+  'regenerar-clave': '/api/convenios/{id}/regenerar-clave/',
+  'revocar-clave': '/api/convenios/{id}/revocar-clave/',
 } as const;
 
 /** HU-34: aprobar, desactivar (RN-08) o reactivar. Quedan en auditoría (RN-12). */

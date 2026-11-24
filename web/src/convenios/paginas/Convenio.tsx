@@ -49,7 +49,10 @@ const ACCIONES_AUDITORIA: Record<string, string> = {
   EDICION: 'Edición de datos',
   ACTIVACION: 'Activación',
   DESACTIVACION: 'Desactivación',
-  CAMBIO_CLAVE: 'Cambio de contraseña',
+  CAMBIO_CLAVE: 'Cambio de contraseña o clave',
+  REVOCACION_CLAVE: 'Revocación de la clave del convenio',
+  BLOQUEO_CLAVE: 'Bloqueo de la clave por intentos fallidos',
+  SOLICITUD_PUBLICA: 'Solicitud desde el portal',
   BLOQUEO_LINK: 'Bloqueo del link por intentos fallidos',
   DESBLOQUEO_LINK: 'Desbloqueo del link al rotar la contraseña',
   REGISTRO: 'Registro desde el portal',
@@ -109,12 +112,17 @@ function Auditoria({ id }: { id: number }) {
   );
 }
 
-type Confirmando = 'aprobar' | 'desactivar' | 'activar' | 'restablecer' | null;
+type Confirmando = 'aprobar' | 'desactivar' | 'activar' | 'restablecer' | 'clave' | 'revocar' | null;
 
 const PREGUNTAS: Record<Exclude<Confirmando, null>, { texto: string; boton: string }> = {
   aprobar: { texto: 'Aprobar el convenio: podrá pedir viajes y se le avisará por correo.', boton: 'Aprobar' },
-  desactivar: { texto: 'Desactivar: la cuenta pierde el acceso al instante. Las reservas no se borran (RN-08).', boton: 'Desactivar' },
-  activar: { texto: 'Reactivar: la cuenta vuelve a entrar con su contraseña.', boton: 'Activar' },
+  desactivar: { texto: 'Desactivar: la cuenta o la clave pierden el acceso al instante. Las reservas no se borran (RN-08).', boton: 'Desactivar' },
+  activar: { texto: 'Reactivar el convenio.', boton: 'Activar' },
+  clave: {
+    texto: 'Se generará una clave nueva y se enviará al correo de contacto. La anterior deja de servir al instante.',
+    boton: 'Generar clave',
+  },
+  revocar: { texto: 'Revocar la clave: nadie podrá pedir con el convenio en el portal hasta generar otra.', boton: 'Revocar' },
   restablecer: { texto: 'Se generará una contraseña temporal y se cerrarán sus sesiones.', boton: 'Restablecer' },
 };
 
@@ -181,7 +189,14 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
     } else if (confirmando === 'desactivar') {
       await ejecutar(() => accion.mutateAsync('desactivar'), 'Convenio desactivado: su cuenta perdió el acceso.');
     } else if (confirmando === 'activar') {
-      await ejecutar(() => accion.mutateAsync('activar'), 'Convenio activado.');
+      await ejecutar(
+        () => accion.mutateAsync('activar'),
+        convenio.admite_clave ? 'Convenio activado. Genera una clave nueva para que pueda pedir en el portal.' : 'Convenio activado.',
+      );
+    } else if (confirmando === 'clave') {
+      await ejecutar(() => accion.mutateAsync('regenerar-clave'), 'Clave generada. Se envió al correo de contacto.');
+    } else if (confirmando === 'revocar') {
+      await ejecutar(() => accion.mutateAsync('revocar-clave'), 'Clave revocada.');
     }
   }
 
@@ -297,14 +312,27 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
             )}
             {!convenio.tiene_cuenta && (
               <p className={s.notaEstado}>
-                {convenio.contacto_correo
-                  ? 'Sin cuenta (CC-22): sus reservas del portal con el RUT y un correo autorizado quedan en el convenio.'
-                  : 'Convenio anterior al registro en el portal, sin cuenta: queda como historial.'}
+                {convenio.admite_clave
+                  ? 'Sin cuenta (CC-23): el contacto y los correos autorizados piden en el portal con la clave del convenio.'
+                  : convenio.contacto_correo
+                    ? 'Sin cuenta (CC-22): sus reservas del portal con el RUT y un correo autorizado quedan en el convenio.'
+                    : 'Convenio anterior al registro en el portal, sin cuenta: queda como historial.'}
+              </p>
+            )}
+            {convenio.admite_clave && convenio.estado !== 'EN_REVISION' && convenio.estado !== 'RECHAZADO' && (
+              <p className={s.notaEstado}>
+                {convenio.clave_vigente && convenio.clave_generada_en
+                  ? `Clave vigente, generada el ${formatearFechaHora(convenio.clave_generada_en)}. Nunca se muestra aquí.`
+                  : 'Sin clave vigente: nadie puede pedir con el convenio en el portal.'}
               </p>
             )}
             {confirmando ? (
               <div className={s.panelConfirmacion} role="alertdialog" aria-labelledby="pregunta-convenio">
-                <p id="pregunta-convenio">{PREGUNTAS[confirmando].texto}</p>
+                <p id="pregunta-convenio">
+                  {confirmando === 'aprobar' && convenio.admite_clave
+                    ? 'Aprobar el convenio: se generará su clave y se enviará al correo de contacto con el aviso de aprobación.'
+                    : PREGUNTAS[confirmando].texto}
+                </p>
                 {confirmando === 'aprobar' && (
                   <label className={s.campoTextarea}>
                     Correos autorizados (uno por línea; «@empresa.cl» autoriza todo el dominio)
@@ -313,7 +341,7 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                 )}
                 <div className={estilos.acciones}>
                   <button type="button" className={estilos.boton} disabled={ocupado} onClick={() => void confirmar()}>
-                    {PREGUNTAS[confirmando].boton}
+                    {confirmando === 'clave' && convenio.clave_vigente ? 'Regenerar clave' : PREGUNTAS[confirmando].boton}
                   </button>
                   <button type="button" className={estilos.botonSecundario} disabled={ocupado} onClick={() => setConfirmando(null)}>
                     Volver
@@ -352,7 +380,18 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                     Desactivar convenio
                   </button>
                 )}
-                {esAdmin && convenio.estado === 'INACTIVO' && convenio.tiene_cuenta && (
+                {esAdmin && convenio.estado === 'APROBADO' && convenio.admite_clave && (
+                  <button type="button" className={`${estilos.botonSecundario} ${s.botonConIcono}`} onClick={() => setConfirmando('clave')}>
+                    <Icono nombre="llave" tamano={16} />
+                    {convenio.clave_vigente ? 'Regenerar clave' : 'Generar clave'}
+                  </button>
+                )}
+                {esAdmin && convenio.admite_clave && convenio.clave_vigente && (
+                  <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('revocar')}>
+                    Revocar clave
+                  </button>
+                )}
+                {esAdmin && convenio.estado === 'INACTIVO' && (convenio.tiene_cuenta || convenio.admite_clave) && (
                   <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('activar')}>
                     Activar convenio
                   </button>

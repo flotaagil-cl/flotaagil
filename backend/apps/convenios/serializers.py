@@ -30,6 +30,11 @@ class ConvenioDetalleSerializer(ConvenioSerializer):
     revisado_por = serializers.CharField(
         source="revisado_por.nombre", allow_null=True, default=None, read_only=True
     )
+    # CC-23 (DC-74): nunca la clave; solo si hay una vigente y cuándo se generó.
+    admite_clave = serializers.SerializerMethodField(
+        help_text="Sin cuenta, con correo de contacto y empresa sin módulo de cuentas"
+    )
+    clave_vigente = serializers.SerializerMethodField()
 
     class Meta(ConvenioSerializer.Meta):
         fields = [
@@ -46,8 +51,19 @@ class ConvenioDetalleSerializer(ConvenioSerializer):
             "contacto_correo",
             "viajes_estimados_mes",
             "correos_autorizados",
+            "admite_clave",
+            "clave_vigente",
+            "clave_generada_en",
         ]
         read_only_fields = fields
+
+    def get_admite_clave(self, convenio) -> bool:
+        from .servicios import admite_clave
+
+        return admite_clave(convenio)
+
+    def get_clave_vigente(self, convenio) -> bool:
+        return bool(convenio.clave_hash)
 
 
 def _rut(valor):

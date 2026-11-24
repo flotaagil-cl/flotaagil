@@ -108,6 +108,12 @@ class ConfiguracionEmpresa(models.Model):
     reserva_publica_max_correo_hora = _minutos(5, minimo=1)
     reserva_publica_max_convenio_hora = _minutos(30, minimo=1)
     cierre_no_confirmada_horas = _minutos(2, minimo=1)
+    # CC-23 (DC-75): pase de convenio con correo + clave en el portal base. Fallos seguidos antes del bloqueo
+    # temporal, minutos de bloqueo, vigencia del pase y personas por solicitud (supuestos configurables).
+    convenio_pase_max_fallos = _minutos(5, minimo=1)
+    convenio_pase_bloqueo_min = _minutos(15, minimo=1)
+    convenio_pase_vigencia_min = _minutos(120, minimo=1)
+    convenio_max_personas = _minutos(10, minimo=1)
     # DC-62 (CC-19, HU-66): botones de emergencia del portal («Llamar a la central», `tel:`, y «WhatsApp de la
     # central», `wa.me`). Vacíos, el botón no se muestra.
     telefono_central = models.CharField(

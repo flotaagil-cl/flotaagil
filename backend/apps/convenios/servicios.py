@@ -8,6 +8,10 @@ cuentas (decisión del PO del 2026-11-10): los convenios sin cuenta, anteriores 
 historial y solo admiten editar los datos y desactivarlos.
 """
 
+import secrets
+
+from django.conf import settings
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as ErrorDeDjango
 from django.db import IntegrityError, transaction
@@ -184,12 +188,18 @@ def aprobar(convenio: Convenio, *, usuario, correos_autorizados=None) -> Conveni
     )
     convenio.save(update_fields=campos)
     _auditar(usuario, convenio, "APROBACION", previos)
-    como_pedir = (
-        "Ya puedes pedir viajes iniciando sesión en FlotaÁgil."
-        if convenio.usuario_id
-        else "Las reservas hechas en el portal con el RUT de tu empresa y un correo autorizado quedan en el "
-        "convenio."
-    )
+    if admite_clave(convenio):
+        # CC-23 (D1): sin módulo de cuentas, la clave se genera al aprobar y va solo al correo de contacto.
+        clave = _asignar_clave(convenio)
+        _auditar(usuario, convenio, "CAMBIO_CLAVE", {"clave_version": convenio.clave_version - 1})  # RN-12
+        como_pedir = texto_como_pedir(convenio, clave)
+    elif convenio.usuario_id:
+        como_pedir = "Ya puedes pedir viajes iniciando sesión en FlotaÁgil."
+    else:
+        como_pedir = (
+            "Las reservas hechas en el portal con el RUT de tu empresa y un correo autorizado quedan en el "
+            "convenio."
+        )
     _avisar(
         convenio,
         f"Tu convenio con {convenio.empresa.razon_social} fue aprobado",
@@ -225,7 +235,12 @@ def desactivar(convenio: Convenio, *, usuario) -> Convenio:
     convenio = _bloquear(convenio)
     _exigir(convenio, EstadoConvenio.APROBADO)
     convenio.estado = EstadoConvenio.INACTIVO
-    convenio.save(update_fields=["estado"])
+    campos = ["estado"]
+    if convenio.clave_hash:
+        # CC-23 (DC-74): la clave muere con la desactivación; al reactivar, el administrador genera una nueva.
+        convenio.clave_hash, convenio.clave_version = None, convenio.clave_version + 1
+        campos += ["clave_hash", "clave_version"]
+    convenio.save(update_fields=campos)
     if convenio.usuario_id:
         Usuario.objects.filter(pk=convenio.usuario_id).update(activo=False)
         credenciales.revocar_sesiones(convenio.usuario)
@@ -237,8 +252,9 @@ def desactivar(convenio: Convenio, *, usuario) -> Convenio:
 def activar(convenio: Convenio, *, usuario) -> Convenio:
     convenio = _bloquear(convenio)
     _exigir(convenio, EstadoConvenio.INACTIVO)
-    if convenio.usuario_id is None:
-        # Sin cuenta es historial (anterior a HU-34): una vez desactivado no vuelve.
+    if convenio.usuario_id is None and not admite_clave(convenio):
+        # Sin cuenta ni clave es historial (anterior a HU-34): una vez desactivado no vuelve. CC-23 (DC-74):
+        # el convenio del portal base sí vuelve, sin clave hasta que el administrador genere una nueva.
         raise EstadoNoPermitido(
             "Este convenio no tiene cuenta: es historial y no se reactiva.", code="sin_cuenta"
         )
@@ -259,3 +275,96 @@ def restablecer_password(convenio: Convenio, *, usuario) -> tuple[str, object]:
     password, vence = credenciales.asignar_password_temporal(convenio.usuario, por=usuario)
     _auditar(usuario, convenio, "CAMBIO_CLAVE")  # RN-12
     return password, vence
+
+
+# --- Clave de convenio del portal base (CC-23, DC-74) ---
+
+# Sin caracteres que se confunden al dictarla o copiarla (0/O, 1/I/L).
+ALFABETO_CLAVE = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+LARGO_CLAVE = 10
+
+
+def generar_clave() -> str:
+    """Aleatoria, en dos bloques de 5 (p. ej. «ABCDE-23456») para leerla sin errores."""
+    crudo = "".join(secrets.choice(ALFABETO_CLAVE) for _ in range(LARGO_CLAVE))
+    return f"{crudo[:5]}-{crudo[5:]}"
+
+
+def normalizar_clave(clave: str) -> str:
+    """Se compara sin guiones, espacios ni mayúsculas: lo que importa son los 10 caracteres."""
+    return "".join(c for c in (clave or "").upper() if c.isalnum())
+
+
+def clave_correcta(convenio: Convenio, clave: str) -> bool:
+    return bool(convenio.clave_hash) and check_password(normalizar_clave(clave), convenio.clave_hash)
+
+
+def admite_clave(convenio: Convenio) -> bool:
+    """D2: solo los convenios sin cuenta de una empresa sin módulo de cuentas, con correo de contacto."""
+    return (
+        convenio.usuario_id is None and bool(convenio.contacto_correo) and not convenio.empresa.modulo_cuentas
+    )
+
+
+def _asignar_clave(convenio: Convenio) -> str:
+    """Guarda solo el hash y sube la versión (invalida los pases anteriores). Devuelve la clave para el
+    correo."""
+    clave = generar_clave()
+    convenio.clave_hash = make_password(normalizar_clave(clave))
+    convenio.clave_version += 1
+    convenio.clave_generada_en = timezone.now()
+    convenio.save(update_fields=["clave_hash", "clave_version", "clave_generada_en"])
+    return clave
+
+
+def texto_como_pedir(convenio: Convenio, clave: str) -> str:
+    return (
+        "Para pedir viajes con el convenio, entra al portal, elige «Empresa con convenio» e ingresa tu "
+        "correo (este, o uno de los autorizados del convenio) y esta clave:\n\n"
+        f"    {clave}\n\n"
+        f"Portal: {settings.WEB_URL_BASE}/solicitar/{convenio.empresa.slug}\n\n"
+        "La clave sirve para todos los correos autorizados. Guárdala: no la volveremos a mostrar. Si se "
+        "pierde o se filtra, pide a la empresa de transporte que genere una nueva."
+    )
+
+
+def _exigir_clave(convenio: Convenio) -> None:
+    if not admite_clave(convenio):
+        raise EstadoNoPermitido(
+            "Este convenio no usa clave: tiene cuenta, no tiene correo de contacto o la empresa usa cuentas.",
+            code="sin_clave",
+        )
+
+
+@transaction.atomic
+def regenerar_clave(convenio: Convenio, *, usuario) -> Convenio:
+    """D1: solo el administrador. Genera una clave nueva (también la primera de un convenio anterior a CC-23),
+    invalida la anterior y sus pases, y la envía al correo de contacto. Nunca se muestra en el panel."""
+    convenio = _bloquear(convenio)
+    _exigir(convenio, EstadoConvenio.APROBADO)
+    _exigir_clave(convenio)
+    version = convenio.clave_version
+    clave = _asignar_clave(convenio)
+    _auditar(usuario, convenio, "CAMBIO_CLAVE", {"clave_version": version})  # RN-12
+    al_confirmar_correo(
+        convenio.contacto_correo,
+        f"Nueva clave del convenio con {convenio.empresa.razon_social}",
+        f"Hola {convenio.encargado_nombre or ''}:\n\n{convenio.empresa.razon_social} generó una clave nueva "
+        f"para el convenio de {convenio.cliente_nombre}. La anterior ya no sirve.\n\n"
+        f"{texto_como_pedir(convenio, clave)}\n",
+    )
+    return convenio
+
+
+@transaction.atomic
+def revocar_clave(convenio: Convenio, *, usuario) -> Convenio:
+    """D1: solo el administrador. Sin clave, nadie pide con el convenio desde el portal hasta generar otra."""
+    convenio = _bloquear(convenio)
+    _exigir_clave(convenio)
+    if not convenio.clave_hash:
+        raise EstadoNoPermitido("El convenio no tiene una clave vigente.", code="sin_clave")
+    version = convenio.clave_version
+    convenio.clave_hash, convenio.clave_version = None, version + 1
+    convenio.save(update_fields=["clave_hash", "clave_version"])
+    _auditar(usuario, convenio, "REVOCACION_CLAVE", {"clave_version": version})  # RN-12
+    return convenio

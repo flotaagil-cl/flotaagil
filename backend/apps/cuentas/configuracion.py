@@ -29,6 +29,11 @@ RANGOS = {
     "reserva_publica_max_ip_hora": (5, 500),
     "reserva_publica_max_correo_hora": (1, 50),
     "reserva_publica_max_convenio_hora": (1, 500),
+    # CC-23 (DC-75): pase de convenio del portal base.
+    "convenio_pase_max_fallos": (3, 20),
+    "convenio_pase_bloqueo_min": (5, 1440),
+    "convenio_pase_vigencia_min": (15, 720),
+    "convenio_max_personas": (2, 30),
 }
 TELEFONOS = ("telefono_central", "whatsapp_central")
 
@@ -53,6 +58,10 @@ class ConfiguracionEmpresaSerializer(serializers.ModelSerializer):
     reserva_publica_max_convenio_hora = _numero(
         "reserva_publica_max_convenio_hora", "Por correo de convenio y hora"
     )
+    convenio_pase_max_fallos = _numero("convenio_pase_max_fallos", "Claves erradas antes del bloqueo")
+    convenio_pase_bloqueo_min = _numero("convenio_pase_bloqueo_min", "Minutos de bloqueo de la clave")
+    convenio_pase_vigencia_min = _numero("convenio_pase_vigencia_min", "Minutos de vigencia del pase")
+    convenio_max_personas = _numero("convenio_max_personas", "Personas por solicitud de convenio")
 
     class Meta:
         model = ConfiguracionEmpresa

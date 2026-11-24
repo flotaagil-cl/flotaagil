@@ -1788,6 +1788,33 @@ paths:
           description: ''
         '409':
           description: '`estado_convenio`: el convenio no admite la acción en su estado.'
+  /api/convenios/{id}/regenerar-clave/:
+    post:
+      operationId: convenios_regenerar_clave_create
+      description: 'CC-23 (DC-74): solo el administrador. Invalida la clave anterior
+        y sus pases, y envía la nueva al correo de contacto. La clave nunca se muestra
+        en el panel. Se audita (RN-12).'
+      summary: Generar o regenerar la clave del convenio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
+          description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
   /api/convenios/{id}/restablecer-password/:
     post:
       operationId: convenios_restablecer_password_create
@@ -1811,6 +1838,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PasswordTemporal'
+          description: ''
+        '409':
+          description: '`estado_convenio`: el convenio no admite la acción en su estado.'
+  /api/convenios/{id}/revocar-clave/:
+    post:
+      operationId: convenios_revocar_clave_create
+      description: 'CC-23 (DC-74): solo el administrador. Nadie pide con el convenio
+        en el portal hasta generar otra. Se audita (RN-12).'
+      summary: Revocar la clave del convenio
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este convenio.
+        required: true
+      tags:
+      - convenios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvenioDetalle'
           description: ''
         '409':
           description: '`estado_convenio`: el convenio no admite la acción en su estado.'
@@ -2293,6 +2346,47 @@ paths:
           description: Empresa inexistente o con el módulo de cuentas
         '429':
           description: '`limite_ip`'
+  /api/portal/{slug}/convenio/pase/:
+    post:
+      operationId: portal_convenio_pase_create
+      description: El correo debe ser el contacto del convenio o uno autorizado. El
+        pase vence según la configuración de la empresa y se revalida en cada reserva.
+      summary: Pase de convenio con correo y clave (empresas sin el módulo de cuentas)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaseConvenioRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaseConvenioRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaseConvenioRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaseConvenioRespuesta'
+          description: ''
+        '400':
+          description: '`clave_invalida`: el mismo error para cualquier fallo'
+        '404':
+          description: Empresa inexistente o con el módulo de cuentas
+        '429':
+          description: '`limite_ip` o `clave_bloqueada`'
   /api/portal/{slug}/cuenta/:
     post:
       operationId: portal_cuenta_create
@@ -4512,10 +4606,34 @@ components:
           maximum: 500
           minimum: 1
           description: Por correo de convenio y hora (1 a 500).
+        convenio_pase_max_fallos:
+          type: integer
+          maximum: 20
+          minimum: 3
+          description: Claves erradas antes del bloqueo (3 a 20).
+        convenio_pase_bloqueo_min:
+          type: integer
+          maximum: 1440
+          minimum: 5
+          description: Minutos de bloqueo de la clave (5 a 1440).
+        convenio_pase_vigencia_min:
+          type: integer
+          maximum: 720
+          minimum: 15
+          description: Minutos de vigencia del pase (15 a 720).
+        convenio_max_personas:
+          type: integer
+          maximum: 30
+          minimum: 2
+          description: Personas por solicitud de convenio (2 a 30).
       required:
       - cierre_no_confirmada_horas
       - confirmacion_antes_horas
       - confirmacion_plazo_corto_min
+      - convenio_max_personas
+      - convenio_pase_bloqueo_min
+      - convenio_pase_max_fallos
+      - convenio_pase_vigencia_min
       - reserva_publica_max_convenio_hora
       - reserva_publica_max_correo_hora
       - reserva_publica_max_ip_hora
@@ -4659,8 +4777,24 @@ components:
             type: string
           readOnly: true
           description: 'DC-54: correos exactos o «@dominio.cl»'
+        admite_clave:
+          type: boolean
+          readOnly: true
+          description: Sin cuenta, con correo de contacto y empresa sin módulo de
+            cuentas
+        clave_vigente:
+          type: boolean
+          readOnly: true
+        clave_generada_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
       required:
       - activo
+      - admite_clave
+      - clave_generada_en
+      - clave_vigente
       - cliente_nombre
       - cliente_rut
       - contacto_correo
@@ -5975,6 +6109,40 @@ components:
       - id
       - nombre
       - telefono
+    PaseConvenioRequest:
+      type: object
+      properties:
+        correo:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        clave:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 64
+      required:
+      - clave
+      - correo
+    PaseConvenioRespuesta:
+      type: object
+      properties:
+        pase:
+          type: string
+        cliente_nombre:
+          type: string
+        correo:
+          type: string
+          description: El correo del pase, enmascarado
+        vence_en:
+          type: string
+          format: date-time
+      required:
+      - cliente_nombre
+      - correo
+      - pase
+      - vence_en
     Paso:
       type: object
       description: 'Historial para el pasajero: solo el estado y la hora (sin quién
@@ -6064,6 +6232,26 @@ components:
           maximum: 500
           minimum: 1
           description: Por correo de convenio y hora (1 a 500).
+        convenio_pase_max_fallos:
+          type: integer
+          maximum: 20
+          minimum: 3
+          description: Claves erradas antes del bloqueo (3 a 20).
+        convenio_pase_bloqueo_min:
+          type: integer
+          maximum: 1440
+          minimum: 5
+          description: Minutos de bloqueo de la clave (5 a 1440).
+        convenio_pase_vigencia_min:
+          type: integer
+          maximum: 720
+          minimum: 15
+          description: Minutos de vigencia del pase (15 a 720).
+        convenio_max_personas:
+          type: integer
+          maximum: 30
+          minimum: 2
+          description: Personas por solicitud de convenio (2 a 30).
     PatchedConvenioEditarRequest:
       type: object
       properties:
