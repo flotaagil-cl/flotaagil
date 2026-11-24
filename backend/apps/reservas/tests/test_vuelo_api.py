@@ -117,6 +117,46 @@ class TestPanel:
         respuesta = api.post(LISTA, reserva(llegada()), format="json")
         assert Vuelo.objects.get(viaje_id=respuesta.data["id"]).ultima_consulta_en is not None
 
+    def test_escenarios_desarrollo_nacional_demorado_internacional_y_sin_verificar(self, api, settings):
+        settings.FLIGHTAWARE_API_KEY = ""
+        hora = llegada()
+
+        r_nacional = api.post(LISTA, reserva(hora, numero="LA310"), format="json")
+        assert r_nacional.status_code == 201
+        v_nacional = Vuelo.objects.get(viaje_id=r_nacional.data["id"])
+        assert (v_nacional.estado_vuelo, v_nacional.origen_icao, v_nacional.origen_ciudad) == (
+            EstadoVuelo.PROGRAMADO,
+            "SCFA",
+            "Antofagasta",
+        )
+
+        r_demorado = api.post(LISTA, reserva(hora, numero="LA450"), format="json")
+        assert r_demorado.status_code == 201
+        v_demorado = Vuelo.objects.get(viaje_id=r_demorado.data["id"])
+        assert v_demorado.estado_vuelo == EstadoVuelo.DEMORADO
+        assert v_demorado.hora_estimada == hora + timedelta(minutes=25)
+        assert v_demorado.recogida_propuesta == hora + timedelta(minutes=45)
+        assert v_demorado.viaje.recogida_en == hora + timedelta(minutes=30)
+
+        r_internacional = api.post(LISTA, reserva(hora, numero="LA800"), format="json")
+        assert r_internacional.status_code == 201
+        v_internacional = Vuelo.objects.get(viaje_id=r_internacional.data["id"])
+        assert (v_internacional.estado_vuelo, v_internacional.origen_icao, v_internacional.origen_ciudad) == (
+            EstadoVuelo.PROGRAMADO,
+            "KMIA",
+            "Miami",
+        )
+        hoy = api.get(reverse("vuelos-de-hoy")).json()["viajes"]
+        por_id = {item["id"]: item for item in hoy}
+        assert por_id[r_internacional.data["id"]]["vuelo"]["internacional"] is True
+        assert por_id[r_internacional.data["id"]]["vuelo"]["margen_min"] == 35
+        assert por_id[r_nacional.data["id"]]["vuelo"]["margen_min"] == 20
+
+        r_error = api.post(LISTA, reserva(hora, numero="XX999"), format="json")
+        assert r_error.status_code == 201
+        v_error = Vuelo.objects.get(viaje_id=r_error.data["id"])
+        assert (v_error.hora_programada, v_error.ultima_consulta_en) == (hora, None)
+
 
 @pytest.mark.django_db
 class TestPortal:
