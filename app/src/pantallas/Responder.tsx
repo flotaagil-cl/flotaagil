@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icono } from '../componentes/Icono';
 import { segundosRestantes, type Asignacion } from '../conductor/canal';
 
 interface Props {
@@ -30,17 +31,21 @@ export function Responder({ asignacion, responder, ocultar }: Props) {
   return (
     <>
       {falla && (
-        <p className="error" role="alert">
-          {falla}
+        <p className="error alerta-bloque" role="alert">
+          <Icono nombre="alerta" tamano={18} />
+          <span>{falla}</span>
         </p>
       )}
       {vencida ? (
-        <>
-          <p className="aviso">El viaje volvió a la central para reasignarlo.</p>
+        <div className="asignado-vencida">
+          <p className="aviso alerta-bloque">
+            <Icono nombre="reloj" tamano={18} />
+            <span>El viaje volvió a la central para reasignarlo.</span>
+          </p>
           <button className="principal" type="button" onClick={ocultar}>
             Entendido
           </button>
-        </>
+        </div>
       ) : (
         <div className="responder">
           <button className="principal" type="button" disabled={enviando !== null} onClick={() => void enviar(true)}>

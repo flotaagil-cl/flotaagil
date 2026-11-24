@@ -1551,3 +1551,277 @@ button.principal.rechazar {
   margin: 0 0 0.75rem;
   font-size: 1rem;
 }
+
+/* ---------- Viaje asignado (anillo 60 s y datos) ---------- */
+.asignado-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.asignado-anillo {
+  position: relative;
+  flex: none;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+}
+
+.asignado-anillo svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.asignado-anillo-base {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-primario-900) 18%, transparent);
+  stroke-width: 6;
+}
+
+.asignado-anillo-progreso {
+  fill: none;
+  stroke: var(--color-primario-900);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 250ms linear;
+}
+
+.asignado-segundos {
+  position: absolute;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-primario-900);
+}
+
+.asignado-titulos {
+  min-width: 0;
+  flex: 1;
+}
+
+.asignado-titulos h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.asignado-titulos .cuenta {
+  margin: 0.15rem 0 0;
+  font-size: 1.15rem;
+}
+
+.asignado-datos-caja {
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--radio-boton);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  margin-bottom: 0.9rem;
+}
+
+.asignado-vencida {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.asignado-vencida .alerta-bloque,
+.asignado-vencida button.principal {
+  margin-top: 0;
+}
+
+/* ---------- Viaje en curso (barra de 4 etapas + pago segmentado) ---------- */
+.viaje-pasos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-bottom: 0.9rem;
+}
+
+.viaje-paso {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.viaje-paso-barra {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--borde);
+}
+
+.viaje-paso.activo .viaje-paso-barra {
+  background: var(--color-primario-700);
+}
+
+.viaje-paso-texto {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.viaje-paso.activo .viaje-paso-texto {
+  color: var(--color-primario-900);
+  font-weight: 700;
+}
+
+.viaje-datos {
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--radio-boton);
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+}
+
+.viaje-destino-barra {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.85rem 0 0.75rem;
+  color: var(--color-primario-700);
+}
+
+.viaje-destino-barra > svg {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.viaje-destino-barra p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.viaje-destino-barra strong {
+  color: var(--texto);
+}
+
+.boton-navegar {
+  margin-top: 0;
+  min-height: 48px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.etiqueta-campo {
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.metodos-pago {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 0.45rem;
+}
+
+.metodo-opcion {
+  min-height: 48px;
+  padding: 0.45rem 0.5rem;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-boton);
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.metodo-opcion.activo {
+  border-color: var(--color-primario-700);
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+  font-weight: 700;
+}
+
+.campo-prefijo {
+  flex: none;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.campo-entrada-error {
+  border-color: var(--peligro);
+}
+
+/* ---------- Consentimiento y estados iniciales ---------- */
+.consentimiento-cuerpo {
+  padding-top: calc(max(1.5rem, env(safe-area-inset-top)) + 0.75rem);
+}
+
+.consentimiento-cabecera {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 0.45rem;
+}
+
+.consentimiento-cabecera h1 {
+  margin: 0.25rem 0 0;
+  font-size: 1.5rem;
+}
+
+.consentimiento-cabecera p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.consentimiento-icono {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--grad-destacado);
+  color: var(--color-primario-900);
+}
+
+.consentimiento-lista {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  list-style: none;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.consentimiento-item {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.consentimiento-item strong {
+  font-size: 0.95rem;
+  color: var(--texto);
+}
+
+.consentimiento-item span {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+.estado-pantalla {
+  justify-content: center;
+  align-items: center;
+}
+
+.estado-cargando {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  color: var(--texto-suave);
+  font-weight: 600;
+}
+
+.carga-giro {
+  width: 34px;
+  height: 34px;
+  border: 3.5px solid var(--borde);
+  border-top-color: var(--color-primario-700);
+  border-radius: 50%;
+  animation: girar 700ms linear infinite;
+}
+
+.estado-error-cuerpo {
+  justify-content: center;
+}

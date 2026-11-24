@@ -7,6 +7,7 @@ import { App as AppNativa } from '@capacitor/app';
 import { useCallback, useEffect, useState } from 'react';
 import { manejarAtras } from './atras';
 import type { MensajeChat } from './chat/canal';
+import { Icono } from './componentes/Icono';
 import { alertar, pedirPermisoDeNotificaciones, sonarMensaje } from './conductor/alerta';
 import type { EstadoCanal } from './conductor/canal';
 import type { Accion } from './conductor/ejecucion';
@@ -269,8 +270,11 @@ export default function App() {
 
   if (estado.fase === 'cargando') {
     return (
-      <main>
-        <p>Cargando…</p>
+      <main className="app-pantalla estado-pantalla">
+        <div className="estado-cargando">
+          <span className="carga-giro" aria-hidden="true" />
+          <p>Cargando…</p>
+        </div>
       </main>
     );
   }
@@ -278,16 +282,24 @@ export default function App() {
   if (estado.fase === 'cambio_pendiente') return <CambiarPassword sesion={sesion} nombre={estado.usuario.nombre} />;
   if (!perfil) {
     return (
-      <main>
+      <main className="app-pantalla estado-pantalla">
         {fallaPerfil ? (
-          <p className="error" role="alert">
-            {fallaPerfil}{' '}
-            <button type="button" onClick={() => void cargarPerfil()}>
-              Reintentar
-            </button>
-          </p>
+          <div className="app-cuerpo estado-error-cuerpo">
+            <div className="error alerta-bloque" role="alert">
+              <Icono nombre="alerta" tamano={18} />
+              <div className="alerta-cuerpo">
+                <p className="alerta-texto">{fallaPerfil}</p>
+                <button type="button" className="alerta-accion" onClick={() => void cargarPerfil()}>
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          </div>
         ) : (
-          <p>Cargando…</p>
+          <div className="estado-cargando">
+            <span className="carga-giro" aria-hidden="true" />
+            <p>Cargando…</p>
+          </div>
         )}
       </main>
     );

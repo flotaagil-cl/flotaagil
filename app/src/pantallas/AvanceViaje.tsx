@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Icono } from '../componentes/Icono';
 import { leerMonto, metodosDePago, pasoSiguiente, type Accion, type MetodoPago } from '../conductor/ejecucion';
 import type { ViajeActivo } from '../navegacion';
 
@@ -39,8 +40,9 @@ export function AvanceViaje({ viaje, avanzar }: Props) {
   }
 
   const aviso = falla && (
-    <p className="error" role="alert">
-      {falla}
+    <p className="error alerta-bloque" role="alert">
+      <Icono nombre="alerta" tamano={18} />
+      <span>{falla}</span>
     </p>
   );
 
@@ -50,7 +52,12 @@ export function AvanceViaje({ viaje, avanzar }: Props) {
         {viaje.estado === 'EN_CAMINO' && (
           <p className="secundario">La llegada se marca sola a 150 m del punto de recogida.</p>
         )}
-        {viaje.estado === 'EN_ZONA' && <p className="aviso">Llegaste al punto de recogida.</p>}
+        {viaje.estado === 'EN_ZONA' && (
+          <p className="aviso alerta-bloque alerta-compacta">
+            <Icono nombre="ubicacion" tamano={18} />
+            <span>Llegaste al punto de recogida.</span>
+          </p>
+        )}
         {aviso}
         <button className="principal" type="button" disabled={enviando} onClick={() => void enviar(paso.accion)}>
           {enviando ? paso.enviando : paso.texto}
@@ -61,40 +68,54 @@ export function AvanceViaje({ viaje, avanzar }: Props) {
 
   return (
     <form className="avance" onSubmit={finalizar} noValidate>
-      <fieldset>
-        <legend>Método de pago</legend>
-        {metodos.map((opcion) => (
-          <label className="opcion" key={opcion.valor}>
-            <input
-              type="radio"
-              name="metodo"
-              checked={metodo === opcion.valor}
-              onChange={() => setMetodo(opcion.valor)}
-            />
-            {opcion.texto}
-          </label>
-        ))}
-      </fieldset>
-      <div className="campo">
+      <div className="login-campo">
+        <span id="metodo-pago-titulo" className="etiqueta-campo">
+          Método de pago
+        </span>
+        <div className="metodos-pago" role="radiogroup" aria-labelledby="metodo-pago-titulo">
+          {metodos.map((opcion) => (
+            <button
+              key={opcion.valor}
+              type="button"
+              role="radio"
+              aria-checked={metodo === opcion.valor}
+              className={metodo === opcion.valor ? 'metodo-opcion activo' : 'metodo-opcion'}
+              onClick={() => setMetodo(opcion.valor)}
+            >
+              {opcion.texto}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="login-campo">
         <label htmlFor="monto">Monto cobrado (CLP)</label>
-        <input
-          id="monto"
-          inputMode="numeric"
-          autoComplete="off"
-          value={monto}
-          aria-invalid={errorMonto !== null}
-          aria-describedby={errorMonto ? 'monto-error' : undefined}
-          onChange={(e) => {
-            setMonto(e.target.value);
-            setErrorMonto(null);
-          }}
-        />
+        <div className={errorMonto ? 'campo-entrada campo-entrada-error' : 'campo-entrada'}>
+          <span className="campo-prefijo" aria-hidden="true">
+            $
+          </span>
+          <input
+            id="monto"
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder="0"
+            value={monto}
+            aria-invalid={errorMonto !== null}
+            aria-describedby={errorMonto ? 'monto-error' : undefined}
+            onChange={(e) => {
+              setMonto(e.target.value);
+              setErrorMonto(null);
+            }}
+          />
+        </div>
         {errorMonto && (
-          <p className="error" id="monto-error" role="alert">
-            {errorMonto}
+          <p className="error alerta-bloque alerta-compacta" id="monto-error" role="alert">
+            <Icono nombre="alerta" tamano={16} />
+            <span>{errorMonto}</span>
           </p>
         )}
       </div>
+
       {aviso}
       <button className="principal" type="submit" disabled={enviando}>
         {enviando ? 'Finalizando…' : 'Finalizar viaje'}
