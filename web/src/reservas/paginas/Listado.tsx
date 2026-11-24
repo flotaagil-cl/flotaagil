@@ -402,11 +402,12 @@ export function Listado() {
                           <Celda titulo="Pasajero">
                             <span className={s.pasajeroNombre}>{viaje.pasajero.nombre}</span>
                             <span className={estilos.secundario}>{viaje.pasajero.telefono ?? 'Sin teléfono'}</span>
+                            {viaje.solicitante_nombre && <span className={estilos.secundario}>Solicitado por {viaje.solicitante_nombre}</span>}
                           </Celda>
                           <Celda titulo="Trayecto" clase={s.colTrayecto}>
                             {viaje.origen.direccion}
                             <span className={estilos.secundario}>→ {viaje.destino.direccion}</span>
-                            {(viaje.vuelo || viaje.convenio) && (
+                            {(viaje.vuelo || viaje.convenio || viaje.grupo) && (
                               <div className={s.insigniasTrayecto}>
                                 {viaje.vuelo && (
                                   <span className={s.badgeVuelo}>
@@ -419,6 +420,12 @@ export function Listado() {
                                     <Icono nombre="convenios" tamano={13} />
                                     {viaje.convenio.cliente_nombre}
                                   </span>
+                                )}
+                                {viaje.grupo && (
+                                  <Link to={`/reservas/${viaje.id}#grupo`} className={s.badgeConvenio}>
+                                    <Icono nombre="auto" tamano={13} />
+                                    Vehículos separados
+                                  </Link>
                                 )}
                               </div>
                             )}

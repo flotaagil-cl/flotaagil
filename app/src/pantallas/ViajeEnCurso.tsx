@@ -59,6 +59,12 @@ export function ViajeEnCurso({ viaje, children }: { viaje: ViajeActivo; children
       <dl className="lista-datos viaje-datos">
         <dt>Pasajero</dt>
         <dd>{viaje.pasajero}</dd>
+        {viaje.acompanantes && viaje.acompanantes.length > 0 && (
+          <>
+            <dt>Acompañantes</dt>
+            <dd>{viaje.acompanantes.join(', ')}</dd>
+          </>
+        )}
         <dt>Recogida</dt>
         <dd>
           {horaDeChile(viaje.recogida_en)}

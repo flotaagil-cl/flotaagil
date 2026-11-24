@@ -276,11 +276,14 @@ class ReservaPublicaView(_VistaPortal):
         responses={
             201: ReservaPublicaRespuestaSerializer,
             400: OpenApiResponse(description="Datos inválidos"),
+            401: OpenApiResponse(description="CC-23: `pase_vencido` o `pase_invalido`: vuelve a la clave"),
             404: OpenApiResponse(description="Empresa inexistente o con el módulo de cuentas"),
             429: OpenApiResponse(description="`limite_ip` o `limite_correo`"),
         },
         description="HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía por correo el enlace "
-        "para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos).",
+        "para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos). CC-23 (HU-72): "
+        "con `pase` la reserva es del convenio, a nombre de quien la pide; en vehículos separados crea un "
+        "viaje por persona con un solo enlace de confirmación.",
     )
     def post(self, request, slug):
         # HU-60: también con el módulo de cuentas, como «Reservar sin cuenta».
@@ -294,7 +297,32 @@ class ReservaPublicaView(_VistaPortal):
             falsa = {"id": 0, "estado": "PENDIENTE_CONFIRMACION", "mensaje": mensaje}
             falsa |= {"recogida_en": datos.get("recogida_en") or ahora, "confirmar_hasta": ahora}
             return Response(ReservaPublicaRespuestaSerializer(falsa).data, status=status.HTTP_201_CREATED)
-        viaje = publico.crear(empresa, datos, ip=PortalPorMinuto().get_ident(request))
+        ip = PortalPorMinuto().get_ident(request)
+        if datos.get("pase"):
+            # CC-23 (D2): el pase de convenio es solo del portal base.
+            empresa = _empresa_sin_modulo(slug)
+            viajes = publico.crear_con_pase(empresa, datos, ip=ip)
+            viaje = viajes[0]
+            mensaje = (
+                f"Te enviamos un correo con un solo enlace para confirmar los {len(viajes)} traslados."
+                if len(viajes) > 1
+                else mensaje
+            )
+            return Response(
+                ReservaPublicaRespuestaSerializer(
+                    {
+                        "id": viaje.pk,
+                        "estado": viaje.estado,
+                        "recogida_en": viaje.recogida_en,
+                        "confirmar_hasta": viaje.confirmar_hasta,
+                        "confirma_convenio": False,
+                        "viajes": len(viajes),
+                        "mensaje": mensaje,
+                    }
+                ).data,
+                status=status.HTTP_201_CREATED,
+            )
+        viaje = publico.crear(empresa, datos, ip=ip)
         if viaje.confirma_convenio:
             mensaje = "Tu correo no está autorizado en el convenio: le pedimos a la empresa que la autorice."
         return Response(

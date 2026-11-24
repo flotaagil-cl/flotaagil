@@ -20,6 +20,7 @@ export const EMPRESA_PORTAL: EmpresaPublica = {
   antelacion_vuelo_nacional_min: 120,
   antelacion_vuelo_internacional_min: 180,
   capacidad_maxima: 6,
+  convenio_max_personas: 10,
 };
 
 interface Programada {

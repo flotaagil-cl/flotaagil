@@ -1170,6 +1170,9 @@
   min-height: var(--toque);
   cursor: pointer;
 }
+.segmentado[data-forma='pastillas'] .segmentadoOpciones {
+  flex-wrap: wrap;
+}
 .segmentado[data-forma='pastillas'] .segmentadoOpcion {
   flex: none;
 }
@@ -1545,5 +1548,18 @@
   }
   .listaViajes .opcionViaje > :last-child {
     margin-left: 60px;
+  }
+}
+
+/* CC-23 (HU-73): datos de una persona (nombre, cargo, teléfono, correo) en dos columnas en el PC y en una en
+   el celular. */
+.filaPersona {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+@media (max-width: 599px) {
+  .filaPersona {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

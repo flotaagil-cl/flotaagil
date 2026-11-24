@@ -634,3 +634,9 @@
   margin: 0 0 var(--espacio-2);
   font-size: 1rem;
 }
+
+/* CC-23: acompañantes y viajes de una misma solicitud en el detalle de la reserva. */
+.listaSimple {
+  margin: 0;
+  padding-left: 18px;
+}

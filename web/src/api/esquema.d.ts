@@ -1637,7 +1637,7 @@ export interface paths {
         put?: never;
         /**
          * Reserva pública sin cuenta (empresas sin el módulo de cuentas)
-         * @description HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía por correo el enlace para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos).
+         * @description HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía por correo el enlace para confirmarla (DC-53: hasta 24 h antes de la recogida, o 60 min si falta menos). CC-23 (HU-72): con `pase` la reserva es del convenio, a nombre de quien la pide; en vehículos separados crea un viaje por persona con un solo enlace de confirmación.
          */
         post: operations["portal_reservas_create"];
         delete?: never;
@@ -2277,6 +2277,13 @@ export interface components {
         AceptarPrivacidadRequest: {
             acepta: boolean;
         };
+        /** @description CC-23 (DC-76): acompañante del mismo vehículo (sin padrón). Solo el panel ve cargo y contacto. */
+        Acompanante: {
+            nombre: string;
+            cargo: string;
+            telefono: string;
+            correo: string;
+        };
         ActivacionRequest: {
             /** Format: email */
             email: string;
@@ -2675,6 +2682,8 @@ export interface components {
             antelacion_vuelo_internacional_min: number;
             /** @description Pasajeros por viaje: el vehículo más grande de la empresa; 4 sin vehículos (DC-43). */
             readonly capacidad_maxima: number;
+            /** @description CC-23: personas por solicitud con pase de convenio (vehículos separados). */
+            convenio_max_personas: number;
         };
         EmpresaResumen: {
             readonly id: number;
@@ -3167,6 +3176,12 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Viaje"][];
         };
+        /**
+         * @description * `MI` - Para mí
+         *     * `OTRO` - Para otra persona
+         * @enum {string}
+         */
+        ParaEnum: "MI" | "OTRO";
         PasajeroEntradaRequest: {
             nombre: string;
             /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
@@ -3330,6 +3345,14 @@ export interface components {
             nombre: string;
             rol: string;
         };
+        /** @description CC-23 (DC-76): acompañante o pasajero de una reserva con pase. Sin padrón de empleados. */
+        PersonaConvenioRequest: {
+            nombre: string;
+            cargo: string;
+            /** @description Obligatorio en vehículos separados. */
+            telefono?: string;
+            correo?: string;
+        };
         PosicionRequest: {
             /** Format: double */
             lat: number;
@@ -3464,8 +3487,27 @@ export interface components {
             /** Format: date-time */
             recogida_en: string;
         };
-        /** @description HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55). */
+        /**
+         * @description HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55). Con `pase`, reserva de
+         *     convenio del portal base (CC-23, ver `ReservaConPaseMixin`).
+         */
         ReservaPublicaRequest: {
+            /** @description Pase de `convenio/pase/` (CC-23). */
+            pase?: string;
+            /** @default MI */
+            para: components["schemas"]["ParaEnum"];
+            pasajero_nombre?: string;
+            pasajero_cargo?: string;
+            pasajero_telefono?: string;
+            pasajero_correo?: string;
+            acompanantes?: components["schemas"]["PersonaConvenioRequest"][];
+            /** @default MISMO */
+            vehiculos: components["schemas"]["VehiculosEnum"];
+            /**
+             * @description Quien pide declara que informó del aviso de privacidad a las personas que viajan.
+             * @default false
+             */
+            declara_informados: boolean;
             nombre: string;
             /** @description WhatsApp en formato E.164, p. ej. +56912345678. */
             telefono: string;
@@ -3499,8 +3541,11 @@ export interface components {
             maletas?: number;
             acepta_privacidad: boolean;
             sitio_web?: string;
-            /** Format: email */
-            correo: string;
+            /**
+             * Format: email
+             * @description Obligatorio sin `pase`; con pase manda el correo del pase.
+             */
+            correo?: string;
             /** @default false */
             es_empresa: boolean;
             empresa_razon_social?: string;
@@ -3519,6 +3564,11 @@ export interface components {
              * @default false
              */
             confirma_convenio: boolean;
+            /**
+             * @description CC-23: viajes creados (vehículos separados crea uno por persona).
+             * @default 1
+             */
+            viajes: number;
             mensaje: string;
         };
         ReservaVinculada: {
@@ -3913,6 +3963,12 @@ export interface components {
             id: number;
             patente: string;
         };
+        /**
+         * @description * `MISMO` - Mismo vehículo
+         *     * `SEPARADOS` - Vehículos separados
+         * @enum {string}
+         */
+        VehiculosEnum: "MISMO" | "SEPARADOS";
         Viaje: {
             readonly id: number;
             estado?: components["schemas"]["EstadoViajeEnum"];
@@ -3955,12 +4011,21 @@ export interface components {
             empresa_cliente_razon_social?: string | null;
             empresa_cliente_rut?: string | null;
             empresa_cliente_contacto?: string | null;
+            solicitante_nombre?: string | null;
+            solicitante_telefono?: string | null;
+            pasajero_cargo?: string | null;
+            pasajero_correo?: (string) | null;
+            readonly acompanantes: components["schemas"]["Acompanante"][];
+            /** Format: uuid */
+            grupo?: string | null;
         };
         ViajeActivo: {
             id: number;
             estado: string;
             /** @description Nombre del pasajero */
             pasajero: string;
+            /** @description CC-23: nombres de los acompañantes, sin cargos ni teléfonos */
+            acompanantes: string[];
             /** Format: date-time */
             recogida_en: string;
             origen: components["schemas"]["Punto"];
@@ -4067,6 +4132,13 @@ export interface components {
             empresa_cliente_razon_social?: string | null;
             empresa_cliente_rut?: string | null;
             empresa_cliente_contacto?: string | null;
+            solicitante_nombre?: string | null;
+            solicitante_telefono?: string | null;
+            pasajero_cargo?: string | null;
+            pasajero_correo?: (string) | null;
+            readonly acompanantes: components["schemas"]["Acompanante"][];
+            /** Format: uuid */
+            grupo?: string | null;
             readonly historial: components["schemas"]["Historial"][];
             /** @description Puntaje del pasajero, de 1 a 5 (RN-14) */
             readonly calificacion: number | null;
@@ -6893,6 +6965,13 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description CC-23: `pase_vencido` o `pase_invalido`: vuelve a la clave */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Empresa inexistente o con el módulo de cuentas */
             404: {
                 headers: {
@@ -7525,6 +7604,8 @@ export interface operations {
                 estado?: ("ACEPTADO" | "ASIGNADO" | "CANCELADO" | "EN_CAMINO" | "EN_ZONA" | "FINALIZADO" | "PASAJERO_A_BORDO" | "PENDIENTE_CONFIRMACION" | "SOLICITADO")[];
                 /** @description Día de recogida */
                 fecha?: string;
+                /** @description CC-23: viajes de una misma solicitud en vehículos separados */
+                grupo?: string;
                 hasta?: string;
                 /**
                  * @description Ordenamiento
@@ -7744,6 +7825,8 @@ export interface operations {
                 estado?: ("ACEPTADO" | "ASIGNADO" | "CANCELADO" | "EN_CAMINO" | "EN_ZONA" | "FINALIZADO" | "PASAJERO_A_BORDO" | "PENDIENTE_CONFIRMACION" | "SOLICITADO")[];
                 /** @description Día de recogida */
                 fecha?: string;
+                /** @description CC-23: viajes de una misma solicitud en vehículos separados */
+                grupo?: string;
                 hasta?: string;
                 /**
                  * @description Ordenamiento

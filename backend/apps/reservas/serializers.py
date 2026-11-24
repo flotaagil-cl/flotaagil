@@ -115,8 +115,18 @@ def _ubicacion(direccion, punto) -> dict:
     return {"direccion": direccion, "lat": punto.y, "lon": punto.x}
 
 
+class AcompananteSerializer(serializers.Serializer):
+    """CC-23 (DC-76): acompañante del mismo vehículo (sin padrón). Solo el panel ve cargo y contacto."""
+
+    nombre = serializers.CharField()
+    cargo = serializers.CharField(allow_blank=True)
+    telefono = serializers.CharField(allow_blank=True)
+    correo = serializers.CharField(allow_blank=True)
+
+
 class ViajeSerializer(serializers.ModelSerializer):
     pasajero = PasajeroResumenSerializer()
+    acompanantes = AcompananteSerializer(many=True, read_only=True)
     conductor = ConductorResumenSerializer(allow_null=True)
     vehiculo = VehiculoResumenSerializer(allow_null=True)
     convenio = ConvenioResumenSerializer(allow_null=True)
@@ -166,6 +176,13 @@ class ViajeSerializer(serializers.ModelSerializer):
             "empresa_cliente_razon_social",
             "empresa_cliente_rut",
             "empresa_cliente_contacto",
+            # CC-23 (DC-76): reserva con pase de convenio.
+            "solicitante_nombre",
+            "solicitante_telefono",
+            "pasajero_cargo",
+            "pasajero_correo",
+            "acompanantes",
+            "grupo",
         ]
 
     @extend_schema_field(serializers.BooleanField())

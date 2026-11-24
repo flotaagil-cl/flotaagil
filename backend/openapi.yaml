@@ -2663,7 +2663,9 @@ paths:
       operationId: portal_reservas_create
       description: 'HU-51 (CC-22): crea la reserva en PENDIENTE_CONFIRMACION y envía
         por correo el enlace para confirmarla (DC-53: hasta 24 h antes de la recogida,
-        o 60 min si falta menos).'
+        o 60 min si falta menos). CC-23 (HU-72): con `pase` la reserva es del convenio,
+        a nombre de quien la pide; en vehículos separados crea un viaje por persona
+        con un solo enlace de confirmación.'
       summary: Reserva pública sin cuenta (empresas sin el módulo de cuentas)
       parameters:
       - in: path
@@ -2696,6 +2698,8 @@ paths:
           description: ''
         '400':
           description: Datos inválidos
+        '401':
+          description: 'CC-23: `pase_vencido` o `pase_invalido`: vuelve a la clave'
         '404':
           description: Empresa inexistente o con el módulo de cuentas
         '429':
@@ -3421,6 +3425,12 @@ paths:
           format: date
         description: Día de recogida
       - in: query
+        name: grupo
+        schema:
+          type: string
+          format: uuid
+        description: 'CC-23: viajes de una misma solicitud en vehículos separados'
+      - in: query
         name: hasta
         schema:
           type: string
@@ -3727,6 +3737,12 @@ paths:
           type: string
           format: date
         description: Día de recogida
+      - in: query
+        name: grupo
+        schema:
+          type: string
+          format: uuid
+        description: 'CC-23: viajes de una misma solicitud en vehículos separados'
       - in: query
         name: hasta
         schema:
@@ -4054,6 +4070,24 @@ components:
           type: boolean
       required:
       - acepta
+    Acompanante:
+      type: object
+      description: 'CC-23 (DC-76): acompañante del mismo vehículo (sin padrón). Solo
+        el panel ve cargo y contacto.'
+      properties:
+        nombre:
+          type: string
+        cargo:
+          type: string
+        telefono:
+          type: string
+        correo:
+          type: string
+      required:
+      - cargo
+      - correo
+      - nombre
+      - telefono
     ActivacionRequest:
       type: object
       properties:
@@ -5065,11 +5099,16 @@ components:
           readOnly: true
           description: 'Pasajeros por viaje: el vehículo más grande de la empresa;
             4 sin vehículos (DC-43).'
+        convenio_max_personas:
+          type: integer
+          description: 'CC-23: personas por solicitud con pase de convenio (vehículos
+            separados).'
       required:
       - antelacion_vuelo_internacional_min
       - antelacion_vuelo_nacional_min
       - anticipacion_minima_min
       - capacidad_maxima
+      - convenio_max_personas
       - expiracion_verificacion_min
       - margen_nacional_min
       - razon_social
@@ -6079,6 +6118,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Viaje'
+    ParaEnum:
+      enum:
+      - MI
+      - OTRO
+      type: string
+      description: |-
+        * `MI` - Para mí
+        * `OTRO` - Para otra persona
     PasajeroEntradaRequest:
       type: object
       properties:
@@ -6499,6 +6546,33 @@ components:
       - id
       - nombre
       - rol
+    PersonaConvenioRequest:
+      type: object
+      description: 'CC-23 (DC-76): acompañante o pasajero de una reserva con pase.
+        Sin padrón de empleados.'
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 80
+        cargo:
+          type: string
+          minLength: 1
+          maxLength: 80
+        telefono:
+          type: string
+          description: Obligatorio en vehículos separados.
+          maxLength: 24
+        correo:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+      required:
+      - cargo
+      - nombre
     PosicionRequest:
       type: object
       properties:
@@ -6830,9 +6904,47 @@ components:
       - recogida_en
     ReservaPublicaRequest:
       type: object
-      description: 'HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin
-        WhatsApp (DC-55).'
+      description: |-
+        HU-51 (CC-22): reserva sin cuenta, confirmada por correo. Sin WhatsApp (DC-55). Con `pase`, reserva de
+        convenio del portal base (CC-23, ver `ReservaConPaseMixin`).
       properties:
+        pase:
+          type: string
+          description: Pase de `convenio/pase/` (CC-23).
+          maxLength: 300
+        para:
+          allOf:
+          - $ref: '#/components/schemas/ParaEnum'
+          default: MI
+        pasajero_nombre:
+          type: string
+          maxLength: 80
+        pasajero_cargo:
+          type: string
+          maxLength: 80
+        pasajero_telefono:
+          type: string
+          maxLength: 24
+        pasajero_correo:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        acompanantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonaConvenioRequest'
+        vehiculos:
+          allOf:
+          - $ref: '#/components/schemas/VehiculosEnum'
+          default: MISMO
+        declara_informados:
+          type: boolean
+          default: false
+          description: Quien pide declara que informó del aviso de privacidad a las
+            personas que viajan.
         nombre:
           type: string
           minLength: 1
@@ -6906,6 +7018,7 @@ components:
           type: string
           format: email
           minLength: 1
+          description: Obligatorio sin `pase`; con pase manda el correo del pase.
           maxLength: 254
         es_empresa:
           type: boolean
@@ -6921,7 +7034,6 @@ components:
           maxLength: 80
       required:
       - acepta_privacidad
-      - correo
       - destino_dir
       - nombre
       - origen_dir
@@ -6943,6 +7055,10 @@ components:
           type: boolean
           default: false
           description: 'HU-54: la confirma el contacto del convenio, no el pasajero'
+        viajes:
+          type: integer
+          default: 1
+          description: 'CC-23: viajes creados (vehículos separados crea uno por persona).'
         mensaje:
           type: string
       required:
@@ -7917,6 +8033,14 @@ components:
       required:
       - id
       - patente
+    VehiculosEnum:
+      enum:
+      - MISMO
+      - SEPARADOS
+      type: string
+      description: |-
+        * `MISMO` - Mismo vehículo
+        * `SEPARADOS` - Vehículos separados
     Viaje:
       type: object
       properties:
@@ -8055,7 +8179,37 @@ components:
           type: string
           nullable: true
           maxLength: 80
+        solicitante_nombre:
+          type: string
+          nullable: true
+          maxLength: 80
+        solicitante_telefono:
+          type: string
+          nullable: true
+          maxLength: 16
+        pasajero_cargo:
+          type: string
+          nullable: true
+          maxLength: 80
+        pasajero_correo:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        acompanantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Acompanante'
+          readOnly: true
+        grupo:
+          type: string
+          format: uuid
+          nullable: true
       required:
+      - acompanantes
       - alerta_vuelo
       - canal
       - cancelable
@@ -8082,6 +8236,11 @@ components:
         pasajero:
           type: string
           description: Nombre del pasajero
+        acompanantes:
+          type: array
+          items:
+            type: string
+          description: 'CC-23: nombres de los acompañantes, sin cargos ni teléfonos'
         recogida_en:
           type: string
           format: date-time
@@ -8125,6 +8284,7 @@ components:
             * `COORDENADAS` - COORDENADAS
             * `DIRECCION` - DIRECCION
       required:
+      - acompanantes
       - convenio
       - destino
       - detalle_vuelo
@@ -8369,6 +8529,35 @@ components:
           type: string
           nullable: true
           maxLength: 80
+        solicitante_nombre:
+          type: string
+          nullable: true
+          maxLength: 80
+        solicitante_telefono:
+          type: string
+          nullable: true
+          maxLength: 16
+        pasajero_cargo:
+          type: string
+          nullable: true
+          maxLength: 80
+        pasajero_correo:
+          nullable: true
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        acompanantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Acompanante'
+          readOnly: true
+        grupo:
+          type: string
+          format: uuid
+          nullable: true
         historial:
           type: array
           items:
@@ -8386,6 +8575,7 @@ components:
           readOnly: true
           description: Cierre o anulación forzada (HU-05)
       required:
+      - acompanantes
       - alerta_vuelo
       - calificacion
       - canal

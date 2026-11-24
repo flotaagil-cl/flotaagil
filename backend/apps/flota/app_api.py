@@ -482,6 +482,9 @@ class ViajeActivoSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     estado = serializers.CharField()
     pasajero = serializers.CharField(help_text="Nombre del pasajero")
+    acompanantes = serializers.ListField(
+        child=serializers.CharField(), help_text="CC-23: nombres de los acompañantes, sin cargos ni teléfonos"
+    )
     recogida_en = serializers.DateTimeField()
     origen = PuntoSerializer()
     destino = PuntoSerializer()
@@ -552,6 +555,8 @@ class ViajeActivoView(_VistaApp):
                     "id": viaje.pk,
                     "estado": viaje.estado,
                     "pasajero": viaje.pasajero.nombre,
+                    # CC-23: solo los nombres; ni cargos ni teléfonos (el conductor no ve datos de contacto).
+                    "acompanantes": [a.get("nombre", "") for a in viaje.acompanantes or []],
                     "recogida_en": viaje.recogida_en,
                     "origen": origen,
                     "destino": destino,
