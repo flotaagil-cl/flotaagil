@@ -948,22 +948,25 @@
       "epica": "Convenios",
       "label_epica": "epica:convenios",
       "historia": "Como empresa cliente, quiero pedir varios viajes de una vez para mi equipo, con acompañantes.",
-      "criterios": "Una fila por persona, con acompañantes. Titular + acompañantes ≤ mayor capacidad de la flota activa. Envío atómico: se crean todos o ninguno.",
-      "prioridad": "Por definir",
+      "criterios": "Quien pide, para sí o para otra persona, con acompañantes en el mismo vehículo o en vehículos separados (un viaje por persona con el mismo grupo). Titular + acompañantes ≤ mayor capacidad de la flota en el mismo vehículo y ≤ tope por solicitud. Envío atómico: se crean todos o ninguno. Nacen en SOLICITADO (RN-07).",
+      "prioridad": "Alta",
       "sp": 8,
-      "sprint": "Por definir",
+      "sprint": "Sprint 5",
       "responsable": "Renato",
       "en_pareja": false,
       "reglas": [
         "RN-07"
       ],
-      "casos_prueba": [],
+      "casos_prueba": [
+        "CP-67",
+        "CP-68"
+      ],
       "depende_de": [
         "HU-39"
       ],
-      "estado_cambio": "Nueva (rediseño del portal)",
-      "estado": "Pendiente",
-      "estado_evidencia": ""
+      "estado_cambio": "Nueva (rediseño del portal); CC-25, autorizada por Renato, 2026-11-24",
+      "estado": "Hecha",
+      "estado_evidencia": "CC-25 (DC-81): Mi convenio pide para el equipo con las reglas de HU-73."
     },
     {
       "id": "HU-48",
