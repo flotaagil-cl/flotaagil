@@ -1,7 +1,7 @@
 """Reglas de la administración de flota (HU-10): activar y desactivar vehículos, asociar vehículos a
 conductores y editar los datos del conductor. Cada cambio queda en AUDITORIA."""
 
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 
@@ -188,6 +188,46 @@ def crear_conductores(empresa, filas: list[dict], *, usuario) -> list[Conductor]
         )
         creados.append(conductor)
     return creados
+
+
+@transaction.atomic
+def crear_con_acceso(empresa, datos: dict, *, usuario) -> tuple[Conductor, str, object]:
+    """HU-74 (DC-78): alta del conductor con su acceso a la app listo. La temporal se genera en la misma
+    transacción, se devuelve una sola vez y solo queda su hash (DC-14)."""
+    (conductor,) = crear_conductores(empresa, [datos], usuario=usuario)
+    password, vence = credenciales.asignar_password_temporal(conductor.usuario, por=usuario)
+    return conductor, password, vence
+
+
+@transaction.atomic
+def cambiar_correo(conductor: Conductor, email: str, *, usuario) -> Conductor:
+    """HU-74 (DC-78): el administrador corrige el correo de acceso. Cierra todas las sesiones del conductor
+    (debe volver a entrar con el correo nuevo) y queda en auditoría. 409 si está en viaje."""
+    from .serializers import EMAIL_REGISTRADO
+
+    conductor = Conductor.objects.select_for_update().select_related("usuario").get(pk=conductor.pk)
+    cuenta = conductor.usuario
+    if email == cuenta.email:
+        return conductor
+    _no_en_viaje(conductor, "cambiar su correo de acceso")
+    if Usuario.objects.filter(email__iexact=email).exclude(pk=cuenta.pk).exists():
+        raise ValidationError({"email": [EMAIL_REGISTRADO]})
+    previo = cuenta.email
+    cuenta.email = email
+    try:
+        with transaction.atomic():
+            cuenta.save(update_fields=["email"])
+    except IntegrityError as error:  # otro registro tomó el correo entre la validación y el guardado
+        raise ValidationError({"email": [EMAIL_REGISTRADO]}) from error
+    credenciales.revocar_sesiones(cuenta)
+    auditoria.registrar(
+        usuario=usuario,
+        entidad=Entidad.USUARIO,
+        entidad_id=cuenta.pk,
+        accion="CAMBIAR_CORREO",
+        datos_previos={"email": previo},
+    )
+    return conductor
 
 
 @transaction.atomic

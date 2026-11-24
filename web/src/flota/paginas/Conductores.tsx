@@ -6,15 +6,18 @@ import { formatearFecha, hoy } from '../../hora/hora';
 import { useConductores, type ConsultaConductores, type EstadoConductor } from '../api';
 import { Celda, Esqueleto, FallaDeCarga, Paginacion } from '../componentes/comunes';
 import { useEstadoEnVivo } from '../estadoEnVivo';
-import { avisoLicencia, ESTADOS_CONDUCTOR } from '../etiquetas';
+import { ACCESOS_APP, avisoLicencia, ESTADOS_CONDUCTOR } from '../etiquetas';
 import { useFiltrosUrl } from '../filtrosUrl';
 
 const numero = new Intl.NumberFormat('es-CL');
-const SIN_ACCESO = {
-  SIN_PASSWORD: 'Sin contraseña',
-  TEMPORAL: 'Contraseña temporal',
-  TEMPORAL_VENCIDA: 'Temporal vencida',
-} as const;
+/** HU-74: color de la insignia de acceso a la app. */
+const CLASE_ACCESO: Record<keyof typeof ACCESOS_APP, string> = {
+  ACTIVA: estilos.curso,
+  TEMPORAL: estilos.pendiente,
+  TEMPORAL_VENCIDA: estilos.cancelado,
+  SIN_PASSWORD: estilos.cancelado,
+  DESHABILITADA: estilos.fin,
+};
 const CLASE_ESTADO: Record<EstadoConductor, string> = {
   DISPONIBLE: estilos.curso,
   EN_VIAJE: estilos.pendiente,
@@ -86,7 +89,7 @@ export function Conductores() {
       </div>
 
       {lista.isPending ? (
-        <Esqueleto etiqueta="Cargando conductores" columnas={5} />
+        <Esqueleto etiqueta="Cargando conductores" columnas={6} />
       ) : lista.isError ? (
         <FallaDeCarga error={lista.error} que="la página" reintentar={() => void lista.refetch()} />
       ) : lista.data.results.length === 0 ? (
@@ -118,6 +121,7 @@ export function Conductores() {
                 <th scope="col">Licencia</th>
                 <th scope="col">Vehículos</th>
                 <th scope="col">Estado</th>
+                <th scope="col">Acceso a la app</th>
               </tr>
             </thead>
             <tbody>
@@ -144,10 +148,11 @@ export function Conductores() {
                       <span className={`${estilos.etiqueta} ${CLASE_ESTADO[conductor.estado]}`}>
                         {ESTADOS_CONDUCTOR[conductor.estado]}
                       </span>
-                      {!conductor.activo && <span className={estilos.alerta}>Cuenta deshabilitada</span>}
-                      {conductor.activo && conductor.acceso !== 'ACTIVA' && (
-                        <span className={estilos.alerta}>{SIN_ACCESO[conductor.acceso]}</span>
-                      )}
+                    </Celda>
+                    <Celda titulo="Acceso a la app">
+                      <span className={`${estilos.etiqueta} ${CLASE_ACCESO[conductor.activo ? conductor.acceso : 'DESHABILITADA']}`}>
+                        {ACCESOS_APP[conductor.activo ? conductor.acceso : 'DESHABILITADA']}
+                      </span>
                     </Celda>
                   </tr>
                 );

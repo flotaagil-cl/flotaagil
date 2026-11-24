@@ -1145,8 +1145,10 @@ paths:
           description: ''
     post:
       operationId: conductores_create
-      description: 'La cuenta (rol CONDUCTOR) queda sin contraseña utilizable: el
-        administrador genera una temporal con `password/`.'
+      description: 'HU-74 (DC-78): crea la cuenta (rol CONDUCTOR) con su contraseña
+        temporal (DC-14), que se muestra una sola vez en esta respuesta y vence a
+        las PASSWORD_TEMPORAL_HORAS. Al ingresar a la app debe cambiarla. Queda en
+        auditoría.'
       summary: Registrar un conductor con su cuenta
       tags:
       - flota
@@ -1169,7 +1171,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Conductor'
+                $ref: '#/components/schemas/ConductorCreado'
           description: ''
   /api/conductores/{id}/:
     get:
@@ -1233,6 +1235,47 @@ paths:
               schema:
                 $ref: '#/components/schemas/Conductor'
           description: ''
+  /api/conductores/{id}/correo/:
+    post:
+      operationId: conductores_correo_create
+      description: 'HU-74 (DC-78): solo el administrador. Cierra todas las sesiones
+        del conductor, que debe volver a entrar con el correo nuevo. Queda en auditoría
+        (CAMBIAR_CORREO).'
+      summary: Cambiar el correo de acceso del conductor
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este conductor.
+        required: true
+      tags:
+      - flota
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambiarCorreoRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CambiarCorreoRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CambiarCorreoRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conductor'
+          description: ''
+        '400':
+          description: Correo inválido o ya usado
+        '409':
+          description: '`conductor_en_viaje`: el conductor está en viaje.'
   /api/conductores/{id}/deshabilitar/:
     post:
       operationId: conductores_deshabilitar_create
@@ -4222,6 +4265,18 @@ components:
           type: integer
       required:
       - puntaje
+    CambiarCorreoRequest:
+      type: object
+      description: 'HU-74 (DC-78): correo de acceso nuevo. La unicidad final la revisa
+        el servicio.'
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 120
+      required:
+      - email
     CambiarPasswordRequest:
       type: object
       properties:
@@ -4516,6 +4571,11 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        ultimo_ingreso:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
         vehiculos:
           type: array
           items:
@@ -4535,6 +4595,7 @@ components:
       - password_temporal_vence
       - rut
       - telefono
+      - ultimo_ingreso
       - vehiculo_activo
       - vehiculos
     ConductorContingencia:
@@ -4547,6 +4608,104 @@ components:
       required:
       - id
       - nombre
+    ConductorCreado:
+      type: object
+      description: 'HU-74 (DC-78): el alta devuelve la ficha con la temporal, que
+        se muestra una sola vez.'
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        nombre:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        activo:
+          type: boolean
+          readOnly: true
+          description: Cuenta habilitada
+        rut:
+          type: string
+          readOnly: true
+        telefono:
+          type: string
+          readOnly: true
+        licencia_clase:
+          allOf:
+          - $ref: '#/components/schemas/LicenciaClaseEnum'
+          readOnly: true
+        licencia_vence:
+          type: string
+          format: date
+          readOnly: true
+        licencia_vigente:
+          type: boolean
+          readOnly: true
+        estado:
+          allOf:
+          - $ref: '#/components/schemas/EstadoConductorEnum'
+          readOnly: true
+        vehiculo_activo:
+          allOf:
+          - $ref: '#/components/schemas/VehiculoDeclarado'
+          readOnly: true
+          nullable: true
+        consentimiento_gps_en:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        acceso:
+          allOf:
+          - $ref: '#/components/schemas/AccesoEnum'
+          description: SIN_PASSWORD (recién creada), TEMPORAL (debe cambiarla), TEMPORAL_VENCIDA
+            o ACTIVA.
+          readOnly: true
+        password_temporal_vence:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        ultimo_ingreso:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vehiculos:
+          type: array
+          items:
+            $ref: '#/components/schemas/VehiculoAsociado'
+          readOnly: true
+        password_temporal:
+          type: string
+          readOnly: true
+          description: Se muestra una sola vez
+        vence_en:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - acceso
+      - activo
+      - consentimiento_gps_en
+      - email
+      - estado
+      - id
+      - licencia_clase
+      - licencia_vence
+      - licencia_vigente
+      - nombre
+      - password_temporal
+      - password_temporal_vence
+      - rut
+      - telefono
+      - ultimo_ingreso
+      - vehiculo_activo
+      - vehiculos
+      - vence_en
     ConductorCrearRequest:
       type: object
       description: 'Alta: los datos del conductor más el correo de acceso. La cuenta

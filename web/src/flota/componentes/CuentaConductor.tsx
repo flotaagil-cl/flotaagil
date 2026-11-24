@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
+import { Campo } from '../../formularios/Campo';
 import { formatearFechaHora } from '../../hora/hora';
-import { useGenerarPassword, useHabilitacion, type Acceso, type Conductor } from '../api';
+import { useCambiarCorreo, useGenerarPassword, useHabilitacion, type Acceso, type Conductor } from '../api';
 import { mensajeDeError } from '../errores';
 
 const ACCESOS: Record<Acceso, string> = {
@@ -14,11 +16,15 @@ const ACCESOS: Record<Acceso, string> = {
 
 type Confirmando = 'password' | 'deshabilitar' | null;
 
-/** Cuenta del conductor: contraseña temporal (se muestra una sola vez) y habilitación. */
+/**
+ * HU-74 (DC-78): «Acceso a la app» del conductor. Correo de acceso, estado y último ingreso; contraseña temporal
+ * (se muestra una sola vez), cambio de correo y habilitación. Todo cierra las sesiones del conductor cuando corresponde.
+ */
 export function CuentaConductor({ conductor }: { conductor: Conductor }) {
   const generar = useGenerarPassword(conductor.id);
   const habilitacion = useHabilitacion(conductor.id);
   const [confirmando, setConfirmando] = useState<Confirmando>(null);
+  const [cambiandoCorreo, setCambiandoCorreo] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   // La temporal vive solo aquí, en memoria, hasta cerrar el diálogo.
@@ -57,17 +63,38 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
 
   return (
     <div className={estilos.tarjeta}>
-      <h2>Cuenta</h2>
+      <h2>Acceso a la app</h2>
       {aviso && <Aviso>{aviso}</Aviso>}
       {falla && <Aviso tipo="error">{falla}</Aviso>}
-      <p>
-        {conductor.activo ? ACCESOS[conductor.acceso] : 'Deshabilitada: no puede ingresar a la app.'}
-        {conductor.activo && conductor.acceso === 'TEMPORAL' && conductor.password_temporal_vence && (
-          <span className={estilos.secundario}> Vence el {formatearFechaHora(conductor.password_temporal_vence)}.</span>
-        )}
-      </p>
+      <dl className={estilos.datos}>
+        <div>
+          <dt>Correo de acceso</dt>
+          <dd>{conductor.email}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>
+            {conductor.activo ? ACCESOS[conductor.acceso] : 'Deshabilitada: no puede ingresar a la app.'}
+            {conductor.activo && conductor.acceso === 'TEMPORAL' && conductor.password_temporal_vence && (
+              <span className={estilos.secundario}> Vence el {formatearFechaHora(conductor.password_temporal_vence)}.</span>
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Último ingreso</dt>
+          <dd>{conductor.ultimo_ingreso ? formatearFechaHora(conductor.ultimo_ingreso) : 'Todavía no ingresa'}</dd>
+        </div>
+      </dl>
 
-      {confirmando ? (
+      {cambiandoCorreo ? (
+        <CambiarCorreo
+          conductor={conductor}
+          alCerrar={(mensaje) => {
+            setCambiandoCorreo(false);
+            if (mensaje) setAviso(mensaje);
+          }}
+        />
+      ) : confirmando ? (
         <div className={estilos.confirmacion} role="group" aria-label="Confirmar">
           <p>
             {confirmando === 'password'
@@ -97,6 +124,18 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
               {primera ? 'Generar contraseña temporal' : 'Restablecer contraseña'}
             </button>
           )}
+          <button
+            type="button"
+            className={estilos.botonSecundario}
+            disabled={ocupado}
+            onClick={() => {
+              setAviso(null);
+              setFalla(null);
+              setCambiandoCorreo(true);
+            }}
+          >
+            Cambiar correo
+          </button>
           {conductor.activo ? (
             <button type="button" className={estilos.botonPeligro} disabled={ocupado} onClick={() => setConfirmando('deshabilitar')}>
               Deshabilitar cuenta
@@ -111,6 +150,61 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
 
       {temporal && <DialogoPassword {...temporal} correo={conductor.email} alCerrar={() => setTemporal(null)} />}
     </div>
+  );
+}
+
+const CORREO_VALIDO = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/** HU-74 (DC-78): correo de acceso nuevo. Cierra las sesiones del conductor, que entra con el correo nuevo. */
+function CambiarCorreo({ conductor, alCerrar }: { conductor: Conductor; alCerrar: (mensaje?: string) => void }) {
+  const cambiar = useCambiarCorreo(conductor.id);
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState<string | undefined>();
+  const [falla, setFalla] = useState<string | null>(null);
+
+  async function enviar(evento: FormEvent) {
+    evento.preventDefault();
+    setFalla(null);
+    const valor = email.trim().toLowerCase();
+    if (!CORREO_VALIDO.test(valor)) {
+      setError('Ingresa un correo válido.');
+      return;
+    }
+    if (valor === conductor.email) {
+      setError('Es el mismo correo de acceso actual.');
+      return;
+    }
+    setError(undefined);
+    try {
+      await cambiar.mutateAsync(valor);
+      alCerrar(`Correo de acceso cambiado. Sus sesiones se cerraron: debe entrar con ${valor}.`);
+    } catch (e) {
+      if (e instanceof ErrorApi && e.estado === 400) {
+        const cuerpo = (e.cuerpo ?? {}) as { email?: string[] };
+        setError(cuerpo.email?.[0] ?? 'Revisa el correo.');
+      } else {
+        setFalla(mensajeDeError(e, 'el conductor'));
+      }
+    }
+  }
+
+  return (
+    <form className={estilos.confirmacion} onSubmit={(e) => void enviar(e)} noValidate aria-label="Cambiar correo de acceso">
+      {falla && <Aviso tipo="error">{falla}</Aviso>}
+      <Campo etiqueta="Correo de acceso nuevo" error={error} ayuda="Se cerrarán sus sesiones y deberá entrar a la app con este correo.">
+        {(control) => (
+          <input {...control} type="email" maxLength={120} autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)} />
+        )}
+      </Campo>
+      <div className={estilos.acciones}>
+        <button type="submit" className={estilos.boton} disabled={cambiar.isPending}>
+          {cambiar.isPending ? 'Guardando…' : 'Cambiar correo'}
+        </button>
+        <button type="button" className={estilos.botonSecundario} disabled={cambiar.isPending} onClick={() => alCerrar()}>
+          Volver
+        </button>
+      </div>
+    </form>
   );
 }
 

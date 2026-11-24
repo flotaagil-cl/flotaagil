@@ -56,7 +56,8 @@ def login_app(email, password=CLAVE_PRUEBA):
 
 @pytest.mark.django_db
 class TestAlta:
-    def test_crea_cuenta_sin_password_utilizable(self, api, empresa):
+    def test_crea_cuenta_con_temporal(self, api, empresa):
+        """HU-74 (DC-78): el alta deja listo el acceso a la app con la temporal (antes, sin contraseña)."""
         respuesta = api.post(CONDUCTORES, alta(), format="json")
         assert respuesta.status_code == 201, respuesta.json()
         datos = respuesta.json()
@@ -64,13 +65,13 @@ class TestAlta:
             "rosa@flota.example",
             "12345678-5",
             "+56900001234",
-            "SIN_PASSWORD",
+            "TEMPORAL",
             "NO_DISPONIBLE",
         )
         cuenta = Usuario.objects.get(email="rosa@flota.example")
-        assert (cuenta.rol, cuenta.empresa, cuenta.has_usable_password()) == (Rol.CONDUCTOR, empresa, False)
+        assert (cuenta.rol, cuenta.empresa, cuenta.debe_cambiar_password) == (Rol.CONDUCTOR, empresa, True)
         assert Auditoria.objects.get(entidad=Entidad.CONDUCTOR).accion == "CREAR"
-        assert login_app("rosa@flota.example", "").status_code in (400, 401)
+        assert login_app("rosa@flota.example", datos["password_temporal"]).status_code == 200
 
     @pytest.mark.parametrize("campo", ["email", "rut"])
     def test_correo_y_rut_unicos(self, api, chofer, campo):

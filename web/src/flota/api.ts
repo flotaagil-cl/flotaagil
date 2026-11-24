@@ -145,12 +145,31 @@ export function useImportar(ruta: RutaImportar) {
   });
 }
 
+/**
+ * HU-74 (DC-78): el alta devuelve la ficha con la temporal. A la caché va solo la ficha, sin la temporal, que se
+ * queda en el estado de la pantalla hasta cerrar el diálogo.
+ */
 export function useCrearConductor() {
   const api = useApi();
   const alTerminar = useAlTerminar();
   return useMutation({
     mutationFn: (datos: ConductorCrear) => resultado(api.POST('/api/conductores/', { body: datos })),
+    onSuccess: (creado) => {
+      const secretas = new Set(['password_temporal', 'vence_en']);
+      alTerminar.conductor(Object.fromEntries(Object.entries(creado).filter(([campo]) => !secretas.has(campo))) as Conductor);
+    },
+  });
+}
+
+/** HU-74 (DC-78): solo el administrador cambia el correo de acceso; cierra las sesiones del conductor. */
+export function useCambiarCorreo(id: number) {
+  const api = useApi();
+  const alTerminar = useAlTerminar();
+  return useMutation({
+    mutationFn: (email: string) =>
+      resultado(api.POST('/api/conductores/{id}/correo/', { params: { path: { id } }, body: { email } })),
     onSuccess: alTerminar.conductor,
+    onError: (error) => alTerminar.conflicto(error, claves.conductor(id)),
   });
 }
 

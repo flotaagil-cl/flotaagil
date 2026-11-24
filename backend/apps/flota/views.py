@@ -20,6 +20,8 @@ from .filtros import ConductorFiltro, VehiculoFiltro
 from .models import Conductor, ConductorVehiculo, Vehiculo
 from .serializers import (
     AsociarVehiculoSerializer,
+    CambiarCorreoSerializer,
+    ConductorCreadoSerializer,
     ConductorCrearSerializer,
     ConductorEditarSerializer,
     ConductorSerializer,
@@ -158,17 +160,43 @@ class ConductorViewSet(
         summary="Registrar un conductor con su cuenta",
         tags=["flota"],
         request=ConductorCrearSerializer,
-        responses={201: ConductorSerializer},
-        description="La cuenta (rol CONDUCTOR) queda sin contraseña utilizable: el administrador genera una "
-        "temporal con `password/`.",
+        responses={201: ConductorCreadoSerializer},
+        description="HU-74 (DC-78): crea la cuenta (rol CONDUCTOR) con su contraseña temporal (DC-14), que "
+        "se muestra una sola vez en esta respuesta y vence a las PASSWORD_TEMPORAL_HORAS. Al ingresar a la "
+        "app debe cambiarla. Queda en auditoría.",
     )
     def create(self, request):
         entrada = ConductorCrearSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        (conductor,) = servicios.crear_conductores(
-            request.user.empresa, [dict(entrada.validated_data)], usuario=request.user
+        conductor, password, vence = servicios.crear_con_acceso(
+            request.user.empresa, dict(entrada.validated_data), usuario=request.user
         )
-        return self._detalle(conductor, status.HTTP_201_CREATED)
+        ficha = ConductorSerializer(self.get_queryset().get(pk=conductor.pk)).data
+        respuesta = Response(
+            {**ficha, "password_temporal": password, "vence_en": vence}, status=status.HTTP_201_CREATED
+        )
+        respuesta["Cache-Control"] = "no-store"
+        return respuesta
+
+    @extend_schema(
+        summary="Cambiar el correo de acceso del conductor",
+        tags=["flota"],
+        request=CambiarCorreoSerializer,
+        responses={
+            200: ConductorSerializer,
+            400: OpenApiResponse(description="Correo inválido o ya usado"),
+            409: EN_VIAJE,
+        },
+        description="HU-74 (DC-78): solo el administrador. Cierra todas las sesiones del conductor, que debe "
+        "volver a entrar con el correo nuevo. Queda en auditoría (CAMBIAR_CORREO).",
+    )
+    @action(detail=True, methods=["post"])
+    def correo(self, request, pk=None):
+        conductor = self.get_object()
+        entrada = CambiarCorreoSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        servicios.cambiar_correo(conductor, entrada.validated_data["email"], usuario=request.user)
+        return self._detalle(conductor)
 
     @_documentar_importacion("conductores")
     @action(detail=False, methods=["post"], parser_classes=[MultiPartParser, FormParser, JSONParser])

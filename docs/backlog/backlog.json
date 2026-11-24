@@ -1437,6 +1437,30 @@
       "responsable": "Renato",
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)"
+    },
+    {
+      "id": "HU-74",
+      "titulo": "Acceso del conductor a la app desde su alta",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como administrador, quiero que al registrar un conductor quede listo su acceso a la app, para que pueda entrar de inmediato; y como conductor, quiero cambiar mi contraseña desde la app.",
+      "criterios": "El alta crea la cuenta y muestra la temporal una sola vez (solo hash; ni logs, ni auditoría, ni correo). Ficha con «Acceso a la app»: correo, estado, último ingreso, restablecer y deshabilitar (cierran sesiones). Solo el administrador cambia el correo de acceso: único, cierra sesiones, auditoría, 409 en viaje. Listado con el estado de acceso. En la app, «Cambiar contraseña» con la actual; cierra las otras sesiones. El conductor no ve el teléfono del pasajero.",
+      "sp": 5,
+      "reglas": [
+        "RN-12",
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-64"
+      ],
+      "depende_de": [
+        "HU-10"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)"
     }
   ],
   "tareas": [

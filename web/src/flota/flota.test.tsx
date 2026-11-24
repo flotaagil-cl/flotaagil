@@ -262,7 +262,9 @@ describe('conductores', () => {
     const tabla = await tablaConDatos();
     expect(within(tabla).getByText('Vence en 10 días')).toBeInTheDocument();
     expect(within(tabla).getByText('BCDF10')).toBeInTheDocument();
-    expect(within(tabla).getByText('Cuenta deshabilitada')).toBeInTheDocument();
+    // HU-74: columna «Acceso a la app».
+    expect(within(tabla).getByText('Deshabilitado')).toBeInTheDocument();
+    expect(within(tabla).getByText('Contraseña propia')).toBeInTheDocument();
     expect(within(tabla).getByText('Disponible')).toBeInTheDocument();
   });
 
