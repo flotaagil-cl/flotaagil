@@ -173,13 +173,29 @@ export default function App() {
     if (enVivo.conectado) void cargarPerfil();
   }, [enVivo.conectado, cargarPerfil]);
 
-  const actualizarTodo = useCallback(() => Promise.all([cargarPerfil(), contarNoLeidos()]), [cargarPerfil, contarNoLeidos]);
-
   const modo = activa ? modoDeRastreo(perfil) : null;
   useEffect(() => {
     if (modo) void rastreador.iniciar(modo);
     else void rastreador.detener();
   }, [modo]);
+
+  // Si faltaba permiso o falló el GPS, reintenta al volver a la app (p. ej. desde Ajustes) o al refrescar.
+  const reintentarRastreo = useCallback(() => {
+    if (modo && rastreador.estado.error) void rastreador.reintentar();
+  }, [modo]);
+
+  useEffect(() => {
+    if (!modo) return;
+    const escucha = AppNativa.addListener('resume', reintentarRastreo);
+    return () => {
+      void escucha.then((e) => e.remove());
+    };
+  }, [modo, reintentarRastreo]);
+
+  const actualizarTodo = useCallback(
+    () => (reintentarRastreo(), Promise.all([cargarPerfil(), contarNoLeidos()])),
+    [cargarPerfil, contarNoLeidos, reintentarRastreo],
+  );
 
   /** HU-13: Disponible (con el vehículo del turno) o No disponible. Devuelve el mensaje de error o null. */
   async function cambiarTurno(estado: 'DISPONIBLE' | 'NO_DISPONIBLE', vehiculo?: number): Promise<string | null> {
