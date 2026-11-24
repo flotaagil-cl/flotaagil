@@ -48,6 +48,14 @@ describe('HU-51 · reserva pública', () => {
     });
   });
 
+  it('sin cuenta, la nota no habla de «Mis viajes» ni de un aviso ya aceptado', async () => {
+    montarPortal('/solicitar/transportes-andes');
+    await screen.findByLabelText('Origen');
+    expect(screen.getByText(/Te enviaremos un enlace por correo para confirmar tu reserva/)).toBeInTheDocument();
+    expect(screen.queryByText(/Mis viajes/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/al crear tu cuenta/)).not.toBeInTheDocument();
+  });
+
   it('no envía sin correo ni privacidad, y muestra los errores del servidor', async () => {
     const { peticiones } = montarPortal('/solicitar/transportes-andes', {
       responder: (_p, ruta) => (ruta.endsWith('/reservas/') ? jsonPortal(400, { telefono: ['Teléfono inválido.'] }) : undefined),

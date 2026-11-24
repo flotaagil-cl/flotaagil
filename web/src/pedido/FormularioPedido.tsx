@@ -35,10 +35,12 @@ interface Props {
   sinPasajeros?: boolean;
   /** Texto del botón (por defecto, «Pedir mi traslado»). */
   textoBoton?: string;
+  /** Formulario público (sin cuenta): la nota no habla de «Mis viajes» ni de un aviso ya aceptado. */
+  publico?: boolean;
 }
 
 /** HU-39: datos de cada tipo de viaje, con pasajeros y maletas. */
-export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar, sinPasajeros = false, textoBoton }: Props) {
+export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar, sinPasajeros = false, textoBoton, publico = false }: Props) {
   const [v, setV] = useState<ValoresPedido>(iniciales ?? VALORES_INICIALES);
   const [errores, setErrores] = useState<Errores>(erroresIniciales ?? {});
   // La API de vuelos no respondió: el servidor pidió la hora de llegada para no inventarla.
@@ -189,10 +191,17 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
       <Boton type="submit" ancho>
         {textoBoton ?? 'Pedir mi traslado'}
       </Boton>
-      <p className={e.nota}>
-        Sigue tu viaje en «Mis viajes»; también te avisamos por notificación o correo si lo activas. Tus datos se tratan según el{' '}
-        <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link> que aceptaste al crear tu cuenta.
-      </p>
+      {publico ? (
+        <p className={e.nota}>
+          Te enviaremos un enlace por correo para confirmar tu reserva. Antes de enviarla, en el paso siguiente, aceptas el{' '}
+          <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link>.
+        </p>
+      ) : (
+        <p className={e.nota}>
+          Sigue tu viaje en «Mis viajes»; también te avisamos por notificación o correo si lo activas. Tus datos se tratan según el{' '}
+          <Link to={`/solicitar/${empresa.slug}/privacidad`}>aviso de privacidad</Link> que aceptaste al crear tu cuenta.
+        </p>
+      )}
     </form>
   );
 }
