@@ -1,7 +1,7 @@
 /**
- * HU-69: «Vuelos de hoy» (administrador y despachador). Viajes de aeropuerto del día de la empresa, ordenados por la
- * hora del vuelo, con contadores, filtros y la propuesta de recogida confirmable desde la fila (RN-02). Se actualiza
- * sola cada minuto y solo lee la base: el monitoreo (HU-27) es el único que consulta la API de vuelos.
+ * HU-69: «Vuelos de hoy» (administrador y despachador). Viajes de aeropuerto del día (o próximos días) de la
+ * empresa, ordenados por la hora del vuelo, con contadores, filtros y la propuesta de recogida confirmable desde
+ * la fila (RN-02). Se actualiza sola cada minuto y permite disparar una consulta bajo demanda al adaptador.
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -12,24 +12,31 @@ import { resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
 import estilos from '../componentes/panel.module.css';
-import campos from '../formularios/formularios.module.css';
 import { Segmentado } from '../diseno/Segmentado';
 import { FallaDeCarga } from '../flota/componentes/comunes';
+import campos from '../formularios/formularios.module.css';
 import { formatearFecha, formatearHora } from '../hora/hora';
 import { useDecidirRecogida } from '../reservas/api';
 import { mensajeDeErrorApi } from '../reservas/errores';
 import { ESTADOS_VUELO } from '../reservas/etiquetas';
 import { useApi } from '../sesion/SesionProvider';
 import { EstadoVuelo } from './LineaVuelo';
-import { useAhora } from './useAhora';
 import { cuentaRegresiva, enEspera, estadoDeVuelo, llegadaDe, minutosHasta, tipoDeSalida } from './textos';
+import { useAhora } from './useAhora';
 import c from './vuelos.module.css';
 
 type Viaje = components['schemas']['Viaje'];
 type EstadoVueloApi = components['schemas']['EstadoVueloEnum'];
 type Tipo = 'todos' | 'llegadas' | 'salidas';
+type Rango = 'hoy' | 'manana' | 'proximos_3_dias';
 
 export const REFRESCO_MS = 60_000;
+
+const RANGOS: { valor: Rango; texto: string }[] = [
+  { valor: 'hoy', texto: 'Hoy' },
+  { valor: 'manana', texto: 'Mañana' },
+  { valor: 'proximos_3_dias', texto: 'Próximos 3 días' },
+];
 
 const TIPOS: { valor: Tipo; texto: string }[] = [
   { valor: 'todos', texto: 'Todos' },
@@ -39,29 +46,65 @@ const TIPOS: { valor: Tipo; texto: string }[] = [
 
 export function VuelosDeHoy() {
   const api = useApi();
+  const consultas = useQueryClient();
   const ahora = useAhora();
+  const [rango, setRango] = useState<Rango>('hoy');
   const [tipo, setTipo] = useState<Tipo>('todos');
   const [estado, setEstado] = useState<EstadoVueloApi | ''>('');
+  const [consultando, setConsultando] = useState(false);
+  const [avisoConsulta, setAvisoConsulta] = useState<{ tipo: 'info' | 'error'; texto: string } | null>(null);
+
   const consulta = useQuery({
-    queryKey: ['vuelos-de-hoy', tipo, estado],
+    queryKey: ['vuelos-de-hoy', rango, tipo, estado],
     queryFn: () =>
       resultado(
         api.GET('/api/vuelos-de-hoy/', {
-          params: { query: { ...(tipo !== 'todos' && { tipo }), ...(estado && { estado }) } },
+          params: {
+            query: {
+              ...(rango !== 'hoy' && { rango }),
+              ...(tipo !== 'todos' && { tipo }),
+              ...(estado && { estado }),
+            },
+          },
         }),
       ),
     refetchInterval: REFRESCO_MS,
     placeholderData: (anterior) => anterior,
   });
 
+  async function consultarAhora() {
+    setConsultando(true);
+    setAvisoConsulta(null);
+    try {
+      const res = await resultado(api.POST('/api/vuelos-de-hoy/consultar/', { body: { rango } }));
+      await Promise.all([
+        consultas.invalidateQueries({ queryKey: ['vuelos-de-hoy'] }),
+        consultas.invalidateQueries({ queryKey: ['alertas'] }),
+      ]);
+      const detalleSinDatos = res.sin_datos > 0 ? `, ${res.sin_datos} sin datos` : '';
+      setAvisoConsulta({
+        tipo: 'info',
+        texto: `Estados actualizados: ${res.actualizados} de ${res.consultados} vuelos consultados${detalleSinDatos}.`,
+      });
+    } catch (error) {
+      setAvisoConsulta({ tipo: 'error', texto: mensajeDeErrorApi(error) });
+    } finally {
+      setConsultando(false);
+    }
+  }
+
   return (
     <section>
       <div className={estilos.encabezado}>
         <h1>Vuelos de hoy</h1>
+        <button type="button" className={estilos.botonSecundario} disabled={consultando} onClick={() => void consultarAhora()}>
+          {consultando ? 'Consultando…' : 'Consultar ahora'}
+        </button>
       </div>
       <p className={estilos.explicacion}>
         {consulta.data ? `${formatearFecha(consulta.data.fecha)} · ` : ''}Se actualiza cada minuto con lo que registró el monitoreo de vuelos.
       </p>
+      {avisoConsulta && <Aviso tipo={avisoConsulta.tipo}>{avisoConsulta.texto}</Aviso>}
       {consulta.isPending ? (
         <Cargando />
       ) : consulta.isError ? (
@@ -75,6 +118,7 @@ export function VuelosDeHoy() {
             <Contador valor={consulta.data.contadores.propuestas_pendientes} texto="propuestas de recogida pendientes" />
           </ul>
           <div className={c.filtros}>
+            <Segmentado etiqueta="Día" opciones={RANGOS} valor={rango} onCambiar={setRango} forma="pastillas" />
             <Segmentado etiqueta="Mostrar" opciones={TIPOS} valor={tipo} onCambiar={(nuevo) => setTipo(nuevo)} forma="pastillas" />
             <label className={campos.campo}>
               Estado del vuelo
@@ -90,7 +134,7 @@ export function VuelosDeHoy() {
           </div>
           {consulta.data.viajes.length === 0 ? (
             <div className={estilos.vacio}>
-              <p>No hay vuelos con estos filtros hoy.</p>
+              <p>{rango === 'hoy' ? 'No hay vuelos con estos filtros hoy.' : 'No hay vuelos con estos filtros para este período.'}</p>
             </div>
           ) : (
             <table className={estilos.tabla} aria-label="Vuelos de hoy" aria-busy={consulta.isFetching || undefined}>
@@ -108,7 +152,7 @@ export function VuelosDeHoy() {
               </thead>
               <tbody>
                 {consulta.data.viajes.map((viaje) => (
-                  <Fila key={viaje.id} viaje={viaje} ahora={ahora} />
+                  <Fila key={viaje.id} viaje={viaje} ahora={ahora} mostrarFecha={rango === 'proximos_3_dias'} />
                 ))}
               </tbody>
             </table>
@@ -127,7 +171,7 @@ function Contador({ valor, texto }: { valor: number; texto: string }) {
   );
 }
 
-function Fila({ viaje, ahora }: { viaje: Viaje; ahora: number }) {
+function Fila({ viaje, ahora, mostrarFecha }: { viaje: Viaje; ahora: number; mostrarFecha: boolean }) {
   const vuelo = viaje.vuelo;
   const detalle = `/reservas/${viaje.id}`;
   const conductor = viaje.conductor ? viaje.conductor.nombre : <span className={c.sinAsignar}>Sin asignar</span>;
@@ -144,7 +188,10 @@ function Fila({ viaje, ahora }: { viaje: Viaje; ahora: number }) {
       <tr>
         <Celda titulo="Vuelo">
           <Link to={detalle}>{vuelo.numero}</Link>
-          <span className={estilos.secundario}>Llegada · reserva #{viaje.id}</span>
+          <span className={estilos.secundario}>
+            Llegada · reserva #{viaje.id}
+            {mostrarFecha ? ` · ${formatearFecha(vuelo.fecha)}` : ''}
+          </span>
         </Celda>
         <Celda titulo="Programada">{formatearHora(vuelo.hora_programada, ahora)}</Celda>
         <Celda titulo="Estimada">{vuelo.hora_estimada ? formatearHora(vuelo.hora_estimada, ahora) : '—'}</Celda>
@@ -165,7 +212,10 @@ function Fila({ viaje, ahora }: { viaje: Viaje; ahora: number }) {
   return (
     <tr>
       <Celda titulo="Vuelo">
-        <Link to={detalle}>{viaje.vuelo_salida_numero ? `Salida ${viaje.vuelo_salida_numero}` : 'Salida'}{tipoDeSalida(viaje)}</Link>
+        <Link to={detalle}>
+          {viaje.vuelo_salida_numero ? `Salida ${viaje.vuelo_salida_numero}` : 'Salida'}
+          {tipoDeSalida(viaje)}
+        </Link>
         <span className={estilos.secundario}>Reserva #{viaje.id}</span>
       </Celda>
       <Celda titulo="Programada">{formatearHora(despegue, ahora)}</Celda>

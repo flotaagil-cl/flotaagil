@@ -4052,8 +4052,8 @@ paths:
   /api/vuelos-de-hoy/:
     get:
       operationId: vuelos_de_hoy_retrieve
-      description: 'HU-69: viajes de aeropuerto del día de la empresa del usuario.
-        Solo lee la base (sin API de vuelos).'
+      description: 'HU-69: viajes de aeropuerto del día (o próximos días) de la empresa.
+        Solo lee la base.'
       summary: Vuelos de hoy (llegadas y salidas)
       parameters:
       - in: query
@@ -4067,6 +4067,15 @@ paths:
           - DESVIADO
           - PROGRAMADO
         description: 'Estado del vuelo (solo llegadas: las salidas no se monitorean)'
+      - in: query
+        name: rango
+        schema:
+          type: string
+          enum:
+          - hoy
+          - manana
+          - proximos_3_dias
+        description: 'Ventana de fechas: hoy (por defecto), manana o proximos_3_dias'
       - in: query
         name: tipo
         schema:
@@ -4085,6 +4094,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VuelosDeHoy'
+          description: ''
+  /api/vuelos-de-hoy/consultar/:
+    post:
+      operationId: vuelos_de_hoy_consultar_create
+      description: Dispara bajo demanda la consulta del adaptador de vuelos para las
+        llegadas activas del rango.
+      summary: Consultar estado de vuelos ahora
+      tags:
+      - vuelos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultarVuelosRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConsultarVuelosRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConsultarVuelosRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsultarVuelosResponse'
           description: ''
 components:
   schemas:
@@ -4860,6 +4897,32 @@ components:
             está configurado.
       required:
       - soporte_correo
+    ConsultarVuelosRequestRequest:
+      type: object
+      properties:
+        rango:
+          allOf:
+          - $ref: '#/components/schemas/RangoEnum'
+          default: hoy
+          description: |-
+            Ventana de días a consultar en el adaptador de vuelos.
+
+            * `hoy` - hoy
+            * `manana` - manana
+            * `proximos_3_dias` - proximos_3_dias
+    ConsultarVuelosResponse:
+      type: object
+      properties:
+        consultados:
+          type: integer
+        actualizados:
+          type: integer
+        sin_datos:
+          type: integer
+      required:
+      - actualizados
+      - consultados
+      - sin_datos
     ContadoresVuelos:
       type: object
       properties:
@@ -6882,6 +6945,16 @@ components:
       required:
       - lat
       - lng
+    RangoEnum:
+      enum:
+      - hoy
+      - manana
+      - proximos_3_dias
+      type: string
+      description: |-
+        * `hoy` - hoy
+        * `manana` - manana
+        * `proximos_3_dias` - proximos_3_dias
     RapidaEnum:
       enum:
       - EN_CAMINO

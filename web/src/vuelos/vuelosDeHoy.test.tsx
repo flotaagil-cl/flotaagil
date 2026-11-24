@@ -12,6 +12,7 @@ import { REFRESCO_MS } from './VuelosDeHoy';
 type Viaje = components['schemas']['Viaje'];
 
 const RUTA = '/api/vuelos-de-hoy/';
+const RUTA_CONSULTAR = '/api/vuelos-de-hoy/consultar/';
 const en = (min: number) => new Date(Date.now() + min * 60_000).toISOString();
 
 function llegada(id: number, cambios: Partial<components['schemas']['Vuelo']> = {}, viaje: Partial<Viaje> = {}) {
@@ -41,6 +42,7 @@ function llegada(id: number, cambios: Partial<components['schemas']['Vuelo']> = 
 
 class ServidorVuelosFalso {
   consultas: URLSearchParams[] = [];
+  peticionesConsultar: { rango?: string }[] = [];
   private readonly anterior: ServidorAuthFalso['api'];
 
   constructor(
@@ -52,6 +54,14 @@ class ServidorVuelosFalso {
   }
 
   private async atender(peticion: Request, url: URL): Promise<Respuesta> {
+    if (url.pathname === RUTA_CONSULTAR && peticion.method === 'POST') {
+      const cuerpo = (await peticion.json()) as { rango?: string };
+      this.peticionesConsultar.push(cuerpo);
+      return {
+        estado: 200,
+        cuerpo: { consultados: 2, actualizados: 2, sin_datos: 0 },
+      };
+    }
     if (url.pathname !== RUTA) return this.anterior!(peticion, url);
     this.consultas.push(url.searchParams);
     const tipo = url.searchParams.get('tipo');
@@ -64,7 +74,7 @@ class ServidorVuelosFalso {
     return {
       estado: 200,
       cuerpo: {
-        fecha: '2026-11-18',
+        fecha: url.searchParams.get('rango') === 'manana' ? '2026-11-19' : '2026-11-18',
         contadores: {
           demorados: todos.filter((v) => v.vuelo?.estado_vuelo === 'DEMORADO').length,
           cancelados_o_desviados: todos.filter((v) => v.vuelo?.estado_vuelo === 'CANCELADO').length,
@@ -139,6 +149,23 @@ describe('tabla', () => {
     expect(vuelos.consultas.at(-1)?.get('estado')).toBe('DEMORADO');
     await userEvent.click(screen.getByRole('radio', { name: 'Salidas' }));
     expect(screen.getByLabelText('Estado del vuelo')).toBeDisabled();
+  });
+
+  it('permite cambiar el rango de días y consultar estados ahora', async () => {
+    const { vuelos } = montar();
+    await screen.findByRole('table', { name: 'Vuelos de hoy' });
+
+    expect(screen.getByRole('radio', { name: 'Hoy' })).toBeChecked();
+    await userEvent.click(screen.getByRole('radio', { name: 'Mañana' }));
+    await waitFor(() => expect(vuelos.consultas.at(-1)?.get('rango')).toBe('manana'));
+    expect(await screen.findByText(/19-11-2026/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('radio', { name: 'Próximos 3 días' }));
+    await waitFor(() => expect(vuelos.consultas.at(-1)?.get('rango')).toBe('proximos_3_dias'));
+
+    await userEvent.click(screen.getByRole('button', { name: 'Consultar ahora' }));
+    await waitFor(() => expect(vuelos.peticionesConsultar).toEqual([{ rango: 'proximos_3_dias' }]));
+    expect(await screen.findByRole('status')).toHaveTextContent('Estados actualizados: 2 de 2 vuelos consultados.');
   });
 
   it('sin vuelos lo dice', async () => {

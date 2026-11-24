@@ -44,11 +44,11 @@ def datos_del_vuelo(vuelo: Vuelo, configuracion) -> dict:
     }
 
 
-def vuelos_del_dia(empresa_id: int, dia=None):
-    """Viajes de aeropuerto del día (hora de Chile), sin los cancelados, ordenados por la hora del vuelo."""
+def vuelos_del_dia(empresa_id: int, dia=None, *, dias: int = 1):
+    """Viajes de aeropuerto del rango de días (hora de Chile), sin los cancelados, ordenados por hora."""
     dia = dia or timezone.localdate()
     inicio = timezone.make_aware(datetime.combine(dia, time.min))
-    fin = inicio + timedelta(days=1)
+    fin = inicio + timedelta(days=dias)
     return (
         Viaje.objects.filter(empresa_id=empresa_id)
         .exclude(estado=EstadoViaje.CANCELADO)

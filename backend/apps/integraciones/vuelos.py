@@ -77,6 +77,7 @@ ORIGENES_DESARROLLO = {
     "SKBO": ("Bogotá", "Aeropuerto Internacional El Dorado"),
     "KMIA": ("Miami", "Aeropuerto Internacional de Miami"),
     "SCFA": ("Antofagasta", "Aeropuerto Andrés Sabella"),
+    "SCPE": ("San Pedro de Atacama", "Aeródromo San Pedro de Atacama"),
     "SCIE": ("Concepción", "Aeropuerto Carriel Sur"),
     "SCTE": ("Puerto Montt", "Aeropuerto El Tepual"),
 }
