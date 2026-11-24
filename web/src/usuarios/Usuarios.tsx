@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import type { Modulo } from '../api/auth';
 import { ErrorApi } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
 import estilos from '../componentes/panel.module.css';
@@ -25,6 +26,21 @@ const ACCESOS: Record<string, string> = {
   TEMPORAL_VENCIDA: 'Temporal vencida',
   ACTIVA: 'Contraseña propia',
 };
+
+// HU-75 (DC-79): Inicio siempre está; Usuarios es solo del administrador y no es un módulo.
+const GRUPOS: { titulo: string; modulos: [Modulo, string][] }[] = [
+  {
+    titulo: 'Del despachador',
+    modulos: [['MAPA', 'Mapa'], ['RESERVAS', 'Reservas'], ['VUELOS', 'Vuelos de hoy'], ['CHAT', 'Chat'], ['CONVENIOS', 'Convenios']],
+  },
+  {
+    titulo: 'De administrador',
+    modulos: [['VEHICULOS', 'Vehículos'], ['CONDUCTORES', 'Conductores'], ['CAJA', 'Cierre de caja'], ['REPORTES', 'Reportes'], ['CONFIGURACION', 'Configuración']],
+  },
+];
+const ORDEN: Modulo[] = GRUPOS.flatMap((g) => g.modulos.map(([m]) => m));
+const POR_DEFECTO: Modulo[] = GRUPOS[0].modulos.map(([m]) => m);
+const mismos = (a: Modulo[], b: Modulo[]) => a.length === b.length && a.every((m) => b.includes(m));
 
 type Temporal = { password: string; vence: string; correo: string };
 type Confirmando = { usuario: UsuarioPanel; accion: 'desactivar' | 'restablecer' } | null;
@@ -138,7 +154,10 @@ export function Usuarios() {
                   {u.id === yo && ' (tú)'}
                 </Celda>
                 <Celda titulo="Correo">{u.email}</Celda>
-                <Celda titulo="Rol">{ROLES[u.rol as RolPanel]}</Celda>
+                <Celda titulo="Rol">
+                  {ROLES[u.rol as RolPanel]}
+                  {u.rol === 'DESPACHADOR' && <span className={estilos.secundario}>{` · ${u.modulos.length} de ${ORDEN.length} módulos`}</span>}
+                </Celda>
                 <Celda titulo="Estado">{u.activo ? ACCESOS[u.acceso] ?? u.acceso : 'Desactivado'}</Celda>
                 <Celda titulo="Acciones">
                   <div className={estilos.acciones}>
@@ -189,6 +208,7 @@ function FormularioUsuario({
   const [nombre, setNombre] = useState(usuario?.nombre ?? '');
   const [email, setEmail] = useState(usuario?.email ?? '');
   const [rol, setRol] = useState<RolPanel>((usuario?.rol as RolPanel) ?? 'DESPACHADOR');
+  const [modulos, setModulos] = useState<Modulo[]>(usuario?.rol === 'DESPACHADOR' ? usuario.modulos : POR_DEFECTO);
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [falla, setFalla] = useState<string | null>(null);
 
@@ -201,11 +221,14 @@ function FormularioUsuario({
     setFalla(null);
     if (Object.keys(e).length) return;
     try {
+      const elegidos = ORDEN.filter((m) => modulos.includes(m));
       if (usuario) {
-        await editar.mutateAsync({ id: usuario.id, nombre: nombre.trim(), ...(rol !== usuario.rol && { rol }) });
-        alGuardar('Cambios guardados.');
+        // Cambiar el rol o los módulos cierra sus sesiones en el servidor para aplicar los permisos.
+        const cambiaModulos = rol === 'DESPACHADOR' && (rol !== usuario.rol || !mismos(elegidos, usuario.modulos));
+        await editar.mutateAsync({ id: usuario.id, nombre: nombre.trim(), ...(rol !== usuario.rol && { rol }), ...(cambiaModulos && { modulos: elegidos }) });
+        alGuardar(cambiaModulos || rol !== usuario.rol ? 'Cambios guardados: sus sesiones se cerraron para aplicar los permisos.' : 'Cambios guardados.');
       } else {
-        const creado = await crear.mutateAsync({ nombre: nombre.trim(), email: email.trim(), rol });
+        const creado = await crear.mutateAsync({ nombre: nombre.trim(), email: email.trim(), rol, ...(rol === 'DESPACHADOR' && { modulos: elegidos }) });
         alCrear({ password: creado.password_temporal, vence: creado.vence_en, correo: creado.email });
       }
       alCerrar();
@@ -239,6 +262,27 @@ function FormularioUsuario({
         </select>
       </label>
       {esYo && <p className={estilos.secundario}>No puedes cambiar tu propio rol.</p>}
+      {rol === 'DESPACHADOR' && (
+        <fieldset className={campos.opciones}>
+          <legend>Módulos</legend>
+          <p className={campos.ayuda}>Inicio siempre está disponible. Usuarios es solo del administrador.</p>
+          {GRUPOS.map((grupo) => (
+            <fieldset key={grupo.titulo} className={campos.opciones}>
+              <legend>{grupo.titulo}</legend>
+              {grupo.modulos.map(([modulo, etiqueta]) => (
+                <label key={modulo} className={campos.opcion}>
+                  <input
+                    type="checkbox"
+                    checked={modulos.includes(modulo)}
+                    onChange={(e) => setModulos((actuales) => (e.target.checked ? [...actuales, modulo] : actuales.filter((m) => m !== modulo)))}
+                  />
+                  {etiqueta}
+                </label>
+              ))}
+            </fieldset>
+          ))}
+        </fieldset>
+      )}
       <div className={estilos.acciones}>
         <button type="submit" className={estilos.boton} disabled={crear.isPending || editar.isPending}>
           {usuario ? 'Guardar' : 'Crear usuario'}

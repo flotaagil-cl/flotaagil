@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
+import { Aviso } from '../componentes/Aviso';
 import { Icono } from '../diseno/Icono';
 import type { NombreIcono } from '../diseno/iconos';
 import { hoy } from '../hora/hora';
+import { tieneModulo } from '../rutas/tabla';
 import { useSesion } from '../sesion/SesionProvider';
 import { TEXTO_FASE, type FaseIndicadores } from './conexionIndicadores';
 import { Indicadores } from './Indicadores';
@@ -19,8 +21,12 @@ interface Atajo {
 /** Indicadores del día (HU-01) y atajos al listado filtrado. */
 export function Inicio() {
   const { estado } = useSesion();
+  const ubicacion = useLocation();
   const [fase, setFase] = useState<FaseIndicadores>('conectando');
   if (estado.fase !== 'autenticada') return null;
+  // HU-75 (DC-79): los atajos son del módulo Reservas; el aviso llega desde un módulo apagado.
+  const conReservas = tieneModulo(estado.usuario.modulos, 'RESERVAS');
+  const aviso = (ubicacion.state as { aviso?: string } | null)?.aviso;
 
   const atajos: Atajo[] = [
     { a: `/reservas?fecha=${hoy()}`, titulo: 'Reservas de hoy', texto: 'Recogidas del día (hora de Santiago).', icono: 'calendario' },
@@ -70,34 +76,40 @@ export function Inicio() {
             <span className={estilos.puntoVivo} aria-hidden="true" />
             {TEXTO_FASE[fase]}
           </span>
-          <Link to="/reservas/nueva" className={estilos.boton}>
-            <Icono nombre="mas" tamano={18} />
-            Nueva reserva
-          </Link>
+          {conReservas && (
+            <Link to="/reservas/nueva" className={estilos.boton}>
+              <Icono nombre="mas" tamano={18} />
+              Nueva reserva
+            </Link>
+          )}
         </div>
       </header>
 
+      {aviso && <Aviso tipo="error">{aviso}</Aviso>}
+
       <Indicadores alCambiarFase={setFase} />
 
-      <div className={estilos.bloqueAtajos}>
-        <h2 className={estilos.tituloSeccion}>Accesos rápidos de gestión</h2>
-        <ul className={estilos.atajos} aria-label="Atajos a las reservas">
-          {atajos.map((atajo) => (
-            <li key={atajo.a}>
-              <Link to={atajo.a} className={estilos.tarjetaAtajo} data-alerta={atajo.alerta}>
-                <div className={estilos.cabeceraAtajo}>
-                  <span className={estilos.iconoAtajo}>
-                    <Icono nombre={atajo.icono} tamano={18} />
-                  </span>
-                  <Icono nombre="flechaDerecha" tamano={16} className={estilos.flechaAtajo} />
-                </div>
-                <strong>{atajo.titulo}</strong>
-                <span>{atajo.texto}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {conReservas && (
+        <div className={estilos.bloqueAtajos}>
+          <h2 className={estilos.tituloSeccion}>Accesos rápidos de gestión</h2>
+          <ul className={estilos.atajos} aria-label="Atajos a las reservas">
+            {atajos.map((atajo) => (
+              <li key={atajo.a}>
+                <Link to={atajo.a} className={estilos.tarjetaAtajo} data-alerta={atajo.alerta}>
+                  <div className={estilos.cabeceraAtajo}>
+                    <span className={estilos.iconoAtajo}>
+                      <Icono nombre={atajo.icono} tamano={18} />
+                    </span>
+                    <Icono nombre="flechaDerecha" tamano={16} className={estilos.flechaAtajo} />
+                  </div>
+                  <strong>{atajo.titulo}</strong>
+                  <span>{atajo.texto}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

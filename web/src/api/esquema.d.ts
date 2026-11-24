@@ -1856,8 +1856,8 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Editar nombre o rol
-         * @description Cambiar el rol cierra las sesiones del usuario. Queda en auditoría.
+         * Editar nombre, rol o módulos
+         * @description Cambiar el rol o los módulos del despachador (HU-75) cierra las sesiones del usuario. Queda en auditoría.
          */
         patch: operations["usuarios_partial_update"];
         trace?: never;
@@ -3024,6 +3024,20 @@ export interface components {
             total: number;
         };
         /**
+         * @description * `MAPA` - Mapa
+         *     * `RESERVAS` - Reservas
+         *     * `VUELOS` - Vuelos de hoy
+         *     * `CHAT` - Chat
+         *     * `CONVENIOS` - Convenios
+         *     * `VEHICULOS` - Vehículos
+         *     * `CONDUCTORES` - Conductores
+         *     * `CAJA` - Cierre de caja
+         *     * `REPORTES` - Reportes
+         *     * `CONFIGURACION` - Configuración
+         * @enum {string}
+         */
+        ModulosEnum: "MAPA" | "RESERVAS" | "VUELOS" | "CHAT" | "CONVENIOS" | "VEHICULOS" | "CONDUCTORES" | "CAJA" | "REPORTES" | "CONFIGURACION";
+        /**
          * @description * `CAMBIO_DE_PLANES` - Cambié de planes
          *     * `VUELO_CANCELADO` - Mi vuelo se canceló
          *     * `OTRO` - Otro motivo
@@ -3335,6 +3349,8 @@ export interface components {
         PatchedUsuarioPanelEditarRequest: {
             nombre?: string;
             rol?: components["schemas"]["RolPanelEnum"];
+            /** @description HU-75 (DC-79): módulos activos del despachador. Usuarios no es un módulo: es solo del administrador. */
+            modulos?: components["schemas"]["ModulosEnum"][];
         };
         /** @description La patente no se edita: otra patente es otro vehículo. */
         PatchedVehiculoEditarRequest: {
@@ -3945,6 +3961,8 @@ export interface components {
              * Format: date-time
              */
             readonly last_login: string | null;
+            /** @description HU-75: los que puede usar (todos si es administrador). */
+            readonly modulos: components["schemas"]["ModulosEnum"][];
             /** @description Se muestra una sola vez */
             readonly password_temporal: string;
             /** Format: date-time */
@@ -3964,12 +3982,16 @@ export interface components {
              * Format: date-time
              */
             readonly last_login: string | null;
+            /** @description HU-75: los que puede usar (todos si es administrador). */
+            readonly modulos: components["schemas"]["ModulosEnum"][];
         };
         UsuarioPanelCrearRequest: {
             nombre: string;
             /** Format: email */
             email: string;
             rol: components["schemas"]["RolPanelEnum"];
+            /** @description HU-75 (DC-79): módulos activos del despachador. Usuarios no es un módulo: es solo del administrador. */
+            modulos?: components["schemas"]["ModulosEnum"][];
         };
         UsuarioSesion: {
             readonly id: number;
@@ -3981,6 +4003,8 @@ export interface components {
             readonly debe_cambiar_password: boolean;
             /** @description DC-44: pasajero con cuenta que debe aceptar el aviso de privacidad vigente. */
             readonly debe_aceptar_privacidad: boolean;
+            /** @description HU-75 (DC-79): módulos del panel que puede usar. Todos para el administrador; los activos para el despachador; ninguno para los demás roles. */
+            readonly modulos: components["schemas"]["ModulosEnum"][];
         };
         Vehiculo: {
             readonly id: number;

@@ -11,7 +11,7 @@
  */
 
 import { Navigate, type RouteObject } from 'react-router';
-import type { Rol } from '../api/auth';
+import type { Modulo, Rol } from '../api/auth';
 import { Cargando } from '../componentes/Cargando';
 import { ErrorDeRuta } from '../componentes/ErrorDeRuta';
 
@@ -31,10 +31,12 @@ export interface Manejo {
   roles?: Rol[];
   /** HU-56 (CC-22): solo en el menú de las empresas con el módulo de cuentas (WhatsApp con el pasajero). */
   conModulo?: boolean;
+  /** HU-75 (DC-79): módulo del panel; el despachador la ve solo si lo tiene activo (el administrador, siempre). */
+  modulo?: Modulo;
 }
 
 export const ROLES_PANEL: Rol[] = ['ADMINISTRADOR', 'DESPACHADOR'];
-/** Administración de flota (HU-10): solo el administrador. */
+/** Solo el administrador (Usuarios, moderación del chat). */
 export const ROLES_ADMIN: Rol[] = ['ADMINISTRADOR'];
 /** HU-33: cuentas web de la empresa cliente (HU-34) y del pasajero (HU-35), con el mismo inicio de sesión. */
 export const ROLES_CONVENIO: Rol[] = ['CONVENIO'];
@@ -59,11 +61,11 @@ export const pantallasDelPanel: RouteObject[] = [
   {
     path: 'mapa',
     lazy: async () => ({ Component: (await import('../mapa/Mapa')).Mapa }),
-    handle: { titulo: 'Mapa', menu: true, seccion: 'operacion', icono: 'mapa', roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Mapa', menu: true, seccion: 'operacion', icono: 'mapa', roles: ROLES_PANEL, modulo: 'MAPA' } satisfies Manejo,
   },
   {
     path: 'reservas',
-    handle: { titulo: 'Reservas', menu: true, seccion: 'operacion', icono: 'calendario', roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Reservas', menu: true, seccion: 'operacion', icono: 'calendario', roles: ROLES_PANEL, modulo: 'RESERVAS' } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../reservas/paginas/Listado')).Listado }) },
       {
@@ -92,11 +94,11 @@ export const pantallasDelPanel: RouteObject[] = [
     // HU-69: llegadas y salidas del día, con contadores y refresco cada minuto.
     path: 'vuelos-de-hoy',
     lazy: async () => ({ Component: (await import('../vuelos/VuelosDeHoy')).VuelosDeHoy }),
-    handle: { titulo: 'Vuelos de hoy', menu: true, seccion: 'operacion', icono: 'avion', roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Vuelos de hoy', menu: true, seccion: 'operacion', icono: 'avion', roles: ROLES_PANEL, modulo: 'VUELOS' } satisfies Manejo,
   },
   {
     path: 'chat',
-    handle: { titulo: 'Chat', menu: true, seccion: 'operacion', icono: 'mensaje', roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Chat', menu: true, seccion: 'operacion', icono: 'mensaje', roles: ROLES_PANEL, modulo: 'CHAT' } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../chat/paginas/Chat')).Chat }) },
       {
@@ -124,52 +126,52 @@ export const pantallasDelPanel: RouteObject[] = [
   // --- FLOTA Y CLIENTES ---
   {
     path: 'vehiculos',
-    handle: { titulo: 'Vehículos', menu: true, seccion: 'flota', icono: 'auto', roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Vehículos', menu: true, seccion: 'flota', icono: 'auto', roles: ROLES_PANEL, modulo: 'VEHICULOS' } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Vehiculos')).Vehiculos }) },
       {
         path: 'nuevo',
         lazy: async () => ({ Component: (await import('../flota/paginas/VehiculoNuevo')).VehiculoNuevo }),
-        handle: { titulo: 'Nuevo vehículo', roles: ROLES_ADMIN } satisfies Manejo,
+        handle: { titulo: 'Nuevo vehículo', roles: ROLES_PANEL } satisfies Manejo,
       },
       {
         path: 'importar',
         lazy: async () => ({ Component: (await import('../flota/paginas/ImportarVehiculos')).ImportarVehiculos }),
-        handle: { titulo: 'Cargar vehículos por CSV', roles: ROLES_ADMIN } satisfies Manejo,
+        handle: { titulo: 'Cargar vehículos por CSV', roles: ROLES_PANEL } satisfies Manejo,
       },
       {
         path: ':id',
         lazy: async () => ({ Component: (await import('../flota/paginas/Vehiculo')).Vehiculo }),
-        handle: { titulo: 'Vehículo', roles: ROLES_ADMIN } satisfies Manejo,
+        handle: { titulo: 'Vehículo', roles: ROLES_PANEL } satisfies Manejo,
       },
     ],
   },
   {
     path: 'conductores',
-    handle: { titulo: 'Conductores', menu: true, seccion: 'flota', icono: 'volante', roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Conductores', menu: true, seccion: 'flota', icono: 'volante', roles: ROLES_PANEL, modulo: 'CONDUCTORES' } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../flota/paginas/Conductores')).Conductores }) },
       {
         path: 'nuevo',
         lazy: async () => ({ Component: (await import('../flota/paginas/ConductorNuevo')).ConductorNuevo }),
-        handle: { titulo: 'Nuevo conductor', roles: ROLES_ADMIN } satisfies Manejo,
+        handle: { titulo: 'Nuevo conductor', roles: ROLES_PANEL } satisfies Manejo,
       },
       {
         path: 'importar',
         lazy: async () => ({ Component: (await import('../flota/paginas/ImportarConductores')).ImportarConductores }),
-        handle: { titulo: 'Cargar conductores por CSV', roles: ROLES_ADMIN } satisfies Manejo,
+        handle: { titulo: 'Cargar conductores por CSV', roles: ROLES_PANEL } satisfies Manejo,
       },
       {
         path: ':id',
         lazy: async () => ({ Component: (await import('../flota/paginas/Conductor')).Conductor }),
-        handle: { titulo: 'Conductor', roles: ROLES_ADMIN } satisfies Manejo,
+        handle: { titulo: 'Conductor', roles: ROLES_PANEL } satisfies Manejo,
       },
     ],
   },
   {
     path: 'convenios',
     // DC-55 (CC-22): el despachador también revisa los convenios.
-    handle: { titulo: 'Convenios', menu: true, seccion: 'flota', icono: 'convenios', roles: ROLES_PANEL } satisfies Manejo,
+    handle: { titulo: 'Convenios', menu: true, seccion: 'flota', icono: 'convenios', roles: ROLES_PANEL, modulo: 'CONVENIOS' } satisfies Manejo,
     children: [
       { index: true, lazy: async () => ({ Component: (await import('../convenios/paginas/Convenios')).Convenios }) },
       {
@@ -183,12 +185,12 @@ export const pantallasDelPanel: RouteObject[] = [
   {
     path: 'caja',
     lazy: async () => ({ Component: (await import('../caja/Caja')).Caja }),
-    handle: { titulo: 'Cierre de caja', menu: true, seccion: 'administracion', icono: 'caja', roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Cierre de caja', menu: true, seccion: 'administracion', icono: 'caja', roles: ROLES_PANEL, modulo: 'CAJA' } satisfies Manejo,
   },
   {
     path: 'reportes',
     lazy: async () => ({ Component: (await import('../reportes/paginas/Reportes')).Reportes }),
-    handle: { titulo: 'Reportes', menu: true, seccion: 'administracion', icono: 'reportes', roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Reportes', menu: true, seccion: 'administracion', icono: 'reportes', roles: ROLES_PANEL, modulo: 'REPORTES' } satisfies Manejo,
   },
   {
     path: 'usuarios',
@@ -199,7 +201,7 @@ export const pantallasDelPanel: RouteObject[] = [
     // DC-68: números de emergencia y parámetros de la reserva pública, solo el administrador.
     path: 'configuracion',
     lazy: async () => ({ Component: (await import('../configuracion/Configuracion')).Configuracion }),
-    handle: { titulo: 'Configuración', menu: true, seccion: 'administracion', icono: 'configuracion', roles: ROLES_ADMIN } satisfies Manejo,
+    handle: { titulo: 'Configuración', menu: true, seccion: 'administracion', icono: 'configuracion', roles: ROLES_PANEL, modulo: 'CONFIGURACION' } satisfies Manejo,
   },
   // --- ROL CONVENIO ---
   {
@@ -342,13 +344,31 @@ export interface EntradaMenu {
   icono?: NombreIcono;
 }
 
-/** Menú generado desde la tabla, filtrado por rol: solo muestra pantallas que existen. */
-export function entradasDeMenu(rutas: RouteObject[], rol: Rol, base = '', conModulo = true): EntradaMenu[] {
+/** HU-75 (DC-79): ¿el usuario tiene el módulo? Sin módulo, la pantalla es de todos los del rol. */
+export function tieneModulo(modulos: readonly Modulo[] | undefined, modulo: Modulo | undefined): boolean {
+  return !modulo || (modulos ?? []).includes(modulo);
+}
+
+/**
+ * Menú generado desde la tabla, filtrado por rol y por los módulos activos (HU-75): solo muestra pantallas que
+ * existen y que el usuario puede abrir.
+ */
+export function entradasDeMenu(
+  rutas: RouteObject[],
+  rol: Rol,
+  base = '',
+  conModulo = true,
+  modulos?: readonly Modulo[],
+): EntradaMenu[] {
   return rutas.flatMap((ruta) => {
     const camino = ruta.path ? `${base.replace(/\/$/, '')}/${ruta.path.replace(/^\//, '')}` : base || '/';
     const manejo = ruta.handle as Manejo | undefined;
-    const visible = manejo?.menu && (!manejo.roles || manejo.roles.includes(rol)) && (conModulo || !manejo.conModulo);
+    const visible =
+      manejo?.menu &&
+      (!manejo.roles || manejo.roles.includes(rol)) &&
+      (conModulo || !manejo.conModulo) &&
+      (modulos === undefined || tieneModulo(modulos, manejo.modulo));
     const propia = visible ? [{ ruta: camino, titulo: manejo.titulo, seccion: manejo.seccion, icono: manejo.icono }] : [];
-    return [...propia, ...entradasDeMenu(ruta.children ?? [], rol, camino, conModulo)];
+    return [...propia, ...entradasDeMenu(ruta.children ?? [], rol, camino, conModulo, modulos)];
   });
 }

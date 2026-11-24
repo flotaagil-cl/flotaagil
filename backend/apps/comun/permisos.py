@@ -18,6 +18,21 @@ def con_roles(*roles: str) -> type[TieneRol]:
     return type(f"TieneRol_{'_'.join(roles)}", (TieneRol,), {"roles": frozenset(roles)})
 
 
+class TieneModulo(BasePermission):
+    """HU-75 (DC-79): el administrador, siempre; el despachador, si tiene activo alguno de los módulos."""
+
+    modulos: tuple[str, ...] = ()
+
+    def has_permission(self, request, view):
+        usuario = request.user
+        return bool(usuario and usuario.is_authenticated and usuario.tiene_modulo(*self.modulos))
+
+
+def con_modulo(*modulos: str) -> type[TieneModulo]:
+    """Clase de permiso por módulo del panel: permission_classes = [con_modulo(Modulo.RESERVAS)]."""
+    return type(f"TieneModulo_{'_'.join(modulos)}", (TieneModulo,), {"modulos": tuple(modulos)})
+
+
 class ConModuloCuentas(BasePermission):
     """DC-51 (CC-22): las cuentas de pasajero y convenio solo existen si la empresa tiene el módulo.
     Sin él, sus endpoints responden 404, como si no existieran."""

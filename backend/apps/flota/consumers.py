@@ -6,6 +6,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from apps.cuentas.autenticacion import ROLES_PANEL
+from apps.cuentas.models import Modulo
 from apps.cuentas.ws_auth import SUBPROTOCOLO
 
 from .tiempo_real import conductores_del_mapa, grupo_indicadores, grupo_mapa
@@ -23,7 +24,8 @@ class MapaConsumer(AsyncJsonWebsocketConsumer):
         if not getattr(usuario, "is_authenticated", False):
             await self.close(code=SIN_SESION)
             return
-        if usuario.rol not in ROLES_PANEL:
+        # HU-75 (DC-79): el mapa en vivo lo usan el módulo Mapa y las pantallas de Conductores.
+        if usuario.rol not in ROLES_PANEL or not usuario.tiene_modulo(Modulo.MAPA, Modulo.CONDUCTORES):
             await self.close(code=SIN_PERMISO)
             return
         self.grupo = grupo_mapa(usuario.empresa_id)

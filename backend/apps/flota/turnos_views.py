@@ -5,13 +5,14 @@ from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.comun.permisos import con_roles
-from apps.cuentas.models import Rol
+from apps.comun.permisos import con_modulo
+from apps.cuentas.models import Modulo
 
 from . import turnos
 from .models import CierreCaja, Turno
 
-SOLO_ADMIN = [con_roles(Rol.ADMINISTRADOR)]
+# HU-75 (DC-79): módulo Cierre de caja.
+CON_CAJA = [con_modulo(Modulo.CAJA)]
 CONFLICTO = OpenApiResponse(
     description="`turno_abierto`, `cierre_repetido` o `viaje_en_ejecucion` (cierre de caja); `en_viaje` o "
     "`sin_turno` (cierre administrativo)."
@@ -83,7 +84,7 @@ class CerrarCajaSerializer(serializers.Serializer):
 
 
 class TurnosPorCerrarView(APIView):
-    permission_classes = SOLO_ADMIN
+    permission_classes = CON_CAJA
 
     @extend_schema(
         tags=["turnos"],
@@ -95,7 +96,7 @@ class TurnosPorCerrarView(APIView):
 
 
 class TurnosView(APIView):
-    permission_classes = SOLO_ADMIN
+    permission_classes = CON_CAJA
 
     @extend_schema(
         tags=["turnos"],
@@ -116,7 +117,7 @@ class TurnosView(APIView):
 
 
 class CierreCajaView(APIView):
-    permission_classes = SOLO_ADMIN
+    permission_classes = CON_CAJA
 
     @extend_schema(
         tags=["turnos"],

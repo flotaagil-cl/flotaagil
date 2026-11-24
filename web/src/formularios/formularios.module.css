@@ -74,6 +74,13 @@
   margin-bottom: var(--espacio-1);
 }
 
+/* Grupos dentro de un grupo de opciones (HU-75): cada uno en su propia línea. */
+.opciones > .opciones,
+.opciones > .ayuda {
+  width: 100%;
+  margin: 0;
+}
+
 .avisoHora {
   display: flex;
   flex-direction: column;

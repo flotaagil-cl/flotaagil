@@ -4,6 +4,9 @@ Solo ADMINISTRADOR y DESPACHADOR: los conductores tienen su pantalla (HU-10) y l
 pasajero no aparecen. Crear y restablecer usan la contraseña temporal de DC-14 (se muestra una vez, vence a
 las 72 h y obliga a cambiarla). Desactivar revoca las sesiones al instante.
 
+HU-75 (DC-79): el administrador elige los módulos activos de cada despachador; el cambio cierra sus sesiones y
+queda en auditoría con los módulos anteriores. Usuarios no es un módulo: sigue siendo solo del administrador.
+
 Reglas: el administrador no se desactiva ni se quita el rol a sí mismo, y la empresa nunca queda sin al
 menos un administrador activo. Las operaciones que podrían dejarla sin administrador bloquean la fila de la
 EMPRESA, así que dos administradores que se desactivan mutuamente a la vez no la dejan sin ninguno.
@@ -59,6 +62,8 @@ def crear(empresa, datos: dict, *, por) -> tuple[Usuario, str, object]:
         nombre=datos["nombre"].strip(),
         rol=datos["rol"],
     )
+    if "modulos" in datos:  # HU-75: sin ellos, los del despachador de siempre.
+        usuario.modulos = datos["modulos"]
     usuario.set_unusable_password()
     try:
         with transaction.atomic():
@@ -87,7 +92,7 @@ def editar(usuario: Usuario, datos: dict, *, por) -> Usuario:
             )
     previos = {
         campo: getattr(usuario, campo)
-        for campo in ("nombre", "rol")
+        for campo in ("nombre", "rol", "modulos")
         if campo in datos and datos[campo] != getattr(usuario, campo)
     }
     if not previos:
@@ -95,8 +100,8 @@ def editar(usuario: Usuario, datos: dict, *, por) -> Usuario:
     for campo in previos:
         setattr(usuario, campo, datos[campo])
     usuario.save(update_fields=list(previos))
-    if "rol" in previos:
-        # El rol va en el token: con el cambio, las sesiones abiertas deben volver a entrar.
+    if "rol" in previos or "modulos" in previos:
+        # El rol va en el token y el menú sale de los módulos (HU-75): las sesiones abiertas vuelven a entrar.
         credenciales.revocar_sesiones(usuario)
     _auditar(por, usuario, "EDITAR", previos)
     return usuario

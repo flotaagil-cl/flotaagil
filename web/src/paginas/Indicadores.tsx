@@ -7,6 +7,7 @@ import { Icono } from '../diseno/Icono';
 import { useEntorno } from '../entornoContexto';
 import type { CrearSocket } from '../mapa/conexion';
 import { ESTADOS } from '../reservas/etiquetas';
+import { tieneModulo } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import { ConexionIndicadores, TEXTO_FASE, type FaseIndicadores } from './conexionIndicadores';
 import estilos from './Inicio.module.css';
@@ -38,7 +39,9 @@ interface Props {
 export function Indicadores({ crearSocket, alCambiarFase }: Props) {
   const api = useApi();
   const entorno = useEntorno();
-  const { sesion } = useSesion();
+  const { sesion, estado: estadoSesion } = useSesion();
+  // HU-75 (DC-79): sin el módulo Reservas, las cifras se ven pero no enlazan al listado.
+  const conReservas = estadoSesion.fase === 'autenticada' && tieneModulo(estadoSesion.usuario.modulos, 'RESERVAS');
   const cliente = useQueryClient();
   const [fase, setFase] = useState<FaseIndicadores>('conectando');
   const consulta = useQuery({
@@ -88,9 +91,15 @@ export function Indicadores({ crearSocket, alCambiarFase }: Props) {
             <p className={estilos.alertaSinConfirmar} role="alert">
               <Icono nombre="alerta" tamano={18} className={estilos.iconoAlerta} />
               <span>
-                <Link to="/reservas?sin_confirmar=true&desde=">
-                  {consulta.data.sin_confirmar === 1 ? '1 reserva sin confirmar' : `${consulta.data.sin_confirmar} reservas sin confirmar`}
-                </Link>
+                {conReservas ? (
+                  <Link to="/reservas?sin_confirmar=true&desde=">
+                    {consulta.data.sin_confirmar === 1 ? '1 reserva sin confirmar' : `${consulta.data.sin_confirmar} reservas sin confirmar`}
+                  </Link>
+                ) : consulta.data.sin_confirmar === 1 ? (
+                  '1 reserva sin confirmar'
+                ) : (
+                  `${consulta.data.sin_confirmar} reservas sin confirmar`
+                )}
                 : venció su plazo. Confírmalas por teléfono o cancélalas.
               </span>
             </p>
@@ -127,15 +136,22 @@ export function Indicadores({ crearSocket, alCambiarFase }: Props) {
             <ul className={estilos.porEstado} aria-label="Reservas del día por estado">
               {consulta.data.reservas.por_estado.map(({ estado, cantidad }) => (
                 <li key={estado}>
-                  <Link
-                    to={`/reservas?fecha=${consulta.data.fecha}&estado=${estado}`}
-                    className={estilos.chipEstado}
-                    data-activo={cantidad > 0}
-                    data-tono={cantidad > 0 ? TONO_ESTADO[estado] : 'cero'}
-                  >
-                    <span className={estilos.nombreEstado}>{ESTADOS[estado]}</span>
-                    <strong className={estilos.contadorEstado}>{cantidad}</strong>
-                  </Link>
+                  {conReservas ? (
+                    <Link
+                      to={`/reservas?fecha=${consulta.data.fecha}&estado=${estado}`}
+                      className={estilos.chipEstado}
+                      data-activo={cantidad > 0}
+                      data-tono={cantidad > 0 ? TONO_ESTADO[estado] : 'cero'}
+                    >
+                      <span className={estilos.nombreEstado}>{ESTADOS[estado]}</span>
+                      <strong className={estilos.contadorEstado}>{cantidad}</strong>
+                    </Link>
+                  ) : (
+                    <span className={estilos.chipEstado} data-activo={cantidad > 0} data-tono={cantidad > 0 ? TONO_ESTADO[estado] : 'cero'}>
+                      <span className={estilos.nombreEstado}>{ESTADOS[estado]}</span>
+                      <strong className={estilos.contadorEstado}>{cantidad}</strong>
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

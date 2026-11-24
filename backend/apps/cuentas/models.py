@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models, transaction
 from django.db.models import F, Q
@@ -159,6 +160,35 @@ class Rol(models.TextChoices):
     PASAJERO = "PASAJERO", "Pasajero"
 
 
+class Modulo(models.TextChoices):
+    """HU-75 (CC-24, DC-79): módulos del panel que el administrador activa a cada despachador.
+    Inicio siempre está; Usuarios es solo del administrador y no es un módulo activable."""
+
+    MAPA = "MAPA", "Mapa"
+    RESERVAS = "RESERVAS", "Reservas"
+    VUELOS = "VUELOS", "Vuelos de hoy"
+    CHAT = "CHAT", "Chat"
+    CONVENIOS = "CONVENIOS", "Convenios"
+    VEHICULOS = "VEHICULOS", "Vehículos"
+    CONDUCTORES = "CONDUCTORES", "Conductores"
+    CAJA = "CAJA", "Cierre de caja"
+    REPORTES = "REPORTES", "Reportes"
+    CONFIGURACION = "CONFIGURACION", "Configuración"
+
+
+# Los que el despachador tenía antes de HU-75: con ellos parte todo despachador nuevo o existente.
+MODULOS_DESPACHADOR = (Modulo.MAPA, Modulo.RESERVAS, Modulo.VUELOS, Modulo.CHAT, Modulo.CONVENIOS)
+
+
+def modulos_por_defecto() -> list[str]:
+    return [str(m) for m in MODULOS_DESPACHADOR]
+
+
+def modulos_efectivos(usuario) -> list[str]:
+    """HU-75: los módulos que el usuario puede usar, en el orden del menú."""
+    return [str(m) for m in Modulo if usuario.tiene_modulo(m)]
+
+
 class UsuarioManager(BaseUserManager):
     use_in_migrations = True
 
@@ -197,6 +227,13 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     debe_cambiar_password = models.BooleanField(default=False, db_default=False)
     password_temporal_vence = models.DateTimeField(null=True, blank=True)
     is_staff = models.BooleanField(default=False, db_default=False)
+    # DC-79 (HU-75): módulos activos del despachador. El administrador siempre tiene todos; en los demás
+    # roles no se usa.
+    modulos = ArrayField(
+        models.CharField(max_length=14, choices=Modulo.choices),
+        default=modulos_por_defecto,
+        blank=True,
+    )
 
     objects = UsuarioManager()
 
@@ -217,6 +254,12 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return f"{self.nombre} <{self.email}>"
+
+    def tiene_modulo(self, *modulos: str) -> bool:
+        """HU-75: el administrador, siempre; el despachador, si tiene alguno de esos módulos activo."""
+        if self.rol == Rol.ADMINISTRADOR:
+            return True
+        return self.rol == Rol.DESPACHADOR and any(m in self.modulos for m in modulos)
 
     @property
     def is_active(self):

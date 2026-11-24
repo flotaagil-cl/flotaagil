@@ -52,9 +52,9 @@ describe('menú y permisos', () => {
     expect(within(menu).getByRole('group', { name: 'Administración' })).toBeInTheDocument();
   });
 
-  it('el despachador no los ve y si entra por URL ve «sin permiso» sin consultar la API', async () => {
+  it('el despachador sin el módulo no los ve y si entra por URL vuelve a Inicio con un aviso, sin consultar la API', async () => {
     const { servidor } = montar('/vehiculos', 'despacho@andes.example');
-    expect(await screen.findByRole('heading', { name: /permiso/i })).toBeInTheDocument();
+    expect(await screen.findByText(/No tienes acceso a este módulo/)).toBeInTheDocument();
     const menu = screen.getByRole('navigation', { name: 'Menú principal' });
     expect(within(menu).queryByRole('link', { name: 'Vehículos' })).not.toBeInTheDocument();
     expect(servidor.urls.some((u) => u.includes('/api/vehiculos/'))).toBe(false);

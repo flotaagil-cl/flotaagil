@@ -1,7 +1,7 @@
 """HU-36: API de usuarios del panel (`/api/usuarios/`). Solo administrador; otra empresa responde 404
 (RN-13)."""
 
-from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiResponse, extend_schema, extend_schema_field, extend_schema_view
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,29 +10,54 @@ from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
 
 from . import usuarios_panel as servicios
 from .credenciales import estado_de_acceso
-from .models import Rol, Usuario
+from .models import Modulo, Rol, Usuario, modulos_efectivos
 
 CONFLICTO = OpenApiResponse(
     description="`propio_rol`, `propia_cuenta` o `ultimo_administrador` (la empresa debe tener uno activo)."
 )
 
 
+def _campo_modulos():
+    return serializers.ListField(
+        child=serializers.ChoiceField(choices=Modulo.choices),
+        required=False,
+        help_text="HU-75 (DC-79): módulos activos del despachador. Usuarios no es un módulo: es solo del "
+        "administrador.",
+    )
+
+
+def _validar_modulos(valor):
+    return sorted(set(valor), key=list(Modulo.values).index)
+
+
 class UsuarioPanelSerializer(serializers.ModelSerializer):
     acceso = serializers.SerializerMethodField(help_text="SIN_PASSWORD, TEMPORAL, TEMPORAL_VENCIDA o ACTIVA")
+    modulos = serializers.SerializerMethodField(
+        help_text="HU-75: los que puede usar (todos si es administrador)."
+    )
 
     class Meta:
         model = Usuario
-        fields = ["id", "nombre", "email", "rol", "activo", "acceso", "last_login"]
+        fields = ["id", "nombre", "email", "rol", "activo", "acceso", "last_login", "modulos"]
         read_only_fields = fields
 
     def get_acceso(self, usuario) -> str:
         return estado_de_acceso(usuario)
+
+    @staticmethod
+    @extend_schema_field(serializers.ListField(child=serializers.ChoiceField(choices=Modulo.choices)))
+    def get_modulos(usuario):
+        return modulos_efectivos(usuario)
 
 
 class UsuarioPanelCrearSerializer(serializers.Serializer):
     nombre = serializers.CharField(max_length=80)
     email = serializers.EmailField(max_length=120)
     rol = serializers.ChoiceField(choices=[Rol.ADMINISTRADOR, Rol.DESPACHADOR])
+    modulos = _campo_modulos()
+
+    def validate_modulos(self, valor):
+        return _validar_modulos(valor)
 
     def validate_nombre(self, valor):
         valor = valor.strip()
@@ -44,6 +69,10 @@ class UsuarioPanelCrearSerializer(serializers.Serializer):
 class UsuarioPanelEditarSerializer(serializers.Serializer):
     nombre = serializers.CharField(max_length=80, required=False)
     rol = serializers.ChoiceField(choices=[Rol.ADMINISTRADOR, Rol.DESPACHADOR], required=False)
+    modulos = _campo_modulos()
+
+    def validate_modulos(self, valor):
+        return _validar_modulos(valor)
 
     def validate_nombre(self, valor):
         valor = valor.strip()
@@ -109,11 +138,12 @@ class UsuarioPanelViewSet(
         return self._sin_cache(Response(datos, status=status.HTTP_201_CREATED))
 
     @extend_schema(
-        summary="Editar nombre o rol",
+        summary="Editar nombre, rol o módulos",
         tags=["usuarios"],
         request=UsuarioPanelEditarSerializer,
         responses={200: UsuarioPanelSerializer, 409: CONFLICTO},
-        description="Cambiar el rol cierra las sesiones del usuario. Queda en auditoría.",
+        description="Cambiar el rol o los módulos del despachador (HU-75) cierra las sesiones del usuario. "
+        "Queda en auditoría.",
     )
     def partial_update(self, request, pk=None):
         usuario = self.get_object()

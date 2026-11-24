@@ -6,8 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from apps.auditoria.models import Auditoria, Entidad
-from apps.comun.permisos import AisladoPorEmpresaMixin, con_roles
-from apps.cuentas.models import Rol
+from apps.comun.permisos import AisladoPorEmpresaMixin, con_modulo, con_roles
+from apps.cuentas.models import Modulo, Rol
 from apps.flota.serializers import PasswordTemporalSerializer
 
 from . import servicios
@@ -66,7 +66,7 @@ class ConvenioViewSet(
 
     def get_permissions(self):
         if self.action in self.ACCIONES_DEL_DESPACHO:
-            return [con_roles(Rol.ADMINISTRADOR, Rol.DESPACHADOR)()]
+            return [con_modulo(Modulo.CONVENIOS)()]  # HU-75
         return super().get_permissions()
 
     filterset_class = ConvenioFiltro

@@ -1461,6 +1461,31 @@
       "responsable": "Renato",
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)"
+    },
+    {
+      "id": "HU-75",
+      "titulo": "Módulos activos por despachador",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como administrador, quiero decidir qué módulos del panel tiene cada despachador, para darle solo lo que necesita o sumarle módulos de administrador.",
+      "criterios": "En Usuarios, el despachador tiene casillas de módulos en dos grupos (del despachador y de administrador); por defecto, los del despachador. Inicio siempre está y Usuarios no es casilla: solo administrador, también en el servidor. Menú, rutas e Inicio siguen los módulos; por URL a un módulo apagado vuelve a Inicio con un aviso. La API responde 403 y el WebSocket se cierra en un módulo apagado. Cambiar los módulos queda en auditoría y cierra las sesiones del despachador.",
+      "sp": 8,
+      "reglas": [
+        "RN-12",
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-65",
+        "CP-66"
+      ],
+      "depende_de": [
+        "HU-36"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)"
     }
   ],
   "tareas": [
