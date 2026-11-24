@@ -13,8 +13,9 @@ export function BotonesCentral({ central }: { central: NumerosCentral | null | u
   if (!hayNumeros(central)) return null;
   const { telefono, whatsapp } = conWhatsapp(central);
   return (
-    // `tema-portal`: también se muestra en las pantallas de error, fuera del marco del portal.
-    <div className={`tema-portal ${e.formulario}`} role="group" aria-label="Contactar a la central">
+    // `tema-portal`: también se muestra en las pantallas de error, fuera del marco del portal. Sin el alto ni el
+    // fondo de página que trae el tema.
+    <div className={`tema-portal ${e.formulario}`} style={{ minHeight: 0, background: 'none' }} role="group" aria-label="Contactar a la central">
       {telefono && (
         <a href={`tel:${telefono}`} className={claseBoton('secundario', true)}>
           Llamar a la central

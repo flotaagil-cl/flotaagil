@@ -273,7 +273,7 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
     <>
       <h1 className={e.tituloPagina}>¿A dónde llevamos a tu equipo?</h1>
       <p className={e.subtituloPagina}>
-        Pide traslados a nombre de {convenio.cliente_nombre}. Quedan solicitados de inmediato y la central asigna el conductor.
+        Pide traslados a nombre de {convenio.cliente_nombre}: quedan solicitados de inmediato y la central asigna el conductor.
       </p>
       <Pestanas etiqueta="Tipo de viaje" pestanas={TIPOS} activa={tipo} onCambiar={(id) => setTipo(id as TipoPedido)}>
         <FormularioPedido

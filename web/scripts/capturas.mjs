@@ -186,6 +186,39 @@ const PANTALLAS = {
       },
     },
   ],
+  // HU-46: la cuenta del convenio (transportes-andes, con el módulo) con el marco del portal.
+  'HU-46': [
+    { nombre: 'mi-convenio-pedir', ruta: '/mi-convenio', sesion: 'convenio' },
+    {
+      nombre: 'mi-convenio-quien-viaja',
+      ruta: '/mi-convenio',
+      sesion: 'convenio',
+      accion: async (pagina) => {
+        await pagina.getByRole('tab', { name: 'En la ciudad' }).click();
+        await pagina.getByLabel('Origen').fill('Av. Providencia 1208, Providencia');
+        await pagina.getByLabel('Destino').fill('Plaza de Armas, Santiago');
+        await pagina.getByRole('button', { name: 'Siguiente: quién viaja' }).click();
+        await pagina.getByRole('heading', { name: 'Quién viaja' }).waitFor();
+        await pagina.getByLabel('Nombre del pasajero').fill('Pedro Pasajero');
+        await pagina.getByLabel('Teléfono del pasajero').fill('+56900008003');
+      },
+    },
+    { nombre: 'mi-convenio-viajes', ruta: '/mi-convenio/viajes', sesion: 'convenio' },
+  ],
+  // HU-49: el servidor falla después de que el portal guardó los números de la central (respuesta simulada).
+  'HU-49': [
+    {
+      nombre: 'portal-error-central',
+      ruta: PORTAL,
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.route(`**/api/portal/${EMPRESA}/`, (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"detail":"Error."}' }));
+        await pagina.reload();
+        await pagina.getByRole('heading', { name: 'El servidor tuvo un error' }).waitFor();
+      },
+    },
+    { nombre: 'portal-no-encontrada', ruta: '/solicitar/no-existe', sesion: null },
+  ],
   // HU-73 (CC-23): reserva de convenio con correo + clave en el portal base (taxi-pacifico, sin el módulo).
   // CAPTURAS_CLAVE_CONVENIO: la clave sintética de un convenio aprobado (no se imprime ni se captura escrita);
   // CAPTURAS_VIAJE_GRUPO: un viaje de una solicitud en vehículos separados.
