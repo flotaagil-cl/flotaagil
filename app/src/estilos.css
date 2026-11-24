@@ -4,6 +4,18 @@
  * Pensada para una mano: botones de 56 px de alto y zonas táctiles de 44 px o más.
  */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+button,
+input,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   margin: 0;
   overscroll-behavior-y: contain;
@@ -413,4 +425,277 @@ button.principal.rechazar {
 .estado-vuelo.neutro {
   background: var(--insignia-neutra-fondo, var(--suave));
   color: var(--insignia-neutra-texto, var(--texto-suave));
+}
+
+/* Pantalla de ingreso (Login): hero en degradé + hoja inferior redondeada estilo app Android. */
+.login-pantalla {
+  max-width: none;
+  min-height: 100dvh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--superficie);
+}
+
+.login-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: calc(max(1.5rem, env(safe-area-inset-top)) + 1.5rem) 1.5rem 3.25rem;
+  background: var(--grad-hero);
+  color: var(--sobre-oscuro);
+}
+
+.login-circulo-grande,
+.login-circulo-chico {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--sobre-oscuro);
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.login-circulo-grande {
+  top: -80px;
+  right: -70px;
+  width: 240px;
+  height: 240px;
+}
+
+.login-circulo-chico {
+  bottom: -35px;
+  left: -45px;
+  width: 140px;
+  height: 140px;
+}
+
+.login-logo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 0.9rem;
+  border-radius: 20px;
+  background: var(--velo);
+  border: 1.5px solid color-mix(in srgb, var(--sobre-oscuro) 28%, transparent);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--color-primario-900) 28%, transparent);
+}
+
+.login-hero h1 {
+  position: relative;
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+}
+
+.login-subtitulo {
+  position: relative;
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+.login-panel {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: -1.5rem;
+  padding: 1.75rem 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+  border-radius: var(--radio-hero) var(--radio-hero) 0 0;
+  background: var(--superficie);
+  box-shadow: 0 -4px 20px var(--sombra);
+}
+
+.login-contenido {
+  width: 100%;
+  max-width: 26rem;
+  margin: 0 auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-titulo-form {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--texto);
+}
+
+.login-bajada {
+  margin: 0.25rem 0 1.25rem;
+  font-size: 0.9rem;
+  color: var(--texto-suave);
+}
+
+.login-alerta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.login-alerta > svg {
+  flex: none;
+  margin-top: 0.1rem;
+}
+
+.login-reintentar {
+  min-height: auto;
+  padding: 0.15rem 0.55rem;
+  margin-left: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.login-formulario {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-campo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.login-campo label {
+  margin-top: 0;
+  font-size: var(--texto-etiqueta);
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.campo-entrada {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 0.35rem 0 0.85rem;
+  border: 1.5px solid var(--borde-campo);
+  border-radius: var(--radio-boton);
+  background: var(--superficie);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.campo-entrada:focus-within {
+  border-color: var(--color-primario-700);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-tiffany) 40%, transparent);
+}
+
+.campo-entrada input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 0.6rem;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 16px;
+  color: var(--texto);
+}
+
+.campo-entrada input:focus-visible {
+  outline: none;
+}
+
+.campo-entrada input::placeholder {
+  color: var(--texto-suave);
+  opacity: 0.75;
+}
+
+.campo-entrada-icono {
+  flex: none;
+  color: var(--texto-suave);
+  transition: color 150ms ease;
+}
+
+.campo-entrada:focus-within .campo-entrada-icono {
+  color: var(--color-primario-700);
+}
+
+.campo-entrada-accion {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--toque);
+  height: var(--toque);
+  min-height: var(--toque);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radio-campo);
+  background: transparent;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.campo-entrada-accion:active {
+  background: var(--suave);
+}
+
+.login-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--color-primario-900) 24%, transparent);
+  transition: transform 120ms ease, opacity 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+}
+
+.login-boton:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.login-boton:disabled {
+  box-shadow: none;
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.login-giro {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid color-mix(in srgb, var(--sobre-oscuro) 35%, transparent);
+  border-top-color: var(--sobre-oscuro);
+  border-radius: 50%;
+  animation: girar 700ms linear infinite;
+}
+
+.login-ayuda {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin: 1.25rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radio-boton);
+  background: var(--color-tiffany-50);
+  color: var(--texto);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.login-ayuda > svg {
+  flex: none;
+  margin-top: 0.1rem;
+  color: var(--color-primario-700);
+}
+
+.login-pie {
+  margin: auto 0 0;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--texto-suave);
 }
