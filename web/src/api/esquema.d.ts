@@ -1118,6 +1118,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/convenios/{id}/regenerar-clave/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generar o regenerar la clave del convenio
+         * @description CC-23 (DC-74): solo el administrador. Invalida la clave anterior y sus pases, y envía la nueva al correo de contacto. La clave nunca se muestra en el panel. Se audita (RN-12).
+         */
+        post: operations["convenios_regenerar_clave_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/convenios/{id}/restablecer-password/": {
         parameters: {
             query?: never;
@@ -1132,6 +1152,26 @@ export interface paths {
          * @description DC-14: temporal que se muestra una vez y obliga a cambiarla. Se audita (RN-12).
          */
         post: operations["convenios_restablecer_password_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/convenios/{id}/revocar-clave/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revocar la clave del convenio
+         * @description CC-23 (DC-74): solo el administrador. Nadie pide con el convenio en el portal hasta generar otra. Se audita (RN-12).
+         */
+        post: operations["convenios_revocar_clave_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1438,6 +1478,26 @@ export interface paths {
          * @description HU-53 (CC-22): crea el convenio EN_REVISION sin cuenta; lo revisan el administrador o el despachador y el resultado llega al correo de contacto.
          */
         post: operations["portal_convenio_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/portal/{slug}/convenio/pase/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pase de convenio con correo y clave (empresas sin el módulo de cuentas)
+         * @description El correo debe ser el contacto del convenio o uno autorizado. El pase vence según la configuración de la empresa y se revalida en cada reserva.
+         */
+        post: operations["portal_convenio_pase_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2434,6 +2494,14 @@ export interface components {
             reserva_publica_max_correo_hora: number;
             /** @description Por correo de convenio y hora (1 a 500). */
             reserva_publica_max_convenio_hora: number;
+            /** @description Claves erradas antes del bloqueo (3 a 20). */
+            convenio_pase_max_fallos: number;
+            /** @description Minutos de bloqueo de la clave (5 a 1440). */
+            convenio_pase_bloqueo_min: number;
+            /** @description Minutos de vigencia del pase (15 a 720). */
+            convenio_pase_vigencia_min: number;
+            /** @description Personas por solicitud de convenio (2 a 30). */
+            convenio_max_personas: number;
         };
         ConfiguracionPublica: {
             /**
@@ -2487,6 +2555,11 @@ export interface components {
             readonly viajes_estimados_mes: number | null;
             /** @description DC-54: correos exactos o «@dominio.cl» */
             readonly correos_autorizados: string[];
+            /** @description Sin cuenta, con correo de contacto y empresa sin módulo de cuentas */
+            readonly admite_clave: boolean;
+            readonly clave_vigente: boolean;
+            /** Format: date-time */
+            readonly clave_generada_en: string | null;
         };
         ConvenioResumen: {
             id: number;
@@ -3105,6 +3178,19 @@ export interface components {
             /** @description Null si el pasajero eliminó su cuenta (DC-50). */
             telefono: string | null;
         };
+        PaseConvenioRequest: {
+            /** Format: email */
+            correo: string;
+            clave: string;
+        };
+        PaseConvenioRespuesta: {
+            pase: string;
+            cliente_nombre: string;
+            /** @description El correo del pase, enmascarado */
+            correo: string;
+            /** Format: date-time */
+            vence_en: string;
+        };
         /** @description Historial para el pasajero: solo el estado y la hora (sin quién lo cambió). */
         Paso: {
             estado: string;
@@ -3143,6 +3229,14 @@ export interface components {
             reserva_publica_max_correo_hora?: number;
             /** @description Por correo de convenio y hora (1 a 500). */
             reserva_publica_max_convenio_hora?: number;
+            /** @description Claves erradas antes del bloqueo (3 a 20). */
+            convenio_pase_max_fallos?: number;
+            /** @description Minutos de bloqueo de la clave (5 a 1440). */
+            convenio_pase_bloqueo_min?: number;
+            /** @description Minutos de vigencia del pase (15 a 720). */
+            convenio_pase_vigencia_min?: number;
+            /** @description Personas por solicitud de convenio (2 a 30). */
+            convenio_max_personas?: number;
         };
         PatchedConvenioEditarRequest: {
             cliente_nombre?: string;
@@ -3222,6 +3316,9 @@ export interface components {
             readonly consentimiento_gps_en: string | null;
             readonly vehiculos: components["schemas"]["VehiculoAsociado"][];
             readonly fila: components["schemas"]["LugarEnFila"] | null;
+            readonly asignacion_pendiente: {
+                [key: string]: unknown;
+            } | null;
         };
         PersonaChat: {
             id: number;
@@ -5832,6 +5929,35 @@ export interface operations {
             };
         };
     };
+    convenios_regenerar_clave_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
+                };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     convenios_restablecer_password_create: {
         parameters: {
             query?: never;
@@ -5850,6 +5976,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PasswordTemporal"];
+                };
+            };
+            /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    convenios_revocar_clave_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Un valor de entero único que identifique este convenio. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvenioDetalle"];
                 };
             };
             /** @description `estado_convenio`: el convenio no admite la acción en su estado. */
@@ -6388,6 +6543,54 @@ export interface operations {
                 content?: never;
             };
             /** @description `limite_ip` */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    portal_convenio_pase_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaseConvenioRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaseConvenioRequest"];
+                "multipart/form-data": components["schemas"]["PaseConvenioRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaseConvenioRespuesta"];
+                };
+            };
+            /** @description `clave_invalida`: el mismo error para cualquier fallo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Empresa inexistente o con el módulo de cuentas */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description `limite_ip` o `clave_bloqueada` */
             429: {
                 headers: {
                     [name: string]: unknown;

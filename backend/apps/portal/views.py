@@ -1,6 +1,8 @@
 """Portal público del pasajero (HU-19). Sin autenticación: se protege con throttling por IP,
 límite por teléfono y un campo trampa."""
 
+from datetime import timedelta
+
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -19,12 +21,15 @@ from apps.cuentas.serializers import ErrorSerializer
 from apps.integraciones.correo import enmascarar as enmascarar_correo
 from apps.reservas import cuentas_pasajero
 
+from . import pase as pases
 from . import publico, servicios
 from .serializers import (
     AutorizacionSerializer,
     CrearCuentaSerializer,
     EmpresaPublicaSerializer,
     EncuestaSerializer,
+    PaseConvenioRespuestaSerializer,
+    PaseConvenioSerializer,
     ReservaConfirmadaSerializer,
     ReservaPublicaRespuestaSerializer,
     ReservaPublicaSerializer,
@@ -305,6 +310,49 @@ class ReservaPublicaView(_VistaPortal):
             ).data,
             status=status.HTTP_201_CREATED,
         )
+
+
+class PaseConvenioView(_VistaPortal):
+    """CC-23 (HU-72, DC-75): correo + clave del convenio → pase firmado para el formulario público."""
+
+    throttle_classes = [PortalPorMinuto]
+
+    @extend_schema(
+        tags=["portal"],
+        summary="Pase de convenio con correo y clave (empresas sin el módulo de cuentas)",
+        request=PaseConvenioSerializer,
+        responses={
+            200: PaseConvenioRespuestaSerializer,
+            400: OpenApiResponse(description="`clave_invalida`: el mismo error para cualquier fallo"),
+            404: OpenApiResponse(description="Empresa inexistente o con el módulo de cuentas"),
+            429: OpenApiResponse(description="`limite_ip` o `clave_bloqueada`"),
+        },
+        description="El correo debe ser el contacto del convenio o uno autorizado. El pase vence según la "
+        "configuración de la empresa y se revalida en cada reserva.",
+    )
+    def post(self, request, slug):
+        empresa = _empresa_sin_modulo(slug)
+        entrada = PaseConvenioSerializer(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        pase, convenio, correo = pases.emitir(
+            empresa,
+            entrada.validated_data["correo"],
+            entrada.validated_data["clave"],
+            ip=PortalPorMinuto().get_ident(request),
+        )
+        vigencia = empresa.configuracion.convenio_pase_vigencia_min
+        respuesta = Response(
+            PaseConvenioRespuestaSerializer(
+                {
+                    "pase": pase,
+                    "cliente_nombre": convenio.cliente_nombre,
+                    "correo": enmascarar_correo(correo),
+                    "vence_en": timezone.now() + timedelta(minutes=vigencia),
+                }
+            ).data
+        )
+        respuesta["Cache-Control"] = "no-store"
+        return respuesta
 
 
 class SolicitudConvenioView(_VistaPortal):

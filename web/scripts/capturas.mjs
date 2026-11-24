@@ -110,6 +110,26 @@ const PANTALLAS = {
       destino: /^\/reservas\/\d+$/,
     },
   ],
+  // HU-72 (CC-23): clave del convenio en la ficha (solo el administrador; la clave nunca se muestra).
+  // CAPTURAS_CONVENIO_CLAVE: un convenio aprobado sin cuenta de taxi-pacifico.
+  'HU-72': [
+    {
+      nombre: 'panel-convenio-clave',
+      ruta: () => `/convenios/${process.env.CAPTURAS_CONVENIO_CLAVE ?? '0'}`,
+      sesion: 'admin@taxi-pacifico.example',
+      destino: /^\/convenios\/\d+$/,
+    },
+    {
+      nombre: 'panel-regenerar-clave',
+      ruta: () => `/convenios/${process.env.CAPTURAS_CONVENIO_CLAVE ?? '0'}`,
+      sesion: 'admin@taxi-pacifico.example',
+      destino: /^\/convenios\/\d+$/,
+      accion: async (pagina) => {
+        await pagina.getByRole('button', { name: 'Regenerar clave' }).click();
+        await pagina.getByRole('alertdialog').waitFor();
+      },
+    },
+  ],
   // HU-53 (CC-22): solicitud pública de convenio y su revisión por el despachador. CAPTURAS_CONVENIO: una en revisión.
   'HU-53': [
     { nombre: 'portal-solicitud-convenio', ruta: '/solicitar/taxi-pacifico/convenio', sesion: null },
@@ -674,7 +694,11 @@ async function main() {
   const desconocidas = hus.filter((hu) => !PANTALLAS[hu]);
   if (desconocidas.length) throw new Error(`Sin pantallas definidas: ${desconocidas.join(', ')}`);
 
-  const navegador = await chromium.launch({ channel: process.env.CAPTURAS_CANAL ?? 'msedge', headless: true });
+  // CAPTURAS_EJECUTABLE: ruta a un Chromium ya instalado (por ejemplo en CI o un contenedor), en vez del canal.
+  const ejecutable = process.env.CAPTURAS_EJECUTABLE;
+  const navegador = await chromium.launch(
+    ejecutable ? { executablePath: ejecutable, headless: true } : { channel: process.env.CAPTURAS_CANAL ?? 'msedge', headless: true },
+  );
   let fallas = 0;
   try {
     for (const { sufijo, opciones } of ANCHOS) {

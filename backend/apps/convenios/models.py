@@ -57,6 +57,12 @@ class Convenio(models.Model):
     contacto_correo = models.EmailField(max_length=254, null=True, blank=True)
     viajes_estimados_mes = models.PositiveSmallIntegerField(null=True, blank=True)
     correos_autorizados = models.JSONField(default=list, blank=True)
+    # CC-23 (DC-74): clave de convenio para pedir en el portal base (sin `modulo_cuentas`). La genera el
+    # sistema al aprobar y solo se guarda su hash. `clave_version` sube al regenerarla, revocarla o desactivar
+    # el convenio, e invalida los pases emitidos con la anterior.
+    clave_hash = models.CharField(max_length=128, null=True, blank=True)
+    clave_version = models.PositiveSmallIntegerField(default=0, db_default=0)
+    clave_generada_en = models.DateTimeField(null=True, blank=True)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:
@@ -82,6 +88,11 @@ class Convenio(models.Model):
         correo = (correo or "").strip().lower()
         dominio = "@" + correo.rpartition("@")[2]
         return correo in self.correos_autorizados or dominio in self.correos_autorizados
+
+    def habilita(self, correo: str) -> bool:
+        """CC-23: el correo puede usar la clave del convenio: el contacto o uno autorizado (D5)."""
+        correo = (correo or "").strip().lower()
+        return bool(correo) and (correo == (self.contacto_correo or "").lower() or self.autoriza(correo))
 
     @property
     def activo(self) -> bool:

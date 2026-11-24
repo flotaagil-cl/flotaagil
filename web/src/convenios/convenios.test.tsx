@@ -144,7 +144,7 @@ describe('ficha', () => {
   it('aprobado: desactivar explica el corte y se puede activar de nuevo', async () => {
     await abrir();
     await userEvent.click(screen.getByRole('button', { name: 'Desactivar convenio' }));
-    expect(screen.getByText(/pierde el acceso al instante/)).toBeInTheDocument();
+    expect(screen.getByText(/pierden el acceso al instante/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Desactivar' }));
     expect(await screen.findByRole('button', { name: 'Activar convenio' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Activar convenio' }));
@@ -232,7 +232,7 @@ describe('auditoría del convenio (HU-12, CP-24)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Restablecer contraseña' }));
     await userEvent.click(screen.getByRole('button', { name: 'Restablecer' }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Listo' }));
-    expect(await screen.findByText('Cambio de contraseña')).toBeInTheDocument();
+    expect(await screen.findByText('Cambio de contraseña o clave')).toBeInTheDocument();
   });
 
   it('pagina', async () => {
@@ -308,5 +308,31 @@ describe('compartir enlace del portal (DC-73)', () => {
     montar('/convenios');
     await userEvent.click(await screen.findByRole('button', { name: 'Copiar enlace del portal' }));
     expect(await screen.findByRole('button', { name: 'No se pudo copiar' })).toBeInTheDocument();
+  });
+});
+
+describe('CC-23 · clave del convenio (DC-74)', () => {
+  const SIN_CUENTA = { id: 7, tiene_cuenta: false, encargado_email: null, admite_clave: true, clave_vigente: false, clave_generada_en: null };
+
+  it('el administrador genera y revoca la clave; el panel nunca la muestra', async () => {
+    const { convenios } = montar('/convenios/7');
+    convenios.convenios = [convenioDePrueba(SIN_CUENTA)];
+    expect(await screen.findByText(/Sin clave vigente/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Generar clave' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Generar clave' }));
+    expect(await screen.findByText(/Clave generada. Se envió al correo de contacto/)).toBeInTheDocument();
+    expect(screen.getByText(/Clave vigente, generada el/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Revocar clave' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Revocar' }));
+    expect(await screen.findByText('Clave revocada.')).toBeInTheDocument();
+    expect(screen.getByText(/Sin clave vigente/)).toBeInTheDocument();
+  });
+
+  it('el despachador no ve las acciones de la clave', async () => {
+    const { convenios } = montar('/convenios/7', 'despacho@andes.example');
+    convenios.convenios = [convenioDePrueba({ ...SIN_CUENTA, clave_vigente: true, clave_generada_en: '2026-11-20T12:00:00Z' })];
+    await screen.findByRole('heading', { name: /Minera Sintética/ });
+    expect(screen.queryByRole('button', { name: /Regenerar clave|Generar clave/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Revocar clave' })).not.toBeInTheDocument();
   });
 });

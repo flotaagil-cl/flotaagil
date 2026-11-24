@@ -27,6 +27,9 @@ export function convenioDePrueba(cambios: Partial<ConvenioDetalle> = {}): Conven
     contacto_correo: null,
     viajes_estimados_mes: null,
     correos_autorizados: [],
+    admite_clave: false,
+    clave_vigente: false,
+    clave_generada_en: null,
     ...cambios,
   };
 }
@@ -71,7 +74,7 @@ export class ServidorConveniosFalso {
       this.convenios.push(nuevo);
       return { estado: 201, cuerpo: nuevo };
     }
-    const detalle = /^\/api\/convenios\/(\d+)\/(aprobar\/|rechazar\/|desactivar\/|activar\/|restablecer-password\/|auditoria\/)?$/.exec(url.pathname);
+    const detalle = /^\/api\/convenios\/(\d+)\/(aprobar\/|rechazar\/|desactivar\/|activar\/|restablecer-password\/|regenerar-clave\/|revocar-clave\/|auditoria\/)?$/.exec(url.pathname);
     const convenio = detalle && this.convenios.find((c) => c.id === Number(detalle[1]));
     if (!convenio) return { estado: 404, cuerpo: { detail: 'No encontrado.' } };
     if (detalle[2] === 'auditoria/') {
@@ -97,6 +100,9 @@ export class ServidorConveniosFalso {
       'rechazar/': { estado: 'RECHAZADO', activo: false, motivo_rechazo: String(cuerpo?.motivo ?? '') },
       'desactivar/': { estado: 'INACTIVO', activo: false },
       'activar/': { estado: 'APROBADO', activo: true },
+      // CC-23: la clave nunca viaja al panel; solo si hay una vigente y cuándo se generó.
+      'regenerar-clave/': { clave_vigente: true, clave_generada_en: '2026-11-24T12:00:00Z' },
+      'revocar-clave/': { clave_vigente: false },
     };
     if (detalle[2]) {
       Object.assign(convenio, cambios[detalle[2]]);

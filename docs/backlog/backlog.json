@@ -1382,6 +1382,32 @@
       "estado_cambio": "Nueva (autorizada por Renato, 2026-11-18)",
       "epica": "Gestión y despacho",
       "label_epica": "epica:gestion-despacho"
+    },
+    {
+      "id": "HU-72",
+      "titulo": "Clave del convenio y acceso con correo + clave",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como empresa con convenio y sin el módulo de cuentas, quiero una clave del convenio para pedir en el formulario público con mi correo autorizado; y como administrador, generarla, regenerarla o revocarla.",
+      "criterios": "Al aprobar un convenio sin cuenta se genera la clave y va solo al correo de contacto; solo se guarda el hash y nunca se muestra. Solo el administrador la regenera o revoca; desactivar la corta. Correo autorizado + clave entregan un pase firmado con vencimiento; mismo error ante cualquier fallo, bloqueo tras N fallos y límite por IP; el pase muere al regenerar, revocar, desactivar o quitar el correo. Auditoría (RN-12).",
+      "sp": 8,
+      "reglas": [
+        "RN-07",
+        "RN-12",
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-58",
+        "CP-59"
+      ],
+      "depende_de": [
+        "HU-53"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-23, autorizada por Renato, 2026-11-24)"
     }
   ],
   "tareas": [

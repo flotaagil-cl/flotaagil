@@ -57,7 +57,7 @@ class ConvenioViewSet(
 
     queryset = (
         Convenio.objects.annotate(reservas=Count("viajes"))
-        .select_related("usuario", "revisado_por")
+        .select_related("usuario", "revisado_por", "empresa")
         .order_by("cliente_nombre", "id")
     )
     permission_classes = [con_roles(Rol.ADMINISTRADOR)]
@@ -159,6 +159,30 @@ class ConvenioViewSet(
         )
         respuesta["Cache-Control"] = "no-store"
         return respuesta
+
+    @extend_schema(
+        summary="Generar o regenerar la clave del convenio",
+        tags=["convenios"],
+        request=None,
+        responses={200: ConvenioDetalleSerializer, 409: CONFLICTO},
+        description="CC-23 (DC-74): solo el administrador. Invalida la clave anterior y sus pases, y envía "
+        "la nueva al correo de contacto. La clave nunca se muestra en el panel. Se audita (RN-12).",
+    )
+    @action(detail=True, methods=["post"], url_path="regenerar-clave")
+    def regenerar_clave(self, request, pk=None):
+        return self._accion(servicios.regenerar_clave)
+
+    @extend_schema(
+        summary="Revocar la clave del convenio",
+        tags=["convenios"],
+        request=None,
+        responses={200: ConvenioDetalleSerializer, 409: CONFLICTO},
+        description="CC-23 (DC-74): solo el administrador. Nadie pide con el convenio en el portal hasta "
+        "generar otra. Se audita (RN-12).",
+    )
+    @action(detail=True, methods=["post"], url_path="revocar-clave")
+    def revocar_clave(self, request, pk=None):
+        return self._accion(servicios.revocar_clave)
 
     @extend_schema(
         summary="Auditoría del convenio",

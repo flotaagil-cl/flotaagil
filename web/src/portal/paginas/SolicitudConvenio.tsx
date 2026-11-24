@@ -132,21 +132,24 @@ export function SolicitudConvenio() {
       <h1 id="titulo-convenio" className={e.tituloPagina}>
         Solicita un convenio
       </h1>
-      <p className={e.subtituloPagina}>Para empresas que viajan seguido: las reservas de tus correos autorizados quedan en el convenio.</p>
+      <p className={e.subtituloPagina}>
+        Para empresas que viajan seguido. Al aprobarse, el correo de contacto recibe la clave del convenio: con ella piden traslados el contacto y
+        los correos autorizados.
+      </p>
       <form className={e.formulario} onSubmit={alEnviar} noValidate aria-label="Solicitud de convenio">
         {errores.general && <Aviso tipo="error">{errores.general}</Aviso>}
         {campo('cliente_nombre', { autoComplete: 'organization' })}
         {campo('cliente_rut', { placeholder: '12345678-9' })}
         {campo('direccion', { autoComplete: 'street-address' })}
         {campo('contacto_nombre', { autoComplete: 'name' })}
-        {campo('contacto_correo', { type: 'email', autoComplete: 'email', ayuda: 'Aquí llega el resultado y las autorizaciones de viajes.' })}
+        {campo('contacto_correo', { type: 'email', autoComplete: 'email', ayuda: 'Aquí llegan el resultado y, si se aprueba, la clave del convenio.' })}
         {campo('contacto_telefono', { type: 'tel', autoComplete: 'tel', placeholder: '+56912345678' })}
         {campo('viajes_estimados_mes', { type: 'number', inputMode: 'numeric', min: 1 })}
         <Campo
           etiqueta="Correos autorizados para pedir viajes"
           value={datos.correos}
           error={errores.correos_autorizados}
-          ayuda="Separados por coma. «@tuempresa.cl» autoriza todo el dominio."
+          ayuda="Quienes, además del contacto, pueden pedir con la clave. Separados por coma; «@tuempresa.cl» autoriza todo el dominio."
           onChange={(ev) => setDatos((d) => ({ ...d, correos: ev.target.value }))}
         />
         {/* Campo trampa: oculto para las personas; un bot lo llena. */}
