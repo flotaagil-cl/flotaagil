@@ -22,6 +22,11 @@ from .test_portal import en_horas, solicitud
 URL = "mi-cuenta-solicitudes"
 
 
+def con(n: int) -> dict:
+    """CC-26 (DC-82): los pasajeros los calcula el servidor; con cuenta, quien pide más n acompañantes."""
+    return {"acompanantes": [{"nombre": f"Acompañante {i}"} for i in range(n)], "declara_informados": True}
+
+
 def pedir(cliente, **cambios):
     return cliente.post(reverse(URL), solicitud(**cambios), format="json")
 
@@ -46,7 +51,7 @@ class TestEnLaCiudad:
         assert "recogida_en" in respuesta.data
 
     def test_guarda_pasajeros_y_maletas(self, con_cuenta):
-        assert pedir(con_cuenta, pasajeros=3, maletas=4).status_code == 201
+        assert pedir(con_cuenta, **con(2), maletas=4).status_code == 201
         viaje = Viaje.objects.get()
         assert (viaje.pasajeros, viaje.maletas) == (3, 4)
 
@@ -214,16 +219,16 @@ class TestCapacidad:
     def test_no_supera_la_mayor_capacidad_de_la_flota(self, con_cuenta, empresa):
         VehiculoFactory(empresa=empresa, capacidad=4)
         VehiculoFactory(empresa=empresa, capacidad=5, activo=False)
-        respuesta = pedir(con_cuenta, pasajeros=6)
+        respuesta = pedir(con_cuenta, **con(5))
         assert respuesta.status_code == 400
-        assert "hasta 5 pasajeros" in str(respuesta.data["pasajeros"][0])
-        assert pedir(con_cuenta, pasajeros=5).status_code == 201
+        assert "hasta 5 pasajeros" in str(respuesta.data["acompanantes"][0])
+        assert pedir(con_cuenta, **con(4)).status_code == 201
 
     def test_sin_vehiculos_el_limite_es_4(self, con_cuenta):
-        respuesta = pedir(con_cuenta, pasajeros=5)
+        respuesta = pedir(con_cuenta, **con(4))
         assert respuesta.status_code == 400
-        assert "hasta 4 pasajeros" in str(respuesta.data["pasajeros"][0])
-        assert pedir(con_cuenta, pasajeros=4).status_code == 201
+        assert "hasta 4 pasajeros" in str(respuesta.data["acompanantes"][0])
+        assert pedir(con_cuenta, **con(3)).status_code == 201
 
     def test_al_asignar_exige_la_capacidad_del_vehiculo(self, cliente, despachador, empresa):
         cliente.force_authenticate(despachador)
