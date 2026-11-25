@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 import { resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
@@ -7,6 +6,7 @@ import { Cargando } from '../componentes/Cargando';
 import { HiloSimple } from '../chat/HiloSimple';
 import e from '../diseno/diseno.module.css';
 import { Tarjeta } from '../diseno/Tarjeta';
+import { useTitulo } from '../diseno/titulo';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import { useCanalPasajero } from './canal';
@@ -22,9 +22,7 @@ export function Soporte() {
   const soporte = useQuery({ queryKey: ['chat', 'soporte'], queryFn: () => resultado(api.POST('/api/chat/soporte/')), retry: false });
   useCanalPasajero();
 
-  useEffect(() => {
-    document.title = 'Soporte';
-  }, []);
+  useTitulo('Soporte', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
 
   if (estado.fase !== 'autenticada') return null;
   if (estado.usuario.rol !== 'PASAJERO') return <Navigate to={inicioDeRol(estado.usuario.rol)} replace />;

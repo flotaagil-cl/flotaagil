@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router';
 import { resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
@@ -9,6 +9,7 @@ import e from '../diseno/diseno.module.css';
 import { Icono } from '../diseno/Icono';
 import { Segmentado } from '../diseno/Segmentado';
 import { Insignia } from '../diseno/Tarjeta';
+import { useTitulo } from '../diseno/titulo';
 import { formatearFechaHora } from '../hora/hora';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
@@ -25,9 +26,7 @@ export function MisViajes() {
   const [vista, setVista] = useState<'proximos' | 'anteriores'>('proximos');
   const viajes = useQuery({ queryKey: ['mi-cuenta', 'viajes'], queryFn: () => resultado(api.GET('/api/mi-cuenta/reservas/')) });
 
-  useEffect(() => {
-    document.title = 'Mis viajes';
-  }, []);
+  useTitulo('Mis viajes', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
 
   if (estado.fase !== 'autenticada') return null;
   if (estado.usuario.rol !== 'PASAJERO') return <Navigate to={inicioDeRol(estado.usuario.rol)} replace />;

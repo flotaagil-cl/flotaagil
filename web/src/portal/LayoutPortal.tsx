@@ -4,6 +4,7 @@ import { Link, Outlet, useMatches, useParams } from 'react-router';
 import { ErrorApi } from '../api/resultado';
 import { MENSAJES } from '../api/errores';
 import { MarcoPortal } from '../diseno/MarcoPortal';
+import { useTitulo } from '../diseno/titulo';
 import { useEntorno } from '../entornoContexto';
 import { ContactoDeError } from '../componentes/ContactoDeError';
 import { crearClientePortal, useEmpresa, type ClientePortal } from './api';
@@ -38,7 +39,7 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
   const razonSocial = empresa.data?.razon_social;
   const matches = useMatches();
   const manejo = matches.at(-1)?.handle as
-    | { barraMovil?: 'normal' | 'oculta'; completa?: boolean; requiereModulo?: boolean; soloSinModulo?: boolean }
+    | { titulo?: string; barraMovil?: 'normal' | 'oculta'; completa?: boolean; requiereModulo?: boolean; soloSinModulo?: boolean }
     | undefined;
   // DC-51 (CC-22): crear cuenta, activarla y registrar empresa existen solo con el módulo de cuentas.
   const sinModulo = empresa.data !== undefined && !empresa.data.modulo_cuentas;
@@ -49,9 +50,13 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
     if (central) guardarCentral(almacen, slug, central);
   }, [almacen, slug, central]);
 
-  useEffect(() => {
-    document.title = razonSocial ? `Solicitar un viaje · ${razonSocial}` : 'Solicitar un viaje';
-  }, [razonSocial]);
+  const errorEstado = empresa.error instanceof ErrorApi ? empresa.error.estado : 0;
+  const tituloPortal = empresa.isError
+    ? errorEstado === 404
+      ? 'Portal no disponible'
+      : 'Error de conexión'
+    : (manejo?.titulo ?? (empresa.data ? (sinModulo ? 'Pedir un traslado' : 'Pide tu traslado') : 'Solicitar un viaje'));
+  useTitulo(tituloPortal, razonSocial);
 
   let contenido;
   if (empresa.isPending) {

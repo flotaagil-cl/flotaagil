@@ -5,6 +5,7 @@ import { ErrorApi, resultado } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import e from '../../diseno/diseno.module.css';
+import { useTitulo } from '../../diseno/titulo';
 import { formatearFechaHora } from '../../hora/hora';
 import { useContextoPortal } from '../contexto';
 
@@ -19,7 +20,7 @@ const MENSAJES: Record<number, { titulo: string; texto: string }> = {
  * deben confirmar solos) y muestra «Reserva confirmada».
  */
 export function ConfirmarReserva() {
-  const { api, slug } = useContextoPortal();
+  const { api, empresa, slug } = useContextoPortal();
   const { token = '' } = useParams();
   const confirmar = useMutation({
     mutationFn: () => resultado(api.POST('/api/portal/{slug}/reservas/confirmar/', { params: { path: { slug } }, body: { token } })),
@@ -28,8 +29,9 @@ export function ConfirmarReserva() {
   // El enlace es de un solo uso: se envía una vez aunque el efecto corra dos veces (StrictMode en desarrollo).
   const enviado = useRef(false);
 
+  useTitulo('Confirmar reserva', empresa.razon_social);
+
   useEffect(() => {
-    document.title = 'Confirmar reserva';
     if (enviado.current) return;
     enviado.current = true;
     mutate();

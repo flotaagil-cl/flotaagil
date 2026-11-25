@@ -58,11 +58,13 @@ describe('módulos del despachador', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: /Reportes/ }),
     ).toBeInTheDocument();
+    expect(document.title).toBe('Reportes · FlotaÁgil');
   });
 
   it('sin Reservas, Inicio no ofrece «Nueva reserva» ni los atajos', async () => {
     montarPanel('/', { servidor: conModulos(['MAPA']) });
     await screen.findByRole('navigation', { name: 'Menú principal' });
+    expect(document.title).toBe('Inicio · FlotaÁgil');
     expect(
       screen.queryByRole('link', { name: 'Nueva reserva' }),
     ).not.toBeInTheDocument();

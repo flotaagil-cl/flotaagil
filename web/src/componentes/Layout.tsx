@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, NavLink, Outlet, useLocation, useMatches, useNavigate } from 'react-router';
 import { AlertasVuelo } from '../alertas/AlertasVuelo';
 import { AlertasLlegada } from '../chat/AlertasLlegada';
 import { ChatEnVivo } from '../chat/EnVivo';
 import { NoLeidosChat } from '../chat/NoLeidos';
 import { Icono } from '../diseno/Icono';
+import { formatearTitulo } from '../diseno/titulo';
 import '../diseno/tokens.css';
 import { SinPermiso } from '../paginas/SinPermiso';
 import { useRutas } from '../rutas/contexto';
@@ -35,17 +36,28 @@ export function Layout() {
   const navegar = useNavigate();
   const { pathname } = useLocation();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const autenticado = estado.fase === 'autenticada';
+  const roles = coincidencias
+    .map((c) => (c.handle as Manejo | undefined)?.roles)
+    .filter((r) => r !== undefined)
+    .at(-1);
+  const permitido = autenticado ? !roles || roles.includes(estado.usuario.rol) : true;
+  const tituloRuta = coincidencias
+    .map((c) => (c.handle as Manejo | undefined)?.titulo)
+    .filter((t): t is string => Boolean(t))
+    .at(-1);
+
+  useEffect(() => {
+    if (autenticado && tituloRuta) {
+      document.title = formatearTitulo(!permitido ? 'Sin permiso' : tituloRuta);
+    }
+  }, [autenticado, permitido, tituloRuta]);
+
   if (estado.fase !== 'autenticada') return null;
   const { usuario } = estado;
   const delPanel = ROLES_PANEL.includes(usuario.rol);
   // HU-33: el convenio y el pasajero no tienen Inicio del panel; «/» los lleva a su vista.
   if (!delPanel && pathname === '/') return <Navigate to={inicioDeRol(usuario.rol)} replace />;
-
-  const roles = coincidencias
-    .map((c) => (c.handle as Manejo | undefined)?.roles)
-    .filter((r) => r !== undefined)
-    .at(-1);
-  const permitido = !roles || roles.includes(usuario.rol);
   // HU-75 (DC-79): el módulo de la pantalla (de la ruta o de su sección); el backend responde 403 igual.
   const modulo = coincidencias
     .map((c) => (c.handle as Manejo | undefined)?.modulo)

@@ -13,6 +13,7 @@ import { Icono } from '../diseno/Icono';
 import { MarcoPortal } from '../diseno/MarcoPortal';
 import { Pestanas } from '../diseno/Pestanas';
 import { Insignia, Tarjeta, type TonoInsignia } from '../diseno/Tarjeta';
+import { useTitulo } from '../diseno/titulo';
 import { useEntorno } from '../entornoContexto';
 import { formatearFechaHora } from '../hora/hora';
 import { FormularioPedido } from '../pedido/FormularioPedido';
@@ -91,11 +92,10 @@ function useGuardaConvenio(): ReactNode | null {
  * quien pide, para sí o para otra persona, con acompañantes en el mismo vehículo o en vehículos separados.
  */
 export function MiConvenio() {
+  const { estado } = useSesion();
   const guarda = useGuardaConvenio();
   const convenio = useMiConvenio();
-  useEffect(() => {
-    document.title = 'Mi convenio';
-  }, []);
+  useTitulo('Mi convenio', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
   if (guarda) return guarda;
   return (
     <MarcoConvenio>
@@ -320,12 +320,11 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
 
 /** HU-46: los viajes del convenio, próximos y anteriores, como tarjetas (igual que «Mis viajes» del pasajero). */
 export function ViajesDelConvenio() {
+  const { estado } = useSesion();
   const guarda = useGuardaConvenio();
   const api = useApi();
   const reservas = useQuery({ queryKey: ['mi-convenio', 'reservas'], queryFn: () => resultado(api.GET('/api/mi-convenio/reservas/')) });
-  useEffect(() => {
-    document.title = 'Viajes del convenio';
-  }, []);
+  useTitulo('Viajes del convenio', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
   if (guarda) return guarda;
   const todos = reservas.data?.results ?? [];
   const proximos = todos.filter((v) => !esAnterior(v.estado)).sort((a, b) => a.recogida_en.localeCompare(b.recogida_en));
