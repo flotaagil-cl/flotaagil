@@ -59,6 +59,19 @@ class TestCorreoConMarca:
         assert paleta_de("tiffany").oscuro in html
         assert mail.outbox[0].attachments == []
 
+    def test_cc21_usa_el_nombre_de_marca_y_sin_logo_las_iniciales(self, empresa):
+        empresa.nombre_marca, empresa.iniciales = "Andes <Traslados>", "AT"
+        empresa.save(update_fields=["nombre_marca", "iniciales"])
+        tareas.enviar_correo.delay("ana@ejemplo.example", "A", "T", empresa.pk)
+        html = _html(mail.outbox[0])
+        assert "AT</span>" in html and "FlotaÁgil</span>" not in html
+        assert "Andes &lt;Traslados&gt;" in html and empresa.razon_social not in html
+
+    def test_cc21_el_nombre_visible_cae_en_la_razon_social(self, empresa):
+        assert empresa.nombre_visible == empresa.razon_social
+        empresa.nombre_marca = "Andes"
+        assert empresa.nombre_visible == "Andes"
+
     def test_si_el_logo_no_se_puede_leer_el_correo_sale_igual(self, empresa):
         empresa.logo = f"logos/{empresa.pk}/no-existe"
         empresa.save(update_fields=["logo"])

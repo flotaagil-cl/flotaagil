@@ -34,7 +34,7 @@ def _cuando(viaje) -> str:
 def mensaje(viaje, tipo: str) -> tuple[str, str] | None:
     """(asunto, texto) del aviso, o None si ese aviso no va por correo."""
     nombre = viaje.pasajero.nombre
-    empresa = viaje.empresa.razon_social
+    empresa = viaje.empresa.nombre_visible  # CC-21: solo va en los asuntos
     tramo = f"{viaje.origen_dir} → {viaje.destino_dir}, {_cuando(viaje)}"
     if tipo == AVISO_CONFIRMACION:
         return (

@@ -1841,3 +1841,15 @@ button.principal.rechazar {
   padding: 12px;
   border: 0;
 }
+
+/* CC-21: iniciales de la empresa en lugar del logo, sobre la misma base blanca. */
+.barra-logo.marca-iniciales,
+.login-logo.marca-iniciales {
+  background: var(--superficie);
+  color: var(--color-primario-900);
+  font-weight: 800;
+}
+
+.login-logo.marca-iniciales {
+  font-size: 1.6rem;
+}

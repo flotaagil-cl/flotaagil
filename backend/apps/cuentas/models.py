@@ -64,6 +64,11 @@ class Empresa(models.Model):
             if nueva:
                 ConfiguracionEmpresa.objects.create(empresa=self)
 
+    @property
+    def nombre_visible(self) -> str:
+        """CC-21 (DC-86): el nombre de los encabezados y de los asuntos de los correos."""
+        return self.nombre_marca or self.razon_social
+
 
 def _minutos(defecto: int, minimo: int = 0):
     return models.PositiveSmallIntegerField(

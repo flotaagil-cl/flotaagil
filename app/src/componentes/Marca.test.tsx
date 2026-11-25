@@ -21,6 +21,14 @@ describe('Marca', () => {
   });
 });
 
+describe('Marca con iniciales (CC-21, CP-76)', () => {
+  it('sin logo muestra las iniciales con el nombre de marca como texto alternativo', async () => {
+    render(<Marca clase="login-logo" tamano={34} />);
+    await act(() => temaApp.actualizar({ paleta: 'tiffany', logo: null, nombre_marca: 'Andes', iniciales: 'TA' }, 'Andes Demo SpA'));
+    expect(screen.getByRole('img', { name: 'Iniciales de Andes' }).textContent).toBe('TA');
+  });
+});
+
 describe('estado del vuelo', () => {
   it('lleva ícono y texto, no solo color', () => {
     render(<VueloDelViaje vuelo={{ numero: 'LA845', hora_programada: '2026-11-25T18:00:00Z', hora_estimada: null, estado_vuelo: 'CANCELADO' }} />);

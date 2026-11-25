@@ -1,5 +1,5 @@
 /**
- * CC-27 (HU-80): el tema de la empresa en la app del conductor (paleta y logo).
+ * CC-27 (HU-80) y CC-21: la marca de la empresa en la app del conductor (paleta, logo, nombre e iniciales).
  *
  * Llega con la sesión: se lee al ingresar o al abrir la app y queda guardado en el celular, con el logo incluido,
  * para que cargue sin conexión. No cambia en vivo. No es un dato secreto, así que no usa el almacenamiento cifrado.
@@ -8,11 +8,17 @@
 export interface AparienciaEmpresa {
   paleta: string;
   logo: { app: string } | null;
+  /** CC-21: pueden faltar si el servidor es anterior. */
+  nombre_marca?: string;
+  iniciales?: string;
 }
 
 export interface Tema {
   paleta: string;
+  /** Nombre visible: el de marca o, si no hay, la razón social. */
   empresa: string;
+  /** Se muestran cuando no hay logo. */
+  iniciales?: string;
   /** El logo como data URL, para verlo sin red. `null`: se usa el de FlotaÁgil. */
   logo: string | null;
   /** De dónde salió el logo guardado; cambia cuando la empresa sube otro. */
@@ -59,15 +65,16 @@ export class TemaApp {
   }
 
   /** Con la apariencia recibida al ingresar o al abrir. Un servidor sin este dato no cambia nada. */
-  async actualizar(apariencia: AparienciaEmpresa | null | undefined, empresa: string): Promise<void> {
+  async actualizar(apariencia: AparienciaEmpresa | null | undefined, razonSocial: string): Promise<void> {
     if (!apariencia) return;
+    const marca = { paleta: apariencia.paleta, empresa: apariencia.nombre_marca || razonSocial, iniciales: apariencia.iniciales ?? '' };
     const ruta = apariencia.logo?.app ?? null;
     const conocido = ruta !== null && this.actual?.ruta === ruta ? this.actual.logo : null;
-    this.poner({ paleta: apariencia.paleta, empresa, logo: conocido, ruta: conocido ? ruta : null });
+    this.poner({ ...marca, logo: conocido, ruta: conocido ? ruta : null });
     if (!ruta || conocido) return;
     const logo = await this.descargar(`${this.base}${ruta}`);
     // Si no se pudo descargar queda el de FlotaÁgil y se reintenta la próxima vez que se abra.
-    if (logo) this.poner({ paleta: apariencia.paleta, empresa, logo, ruta });
+    if (logo) this.poner({ ...marca, logo, ruta });
   }
 
   private poner(tema: Tema) {

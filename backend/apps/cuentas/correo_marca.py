@@ -1,4 +1,4 @@
-"""CC-27 (HU-80): los correos llevan el logo y los colores de la empresa.
+"""CC-27 (HU-80) y CC-21: los correos llevan la marca de la empresa (logo o iniciales, colores y nombre).
 
 El texto plano sigue siendo el contenido del correo; este HTML solo lo viste. El logo viaja dentro del correo
 (adjunto con `cid:`), así se ve sin depender de una URL pública. Estilos en línea y una tabla, que es lo que
@@ -23,7 +23,7 @@ _ENLACE = re.compile(r"(https?://[^\s<>\"]*[^\s<>\".,;:)])")
 
 
 def leer_logo(empresa) -> bytes | None:
-    """PNG de la variante «correo». Si no hay logo o no se puede leer, el correo sale con el de FlotaÁgil."""
+    """PNG de la variante «correo». Sin logo legible, el correo sale con las iniciales o FlotaÁgil."""
     if not empresa.logo:
         return None
     try:
@@ -54,7 +54,7 @@ def _parrafos(texto: str, color: str) -> str:
 
 def html_del_correo(empresa, texto: str, con_logo: bool) -> str:
     paleta = paleta_de(empresa.paleta)
-    nombre = escape(empresa.razon_social)
+    nombre = escape(empresa.nombre_visible)
     if con_logo:
         marca = (
             f'<img src="cid:{CID_LOGO}" alt="Logo de {nombre}" width="180" height="60" '
@@ -62,7 +62,7 @@ def html_del_correo(empresa, texto: str, con_logo: bool) -> str:
         )
     else:
         estilo = f"display:block;padding:6px 8px;font-size:18px;font-weight:bold;color:{paleta.oscuro};"
-        marca = f'<span style="{estilo}">FlotaÁgil</span>'
+        marca = f'<span style="{estilo}">{escape(empresa.iniciales or "FlotaÁgil")}</span>'
     return (
         '<!doctype html><html lang="es"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width, initial-scale=1"></head>'

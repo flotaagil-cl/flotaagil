@@ -720,6 +720,22 @@ const PANTALLAS = {
     { nombre: 'panel-inicio-iniciales', ruta: '/', sesion: 'admin@taxi-pacifico.example' },
     { nombre: 'portal-ingresar-nombre-de-marca', ruta: `${PORTAL}/ingresar`, sesion: null },
     { nombre: 'portal-formulario-iniciales', ruta: '/solicitar/taxi-pacifico', sesion: null },
+    // Las de la app: CAPTURAS_URL en el servidor de la app y CAPTURAS_SOLO=app-nombre-de-marca,app-iniciales.
+    {
+      nombre: 'app-nombre-de-marca',
+      ruta: '/',
+      sesion: null,
+      accion: (pagina) => ingresarEnLaApp(pagina, 'conductor1@transportes-andes.example', true),
+    },
+    {
+      nombre: 'app-iniciales',
+      ruta: '/',
+      sesion: null,
+      accion: async (pagina) => {
+        await ingresarEnLaApp(pagina, 'conductor1@taxi-pacifico.example', false);
+        await pagina.getByRole('img', { name: /^Iniciales de/ }).waitFor();
+      },
+    },
   ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
