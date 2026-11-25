@@ -38,6 +38,9 @@ class Empresa(models.Model):
     # en el almacenamiento (NULL = logo de FlotaÁgil). Los edita el administrador desde el panel.
     paleta = models.CharField(max_length=12, default=PREDETERMINADA, db_default=PREDETERMINADA)
     logo = models.CharField(max_length=120, null=True, blank=True, editable=False)
+    # CC-21 (DC-86): nombre de marca (vacío = razón social en encabezados) e iniciales (se muestran sin logo).
+    nombre_marca = models.CharField(max_length=30, blank=True, default="", db_default="")
+    iniciales = models.CharField(max_length=3, blank=True, default="", db_default="")
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:

@@ -58,7 +58,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Cambiar la paleta (auditado) */
+        /** Cambiar la paleta, el nombre de marca o las iniciales (auditado) */
         patch: operations["apariencia_partial_update"];
         trace?: never;
     };
@@ -1751,7 +1751,7 @@ export interface paths {
         };
         /**
          * Apariencia pública de una empresa
-         * @description Sin sesión: solo la paleta y las URL del logo, sin otros datos de la empresa.
+         * @description Sin sesión: solo la marca (paleta, URL del logo, nombre de marca e iniciales), sin otros datos.
          */
         get: operations["publico_apariencia_retrieve"];
         put?: never;
@@ -2430,8 +2430,12 @@ export interface components {
         };
         Apariencia: {
             paleta: components["schemas"]["PaletaEnum"];
-            /** @description Rutas de las versiones; null = logo de FlotaÁgil */
+            /** @description Rutas de las versiones; null = sin logo propio */
             logo: components["schemas"]["Logo"] | null;
+            /** @description Vacío = se muestra la razón social */
+            nombre_marca: string;
+            /** @description Se muestran cuando no hay logo */
+            iniciales: string;
         };
         AprobacionRequest: {
             /** @description HU-53: ajusta los correos autorizados al aprobar (correos exactos o «@dominio.cl») */
@@ -3442,6 +3446,12 @@ export interface components {
             /** Format: date-time */
             vence_en: string;
         };
+        /** @description Cambio parcial: solo se modifica lo que viene. */
+        PatchedAparienciaEntradaRequest: {
+            paleta?: components["schemas"]["PaletaEnum"];
+            nombre_marca?: string;
+            iniciales?: string;
+        };
         /** @description Datos del conductor. El email y la contraseña (credenciales) no se editan aquí. */
         PatchedConductorEditarRequest: {
             nombre?: string;
@@ -3490,9 +3500,6 @@ export interface components {
         };
         PatchedGrupoRequest: {
             nombre?: string;
-        };
-        PatchedPaletaEntradaRequest: {
-            paleta?: components["schemas"]["PaletaEnum"];
         };
         /** @description HU-45: el correo es el usuario de ingreso y no se cambia aquí. */
         PatchedPerfilEntradaRequest: {
@@ -4608,9 +4615,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedPaletaEntradaRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedPaletaEntradaRequest"];
-                "multipart/form-data": components["schemas"]["PatchedPaletaEntradaRequest"];
+                "application/json": components["schemas"]["PatchedAparienciaEntradaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAparienciaEntradaRequest"];
+                "multipart/form-data": components["schemas"]["PatchedAparienciaEntradaRequest"];
             };
         };
         responses: {

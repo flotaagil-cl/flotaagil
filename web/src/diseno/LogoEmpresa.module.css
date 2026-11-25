@@ -21,3 +21,13 @@
 .portal {
   height: 40px;
 }
+
+/* CC-21: iniciales en lugar del logo, con el color oscuro de la paleta. */
+.iniciales {
+  justify-content: center;
+  min-width: 40px;
+  border: 2px solid var(--color-primario-900);
+  color: var(--color-primario-900);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}

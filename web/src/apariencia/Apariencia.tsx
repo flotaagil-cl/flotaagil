@@ -1,6 +1,7 @@
 /**
- * CC-27 (HU-78): apariencia de la empresa, solo del administrador. Paleta del catálogo fijo y logo, con vista previa
- * de panel, portal y app. Al guardar, el panel toma el tema sin recargar (la sesión lleva la apariencia).
+ * CC-27 (HU-78) y CC-21: apariencia de la empresa, solo del administrador. Paleta del catálogo fijo, logo, nombre de
+ * marca e iniciales, con vista previa de panel, portal y app. Al guardar, el panel toma el tema sin recargar (la
+ * sesión lleva la apariencia).
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -10,12 +11,14 @@ import { Aviso } from '../componentes/Aviso';
 import { Cargando } from '../componentes/Cargando';
 import panel from '../componentes/panel.module.css';
 import { Boton } from '../diseno/Boton';
+import { Campo } from '../diseno/Campo';
 import type { Apariencia as Datos } from '../diseno/LogoEmpresa';
+import { nombreVisible } from '../diseno/marca';
 import { PALETA_PREDETERMINADA, PALETAS, type ClavePaleta } from '../diseno/paletas.generado';
 import { FallaDeCarga } from '../flota/componentes/comunes';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import c from './apariencia.module.css';
-import { revisarArchivo, TIPOS } from './archivo';
+import { inicialesValidas, limpiarNombre, MAXIMO_NOMBRE, revisarArchivo, TIPOS } from './archivo';
 import { VistaPrevia } from './VistaPrevia';
 
 function mensajeDe(error: unknown): string {
@@ -33,7 +36,7 @@ export function Apariencia() {
         <h1>Apariencia</h1>
       </div>
       <p className={panel.explicacion}>
-        La paleta y el logo se ven en el panel, el portal del pasajero, la app del conductor y los correos. Cada cambio queda en la auditoría.
+        La marca de tu empresa se ve en el panel, el portal del pasajero, la app del conductor y los correos. Cada cambio queda en la auditoría.
       </p>
       {consulta.isPending ? (
         <Cargando />
@@ -62,6 +65,8 @@ function Formulario({ actual }: { actual: Datos }) {
   const consultas = useQueryClient();
   const { sesion, estado } = useSesion();
   const [paleta, setPaleta] = useState<ClavePaleta>(actual.paleta);
+  const [nombre, setNombre] = useState(actual.nombre_marca);
+  const [iniciales, setIniciales] = useState(actual.iniciales);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [errorLogo, setErrorLogo] = useState<string | null>(null);
   const [falla, setFalla] = useState<string | null>(null);
@@ -73,14 +78,13 @@ function Formulario({ actual }: { actual: Datos }) {
 
   function aplicar(datos: Datos, mensaje: string) {
     consultas.setQueryData(['apariencia'], datos);
-    setPaleta(datos.paleta);
     // El panel toma el tema nuevo sin recargar.
     if (empresa) sesion.actualizarUsuario({ empresa: { ...empresa, apariencia: datos } });
     setAviso(mensaje);
   }
 
   const guardar = useMutation({
-    mutationFn: async (cambios: { paleta?: ClavePaleta; archivo?: File | null }) => {
+    mutationFn: async (cambios: { paleta?: ClavePaleta; nombre?: string; iniciales?: string; archivo?: File | null }) => {
       let datos = actual;
       if (cambios.archivo) {
         const formulario = new FormData();
@@ -89,12 +93,24 @@ function Formulario({ actual }: { actual: Datos }) {
         setArchivo(null);
         setVuelta((v) => v + 1);
       }
-      if (cambios.paleta && cambios.paleta !== datos.paleta) {
-        datos = await resultado(api.PATCH('/api/apariencia/', { body: { paleta: cambios.paleta } }));
+      // Solo se envía lo que cambia.
+      const cuerpo = {
+        ...(cambios.paleta && cambios.paleta !== datos.paleta && { paleta: cambios.paleta }),
+        ...(cambios.nombre !== undefined && cambios.nombre !== datos.nombre_marca && { nombre_marca: cambios.nombre }),
+        ...(cambios.iniciales !== undefined && cambios.iniciales !== datos.iniciales && { iniciales: cambios.iniciales }),
+      };
+      if (Object.keys(cuerpo).length > 0) {
+        datos = await resultado(api.PATCH('/api/apariencia/', { body: cuerpo }));
       }
       return datos;
     },
-    onSuccess: (datos) => aplicar(datos, 'Cambios guardados.'),
+    onSuccess: (datos, cambios) => {
+      setPaleta(datos.paleta);
+      // «Restablecer» solo toca la paleta: no borra lo que se esté escribiendo.
+      if (cambios.nombre !== undefined) setNombre(datos.nombre_marca);
+      if (cambios.iniciales !== undefined) setIniciales(datos.iniciales);
+      aplicar(datos, 'Cambios guardados.');
+    },
     onError: (error) => {
       setFalla(mensajeDe(error));
       void consultas.invalidateQueries({ queryKey: ['apariencia'] });
@@ -102,7 +118,7 @@ function Formulario({ actual }: { actual: Datos }) {
   });
   const quitar = useMutation({
     mutationFn: () => resultado(api.DELETE('/api/apariencia/logo/')),
-    onSuccess: (datos) => aplicar(datos, 'Se quitó el logo: se usa el de FlotaÁgil.'),
+    onSuccess: (datos) => aplicar(datos, datos.iniciales ? 'Se quitó el logo: se muestran las iniciales.' : 'Se quitó el logo: se usa el de FlotaÁgil.'),
     onError: (error) => setFalla(mensajeDe(error)),
   });
 
@@ -122,11 +138,15 @@ function Formulario({ actual }: { actual: Datos }) {
   function enviar(evento: FormEvent) {
     evento.preventDefault();
     limpiarAvisos();
-    guardar.mutate({ paleta, archivo });
+    if (!inicialesOk) return;
+    guardar.mutate({ paleta, nombre: nombreLimpio, iniciales, archivo });
   }
 
   const ocupado = guardar.isPending || quitar.isPending;
-  const hayCambios = paleta !== actual.paleta || archivo !== null;
+  const nombreLimpio = limpiarNombre(nombre);
+  const inicialesOk = inicialesValidas(iniciales);
+  const hayCambios = paleta !== actual.paleta || archivo !== null || nombreLimpio !== actual.nombre_marca || iniciales !== actual.iniciales;
+  const razonSocial = empresa?.razon_social ?? 'Tu empresa';
   const logoVisible = vista ?? actual.logo?.panel ?? null;
 
   return (
@@ -168,7 +188,9 @@ function Formulario({ actual }: { actual: Datos }) {
             {logoVisible ? (
               <img src={logoVisible} alt={vista ? 'Vista previa del logo nuevo' : 'Logo actual'} />
             ) : (
-              <span className={c.sinLogo}>Sin logo propio: se usa el de FlotaÁgil.</span>
+              <span className={c.sinLogo}>
+                {actual.iniciales ? `Sin logo propio: se muestran las iniciales ${actual.iniciales}.` : 'Sin logo propio: se usa el de FlotaÁgil.'}
+              </span>
             )}
           </div>
           <div className={c.acciones}>
@@ -194,15 +216,45 @@ function Formulario({ actual }: { actual: Datos }) {
         {errorLogo && <Aviso tipo="error">{errorLogo}</Aviso>}
       </fieldset>
 
+      <fieldset className={panel.tarjeta}>
+        <legend>Nombre de marca e iniciales</legend>
+        <div className={c.datos}>
+          <Campo
+            etiqueta="Nombre de marca"
+            maxLength={MAXIMO_NOMBRE}
+            placeholder={razonSocial}
+            autoComplete="off"
+            value={nombre}
+            ayuda="Opcional, hasta 30 caracteres. Si queda vacío se muestra la razón social."
+            onChange={(evento) => {
+              limpiarAvisos();
+              setNombre(evento.target.value);
+            }}
+          />
+          <Campo
+            etiqueta="Iniciales"
+            maxLength={3}
+            autoComplete="off"
+            value={iniciales}
+            ayuda="Opcionales, de 1 a 3 letras o números. Se muestran cuando no hay logo."
+            error={inicialesOk ? undefined : 'Usa solo letras o números, sin espacios ni signos.'}
+            onChange={(evento) => {
+              limpiarAvisos();
+              setIniciales(evento.target.value.toUpperCase());
+            }}
+          />
+        </div>
+      </fieldset>
+
       <section className={panel.tarjeta} aria-labelledby="titulo-vista">
         <h2 id="titulo-vista">Vista previa</h2>
-        <VistaPrevia paleta={paleta} logo={vista ?? actual.logo?.portal ?? null} empresa={empresa?.razon_social ?? 'Tu empresa'} />
+        <VistaPrevia paleta={paleta} logo={vista ?? actual.logo?.portal ?? null} iniciales={iniciales} empresa={nombreVisible({ nombre_marca: nombreLimpio }, razonSocial)} />
       </section>
 
       {falla && <Aviso tipo="error">{falla}</Aviso>}
       {aviso && <Aviso>{aviso}</Aviso>}
       <div className={panel.acciones}>
-        <Boton type="submit" cargando={guardar.isPending} disabled={!hayCambios || ocupado}>
+        <Boton type="submit" cargando={guardar.isPending} disabled={!hayCambios || !inicialesOk || ocupado}>
           Guardar cambios
         </Boton>
         <button

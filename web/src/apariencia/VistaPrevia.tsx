@@ -1,18 +1,22 @@
-/** CC-27 (HU-78): cómo se verán el panel, el portal y la app con la paleta y el logo elegidos (decorativa). */
+/** CC-27 (HU-78) y CC-21: cómo se verán el panel, el portal y la app con la marca elegida (decorativa). */
 
 import { Icono } from '../diseno/Icono';
 import type { ClavePaleta } from '../diseno/paletas.generado';
 import panel from '../componentes/panel.module.css';
 import c from './apariencia.module.css';
 
-function Marca({ logo, empresa }: { logo: string | null; empresa: string }) {
-  return logo ? (
-    <span className={c.base}>
-      <img src={logo} alt={`Logo de ${empresa}`} />
-    </span>
-  ) : (
-    <span className={c.base}>
-      <strong>FlotaÁgil</strong>
+interface Marcado {
+  logo: string | null;
+  iniciales: string;
+  /** Nombre visible: el de marca o la razón social. */
+  empresa: string;
+}
+
+function Marca({ logo, iniciales, empresa }: Marcado) {
+  return (
+    <span className={c.marcado}>
+      <span className={c.base}>{logo ? <img src={logo} alt={`Logo de ${empresa}`} /> : <strong>{iniciales || 'FlotaÁgil'}</strong>}</span>
+      <span className={c.nombreMarca}>{empresa}</span>
     </span>
   );
 }
@@ -37,13 +41,13 @@ function Estados() {
   );
 }
 
-export function VistaPrevia({ paleta, logo, empresa }: { paleta: ClavePaleta; logo: string | null; empresa: string }) {
+export function VistaPrevia({ paleta, ...marca }: Marcado & { paleta: ClavePaleta }) {
   return (
     <div className={c.vistas} data-paleta={paleta} data-testid="vista-previa">
       <figure className={c.vista}>
         <div className={c.pantalla}>
           <div className={c.barraPanel}>
-            <Marca logo={logo} empresa={empresa} />
+            <Marca {...marca} />
           </div>
           <div className={c.cuerpoPanel}>
             <ul className={c.menuFalso} aria-hidden="true">
@@ -62,7 +66,7 @@ export function VistaPrevia({ paleta, logo, empresa }: { paleta: ClavePaleta; lo
       <figure className={c.vista}>
         <div className={c.pantalla}>
           <div className={c.hero}>
-            <Marca logo={logo} empresa={empresa} />
+            <Marca {...marca} />
             <p>¿A dónde te llevamos?</p>
           </div>
           <div className={c.contenidoFalso}>
@@ -75,7 +79,7 @@ export function VistaPrevia({ paleta, logo, empresa }: { paleta: ClavePaleta; lo
       <figure className={c.vista}>
         <div className={`${c.pantalla} ${c.telefono}`}>
           <div className={c.hero}>
-            <Marca logo={logo} empresa={empresa} />
+            <Marca {...marca} />
           </div>
           <div className={c.contenidoFalso}>
             <span className={c.destacadoFalso}>Viaje en curso</span>

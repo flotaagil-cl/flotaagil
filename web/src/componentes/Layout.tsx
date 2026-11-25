@@ -9,6 +9,7 @@ import { formatearTitulo } from '../diseno/titulo';
 import '../diseno/tokens.css';
 import '../diseno/paletas.css';
 import { LogoEmpresa } from '../diseno/LogoEmpresa';
+import { nombreVisible } from '../diseno/marca';
 import { SinPermiso } from '../paginas/SinPermiso';
 import { useRutas } from '../rutas/contexto';
 import type { EntradaMenu, Manejo, SeccionMenu } from '../rutas/tabla';
@@ -106,8 +107,8 @@ export function Layout() {
         >
           Menú
         </button>
-        <LogoEmpresa apariencia={usuario.empresa.apariencia} variante="panel" empresa={usuario.empresa.razon_social} respaldo={<span className={estilos.marca}>FlotaÁgil</span>} />
-        <span className={estilos.empresa}>{usuario.empresa.razon_social}</span>
+        <LogoEmpresa apariencia={usuario.empresa.apariencia} variante="panel" empresa={nombreVisible(usuario.empresa.apariencia, usuario.empresa.razon_social)} respaldo={<span className={estilos.marca}>FlotaÁgil</span>} />
+        <span className={estilos.empresa}>{nombreVisible(usuario.empresa.apariencia, usuario.empresa.razon_social)}</span>
         <div className={estilos.usuario}>
           <span>
             {usuario.nombre} · {NOMBRE_ROL[usuario.rol]}

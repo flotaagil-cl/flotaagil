@@ -17,6 +17,7 @@ from apps.cuentas.tests.fabricas import UsuarioFactory
 pytestmark = pytest.mark.django_db
 
 URL = reverse("apariencia")
+SIN_CAMBIOS = {"paleta": "tiffany", "logo": None, "nombre_marca": "", "iniciales": ""}
 URL_LOGO = reverse("apariencia-logo")
 
 
@@ -73,7 +74,7 @@ def test_catalogo_fijo_de_diez_con_tiffany_predeterminada(empresa):
 
 
 def test_cambia_la_paleta_con_auditoria_y_restablece(admin, administrador, empresa):
-    assert admin.get(URL).json() == {"paleta": "tiffany", "logo": None}
+    assert admin.get(URL).json() == SIN_CAMBIOS
     assert admin.patch(URL, {"paleta": "indigo"}, format="json").json()["paleta"] == "indigo"
     admin.patch(URL, {"paleta": "indigo"}, format="json")  # sin cambio no se audita
     registro = Auditoria.objects.get(accion="EDITAR_APARIENCIA")
@@ -229,6 +230,51 @@ def test_si_falla_el_almacenamiento_no_quedan_archivos(monkeypatch):
     assert not any(default_storage.exists(nombre) for nombre in guardadas)
 
 
+# --- Nombre de marca e iniciales (CC-21, DC-86, CP-75) -------------------------------------------
+
+
+def test_guarda_nombre_e_iniciales_normalizados_y_audita_solo_lo_que_cambia(admin, cliente, empresa):
+    entrada = {"nombre_marca": "  Andes   Traslados ", "iniciales": "añ1"}
+    datos = admin.patch(URL, entrada, format="json").json()
+    assert (datos["nombre_marca"], datos["iniciales"], datos["paleta"]) == (
+        "Andes Traslados",
+        "AÑ1",
+        "tiffany",
+    )
+    registro = Auditoria.objects.get(accion="EDITAR_APARIENCIA")
+    assert registro.datos_previos == {"nombre_marca": "", "iniciales": ""}
+    admin.patch(URL, {"nombre_marca": "Andes Traslados", "paleta": "cian"}, format="json")
+    ultimo = Auditoria.objects.filter(accion="EDITAR_APARIENCIA").order_by("pk").last()
+    assert ultimo.datos_previos == {"paleta": "tiffany"}
+    cliente.force_authenticate(None)
+    publica = cliente.get(reverse("apariencia-publica", args=[empresa.slug])).json()
+    assert (publica["nombre_marca"], publica["iniciales"]) == ("Andes Traslados", "AÑ1")
+
+
+def test_vaciarlos_vuelve_a_lo_anterior(admin):
+    admin.patch(URL, {"nombre_marca": "Andes", "iniciales": "TA"}, format="json")
+    assert admin.patch(URL, {"nombre_marca": "", "iniciales": ""}, format="json").json() == SIN_CAMBIOS
+
+
+@pytest.mark.parametrize(
+    "campo,valor",
+    [
+        ("nombre_marca", "x" * 31),
+        ("nombre_marca", "Andes\r\nBcc: otro@ejemplo.example"),
+        ("nombre_marca", "Andes\u2028Traslados"),
+        ("iniciales", "ABCD"),
+        ("iniciales", "A B"),
+        ("iniciales", "A."),
+        ("iniciales", "ßßs"),
+    ],
+)
+def test_rechaza_nombres_e_iniciales_no_validos(admin, empresa, campo, valor):
+    respuesta = admin.patch(URL, {campo: valor}, format="json")
+    assert respuesta.status_code == 400 and campo in respuesta.json()
+    empresa.refresh_from_db()
+    assert getattr(empresa, campo) == ""
+
+
 # --- Endpoint público y sesión -------------------------------------------------------------------
 
 
@@ -237,7 +283,7 @@ def test_publico_solo_paleta_y_logo_y_sirve_el_png(admin, cliente, empresa):
     admin.patch(URL, {"paleta": "cian"}, format="json")
     cliente.force_authenticate(None)
     datos = cliente.get(reverse("apariencia-publica", args=[empresa.slug])).json()
-    assert set(datos) == {"paleta", "logo"} and datos["paleta"] == "cian"
+    assert set(datos) == set(SIN_CAMBIOS) and datos["paleta"] == "cian"
     respuesta = cliente.get(datos["logo"]["portal"])
     assert respuesta.status_code == 200 and respuesta["Content-Type"] == "image/png"
     assert "immutable" in respuesta["Cache-Control"]
@@ -259,7 +305,7 @@ def test_publico_404_para_empresa_inactiva_version_vieja_o_variante_ajena(admin,
 def test_la_sesion_trae_la_apariencia_de_su_empresa(empresa):
     from apps.cuentas.serializers import EmpresaResumenSerializer
 
-    assert EmpresaResumenSerializer(empresa).data["apariencia"] == {"paleta": "tiffany", "logo": None}
+    assert EmpresaResumenSerializer(empresa).data["apariencia"] == SIN_CAMBIOS
 
 
 def test_datos_demo_deja_dos_apariencias_sin_pisar_los_cambios(settings, django_capture_on_commit_callbacks):
@@ -271,6 +317,8 @@ def test_datos_demo_deja_dos_apariencias_sin_pisar_los_cambios(settings, django_
     taxi = Empresa.objects.get(slug="taxi-pacifico")
     assert (andes.paleta, bool(andes.logo)) == ("indigo", True)
     assert (taxi.paleta, taxi.logo) == ("tiffany", None)
+    assert (andes.nombre_marca, andes.iniciales) == ("Andes Demo", "")
+    assert (taxi.nombre_marca, taxi.iniciales) == ("", "TP")
     assert default_storage.exists(logos.ruta(andes.logo, "portal"))
     # Si el administrador ya la cambió, volver a cargar los datos no la pisa.
     Empresa.objects.filter(pk=andes.pk).update(paleta="grafito")

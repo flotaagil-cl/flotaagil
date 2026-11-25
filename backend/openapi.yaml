@@ -74,20 +74,20 @@ paths:
           description: ''
     patch:
       operationId: apariencia_partial_update
-      summary: Cambiar la paleta (auditado)
+      summary: Cambiar la paleta, el nombre de marca o las iniciales (auditado)
       tags:
       - apariencia
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedPaletaEntradaRequest'
+              $ref: '#/components/schemas/PatchedAparienciaEntradaRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedPaletaEntradaRequest'
+              $ref: '#/components/schemas/PatchedAparienciaEntradaRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedPaletaEntradaRequest'
+              $ref: '#/components/schemas/PatchedAparienciaEntradaRequest'
       security:
       - jwtAuth: []
       responses:
@@ -2911,8 +2911,8 @@ paths:
   /api/publico/apariencia/{slug}/:
     get:
       operationId: publico_apariencia_retrieve
-      description: 'Sin sesión: solo la paleta y las URL del logo, sin otros datos
-        de la empresa.'
+      description: 'Sin sesión: solo la marca (paleta, URL del logo, nombre de marca
+        e iniciales), sin otros datos.'
       summary: Apariencia pública de una empresa
       parameters:
       - in: path
@@ -4396,9 +4396,17 @@ components:
           allOf:
           - $ref: '#/components/schemas/Logo'
           nullable: true
-          description: Rutas de las versiones; null = logo de FlotaÁgil
+          description: Rutas de las versiones; null = sin logo propio
+        nombre_marca:
+          type: string
+          description: Vacío = se muestra la razón social
+        iniciales:
+          type: string
+          description: Se muestran cuando no hay logo
       required:
+      - iniciales
       - logo
+      - nombre_marca
       - paleta
     AprobacionRequest:
       type: object
@@ -6687,6 +6695,18 @@ components:
       required:
       - password_temporal
       - vence_en
+    PatchedAparienciaEntradaRequest:
+      type: object
+      description: 'Cambio parcial: solo se modifica lo que viene.'
+      properties:
+        paleta:
+          $ref: '#/components/schemas/PaletaEnum'
+        nombre_marca:
+          type: string
+          maxLength: 30
+        iniciales:
+          type: string
+          maxLength: 3
     PatchedConductorEditarRequest:
       type: object
       description: Datos del conductor. El email y la contraseña (credenciales) no
@@ -6819,11 +6839,6 @@ components:
           type: string
           minLength: 1
           maxLength: 60
-    PatchedPaletaEntradaRequest:
-      type: object
-      properties:
-        paleta:
-          $ref: '#/components/schemas/PaletaEnum'
     PatchedPerfilEntradaRequest:
       type: object
       description: 'HU-45: el correo es el usuario de ingreso y no se cambia aquí.'

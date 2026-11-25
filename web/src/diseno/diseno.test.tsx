@@ -209,7 +209,7 @@ describe('HU-37 · marco y pantalla con mapa', () => {
           ]}
           usuario={{ nombre: 'Camila Muñoz' }}
           onCerrarSesion={salir}
-          apariencia={{ paleta: 'violeta', logo: null }}
+          apariencia={{ paleta: 'violeta', logo: null, nombre_marca: '', iniciales: '' }}
         >
           <h1>¿A dónde te llevamos?</h1>
         </MarcoPortal>
