@@ -203,7 +203,12 @@ function Lista({
                       {c.ultimo && <span className="conversacion-ultimo">{`${c.ultimo.autor}: ${c.ultimo.texto}`}</span>}
                     </span>
                     <span className="conversacion-meta">
-                      {c.no_leidos > 0 && <span className="insignia">{`${c.no_leidos} sin leer`}</span>}
+                      {c.no_leidos > 0 && (
+                        <span className="insignia">
+                          <Icono nombre="mensaje" tamano={13} />
+                          {`${c.no_leidos} sin leer`}
+                        </span>
+                      )}
                       <Icono nombre="derecha" tamano={18} className="lista-flecha" />
                     </span>
                   </button>

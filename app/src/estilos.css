@@ -812,29 +812,14 @@ button.principal.rechazar {
   box-shadow: 0 2px 6px color-mix(in srgb, var(--color-primario-900) 20%, transparent);
 }
 
-.barra-estado-punto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--texto-suave);
-}
-
 .barra-estado[data-estado='DISPONIBLE'] {
   background: var(--insignia-ok-fondo);
   color: var(--insignia-ok-texto);
 }
 
-.barra-estado[data-estado='DISPONIBLE'] .barra-estado-punto {
-  background: var(--exito);
-}
-
 .barra-estado[data-estado='EN_VIAJE'] {
   background: var(--insignia-info-fondo);
   color: var(--insignia-info-texto);
-}
-
-.barra-estado[data-estado='EN_VIAJE'] .barra-estado-punto {
-  background: var(--color-primario-900);
 }
 
 .app-cuerpo {
@@ -1825,4 +1810,34 @@ button.principal.rechazar {
 
 .estado-error-cuerpo {
   justify-content: center;
+}
+
+/* CC-27 (HU-80): chips de estado con ícono; el logo de la empresa va sobre una base blanca redondeada. */
+.estado-vuelo svg,
+.insignia svg,
+.etiqueta-compacta svg {
+  margin-right: 0.25rem;
+  vertical-align: -0.12em;
+}
+
+.logo-empresa {
+  display: block;
+  flex: none;
+  box-sizing: content-box;
+  object-fit: contain;
+  background: var(--superficie);
+}
+
+.logo-empresa.barra-logo {
+  width: 66px;
+  height: 22px;
+  padding: 5px;
+  border: 0;
+}
+
+.logo-empresa.login-logo {
+  width: 168px;
+  height: 56px;
+  padding: 12px;
+  border: 0;
 }

@@ -72,7 +72,7 @@ def _avisar(convenio: Convenio, asunto: str, texto: str) -> None:
     # CC-22 (DC-55): la solicitud pública no tiene cuenta: el resultado va al correo de contacto.
     destino = convenio.usuario.email if convenio.usuario_id else convenio.contacto_correo
     if destino:
-        al_confirmar_correo(destino, asunto, texto)
+        al_confirmar_correo(destino, asunto, texto, convenio.empresa_id)
 
 
 def normalizar_correos(correos) -> list[str]:
@@ -352,6 +352,7 @@ def regenerar_clave(convenio: Convenio, *, usuario) -> Convenio:
         f"Hola {convenio.encargado_nombre or ''}:\n\n{convenio.empresa.razon_social} generó una clave nueva "
         f"para el convenio de {convenio.cliente_nombre}. La anterior ya no sirve.\n\n"
         f"{texto_como_pedir(convenio, clave)}\n",
+        convenio.empresa_id,
     )
     return convenio
 

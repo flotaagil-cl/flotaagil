@@ -70,4 +70,4 @@ def enviar(viaje, tipo: str) -> None:
     """Desde la tarea `enviar_aviso`, ya en el worker: el correo se encola con su propio reintento."""
     contenido = mensaje(viaje, tipo)
     if viaje.contacto_correo and contenido:
-        enviar_correo.delay(viaje.contacto_correo, *contenido)
+        enviar_correo.delay(viaje.contacto_correo, *contenido, viaje.empresa_id)

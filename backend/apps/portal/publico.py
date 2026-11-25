@@ -339,6 +339,7 @@ def avisar_solicitud_pase(viajes: list[Viaje], convenio: Convenio, personas: lis
         primero.contacto_correo,
         f"Confirma tu reserva {numeros} · {empresa.razon_social}",
         texto,
+        empresa.pk,
     )
     informados = {primero.contacto_correo}
     for persona in personas:
@@ -351,6 +352,7 @@ def avisar_solicitud_pase(viajes: list[Viaje], convenio: Convenio, personas: lis
                 f"Hola {persona['nombre']}:\n\n{primero.solicitante_nombre} pidió un traslado para ti con "
                 f"{empresa.razon_social} ({convenio.cliente_nombre}): {_resumen(primero)}.\n\n"
                 "Este correo es solo informativo: la reserva la confirma quien la pidió.",
+                empresa.pk,
             )
     contacto = (convenio.contacto_correo or "").lower()
     if contacto and contacto != primero.contacto_correo:
@@ -362,6 +364,7 @@ def avisar_solicitud_pase(viajes: list[Viaje], convenio: Convenio, personas: lis
             f"{'traslados' if len(viajes) > 1 else 'traslado'} ({numeros}): {_resumen(primero)}.\n\n"
             "Es solo un aviso: no necesitas hacer nada. Si no lo reconoces, pide a "
             f"{empresa.razon_social} que regenere la clave.",
+            empresa.pk,
         )
 
 
@@ -386,6 +389,7 @@ def avisar_solicitud(viaje: Viaje) -> None:
         viaje.contacto_correo,
         f"Confirma tu reserva N.º {viaje.pk} · {viaje.empresa.razon_social}",
         texto_solicitud(viaje, url),
+        viaje.empresa_id,
     )
 
 
@@ -451,6 +455,7 @@ def _pedir_autorizacion(viaje: Viaje) -> None:
         f"Hola {viaje.pasajero.nombre}:\n\nRecibimos tu solicitud N.º {viaje.pk} ({viaje.origen_dir} → "
         f"{viaje.destino_dir}, {cuando}). Como tu correo no está autorizado en el convenio de "
         f"{convenio.cliente_nombre}, le pedimos a la empresa que la autorice. Te avisaremos por correo.",
+        viaje.empresa_id,
     )
     url = enlace(viaje.empresa, "autorizar", token_de(viaje, SAL_AUTORIZAR))
     al_confirmar_correo(
@@ -461,6 +466,7 @@ def _pedir_autorizacion(viaje: Viaje) -> None:
         f"{viaje.destino_dir}, {cuando}.\n\n"
         f"Para autorizarlo o rechazarlo, abre este enlace antes del "
         f"{timezone.localtime(viaje.confirmar_hasta):%d-%m-%Y %H:%M}:\n{url}\n",
+        viaje.empresa_id,
     )
 
 
@@ -499,6 +505,7 @@ def autorizar(empresa, token: str, decision: str) -> Viaje:
         f"Tu reserva N.º {viaje.pk} no fue autorizada",
         f"Hola {viaje.pasajero.nombre}:\n\n{viaje.convenio.cliente_nombre} no autorizó tu reserva "
         f"N.º {viaje.pk}, así que quedó cancelada. Si la necesitas igual, puedes pedirla como particular.",
+        viaje.empresa_id,
     )
     return viaje
 

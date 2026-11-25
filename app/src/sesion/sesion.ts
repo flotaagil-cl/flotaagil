@@ -11,6 +11,7 @@
  * - Con una contraseña temporal pendiente (DC-14) la sesión queda en «cambio_pendiente» hasta cambiarla.
  */
 
+import type { AparienciaEmpresa } from '../tema/tema';
 import type { AlmacenRefresh } from './almacen';
 
 export interface Usuario {
@@ -19,7 +20,7 @@ export interface Usuario {
   email: string;
   rol: string;
   debe_cambiar_password: boolean;
-  empresa: { id: number; razon_social: string; slug: string };
+  empresa: { id: number; razon_social: string; slug: string; apariencia?: AparienciaEmpresa };
 }
 
 export type EstadoSesion =

@@ -154,6 +154,7 @@ def pedir_recuperacion(email: str) -> None:
         f"Hola {usuario.nombre}:\n\nPara elegir una contraseña nueva abre este enlace (vence en "
         f"{settings.PASSWORD_RESET_TIMEOUT // 60} minutos y sirve una sola vez):\n\n{enlace}\n\n"
         "Si no lo pediste, ignora este correo.\n",
+        usuario.empresa_id,
     )
 
 
