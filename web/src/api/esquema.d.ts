@@ -2268,11 +2268,31 @@ export interface paths {
         };
         /**
          * Vuelos de hoy (llegadas y salidas)
-         * @description HU-69: viajes de aeropuerto del día de la empresa del usuario. Solo lee la base (sin API de vuelos).
+         * @description HU-69: viajes de aeropuerto del día (o próximos días) de la empresa. Solo lee la base.
          */
         get: operations["vuelos_de_hoy_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vuelos-de-hoy/consultar/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Consultar estado de vuelos ahora
+         * @description Dispara bajo demanda la consulta del adaptador de vuelos para las llegadas activas del rango.
+         */
+        post: operations["vuelos_de_hoy_consultar_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2581,6 +2601,22 @@ export interface components {
              * @description Correo de soporte de FlotaÁgil (SOPORTE_CORREO); null si no está configurado.
              */
             soporte_correo: string | null;
+        };
+        ConsultarVuelosRequestRequest: {
+            /**
+             * @description Ventana de días a consultar en el adaptador de vuelos.
+             *
+             *     * `hoy` - hoy
+             *     * `manana` - manana
+             *     * `proximos_3_dias` - proximos_3_dias
+             * @default hoy
+             */
+            rango: components["schemas"]["RangoEnum"];
+        };
+        ConsultarVuelosResponse: {
+            consultados: number;
+            actualizados: number;
+            sin_datos: number;
         };
         ContadoresVuelos: {
             demorados: number;
@@ -3475,6 +3511,13 @@ export interface components {
             /** Format: double */
             lng: number;
         };
+        /**
+         * @description * `hoy` - hoy
+         *     * `manana` - manana
+         *     * `proximos_3_dias` - proximos_3_dias
+         * @enum {string}
+         */
+        RangoEnum: "hoy" | "manana" | "proximos_3_dias";
         /**
          * @description * `EN_CAMINO` - Voy en camino
          *     * `LLEGUE` - Llegué
@@ -8235,6 +8278,8 @@ export interface operations {
             query?: {
                 /** @description Estado del vuelo (solo llegadas: las salidas no se monitorean) */
                 estado?: "ATERRIZADO" | "CANCELADO" | "DEMORADO" | "DESVIADO" | "PROGRAMADO";
+                /** @description Ventana de fechas: hoy (por defecto), manana o proximos_3_dias */
+                rango?: "hoy" | "manana" | "proximos_3_dias";
                 /** @description Sin él, ambos */
                 tipo?: "llegadas" | "salidas";
             };
@@ -8250,6 +8295,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VuelosDeHoy"];
+                };
+            };
+        };
+    };
+    vuelos_de_hoy_consultar_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConsultarVuelosRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConsultarVuelosRequestRequest"];
+                "multipart/form-data": components["schemas"]["ConsultarVuelosRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultarVuelosResponse"];
                 };
             };
         };

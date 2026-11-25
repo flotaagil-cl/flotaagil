@@ -6,6 +6,7 @@ from datetime import timedelta
 from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 
+from apps.aeropuerto.demo import asegurar_vuelos_demo_vigentes
 from apps.comun.validadores import digito_verificador
 from apps.convenios.models import Convenio, EstadoConvenio
 from apps.convenios.servicios import normalizar_clave
@@ -246,4 +247,5 @@ def cargar(empresa, numero_empresa: int, conductores, faker, password: str) -> i
                 )
             if estado == final:
                 break
+    asegurar_vuelos_demo_vigentes(empresa)
     return len(VIAJES[numero_empresa])

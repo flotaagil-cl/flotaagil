@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from apps.aeropuerto.demo import asegurar_vuelos_demo_vigentes
 from apps.aeropuerto.models import Geocerca
 from apps.aeropuerto.zonas import NOMBRE_ZONA_SCL, poligono_scl
 from apps.chat import demo as demo_chat
@@ -107,6 +108,7 @@ class Command(BaseCommand):
                         conductores.append(usuario)
                 perfiles = demo_flota.cargar(empresa, numero, conductores)
                 viajes_creados += demo_reservas.cargar(empresa, numero, perfiles, faker, password)
+                viajes_creados += asegurar_vuelos_demo_vigentes(empresa)
                 # También en una base cargada antes de HU-34, que ya tiene viajes y no pasa por cargar().
                 demo_reservas.asegurar_convenio(empresa, numero, password)
                 demo_chat.cargar(empresa, conductores)

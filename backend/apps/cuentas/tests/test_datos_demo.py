@@ -108,23 +108,39 @@ class TestDatosDemo:
         assert Convenio.objects.filter(empresa__slug="taxi-pacifico").count() == 1
 
     def test_carga_flota_y_viajes_en_todos_los_estados(self, settings):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
         from apps.aeropuerto.models import Vuelo
         from apps.auditoria.models import Auditoria
         from apps.flota.models import Conductor, Vehiculo
         from apps.reservas.models import EstadoViaje, HistorialEstado, Sentido, Viaje
 
         settings.DEBUG = True
+        settings.FLIGHTAWARE_API_KEY = ""
         call_command("datos_demo", password="clave-demo-123")
         assert Vehiculo.objects.count() == 10
         assert Conductor.objects.count() == 8
-        assert Viaje.objects.count() == 30
+        total_viajes = Viaje.objects.count()
+        # 30 viajes base (15 por empresa) + parrilla dinámica de 3 días (sin duplicar códigos de hoy).
+        assert total_viajes >= 30 + 30
         assert set(Viaje.objects.values_list("estado", flat=True)) == set(EstadoViaje.values)
         assert not Vuelo.objects.exclude(viaje__sentido=Sentido.DESDE_AEROPUERTO).exists()
         assert all(v.historial.exists() for v in Viaje.objects.all())
-        assert HistorialEstado.objects.filter(estado_anterior__isnull=True).count() == 30
+        assert HistorialEstado.objects.filter(estado_anterior__isnull=True).count() == total_viajes
         assert Auditoria.objects.filter(accion="CANCELACION").count() == 2
+
+        hoy = timezone.localdate()
+        for empresa in Empresa.objects.all():
+            for offset in range(3):
+                assert (
+                    Vuelo.objects.filter(viaje__empresa=empresa, fecha=hoy + timedelta(days=offset)).count()
+                    >= 6
+                )
+
         call_command("datos_demo", password="clave-demo-123")
-        assert Viaje.objects.count() == 30
+        assert Viaje.objects.count() == total_viajes
 
     def test_no_corre_sin_debug(self, settings):
         settings.DEBUG = False
