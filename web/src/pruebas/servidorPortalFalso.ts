@@ -51,6 +51,8 @@ export class ServidorPortalFalso {
     const url = new URL(peticion.url);
     const ruta = `${peticion.method} ${url.pathname}`;
     this.llamadas.push(ruta);
+    // CC-27: la apariencia pública es la otra consulta sin sesión que hace el portal.
+    if (peticion.method === 'GET' && url.pathname.startsWith('/api/publico/apariencia/')) return json(200, { paleta: 'tiffany', logo: null });
     if (!url.pathname.startsWith('/api/portal/')) {
       this.prohibidas.push(ruta);
       throw new Error(`El portal no debe llamar a ${ruta}`);

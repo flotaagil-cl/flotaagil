@@ -288,7 +288,7 @@ export function Pedir() {
 
   if (etapa.fase === 'recibido') {
     return (
-      <MarcoPortal marca={usuario.empresa.razon_social} inicio="/pedir" enlaces={enlaces} enlacesCuenta={CUENTA_PASAJERO} usuario={usuario} onCerrarSesion={salir}>
+      <MarcoPortal marca={usuario.empresa.razon_social} apariencia={usuario.empresa.apariencia} inicio="/pedir" enlaces={enlaces} enlacesCuenta={CUENTA_PASAJERO} usuario={usuario} onCerrarSesion={salir}>
         <div className={e.recibido}>
           <span className={e.recibidoMarca} aria-hidden="true">
             <Icono nombre="check" tamano={36} />
@@ -325,6 +325,7 @@ export function Pedir() {
   return (
     <MarcoPortal
       marca={usuario.empresa.razon_social}
+      apariencia={usuario.empresa.apariencia}
       inicio="/pedir"
       enlaces={enlaces}
       enlacesCuenta={CUENTA_PASAJERO}

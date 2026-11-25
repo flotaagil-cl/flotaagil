@@ -52,7 +52,7 @@ export function AceptarPrivacidad() {
 
   const slug = usuario.empresa.slug;
   return (
-    <MarcoPortal marca={usuario.empresa.razon_social} inicio="/aceptar-privacidad" barraMovil="oculta">
+    <MarcoPortal marca={usuario.empresa.razon_social} apariencia={usuario.empresa.apariencia} inicio="/aceptar-privacidad" barraMovil="oculta">
       <PantallaAcceso
         titulo="Antes de seguir"
         subtitulo="Actualizamos cómo te pedimos el consentimiento: lo aceptas una vez y queda en tu cuenta."

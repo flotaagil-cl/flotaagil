@@ -209,7 +209,7 @@ describe('HU-37 · marco y pantalla con mapa', () => {
           ]}
           usuario={{ nombre: 'Camila Muñoz' }}
           onCerrarSesion={salir}
-          colores={{ '--color-primario-700': 'teal' }}
+          apariencia={{ paleta: 'violeta', logo: null }}
         >
           <h1>¿A dónde te llevamos?</h1>
         </MarcoPortal>
@@ -221,7 +221,7 @@ describe('HU-37 · marco y pantalla con mapa', () => {
     expect(screen.getByRole('link', { name: 'Saltar al contenido' })).toHaveAttribute('href', '#contenido');
     expect(screen.getByRole('main')).toHaveAttribute('id', 'contenido');
     expect(screen.getByRole('main').parentElement).toHaveClass('tema-portal');
-    expect(screen.getByRole('main').parentElement!.style.getPropertyValue('--color-primario-700')).toBe('teal');
+    expect(screen.getByRole('main').parentElement).toHaveAttribute('data-paleta', 'violeta');
 
     const cuenta = screen.getByRole('button', { name: /Camila Muñoz/ });
     expect(cuenta).toHaveAttribute('aria-expanded', 'false');

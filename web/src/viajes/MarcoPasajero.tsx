@@ -14,6 +14,7 @@ export function MarcoPasajero({ barraMovil = 'normal', children }: { barraMovil?
   return (
     <MarcoPortal
       marca={usuario.empresa.razon_social}
+      apariencia={usuario.empresa.apariencia}
       inicio="/pedir"
       enlaces={ENLACES_PASAJERO}
       enlacesCuenta={CUENTA_PASAJERO}

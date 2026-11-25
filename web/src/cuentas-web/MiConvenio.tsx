@@ -72,7 +72,7 @@ function MarcoConvenio({ children }: { children: ReactNode }) {
   const { usuario } = estado;
   const salir = () => void sesion.logout().then(() => navegar(`/solicitar/${usuario.empresa.slug}/ingresar`, { replace: true }));
   return (
-    <MarcoPortal marca={usuario.empresa.razon_social} inicio="/mi-convenio" enlaces={ENLACES_CONVENIO} usuario={usuario} onCerrarSesion={salir}>
+    <MarcoPortal marca={usuario.empresa.razon_social} apariencia={usuario.empresa.apariencia} inicio="/mi-convenio" enlaces={ENLACES_CONVENIO} usuario={usuario} onCerrarSesion={salir}>
       <div className={e.paginaAngosta}>{children}</div>
     </MarcoPortal>
   );

@@ -8,6 +8,7 @@ import { Campo } from '../diseno/Campo';
 import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
 import { MarcoPortal } from '../diseno/MarcoPortal';
+import { useAparienciaPublica } from '../diseno/aparienciaPublica';
 import { PantallaAcceso, Separador } from '../diseno/PantallaAcceso';
 import { useApi } from '../sesion/SesionProvider';
 import { useIngreso } from './ingreso';
@@ -28,6 +29,7 @@ export function IngresarPortal() {
     staleTime: 5 * 60_000,
   });
   const marca = empresa.data?.razon_social ?? 'FlotaÁgil';
+  const tema = useAparienciaPublica(slug);
   const {
     register,
     formState: { errors, isSubmitting },
@@ -43,8 +45,9 @@ export function IngresarPortal() {
 
   const registro = empresa.data ? { a: `/solicitar/${slug}/registro-empresa`, texto: '¿Eres empresa? Registra tu convenio' } : undefined;
 
+  if (!tema.lista) return <div role="status" aria-label="Cargando" aria-busy="true" />;
   return (
-    <MarcoPortal marca={marca} inicio={`/solicitar/${slug}/ingresar`} barraMovil="flotante" accion={registro}>
+    <MarcoPortal marca={marca} apariencia={tema.apariencia} inicio={`/solicitar/${slug}/ingresar`} barraMovil="flotante" accion={registro}>
       <PantallaAcceso titulo="Ingresar" tituloMovil="Tu traslado, sin esperas" subtitulo="Ingresa para pedir y seguir tus viajes." movil="mapa">
         {empresa.isError && <Aviso tipo="error">Esta empresa no tiene un portal disponible. Revisa el enlace que te enviaron.</Aviso>}
         <form className={e.formulario} onSubmit={(evento) => void enviar(evento)} noValidate aria-label="Ingresar">

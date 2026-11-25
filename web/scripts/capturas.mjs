@@ -680,6 +680,13 @@ const PANTALLAS = {
     { nombre: 'panel-inicio-indigo', ruta: '/', sesion: 'admin' },
     { nombre: 'panel-inicio-tiffany', ruta: '/', sesion: 'admin@taxi-pacifico.example' },
   ],
+  // CC-27 (HU-79): el portal de las dos empresas demo: Índigo con logo (con cuentas) y Tiffany sin logo (sin cuentas).
+  'HU-79': [
+    { nombre: 'portal-ingresar-indigo', ruta: `${PORTAL}/ingresar`, sesion: null },
+    { nombre: 'portal-registro-convenio-indigo', ruta: `${PORTAL}/registro-empresa`, sesion: null },
+    { nombre: 'mi-convenio-indigo', ruta: '/mi-convenio', sesion: 'convenio' },
+    { nombre: 'portal-formulario-tiffany', ruta: '/solicitar/taxi-pacifico', sesion: null },
+  ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
   // HU-76 (CC-26): el pasajero con cuenta pide para otra persona y con acompañantes, sin paso nuevo.
