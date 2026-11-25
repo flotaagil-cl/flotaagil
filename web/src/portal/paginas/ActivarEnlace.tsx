@@ -6,6 +6,7 @@ import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import { claseBoton } from '../../diseno/clases';
 import e from '../../diseno/diseno.module.css';
+import { useTitulo } from '../../diseno/titulo';
 import { useContextoPortal } from '../contexto';
 
 const MENSAJES: Record<string, { titulo: string; texto: string }> = {
@@ -22,7 +23,7 @@ const MENSAJES: Record<string, { titulo: string; texto: string }> = {
  * cargar el correo: los revisores de enlaces no deben activarla solos) y una sola vez aunque el efecto corra dos.
  */
 export function ActivarEnlace() {
-  const { api, slug } = useContextoPortal();
+  const { api, empresa, slug } = useContextoPortal();
   const { token = '' } = useParams();
   const activar = useMutation({
     mutationFn: () => resultado(api.POST('/api/portal/{slug}/cuenta/activar/', { params: { path: { slug } }, body: { token } })),
@@ -30,8 +31,9 @@ export function ActivarEnlace() {
   const { mutate } = activar;
   const enviado = useRef(false);
 
+  useTitulo('Activar cuenta', empresa.razon_social);
+
   useEffect(() => {
-    document.title = 'Activar cuenta';
     if (enviado.current) return;
     enviado.current = true;
     mutate();

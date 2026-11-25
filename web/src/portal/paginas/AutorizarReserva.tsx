@@ -1,10 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { useParams } from 'react-router';
 import { ErrorApi, resultado } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import { Boton } from '../../diseno/Boton';
 import e from '../../diseno/diseno.module.css';
+import { useTitulo } from '../../diseno/titulo';
 import { formatearFechaHora } from '../../hora/hora';
 import { useContextoPortal } from '../contexto';
 
@@ -21,16 +21,14 @@ const ERRORES: Record<number, string> = {
  * autorizado. Elige con un botón (no al abrir el enlace): autorizar la confirma y rechazar la cancela.
  */
 export function AutorizarReserva() {
-  const { api, slug } = useContextoPortal();
+  const { api, empresa, slug } = useContextoPortal();
   const { token = '' } = useParams();
   const decidir = useMutation({
     mutationFn: (decision: Decision) =>
       resultado(api.POST('/api/portal/{slug}/reservas/autorizar/', { params: { path: { slug } }, body: { token, decision } })),
   });
 
-  useEffect(() => {
-    document.title = 'Autorizar reserva';
-  }, []);
+  useTitulo('Autorizar reserva', empresa.razon_social);
 
   if (decidir.isSuccess) {
     const viaje = decidir.data;

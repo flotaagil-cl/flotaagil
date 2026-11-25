@@ -6,6 +6,7 @@ import { Campo, Casilla } from '../../diseno/Campo';
 import e from '../../diseno/diseno.module.css';
 import { PantallaAcceso } from '../../diseno/PantallaAcceso';
 import { Destacado } from '../../diseno/Tarjeta';
+import { useTitulo } from '../../diseno/titulo';
 import { useCrearCuenta } from '../api';
 import { useContextoPortal } from '../contexto';
 import { ActivarCuenta } from '../ActivarCuenta';
@@ -42,6 +43,7 @@ function validar(datos: Campos, privacidad: boolean): Errores {
  */
 export function CrearCuenta() {
   const { api, empresa, slug } = useContextoPortal();
+  useTitulo('Crear cuenta', empresa.razon_social);
   const crear = useCrearCuenta(api, slug);
   const [datos, setDatos] = useState<Campos>({ nombre: '', apellido: '', email: '', telefono: '', password: '' });
   const [privacidad, setPrivacidad] = useState(false);

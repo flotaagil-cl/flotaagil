@@ -16,6 +16,7 @@ import { MarcoPortal } from './MarcoPortal';
 import { PantallaConMapa } from './PantallaConMapa';
 import { Pestanas } from './Pestanas';
 import { Destacado, Insignia, Tarjeta } from './Tarjeta';
+import { formatearTitulo, useTitulo } from './titulo';
 
 const SCL = { lat: -33.393, lng: -70.794 };
 const CENTRO = { lat: -33.437, lng: -70.65 };
@@ -310,5 +311,20 @@ describe('HU-37 · mapa de respaldo y adaptador', () => {
     expect(proyectar([])(SCL)).toEqual({ x: 200, y: 150 });
     expect(proyectar([SCL])(SCL)).toEqual({ x: 200, y: 150 });
     expect(curva({ x: 0, y: 0 }, { x: 10, y: 0 })).toBe('M0 0 Q5 -2 10 0');
+  });
+
+  it('formatearTitulo y useTitulo componen el título de la pestaña con la marca', () => {
+    expect(formatearTitulo('Inicio')).toBe('Inicio · FlotaÁgil');
+    expect(formatearTitulo('Mis viajes', 'Transportes Andes')).toBe('Mis viajes · Transportes Andes');
+    expect(formatearTitulo('')).toBe('FlotaÁgil');
+
+    function Demo({ pagina, marca }: { pagina: string; marca?: string }) {
+      useTitulo(pagina, marca);
+      return null;
+    }
+    const { rerender } = render(<Demo pagina="Mi perfil" marca="Taxi Pacífico" />);
+    expect(document.title).toBe('Mi perfil · Taxi Pacífico');
+    rerender(<Demo pagina="Vuelos de hoy" />);
+    expect(document.title).toBe('Vuelos de hoy · FlotaÁgil');
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 import { resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
@@ -7,6 +7,7 @@ import { Casilla } from '../diseno/Campo';
 import e from '../diseno/diseno.module.css';
 import { MarcoPortal } from '../diseno/MarcoPortal';
 import { PantallaAcceso } from '../diseno/PantallaAcceso';
+import { useTitulo } from '../diseno/titulo';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 
@@ -23,9 +24,7 @@ export function AceptarPrivacidad() {
   const [falla, setFalla] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => {
-    document.title = 'Aviso de privacidad';
-  }, []);
+  useTitulo('Aviso de privacidad', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
 
   if (estado.fase !== 'autenticada') return null;
   const { usuario } = estado;

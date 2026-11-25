@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { Link, Navigate, useParams } from 'react-router';
 import { ErrorApi, resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
@@ -12,6 +11,7 @@ import { Mapa } from '../diseno/mapa/Mapa';
 import type { Marcador } from '../diseno/mapa/tipos';
 import { PantallaConMapa } from '../diseno/PantallaConMapa';
 import { Avatar, Insignia, Tarjeta } from '../diseno/Tarjeta';
+import { useTitulo } from '../diseno/titulo';
 import { formatearFechaHora } from '../hora/hora';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
@@ -51,9 +51,7 @@ export function TuViaje() {
   });
   const { refetch } = viaje;
 
-  useEffect(() => {
-    document.title = 'Tu viaje';
-  }, []);
+  useTitulo('Tu viaje', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
 
   // HU-65 y HU-66: el cambio de estado y los mensajes llegan en vivo por /ws/chat/; la revisión periódica queda
   // de respaldo.

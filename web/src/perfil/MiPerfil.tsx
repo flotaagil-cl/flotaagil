@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import type { components } from '../api/esquema';
 import { ErrorApi, resultado } from '../api/resultado';
@@ -14,6 +14,7 @@ import { Icono } from '../diseno/Icono';
 import { MINIMO_PASSWORD, reglasPassword } from '../diseno/password';
 import { ReglasPassword } from '../diseno/ReglasPassword';
 import { Insignia } from '../diseno/Tarjeta';
+import { useTitulo } from '../diseno/titulo';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 import { MarcoPasajero } from '../viajes/MarcoPasajero';
@@ -35,9 +36,7 @@ export function MiPerfil() {
   // Fuera del formulario: al guardar, el formulario se vuelve a montar con los datos nuevos.
   const [guardado, setGuardado] = useState(false);
 
-  useEffect(() => {
-    document.title = 'Mi perfil';
-  }, []);
+  useTitulo('Mi perfil', estado.fase === 'autenticada' ? estado.usuario.empresa.razon_social : undefined);
 
   if (estado.fase !== 'autenticada') return null;
   if (estado.usuario.rol !== 'PASAJERO') return <Navigate to={inicioDeRol(estado.usuario.rol)} replace />;

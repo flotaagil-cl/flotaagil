@@ -266,55 +266,60 @@ export function crearRutas(pantallas: RouteObject[] = pantallasDelPanel): RouteO
         {
           path: 'privacidad',
           lazy: async () => ({ Component: (await import('../portal/paginas/Privacidad')).Privacidad }),
+          handle: { titulo: 'Aviso de privacidad' },
         },
         // HU-60: «Reservar sin cuenta» en las empresas con el módulo (sin él, la reserva pública es la portada).
         {
           path: 'reservar',
           lazy: async () => ({ Component: (await import('../portal/paginas/ReservaPublica')).ReservaPublica }),
+          handle: { titulo: 'Pedir un traslado' },
         },
         // HU-53 (CC-22): solicitud pública de convenio (solo sin el módulo de cuentas).
         {
           path: 'convenio',
           lazy: async () => ({ Component: (await import('../portal/paginas/SolicitudConvenio')).SolicitudConvenio }),
-          handle: { soloSinModulo: true },
+          handle: { titulo: 'Solicitar un convenio', soloSinModulo: true },
         },
         // HU-56 (CC-22): encuesta de satisfacción desde el correo.
         {
           path: 'encuesta/:token',
           lazy: async () => ({ Component: (await import('../portal/paginas/Encuesta')).Encuesta }),
+          handle: { titulo: '¿Cómo fue tu viaje?' },
         },
         // HU-54 (CC-22): el contacto del convenio autoriza o rechaza la reserva.
         {
           path: 'autorizar/:token',
           lazy: async () => ({ Component: (await import('../portal/paginas/AutorizarReserva')).AutorizarReserva }),
+          handle: { titulo: 'Autorizar reserva' },
         },
         // HU-64 (CC-19): el enlace del correo que activa la cuenta del pasajero.
         {
           path: 'activar/:token',
           lazy: async () => ({ Component: (await import('../portal/paginas/ActivarEnlace')).ActivarEnlace }),
-          handle: { requiereModulo: true },
+          handle: { titulo: 'Activar cuenta', requiereModulo: true },
         },
         // HU-51 (CC-22): el enlace del correo que confirma la reserva pública.
         {
           path: 'confirmar/:token',
           lazy: async () => ({ Component: (await import('../portal/paginas/ConfirmarReserva')).ConfirmarReserva }),
+          handle: { titulo: 'Confirmar reserva' },
         },
         {
           path: 'registro-empresa',
           lazy: async () => ({ Component: (await import('../portal/paginas/RegistroEmpresa')).RegistroEmpresa }),
-          handle: { requiereModulo: true }, // DC-51: solo con el módulo de cuentas
+          handle: { titulo: 'Registrar convenio', requiereModulo: true }, // DC-51: solo con el módulo de cuentas
         },
         {
           path: 'cuenta',
           lazy: async () => ({ Component: (await import('../portal/paginas/CrearCuenta')).CrearCuenta }),
           // HU-38: en el celular el título va en la banda con el degradé, sin la barra.
-          handle: { barraMovil: 'oculta', completa: true, requiereModulo: true },
+          handle: { titulo: 'Crear cuenta', barraMovil: 'oculta', completa: true, requiereModulo: true },
         },
         {
           // HU-41: volver a activar la cuenta (reenviar el mensaje o corregir el número).
           path: 'activar',
           lazy: async () => ({ Component: (await import('../portal/paginas/Activar')).Activar }),
-          handle: { barraMovil: 'oculta', completa: true, requiereModulo: true },
+          handle: { titulo: 'Activa tu cuenta', barraMovil: 'oculta', completa: true, requiereModulo: true },
         },
       ],
     },

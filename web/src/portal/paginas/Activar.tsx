@@ -5,6 +5,7 @@ import { Boton } from '../../diseno/Boton';
 import { Campo } from '../../diseno/Campo';
 import e from '../../diseno/diseno.module.css';
 import { PantallaAcceso } from '../../diseno/PantallaAcceso';
+import { useTitulo } from '../../diseno/titulo';
 import { ActivarCuenta } from '../ActivarCuenta';
 import { useContextoPortal } from '../contexto';
 
@@ -13,7 +14,8 @@ import { useContextoPortal } from '../contexto';
  * cuenta para reenviar el enlace (HU-64).
  */
 export function Activar() {
-  const { api, slug } = useContextoPortal();
+  const { api, empresa, slug } = useContextoPortal();
+  useTitulo('Activa tu cuenta', empresa.razon_social);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [correo, setCorreo] = useState<string | null>(null);

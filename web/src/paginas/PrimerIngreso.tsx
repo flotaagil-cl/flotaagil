@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { ErrorApi, resultado } from '../api/resultado';
 import { Aviso } from '../componentes/Aviso';
@@ -10,6 +10,7 @@ import { MarcoPortal } from '../diseno/MarcoPortal';
 import { PantallaAcceso } from '../diseno/PantallaAcceso';
 import { MINIMO_PASSWORD, reglasPassword } from '../diseno/password';
 import { ReglasPassword } from '../diseno/ReglasPassword';
+import { useTitulo } from '../diseno/titulo';
 import { inicioDeRol } from '../rutas/tabla';
 import { useApi, useSesion } from '../sesion/SesionProvider';
 
@@ -32,9 +33,8 @@ export function PrimerIngreso() {
   const [falla, setFalla] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => {
-    document.title = 'Crea tu contraseña';
-  }, []);
+  const marca = estado.fase === 'autenticada' && DEL_PORTAL.has(estado.usuario.rol) ? estado.usuario.empresa.razon_social : undefined;
+  useTitulo('Crea tu contraseña', marca);
 
   if (estado.fase !== 'autenticada') return null;
   const { usuario } = estado;

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { ErrorApi } from '../../api/resultado';
+import { useTitulo } from '../../diseno/titulo';
 import { Campo } from '../../formularios/Campo';
 import { useRegistrarEmpresa, type RegistroEmpresa as Datos } from '../api';
 import { useContextoPortal } from '../contexto';
@@ -48,6 +49,7 @@ function validar(datos: Campos): Errores {
  */
 export function RegistroEmpresa() {
   const { api, empresa, slug } = useContextoPortal();
+  useTitulo('Registrar convenio', empresa.razon_social);
   const registrar = useRegistrarEmpresa(api, slug);
   const [datos, setDatos] = useState<Campos>(VACIO);
   const [trampa, setTrampa] = useState('');
