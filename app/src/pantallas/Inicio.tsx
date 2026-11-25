@@ -95,7 +95,7 @@ export function Inicio({
             <Marca clase="barra-logo" tamano={20} />
             <div className="barra-titulos">
               <h1>Hola, {usuario.nombre}</h1>
-              <p className="barra-subtitulo">{usuario.empresa.razon_social}</p>
+              <p className="barra-subtitulo">{usuario.empresa.apariencia?.nombre_marca || usuario.empresa.razon_social}</p>
             </div>
           </div>
           <span className="barra-estado" data-estado={perfil.estado}>

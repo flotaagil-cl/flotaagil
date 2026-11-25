@@ -202,7 +202,7 @@ def aprobar(convenio: Convenio, *, usuario, correos_autorizados=None) -> Conveni
         )
     _avisar(
         convenio,
-        f"Tu convenio con {convenio.empresa.razon_social} fue aprobado",
+        f"Tu convenio con {convenio.empresa.nombre_visible} fue aprobado",
         f"Hola {convenio.encargado_nombre}:\n\n{convenio.empresa.razon_social} aprobó el convenio de "
         f"{convenio.cliente_nombre}. {como_pedir}\n",
     )
@@ -222,7 +222,7 @@ def rechazar(convenio: Convenio, *, motivo: str, usuario) -> Convenio:
     _auditar(usuario, convenio, "RECHAZO", {"estado": EstadoConvenio.EN_REVISION}, motivo=motivo[:200])
     _avisar(
         convenio,
-        f"Tu solicitud de convenio con {convenio.empresa.razon_social}",
+        f"Tu solicitud de convenio con {convenio.empresa.nombre_visible}",
         f"Hola {convenio.encargado_nombre}:\n\n{convenio.empresa.razon_social} no aprobó el convenio de "
         f"{convenio.cliente_nombre}.\n\nMotivo: {motivo[:200]}\n",
     )
@@ -348,7 +348,7 @@ def regenerar_clave(convenio: Convenio, *, usuario) -> Convenio:
     _auditar(usuario, convenio, "CAMBIO_CLAVE", {"clave_version": version})  # RN-12
     al_confirmar_correo(
         convenio.contacto_correo,
-        f"Nueva clave del convenio con {convenio.empresa.razon_social}",
+        f"Nueva clave del convenio con {convenio.empresa.nombre_visible}",
         f"Hola {convenio.encargado_nombre or ''}:\n\n{convenio.empresa.razon_social} generó una clave nueva "
         f"para el convenio de {convenio.cliente_nombre}. La anterior ya no sirve.\n\n"
         f"{texto_como_pedir(convenio, clave)}\n",

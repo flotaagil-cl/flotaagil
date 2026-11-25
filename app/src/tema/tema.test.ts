@@ -39,8 +39,20 @@ describe('tema de la empresa', () => {
 
     expect(descargar).toHaveBeenCalledWith('https://api.example/api/logo/v1/app.png');
     expect(cuerpo.dataset.paleta).toBe('indigo');
-    expect(leerTema(guardado)).toEqual({ paleta: 'indigo', empresa: EMPRESA, logo: LOGO, ruta: '/api/logo/v1/app.png' });
+    expect(leerTema(guardado)).toEqual({ paleta: 'indigo', empresa: EMPRESA, iniciales: '', logo: LOGO, ruta: '/api/logo/v1/app.png' });
     expect(avisos).toHaveBeenCalled();
+  });
+
+  it('CC-21: guarda el nombre de marca y las iniciales, y sin nombre usa la razón social', async () => {
+    conDocumento();
+    const guardado = almacen();
+    const tema = new TemaApp(guardado, vi.fn(), '');
+    await tema.actualizar({ paleta: 'cian', logo: null, nombre_marca: 'Andes Traslados', iniciales: 'AT' }, EMPRESA);
+    expect(leerTema(guardado)).toMatchObject({ empresa: 'Andes Traslados', iniciales: 'AT' });
+    // Otra apertura sin conexión: lo guardado basta.
+    expect(new TemaApp(guardado, vi.fn(), '').leer()).toMatchObject({ empresa: 'Andes Traslados', iniciales: 'AT' });
+    await tema.actualizar({ paleta: 'cian', logo: null, nombre_marca: '', iniciales: '' }, EMPRESA);
+    expect(tema.leer()).toMatchObject({ empresa: EMPRESA, iniciales: '' });
   });
 
   it('sin conexión, al abrir usa lo guardado sin pedir nada', () => {

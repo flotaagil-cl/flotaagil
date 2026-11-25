@@ -337,7 +337,7 @@ def avisar_solicitud_pase(viajes: list[Viaje], convenio: Convenio, personas: lis
     )
     al_confirmar_correo(
         primero.contacto_correo,
-        f"Confirma tu reserva {numeros} · {empresa.razon_social}",
+        f"Confirma tu reserva {numeros} · {empresa.nombre_visible}",
         texto,
         empresa.pk,
     )
@@ -348,7 +348,7 @@ def avisar_solicitud_pase(viajes: list[Viaje], convenio: Convenio, personas: lis
             informados.add(destino)
             al_confirmar_correo(
                 destino,
-                f"Tu traslado con {empresa.razon_social}",
+                f"Tu traslado con {empresa.nombre_visible}",
                 f"Hola {persona['nombre']}:\n\n{primero.solicitante_nombre} pidió un traslado para ti con "
                 f"{empresa.razon_social} ({convenio.cliente_nombre}): {_resumen(primero)}.\n\n"
                 "Este correo es solo informativo: la reserva la confirma quien la pidió.",
@@ -387,7 +387,7 @@ def avisar_solicitud(viaje: Viaje) -> None:
     url = enlace(viaje.empresa, "confirmar", token_de(viaje))
     al_confirmar_correo(
         viaje.contacto_correo,
-        f"Confirma tu reserva N.º {viaje.pk} · {viaje.empresa.razon_social}",
+        f"Confirma tu reserva N.º {viaje.pk} · {viaje.empresa.nombre_visible}",
         texto_solicitud(viaje, url),
         viaje.empresa_id,
     )
@@ -460,7 +460,7 @@ def _pedir_autorizacion(viaje: Viaje) -> None:
     url = enlace(viaje.empresa, "autorizar", token_de(viaje, SAL_AUTORIZAR))
     al_confirmar_correo(
         _contacto(convenio),
-        f"Autoriza la reserva N.º {viaje.pk} · {viaje.empresa.razon_social}",
+        f"Autoriza la reserva N.º {viaje.pk} · {viaje.empresa.nombre_visible}",
         f"Hola {convenio.encargado_nombre or ''}:\n\n{viaje.pasajero.nombre} ({viaje.contacto_correo}) "
         f"pidió un traslado con el RUT de {convenio.cliente_nombre}: {viaje.origen_dir} → "
         f"{viaje.destino_dir}, {cuando}.\n\n"
