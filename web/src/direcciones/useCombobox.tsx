@@ -1,6 +1,6 @@
 /**
  * HU-71 (DC-72): campo de dirección con sugerencias (patrón combobox de ARIA). Sugiere desde 3 caracteres, 300 ms
- * después de la última tecla, hasta 5 resultados; se navega con flechas, Enter y Escape. Elegir una guarda el texto
+ * después de la última tecla, hasta 5 resultados; se navega con flechas, Enter y Escape (Enter nunca envía el formulario). Elegir una guarda el texto
  * y sus coordenadas (el backend no vuelve a geocodificar); escribir a mano las borra. Si el servicio no responde, el
  * campo queda como texto normal, sin errores a la vista.
  */
@@ -83,9 +83,11 @@ export function useCombobox({ valor, alCambiar, alElegir, buscar }: Opciones): {
       evento.preventDefault();
       setAbierta(true);
       setActiva((i) => (i <= 0 ? sugerencias.length - 1 : i - 1));
-    } else if (evento.key === 'Enter' && abierta && activa >= 0) {
-      evento.preventDefault(); // elige; no envía el formulario
-      elegir(sugerencias[activa]);
+    } else if (evento.key === 'Enter') {
+      // Enter en una dirección nunca envía el formulario: elige la sugerencia marcada o cierra la lista.
+      evento.preventDefault();
+      if (abierta && activa >= 0) elegir(sugerencias[activa]);
+      else cerrar();
     } else if (evento.key === 'Escape' && abierta) {
       evento.preventDefault();
       cerrar();

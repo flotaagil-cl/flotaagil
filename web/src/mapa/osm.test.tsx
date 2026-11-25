@@ -193,6 +193,14 @@ describe('mapas del portal con OpenStreetMap', () => {
     expect(leaflet.estado.mapas[0].encuadres).toHaveLength(1);
   });
 
+  it('sin pines vuelve a centrarse en Santiago', async () => {
+    const { rerender } = render(<MapaOsmPortal {...props} />);
+    await waitFor(() => expect(leaflet.estado.mapas[0].encuadres).toHaveLength(1));
+    leaflet.estado.mapas[0].setView = null;
+    rerender(<MapaOsmPortal etiqueta="Mapa de Santiago" marcadores={[]} />);
+    await waitFor(() => expect(leaflet.estado.mapas[0].setView).toEqual([-33.45, -70.66]));
+  });
+
   it('si las teselas no cargan, vuelve al mapa de respaldo', async () => {
     render(<MapaOsmPortal {...props} />);
     await waitFor(() => expect(leaflet.estado.capas).toHaveLength(1));

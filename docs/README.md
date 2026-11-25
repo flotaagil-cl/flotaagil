@@ -4,7 +4,7 @@
 
 | Ruta | Contenido |
 |---|---|
-| [`backlog/backlog.json`](backlog/backlog.json) | Product backlog: 70 HU + H-3 (394 SP); HU-31 a HU-36 por CC-12, CC-15, CC-16 y CC-17; HU-37 a HU-49 por el rediseño del portal (HU-40 por CC-18); HU-50 a HU-75 por CC-19, CC-20, CC-22, CC-23, CC-24 y las autorizadas el 2026-11-18; HU-47 por CC-25. `estado` (Hecha, Retirada, Desistida, Pendiente) y `estado_evidencia` (CC o DC) por HU |
+| [`backlog/backlog.json`](backlog/backlog.json) | Product backlog: 71 HU + H-3 (399 SP); HU-31 a HU-36 por CC-12, CC-15, CC-16 y CC-17; HU-37 a HU-49 por el rediseño del portal (HU-40 por CC-18); HU-50 a HU-75 por CC-19, CC-20, CC-22, CC-23, CC-24 y las autorizadas el 2026-11-18; HU-47 por CC-25; HU-76 por CC-26. `estado` (Hecha, Retirada, Desistida, Pendiente) y `estado_evidencia` (CC o DC) por HU |
 | [`diccionario-datos.md`](diccionario-datos.md) | Diccionario de datos (Anexo D del Informe 2): fuente de los modelos del backend |
 | [`diccionario-cambios.md`](diccionario-cambios.md) | Agregados y desvíos respecto del Anexo D, para actualizar el informe |
 | [`sprint0.md`](sprint0.md) | Instrucciones del Sprint 0 (ecosistema GitHub) |

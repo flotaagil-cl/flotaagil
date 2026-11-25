@@ -21,6 +21,8 @@ import { CUENTA_PASAJERO, ENLACES_PASAJERO } from '../viajes/viaje';
 import { FormularioPedido } from './FormularioPedido';
 import { ErrorApi } from '../api/resultado';
 import { mostrarTelefono } from '../portal/telefono';
+import { cuerpoPersonas, DATOS_CONVENIO, erroresConvenioDelServidor, totalPersonas, validarConvenio, type DatosConvenio, type ErroresConvenio } from '../portal/convenio';
+import { QuienViaja } from './QuienViaja';
 import { erroresDelServidor, esTipo, resumenPedido, TIPOS, type CuerpoPedido, type Errores, type TipoPedido, type ValoresPedido } from './pedido';
 
 const SCL = { lat: -33.393, lng: -70.794 };
@@ -28,7 +30,7 @@ const SCL = { lat: -33.393, lng: -70.794 };
 type Etapa =
   | { fase: 'formulario'; valores?: ValoresPedido; errores?: Errores }
   | { fase: 'revision'; tipo: TipoPedido; valores: ValoresPedido; cuerpo: CuerpoPedido }
-  | { fase: 'recibido'; id: number };
+  | { fase: 'recibido'; id: number; viajes: number };
 const ICONOS: Record<TipoPedido, NombreIcono> = { 'desde-aeropuerto': 'aterrizaje', 'al-aeropuerto': 'despegue', 'en-la-ciudad': 'auto' };
 const ANGOSTO = '(max-width: 899px)';
 
@@ -44,6 +46,29 @@ function useAngosto(): boolean {
   );
 }
 
+/** CC-26: viaja otra persona o alguien más: «Revisa tu pedido» muestra quién viaja. */
+function conTerceros(d: DatosConvenio): boolean {
+  return d.para === 'OTRO' || totalPersonas(d) > 1;
+}
+
+function textoPasajeros(d: DatosConvenio, maletas: number): string {
+  const total = totalPersonas(d);
+  const modo = total > 1 && d.vehiculos === 'SEPARADOS' ? ' en vehículos separados' : '';
+  return `${total}${modo} · ${maletas} ${maletas === 1 ? 'maleta' : 'maletas'}`;
+}
+
+function filasQuienViaja(d: DatosConvenio, cuenta: { nombre: string; telefono: string }): [string, string][] {
+  const otro = d.para === 'OTRO';
+  const filas: [string, string][] = [
+    ['Quién viaja', otro ? d.pasajero.nombre.trim() : `${cuenta.nombre} (tú)`],
+    ['Teléfono', mostrarTelefono(otro ? d.pasajero.telefono.trim() : cuenta.telefono)],
+  ];
+  if (d.acompanado && d.acompanantes.length > 0) filas.push(['Acompañantes', d.acompanantes.map((a) => a.nombre.trim()).join(', ')]);
+  if (d.acompanado && d.vehiculos === 'SEPARADOS') filas.push(['Vehículos', `Uno por persona (${totalPersonas(d)} viajes)`]);
+  if (otro) filas.push(['Pide', cuenta.nombre]);
+  return filas;
+}
+
 function mapaDe(tipo: TipoPedido | null): PropsMapa {
   if (tipo === 'en-la-ciudad') return { etiqueta: 'Mapa de Santiago', marcadores: [] };
   return {
@@ -56,6 +81,8 @@ function mapaDe(tipo: TipoPedido | null): PropsMapa {
  * HU-39: inicio y pedido del pasajero con cuenta (/pedir y /pedir/:tipo), con el marco del portal y la marca de
  * su empresa. En el computador, pestañas con los tres tipos; en el celular, el inicio con las tres opciones y
  * cada formulario en su pantalla. Envía a `POST /api/mi-cuenta/solicitudes/` (HU-40: solo con cuenta).
+ * CC-26 (HU-76): en el mismo formulario, para mí o para otra persona y con acompañantes, en el mismo vehículo o
+ * en vehículos separados (un viaje por persona).
  */
 export function Pedir() {
   const { estado, sesion } = useSesion();
@@ -66,6 +93,8 @@ export function Pedir() {
   // HU-42: formulario → «Revisa tu pedido» → «Pedido recibido».
   const [etapa, setEtapa] = useState<Etapa>({ fase: 'formulario' });
   const [falla, setFalla] = useState<string | null>(null);
+  const [personas, setPersonas] = useState<DatosConvenio>(DATOS_CONVENIO);
+  const [erroresPersonas, setErroresPersonas] = useState<ErroresConvenio>({});
   const usuario = estado.fase === 'autenticada' ? estado.usuario : null;
   const slug = usuario?.empresa.slug ?? '';
   const empresa = useQuery({
@@ -75,7 +104,7 @@ export function Pedir() {
     staleTime: 5 * 60_000,
   });
   const pedir = useMutation({
-    mutationFn: (cuerpo: CuerpoPedido) => resultado(api.POST('/api/mi-cuenta/solicitudes/', { body: cuerpo })),
+    mutationFn: (cuerpo: CuerpoPedido) => resultado(api.POST('/api/mi-cuenta/solicitudes/', { body: { ...cuerpo, ...cuerpoPersonas(personas) } })),
   });
   const cuenta = useQuery({
     queryKey: ['mi-cuenta'],
@@ -102,9 +131,13 @@ export function Pedir() {
     setFalla(null);
     try {
       const respuesta = await pedir.mutateAsync(revisando.cuerpo);
-      setEtapa({ fase: 'recibido', id: respuesta.id });
+      setEtapa({ fase: 'recibido', id: respuesta.id, viajes: respuesta.viajes });
     } catch (error) {
-      if (error instanceof ErrorApi && error.estado === 400) volverAlFormulario({ errores: erroresDelServidor(error.cuerpo) });
+      const deGrupo = error instanceof ErrorApi && error.estado === 400 ? erroresConvenioDelServidor(error.cuerpo) : {};
+      if (Object.keys(deGrupo).length > 0) {
+        setErroresPersonas(deGrupo);
+        volverAlFormulario();
+      } else if (error instanceof ErrorApi && error.estado === 400) volverAlFormulario({ errores: erroresDelServidor(error.cuerpo) });
       else if (error instanceof ErrorApi && error.estado === 429) setFalla('Ya pediste varios traslados hace poco. Espera unos minutos e intenta de nuevo.');
       else setFalla('No se pudo enviar tu pedido. Revisa tu conexión e intenta de nuevo.');
     }
@@ -130,14 +163,28 @@ export function Pedir() {
             <Icono nombre={ICONOS[revisando.tipo]} /> {actual.titulo}
           </h2>
           <dl className={e.resumenFilas}>
-            {resumenPedido(revisando.tipo, revisando.valores, revisando.cuerpo, empresa.data).map(([etiqueta, valor]) => (
-              <div key={etiqueta}>
-                <dt>{etiqueta}</dt>
-                <dd>{valor}</dd>
-              </div>
-            ))}
+            {resumenPedido(revisando.tipo, revisando.valores, revisando.cuerpo, empresa.data).map(([etiqueta, texto]) => {
+              // CC-26: cuántos viajan sale de «¿Para quién es?» y los acompañantes.
+              const valor = etiqueta === 'Pasajeros' ? textoPasajeros(personas, revisando.cuerpo.maletas ?? 0) : texto;
+              return (
+                <div key={etiqueta}>
+                  <dt>{etiqueta}</dt>
+                  <dd>{valor}</dd>
+                </div>
+              );
+            })}
           </dl>
-          {cuenta.data && (
+          {cuenta.data && conTerceros(personas) && (
+            <dl className={`${e.resumenFilas} ${e.resumenCuenta}`} aria-label="Quién viaja">
+              {filasQuienViaja(personas, cuenta.data).map(([etiqueta, valor]) => (
+                <div key={etiqueta}>
+                  <dt>{etiqueta}</dt>
+                  <dd>{valor}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {cuenta.data && !conTerceros(personas) && (
             <dl className={`${e.resumenFilas} ${e.resumenCuenta}`}>
               <div>
                 <dt>Nombre</dt>
@@ -201,6 +248,21 @@ export function Pedir() {
         empresa={empresa.data}
         iniciales={borrador.valores}
         erroresIniciales={borrador.errores}
+        quienViaja={
+          <QuienViaja
+            slug={slug}
+            datos={personas}
+            errores={erroresPersonas}
+            capacidad={empresa.data.capacidad_maxima}
+            tope={empresa.data.convenio_max_personas}
+            onCambiar={setPersonas}
+          />
+        }
+        validarQuienViaja={() => {
+          const encontrados = validarConvenio(personas, empresa.data.capacidad_maxima, empresa.data.convenio_max_personas, { conCargo: false });
+          setErroresPersonas(encontrados);
+          return Object.keys(encontrados).length === 0;
+        }}
         alRevisar={(valores, cuerpo) => {
           setFalla(null);
           setEtapa({ fase: 'revision', tipo, valores, cuerpo });
@@ -231,16 +293,27 @@ export function Pedir() {
           <span className={e.recibidoMarca} aria-hidden="true">
             <Icono nombre="check" tamano={36} />
           </span>
-          <h1 className={e.tituloPagina}>¡Listo! Recibimos tu pedido</h1>
-          <p className={e.subtituloPagina}>Te avisaremos cuando la central te asigne un conductor.</p>
+          <h1 className={e.tituloPagina}>{etapa.viajes > 1 ? `¡Listo! Recibimos ${etapa.viajes} viajes` : '¡Listo! Recibimos tu pedido'}</h1>
+          <p className={e.subtituloPagina}>
+            {etapa.viajes > 1 ? 'Te avisaremos cuando la central asigne un conductor a cada viaje.' : 'Te avisaremos cuando la central te asigne un conductor.'}
+          </p>
           <p className={e.numeroReserva}>
             <span>N.º de reserva</span>
             <strong>{etapa.id}</strong>
           </p>
-          <Link to={`/mis-viajes/${etapa.id}`} className={claseBoton('principal', true)}>
-            Ver mi viaje
+          <Link to={etapa.viajes > 1 ? '/mis-viajes' : `/mis-viajes/${etapa.id}`} className={claseBoton('principal', true)}>
+            {etapa.viajes > 1 ? 'Ver mis viajes' : 'Ver mi viaje'}
           </Link>
-          <button type="button" className={e.botonEnlace} onClick={() => { setEtapa({ fase: 'formulario' }); navegar('/pedir'); }}>
+          <button
+            type="button"
+            className={e.botonEnlace}
+            onClick={() => {
+              setPersonas(DATOS_CONVENIO);
+              setErroresPersonas({});
+              setEtapa({ fase: 'formulario' });
+              navegar('/pedir');
+            }}
+          >
             Volver al inicio
           </button>
         </div>

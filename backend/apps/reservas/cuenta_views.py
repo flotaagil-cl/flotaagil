@@ -13,7 +13,12 @@ from rest_framework.views import APIView
 from apps.comun.permisos import ConModuloCuentas, con_roles
 from apps.cuentas.models import Rol
 from apps.integraciones import push
-from apps.portal.serializers import SolicitudRespuestaSerializer, SolicitudSerializer
+from apps.portal.serializers import (
+    PersonaPasajeroSerializer,
+    ReservaConPaseMixin,
+    SolicitudRespuestaSerializer,
+    SolicitudSerializer,
+)
 
 from . import cuentas_pasajero as cuentas
 from .models import EstadoViaje, SuscripcionPush, Viaje
@@ -107,10 +112,17 @@ class MiReservaSerializer(serializers.ModelSerializer):
         return viaje.estado in cuentas.CANCELABLES
 
 
-class SolicitudCuentaSerializer(SolicitudSerializer):
-    """Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
-    acepta nada (la cuenta ya aceptó una vez); las aceptaciones se ignoran si vienen."""
+class SolicitudCuentaSerializer(ReservaConPaseMixin, SolicitudSerializer):
+    """Los datos de quien pide salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
+    acepta nada (la cuenta ya aceptó una vez); las aceptaciones se ignoran si vienen.
 
+    CC-26 (HU-76, DC-82): como en CC-23 y CC-25, para sí o para otra persona (`para`, `pasajero_*`), con
+    `acompanantes` en el mismo vehículo o en vehículos separados (`vehiculos`), sin cargo. Por los terceros,
+    `declara_informados`. Sin acompañantes, `pasajeros` vale 1."""
+
+    pase = None
+    pide_cargo = False
+    acompanantes = PersonaPasajeroSerializer(many=True, required=False, default=list)
     nombre = serializers.CharField(max_length=80, required=False)
     telefono = serializers.CharField(max_length=24, required=False)
     acepta_privacidad = serializers.BooleanField(required=False)
@@ -122,11 +134,17 @@ class SolicitudCuentaSerializer(SolicitudSerializer):
     def validate_acepta_whatsapp(self, valor):
         return valor
 
+    def validate(self, datos):
+        return self.validar_pase(super().validate(datos))
+
 
 class PedidoRecibidoSerializer(SolicitudRespuestaSerializer):
     """HU-42: con cuenta, la respuesta trae el número de la reserva (el pasajero solo ve las suyas)."""
 
     id = serializers.IntegerField(help_text="Número de la reserva, para «Ver mi viaje».")
+    viajes = serializers.IntegerField(
+        help_text="CC-26: viajes creados (uno por persona en vehículos separados); `id` es el primero."
+    )
 
 
 class AceptarPrivacidadSerializer(serializers.Serializer):
@@ -385,14 +403,16 @@ class SolicitudMiCuentaView(APIView):
             403: OpenApiResponse(description="`aceptar_privacidad`: falta aceptar el aviso vigente (DC-44)"),
             429: OpenApiResponse(description="`limite_telefono`"),
         },
-        description="Queda SOLICITADO sin verificación por WhatsApp; se mantiene el límite por teléfono.",
+        description="Queda SOLICITADO sin verificación por WhatsApp; se mantiene el límite por cuenta. "
+        "CC-26: para sí o para otra persona, con acompañantes, en el mismo vehículo o un viaje por "
+        "persona (mismo `grupo`). Todo o nada.",
     )
     def post(self, request):
         cuenta = cuentas.cuenta_activa(request.user)
         entrada = SolicitudCuentaSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        viaje, respuesta = cuentas.solicitar(cuenta, entrada.validated_data, usuario=request.user)
-        datos = {**respuesta, "id": viaje.pk}
+        viajes, respuesta = cuentas.solicitar(cuenta, entrada.validated_data, usuario=request.user)
+        datos = {**respuesta, "id": viajes[0].pk}
         return Response(PedidoRecibidoSerializer(datos).data, status=status.HTTP_201_CREATED)
 
 

@@ -29,6 +29,10 @@ export function MapaOsmPortal(props: PropsMapa) {
   return <MapaLeaflet {...props} alFallar={() => setFalla(true)} />;
 }
 
+/** Centro de Santiago: la vista sin pines (al abrir y al volver a «En la ciudad» sin direcciones). */
+const SANTIAGO: [number, number] = [-33.45, -70.66];
+const ZOOM_SANTIAGO = 11;
+
 function MapaLeaflet({ etiqueta, marcadores, ruta, alFallar }: PropsMapa & { alFallar: () => void }) {
   const elemento = useRef<HTMLDivElement>(null);
   const [listo, setListo] = useState<{ leaflet: typeof Leaflet; mapa: Leaflet.Map } | null>(null);
@@ -43,7 +47,7 @@ function MapaLeaflet({ etiqueta, marcadores, ruta, alFallar }: PropsMapa & { alF
     cargarLeaflet().then(
       (leaflet) => {
         if (!vigente || !elemento.current) return;
-        mapa = leaflet.map(elemento.current, { zoomControl: false }).setView([-33.45, -70.66], 11);
+        mapa = leaflet.map(elemento.current, { zoomControl: false }).setView(SANTIAGO, ZOOM_SANTIAGO);
         capaOsm(leaflet, () => fallar.current()).addTo(mapa);
         setListo({ leaflet, mapa });
       },
@@ -84,6 +88,7 @@ function MapaLeaflet({ etiqueta, marcadores, ruta, alFallar }: PropsMapa & { alF
     ];
     if (puntos.length > 1) mapa.fitBounds(puntos, { padding: [40, 40], maxZoom: 15 });
     else if (puntos.length === 1) mapa.setView(puntos[0], 15);
+    else mapa.setView(SANTIAGO, ZOOM_SANTIAGO); // sin pines no se queda en el último encuadre
     return () => {
       capa.remove();
     };

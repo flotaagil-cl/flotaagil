@@ -37,7 +37,7 @@ docs/      informes, decisiones, backlog, evidencias     ambos
 
 ## Backlog y tablero
 
-- Backlog: [`docs/backlog/backlog.json`](docs/backlog/backlog.json), 70 HU + H-3 (394 SP). La línea base fueron 25 HU (178 SP) en 4 sprints de 2 semanas; el resto entró por solicitudes de cambio. El campo `estado` de cada HU dice si está hecha, retirada, desistida o pendiente, con el CC o DC que lo respalda.
+- Backlog: [`docs/backlog/backlog.json`](docs/backlog/backlog.json), 71 HU + H-3 (399 SP). La línea base fueron 25 HU (178 SP) en 4 sprints de 2 semanas; el resto entró por solicitudes de cambio. El campo `estado` de cada HU dice si está hecha, retirada, desistida o pendiente, con el CC o DC que lo respalda.
 - Tablero: [FlotaÁgil — Backlog](https://github.com/orgs/flotaagil-cl/projects/1) (GitHub Projects, público).
 - Repositorio: `Flotaagil-CL/flotaagil` desde el 11-11-2026 ([DC-49](docs/diccionario-cambios.md)).
 
