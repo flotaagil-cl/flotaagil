@@ -126,8 +126,12 @@ paths:
       security:
       - jwtAuth: []
       responses:
-        '204':
-          description: No response body
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apariencia'
+          description: ''
   /api/app/asignaciones/{id}/aceptar/:
     post:
       operationId: app_asignaciones_aceptar_create

@@ -156,7 +156,8 @@ class LogoView(_SoloAdministrador):
         tags=["apariencia"],
         summary="Quitar el logo y volver al de FlotaÁgil (auditado)",
         request=None,
-        responses=AparienciaSerializer,
+        # Devuelve la apariencia resultante (sin esto el esquema declara 204 en un DELETE).
+        responses={200: AparienciaSerializer},
     )
     def delete(self, request):
         with transaction.atomic():
