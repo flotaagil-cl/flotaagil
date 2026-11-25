@@ -139,11 +139,17 @@
 .insignia {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 3px 10px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
+}
+.insignia svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
 }
 .insignia[data-tono='info'] {
   background: var(--insignia-info-fondo);

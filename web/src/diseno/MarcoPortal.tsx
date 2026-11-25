@@ -1,6 +1,7 @@
-import { useState, type CSSProperties, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 import { iniciales } from './clases';
+import { LogoEmpresa, type Apariencia } from './LogoEmpresa';
 import './tokens.css';
 import './paletas.css';
 import e from './diseno.module.css';
@@ -18,7 +19,7 @@ export interface EnlacePortal {
 interface Props {
   /** Nombre de la empresa de taxis (razón social), o FlotaÁgil en el panel. */
   marca: string;
-  /** Logo en vez de las iniciales (el ícono de FlotaÁgil en el panel). */
+  /** Marca fija en vez del logo de la empresa (el ícono de FlotaÁgil en las pantallas del panel). */
   logo?: ReactNode;
   /** Adónde lleva la marca. */
   inicio?: string;
@@ -29,8 +30,8 @@ interface Props {
   onCerrarSesion?: () => void;
   /** En el celular: «flotante» deja la barra sobre el mapa; «oculta» la saca (pantallas con volver). */
   barraMovil?: 'normal' | 'flotante' | 'oculta';
-  /** Color por empresa (más adelante): tokens de marca que reemplazan a los del portal. */
-  colores?: Partial<Record<'--color-primario-900' | '--color-primario-700' | '--color-tiffany', string>>;
+  /** CC-27: paleta y logo de la empresa; sin logo propio se usa el de FlotaÁgil. */
+  apariencia?: Apariencia | null;
   /** Enlace a la derecha de la barra cuando no hay sesión («¿Eres empresa? Registra tu convenio»). */
   accion?: EnlacePortal;
   /** Pie de página (aviso de privacidad). */
@@ -42,18 +43,25 @@ interface Props {
  * Marco del portal (HU-37): barra superior con la marca, la navegación y la cuenta. En el celular la
  * navegación pasa al menú de la cuenta (diálogo), que también tiene «Cerrar sesión».
  */
-export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], enlacesCuenta = [], usuario, onCerrarSesion, barraMovil = 'normal', colores, accion, pie, children }: Props) {
+export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], enlacesCuenta = [], usuario, onCerrarSesion, barraMovil = 'normal', apariencia, accion, pie, children }: Props) {
   const [menu, setMenu] = useState(false);
   return (
-    <div className={`tema-portal ${e.marco}`} style={colores as CSSProperties | undefined}>
+    <div className={`tema-portal ${e.marco}`} data-paleta={apariencia?.paleta}>
       <a href="#contenido" className={e.saltar}>
         Saltar al contenido
       </a>
       <header className={e.barra} data-movil={barraMovil}>
         <Link to={inicio} className={e.marca}>
-          <span className={e.logo} aria-hidden="true">
-            {logo ?? iniciales(marca)}
-          </span>
+          <LogoEmpresa
+            apariencia={logo ? null : apariencia}
+            variante="portal"
+            empresa={marca}
+            respaldo={
+              <span className={e.logo} aria-hidden="true">
+                {logo ?? <Icono nombre="auto" />}
+              </span>
+            }
+          />
           <span className={e.marcaNombre}>{marca}</span>
         </Link>
         {enlaces.length > 0 && (

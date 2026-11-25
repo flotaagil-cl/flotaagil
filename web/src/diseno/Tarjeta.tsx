@@ -5,10 +5,13 @@ import type { NombreIcono } from './iconos';
 
 export type TonoInsignia = 'info' | 'ok' | 'revision' | 'peligro' | 'neutra';
 
-/** Insignia de estado. El texto dice el estado: el color solo lo refuerza. */
+const ICONO_DE_TONO: Record<TonoInsignia, NombreIcono> = { info: 'info', ok: 'check', revision: 'reloj', peligro: 'alerta', neutra: 'info' };
+
+/** Insignia de estado. Ícono y texto dicen el estado: el color solo lo refuerza (CC-27). */
 export function Insignia({ tono = 'info', children }: { tono?: TonoInsignia; children: ReactNode }) {
   return (
     <span className={e.insignia} data-tono={tono}>
+      <Icono nombre={ICONO_DE_TONO[tono]} />
       {children}
     </span>
   );

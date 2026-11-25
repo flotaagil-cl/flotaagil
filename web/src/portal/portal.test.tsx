@@ -39,7 +39,8 @@ describe('carga del portal', () => {
     const { servidor, locks, canales } = montarPortal();
     expect(await screen.findByRole('link', { name: 'Ingresar' })).toBeInTheDocument();
     expect(within(screen.getByRole('banner')).getByText('Transportes Andes Demo SpA')).toBeInTheDocument();
-    expect(servidor.llamadas).toEqual(['GET /api/portal/transportes-andes/']);
+    // CC-27: además de la empresa, solo se pide su apariencia (paleta y logo).
+    expect([...servidor.llamadas].sort()).toEqual(['GET /api/portal/transportes-andes/', 'GET /api/publico/apariencia/transportes-andes/']);
     expect(servidor.prohibidas).toEqual([]);
     expect(locks.solicitudes).toBe(0);
     expect(canales()).toBe(0);

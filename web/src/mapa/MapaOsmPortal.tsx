@@ -66,7 +66,8 @@ function MapaLeaflet({ etiqueta, marcadores, ruta, alFallar }: PropsMapa & { alF
     if (!listo) return;
     const { leaflet, mapa } = listo;
     const capa = leaflet.layerGroup().addTo(mapa);
-    const acento = getComputedStyle(document.documentElement).getPropertyValue('--acento').trim() || '#0e7c7b';
+    // CC-27: el acento sale del marco con tema (cambia con la paleta de la empresa), no de la raíz.
+    const acento = getComputedStyle(elemento.current ?? document.documentElement).getPropertyValue('--acento').trim() || '#0c7f7d';
     if (ruta) {
       leaflet
         .polyline(

@@ -4,6 +4,7 @@ import { Link, Outlet, useMatches, useParams } from 'react-router';
 import { ErrorApi } from '../api/resultado';
 import { MENSAJES } from '../api/errores';
 import { MarcoPortal } from '../diseno/MarcoPortal';
+import { useAparienciaPublica } from '../diseno/aparienciaPublica';
 import { useTitulo } from '../diseno/titulo';
 import { useEntorno } from '../entornoContexto';
 import { ContactoDeError } from '../componentes/ContactoDeError';
@@ -41,6 +42,7 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
   const manejo = matches.at(-1)?.handle as
     | { titulo?: string; barraMovil?: 'normal' | 'oculta'; completa?: boolean; requiereModulo?: boolean; soloSinModulo?: boolean }
     | undefined;
+  const marca = useAparienciaPublica(slug);
   // DC-51 (CC-22): crear cuenta, activarla y registrar empresa existen solo con el módulo de cuentas.
   const sinModulo = empresa.data !== undefined && !empresa.data.modulo_cuentas;
   const barraMovil = manejo?.barraMovil ?? 'normal';
@@ -89,8 +91,11 @@ function ContenidoPortal({ api }: { api: ClientePortal }) {
 
   // DC-51: con el módulo, registro con cuenta (HU-34); sin él, solicitud pública de convenio (HU-53).
   const registro = sinModulo ? `/solicitar/${slug}/convenio` : `/solicitar/${slug}/registro-empresa`;
+  // CC-27: primera visita sin el tema todavía: una espera neutra, sin los colores predeterminados.
+  if (!marca.lista) return <div role="status" aria-label="Cargando" aria-busy="true" />;
   return (
     <MarcoPortal
+      apariencia={marca.apariencia}
       marca={razonSocial ?? 'FlotaÁgil'}
       inicio={sinModulo ? `/solicitar/${slug}` : `/solicitar/${slug}/ingresar`}
       barraMovil={barraMovil}

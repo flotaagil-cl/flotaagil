@@ -79,6 +79,7 @@ export function PrimerIngreso() {
   return (
     <MarcoPortal
       marca={delPortal ? usuario.empresa.razon_social : 'FlotaÁgil'}
+      apariencia={delPortal ? usuario.empresa.apariencia : null}
       logo={delPortal ? undefined : <Icono nombre="auto" />}
       inicio="/primer-ingreso"
       barraMovil="oculta"

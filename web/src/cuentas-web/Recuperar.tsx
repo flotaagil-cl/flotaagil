@@ -6,6 +6,7 @@ import { Campo } from '../diseno/Campo';
 import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
 import { MarcoPortal } from '../diseno/MarcoPortal';
+import { useAparienciaPublica } from '../diseno/aparienciaPublica';
 import { PantallaAcceso } from '../diseno/PantallaAcceso';
 import { MINIMO_PASSWORD, reglasPassword } from '../diseno/password';
 import { ReglasPassword } from '../diseno/ReglasPassword';
@@ -51,16 +52,20 @@ function useMarca(api: ClientePortal) {
     };
   }, [api, slug]);
   const conEmpresa = slug !== null && razonSocial !== null;
+  const tema = useAparienciaPublica(slug); // CC-27
   return {
+    tema,
     marca: conEmpresa ? razonSocial : 'FlotaÁgil',
     ingresar: conEmpresa ? `/solicitar/${slug}/ingresar` : '/login',
     sufijo: conEmpresa ? `?empresa=${slug}` : '',
   };
 }
 
-function Marco({ marca, ingresar, children }: { marca: string; ingresar: string; children: ReactNode }) {
+function Marco({ marca, ingresar, tema, children }: { marca: string; ingresar: string; tema: ReturnType<typeof useAparienciaPublica>; children: ReactNode }) {
+  // CC-27: con empresa, no se pinta antes de conocer su paleta.
+  if (!tema.lista) return <div role="status" aria-label="Cargando" aria-busy="true" />;
   return (
-    <MarcoPortal marca={marca} inicio={ingresar} barraMovil="oculta">
+    <MarcoPortal marca={marca} apariencia={tema.apariencia} inicio={ingresar} barraMovil="oculta">
       {children}
     </MarcoPortal>
   );
@@ -69,7 +74,7 @@ function Marco({ marca, ingresar, children }: { marca: string; ingresar: string;
 /** HU-41: pide el enlace (vence a los 30 min). Responde lo mismo exista o no el correo. */
 export function Recuperar() {
   const api = useClientePublico();
-  const { marca, ingresar } = useMarca(api);
+  const { marca, ingresar, tema } = useMarca(api);
   const [email, setEmail] = useState('');
   const [enviado, setEnviado] = useState(false);
   const [reenviado, setReenviado] = useState(false);
@@ -107,7 +112,7 @@ export function Recuperar() {
 
   if (enviado) {
     return (
-      <Marco marca={marca} ingresar={ingresar}>
+      <Marco marca={marca} ingresar={ingresar} tema={tema}>
         <PantallaAcceso titulo="Revisa tu correo" subtitulo="Te enviamos un enlace para crear una contraseña nueva." movil="hero" volver={{ a: ingresar, texto: 'Volver a ingresar' }}>
           <Destacado titulo={email.trim()} icono="mensaje">
             Si es el correo de tu cuenta, el enlace llega en unos minutos. Vence en 30 minutos y sirve una sola vez.
@@ -136,7 +141,7 @@ export function Recuperar() {
   }
 
   return (
-    <Marco marca={marca} ingresar={ingresar}>
+    <Marco marca={marca} ingresar={ingresar} tema={tema}>
       <PantallaAcceso
         titulo="Recupera tu contraseña"
         subtitulo="Escribe el correo de tu cuenta y te enviaremos un enlace para crear una nueva."
@@ -175,7 +180,7 @@ export function Recuperar() {
 export function ElegirPassword() {
   const { uid = '', token = '' } = useParams();
   const api = useClientePublico();
-  const { marca, ingresar, sufijo } = useMarca(api);
+  const { marca, ingresar, sufijo, tema } = useMarca(api);
   const [nueva, setNueva] = useState('');
   const [repetida, setRepetida] = useState('');
   const [listo, setListo] = useState(false);
@@ -211,7 +216,7 @@ export function ElegirPassword() {
 
   if (listo) {
     return (
-      <Marco marca={marca} ingresar={ingresar}>
+      <Marco marca={marca} ingresar={ingresar} tema={tema}>
         <PantallaAcceso titulo="Tu contraseña quedó lista" subtitulo="Ya puedes ingresar con tu contraseña nueva." movil="hero">
           <Link to={ingresar} className={claseBoton('principal', true)}>
             Ingresar
@@ -222,7 +227,7 @@ export function ElegirPassword() {
   }
 
   return (
-    <Marco marca={marca} ingresar={ingresar}>
+    <Marco marca={marca} ingresar={ingresar} tema={tema}>
       <PantallaAcceso titulo="Crea una nueva contraseña" subtitulo="Elige una que no hayas usado antes." movil="hero">
         <form className={e.formulario} onSubmit={(evento) => void enviar(evento)} noValidate aria-label="Crea una nueva contraseña">
           {(errores.token || errores.general) && (
