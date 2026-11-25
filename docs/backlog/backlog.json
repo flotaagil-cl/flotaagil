@@ -1657,6 +1657,106 @@
       "estado_cambio": "Nueva (CC-26, autorizada por Renato, 2026-11-24)",
       "estado": "Hecha",
       "estado_evidencia": "CC-26 (DC-82): el pasajero con cuenta pide para otra persona y con acompañantes con las reglas de HU-73."
+    },
+    {
+      "id": "HU-77",
+      "titulo": "Paleta y logo de la empresa (backend)",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como administrador, quiero elegir la paleta de mi empresa y subir su logo, para que la plataforma muestre nuestra marca.",
+      "criterios": "Catálogo fijo de 10 paletas con prueba de contraste; logo PNG, JPG o WebP de hasta 2 MB y 256 px de ancho como mínimo, procesado en versiones; almacenamiento intercambiable; lectura y escritura solo del administrador con auditoría; endpoint público con solo paleta y logo.",
+      "sp": 8,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-71"
+      ],
+      "depende_de": [
+        "HU-57"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-27, autorizada por Renato, 2026-11-25)",
+      "estado": "Hecha",
+      "estado_evidencia": "CC-27 (DC-83, DC-84): paleta y logo por empresa, solo del administrador y auditados; endpoint público y contraste probado."
+    },
+    {
+      "id": "HU-78",
+      "titulo": "Pantalla Apariencia del panel",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como administrador, quiero una pantalla Apariencia con vista previa, para elegir la paleta y el logo antes de guardarlos.",
+      "criterios": "Solo el administrador; las 10 paletas, vista previa de panel, portal y app, subida del logo y restablecer a Tiffany; se aplica sin recargar; estados con ícono y texto.",
+      "sp": 5,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-72"
+      ],
+      "depende_de": [
+        "HU-77"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-27, autorizada por Renato, 2026-11-25)",
+      "estado": "Pendiente",
+      "estado_evidencia": "CC-27: en construcción."
+    },
+    {
+      "id": "HU-79",
+      "titulo": "Portal del pasajero con la marca de la empresa",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como pasajero, quiero ver el portal con la marca de la empresa, para reconocer con quién estoy pidiendo.",
+      "criterios": "Paleta y logo en el formulario público, el ingreso y el convenio, sin parpadeo de los colores predeterminados.",
+      "sp": 3,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-73"
+      ],
+      "depende_de": [
+        "HU-77"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-27, autorizada por Renato, 2026-11-25)",
+      "estado": "Pendiente",
+      "estado_evidencia": "CC-27: en construcción."
+    },
+    {
+      "id": "HU-80",
+      "titulo": "App del conductor y correos con la marca de la empresa",
+      "epica": "Gestión y despacho",
+      "label_epica": "epica:gestion-despacho",
+      "historia": "Como conductor y como pasajero, quiero que la app y los correos usen la marca de la empresa, para identificar el servicio.",
+      "criterios": "La app lee el tema al ingresar o abrirse y lo guarda para cargar sin conexión; los correos de confirmación llevan el logo y los colores de la empresa.",
+      "sp": 5,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-74"
+      ],
+      "depende_de": [
+        "HU-77"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-27, autorizada por Renato, 2026-11-25)",
+      "estado": "Pendiente",
+      "estado_evidencia": "CC-27: en construcción."
     }
   ],
   "tareas": [

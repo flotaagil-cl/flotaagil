@@ -57,6 +57,77 @@ paths:
               schema:
                 $ref: '#/components/schemas/AlertaVuelo'
           description: ''
+  /api/apariencia/:
+    get:
+      operationId: apariencia_retrieve
+      summary: Apariencia de mi empresa
+      tags:
+      - apariencia
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apariencia'
+          description: ''
+    patch:
+      operationId: apariencia_partial_update
+      summary: Cambiar la paleta (auditado)
+      tags:
+      - apariencia
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPaletaEntradaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPaletaEntradaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPaletaEntradaRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apariencia'
+          description: ''
+  /api/apariencia/logo/:
+    post:
+      operationId: apariencia_logo_create
+      summary: Subir o reemplazar el logo (auditado)
+      tags:
+      - apariencia
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoEntradaRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apariencia'
+          description: ''
+    delete:
+      operationId: apariencia_logo_destroy
+      summary: Quitar el logo y volver al de FlotaÁgil (auditado)
+      tags:
+      - apariencia
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/app/asignaciones/{id}/aceptar/:
     post:
       operationId: app_asignaciones_aceptar_create
@@ -2833,6 +2904,61 @@ paths:
           description: '`enlace_usado`'
         '410':
           description: '`enlace_vencido`: queda «Sin confirmar» (HU-52)'
+  /api/publico/apariencia/{slug}/:
+    get:
+      operationId: publico_apariencia_retrieve
+      description: 'Sin sesión: solo la paleta y las URL del logo, sin otros datos
+        de la empresa.'
+      summary: Apariencia pública de una empresa
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - apariencia
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Apariencia'
+          description: ''
+  /api/publico/apariencia/{slug}/logo/{version}/{variante}.png:
+    get:
+      operationId: publico_apariencia_logo_.png_retrieve
+      summary: Imagen del logo (PNG)
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: variante
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: string
+        required: true
+      tags:
+      - apariencia
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/reportes/{tipo}/:
     get:
       operationId: reportes_retrieve
@@ -4257,6 +4383,19 @@ components:
       - numero_vuelo
       - tipo
       - viaje
+    Apariencia:
+      type: object
+      properties:
+        paleta:
+          $ref: '#/components/schemas/PaletaEnum'
+        logo:
+          allOf:
+          - $ref: '#/components/schemas/Logo'
+          nullable: true
+          description: Rutas de las versiones; null = logo de FlotaÁgil
+      required:
+      - logo
+      - paleta
     AprobacionRequest:
       type: object
       properties:
@@ -5376,7 +5515,12 @@ components:
           maxLength: 50
         modulo_cuentas:
           type: boolean
+        apariencia:
+          allOf:
+          - $ref: '#/components/schemas/Apariencia'
+          readOnly: true
       required:
+      - apariencia
       - id
       - razon_social
       - slug
@@ -5743,6 +5887,34 @@ components:
       required:
       - email
       - password
+    Logo:
+      type: object
+      properties:
+        panel:
+          type: string
+        portal:
+          type: string
+        app:
+          type: string
+        correo:
+          type: string
+        icono:
+          type: string
+      required:
+      - app
+      - correo
+      - icono
+      - panel
+      - portal
+    LogoEntradaRequest:
+      type: object
+      properties:
+        logo:
+          type: string
+          format: binary
+          description: PNG, JPG o WebP; hasta 2 MB y al menos 256 px de ancho
+      required:
+      - logo
     LotePosicionesRequest:
       type: object
       properties:
@@ -6390,6 +6562,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Viaje'
+    PaletaEnum:
+      enum:
+      - tiffany
+      - oceano
+      - cobalto
+      - indigo
+      - violeta
+      - orquidea
+      - magenta
+      - pizarra
+      - grafito
+      - cian
+      type: string
+      description: |-
+        * `tiffany` - Tiffany
+        * `oceano` - Océano
+        * `cobalto` - Cobalto
+        * `indigo` - Índigo
+        * `violeta` - Violeta
+        * `orquidea` - Orquídea
+        * `magenta` - Magenta
+        * `pizarra` - Pizarra
+        * `grafito` - Grafito
+        * `cian` - Cian
     ParaEnum:
       enum:
       - MI
@@ -6619,6 +6815,11 @@ components:
           type: string
           minLength: 1
           maxLength: 60
+    PatchedPaletaEntradaRequest:
+      type: object
+      properties:
+        paleta:
+          $ref: '#/components/schemas/PaletaEnum'
     PatchedPerfilEntradaRequest:
       type: object
       description: 'HU-45: el correo es el usuario de ingreso y no se cambia aquí.'

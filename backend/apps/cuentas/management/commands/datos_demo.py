@@ -19,6 +19,7 @@ from apps.aeropuerto.models import Geocerca
 from apps.aeropuerto.zonas import NOMBRE_ZONA_SCL, poligono_scl
 from apps.chat import demo as demo_chat
 from apps.comun.validadores import digito_verificador
+from apps.cuentas import demo_apariencia
 from apps.cuentas.models import Empresa, Plan, Rol, Usuario
 from apps.flota import demo as demo_flota
 from apps.reservas import demo as demo_reservas
@@ -113,6 +114,7 @@ class Command(BaseCommand):
                 demo_reservas.asegurar_convenio(empresa, numero, password)
                 demo_chat.cargar(empresa, conductores)
                 demo_chat.historial_whatsapp(empresa)
+                demo_apariencia.cargar(empresa)  # CC-27: paleta y logo sintético en Transportes Andes
 
         self.stdout.write(
             self.style.SUCCESS(

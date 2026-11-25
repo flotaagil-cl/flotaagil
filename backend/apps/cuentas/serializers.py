@@ -1,6 +1,7 @@
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from .apariencia import CampoApariencia
 from .models import Empresa, Modulo, Usuario, modulos_efectivos
 
 
@@ -15,9 +16,11 @@ class LoginSerializer(serializers.Serializer):
 
 
 class EmpresaResumenSerializer(serializers.ModelSerializer):
+    apariencia = CampoApariencia()  # CC-27: el tema del panel y de la app llega con la sesión
+
     class Meta:
         model = Empresa
-        fields = ["id", "razon_social", "slug", "modulo_cuentas"]
+        fields = ["id", "razon_social", "slug", "modulo_cuentas", "apariencia"]
 
 
 class UsuarioSesionSerializer(serializers.ModelSerializer):

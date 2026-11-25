@@ -46,7 +46,8 @@ afterEach(() => {
 
 describe('campo con sugerencias', () => {
   it('desde 3 caracteres y 300 ms después de la última tecla, una sola búsqueda', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // Reloj totalmente falso: con la máquina cargada, el tiempo real no puede adelantar la espera.
+    vi.useFakeTimers();
     const buscar = vi.fn<Buscar>(async () => SUGERENCIAS);
     render(<Prueba buscar={buscar} />);
     const campo = screen.getByRole('combobox', { name: 'Origen' });
@@ -61,7 +62,7 @@ describe('campo con sugerencias', () => {
     await act(() => vi.advanceTimersByTimeAsync(20));
     expect(buscar).toHaveBeenCalledTimes(1);
     expect(buscar.mock.calls[0][0]).toBe('prov');
-    expect(await screen.findAllByRole('option', {}, { timeout: 3000 })).toHaveLength(3);
+    expect(screen.getAllByRole('option')).toHaveLength(3);
     expect(campo).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText('© OpenStreetMap contributors')).toBeInTheDocument();
   });

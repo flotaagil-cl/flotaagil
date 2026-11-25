@@ -5,6 +5,10 @@ drf-spectacular==0.30.0
 psycopg[binary]==3.3.6
 django-environ==0.14.0
 django-filter==25.2
+# CC-27 (HU-77): procesamiento del logo; S3 solo por configuración en el despliegue (#75).
+Pillow==13.0.0
+django-storages[s3]==1.14.6
+boto3==1.44.11
 # Tope de kombu[redis] en Celery 5.5: redis<=5.2.1.
 redis==5.2.1
 # Tiempo real (HU-02): WebSocket con Channels 4 y Daphne; capa de canales en Redis.

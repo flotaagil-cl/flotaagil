@@ -44,6 +44,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/apariencia/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Apariencia de mi empresa */
+        get: operations["apariencia_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cambiar la paleta (auditado) */
+        patch: operations["apariencia_partial_update"];
+        trace?: never;
+    };
+    "/api/apariencia/logo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subir o reemplazar el logo (auditado) */
+        post: operations["apariencia_logo_create"];
+        /** Quitar el logo y volver al de FlotaÁgil (auditado) */
+        delete: operations["apariencia_logo_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/app/asignaciones/{id}/aceptar/": {
         parameters: {
             query?: never;
@@ -1706,6 +1742,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/publico/apariencia/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Apariencia pública de una empresa
+         * @description Sin sesión: solo la paleta y las URL del logo, sin otros datos de la empresa.
+         */
+        get: operations["publico_apariencia_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/publico/apariencia/{slug}/logo/{version}/{variante}.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Imagen del logo (PNG) */
+        get: operations["publico_apariencia_logo_.png_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reportes/{tipo}/": {
         parameters: {
             query?: never;
@@ -2355,6 +2428,11 @@ export interface components {
             readonly atendida_en: string | null;
             readonly atendida_por: string | null;
         };
+        Apariencia: {
+            paleta: components["schemas"]["PaletaEnum"];
+            /** @description Rutas de las versiones; null = logo de FlotaÁgil */
+            logo: components["schemas"]["Logo"] | null;
+        };
         AprobacionRequest: {
             /** @description HU-53: ajusta los correos autorizados al aprobar (correos exactos o «@dominio.cl») */
             correos_autorizados?: string[];
@@ -2793,6 +2871,7 @@ export interface components {
             razon_social: string;
             slug: string;
             modulo_cuentas?: boolean;
+            readonly apariencia: components["schemas"]["Apariencia"];
         };
         EncuestaRequest: {
             token: string;
@@ -2960,6 +3039,20 @@ export interface components {
             /** Format: email */
             email: string;
             password: string;
+        };
+        Logo: {
+            panel: string;
+            portal: string;
+            app: string;
+            correo: string;
+            icono: string;
+        };
+        LogoEntradaRequest: {
+            /**
+             * Format: binary
+             * @description PNG, JPG o WebP; hasta 2 MB y al menos 256 px de ancho
+             */
+            logo: string;
         };
         LotePosicionesRequest: {
             posiciones: components["schemas"]["PosicionRequest"][];
@@ -3294,6 +3387,20 @@ export interface components {
             results: components["schemas"]["Viaje"][];
         };
         /**
+         * @description * `tiffany` - Tiffany
+         *     * `oceano` - Océano
+         *     * `cobalto` - Cobalto
+         *     * `indigo` - Índigo
+         *     * `violeta` - Violeta
+         *     * `orquidea` - Orquídea
+         *     * `magenta` - Magenta
+         *     * `pizarra` - Pizarra
+         *     * `grafito` - Grafito
+         *     * `cian` - Cian
+         * @enum {string}
+         */
+        PaletaEnum: "tiffany" | "oceano" | "cobalto" | "indigo" | "violeta" | "orquidea" | "magenta" | "pizarra" | "grafito" | "cian";
+        /**
          * @description * `MI` - Para mí
          *     * `OTRO` - Para otra persona
          * @enum {string}
@@ -3383,6 +3490,9 @@ export interface components {
         };
         PatchedGrupoRequest: {
             nombre?: string;
+        };
+        PatchedPaletaEntradaRequest: {
+            paleta?: components["schemas"]["PaletaEnum"];
         };
         /** @description HU-45: el correo es el usuario de ingreso y no se cambia aquí. */
         PatchedPerfilEntradaRequest: {
@@ -4467,6 +4577,91 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AlertaVuelo"];
                 };
+            };
+        };
+    };
+    apariencia_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Apariencia"];
+                };
+            };
+        };
+    };
+    apariencia_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPaletaEntradaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPaletaEntradaRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPaletaEntradaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Apariencia"];
+                };
+            };
+        };
+    };
+    apariencia_logo_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["LogoEntradaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Apariencia"];
+                };
+            };
+        };
+    };
+    apariencia_logo_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -7302,6 +7497,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    publico_apariencia_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Apariencia"];
+                };
+            };
+        };
+    };
+    "publico_apariencia_logo_.png_retrieve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                variante: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
             };
         };
     };

@@ -20,7 +20,7 @@ interface UsuarioFalso extends Usuario {
   bloqueado?: boolean;
 }
 
-const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes', modulo_cuentas: true };
+const EMPRESA = { id: 1, razon_social: 'Transportes Andes Demo SpA', slug: 'transportes-andes', modulo_cuentas: true, apariencia: { paleta: 'tiffany' as const, logo: null } };
 /** HU-75: el administrador tiene todos; el despachador, los de siempre; los demás roles, ninguno. */
 export const TODOS_LOS_MODULOS: Usuario['modulos'] = ['MAPA', 'RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS', 'VEHICULOS', 'CONDUCTORES', 'CAJA', 'REPORTES', 'CONFIGURACION'];
 export const MODULOS_DESPACHADOR: Usuario['modulos'] = ['MAPA', 'RESERVAS', 'VUELOS', 'CHAT', 'CONVENIOS'];

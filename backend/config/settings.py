@@ -104,6 +104,25 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+# CC-27 (DC-83): logos de las empresas. En desarrollo, disco local; en el despliegue (#75) S3 solo con
+# variables de entorno: ARCHIVOS_BACKEND=storages.backends.s3.S3Storage, ARCHIVOS_S3_BUCKET y
+# ARCHIVOS_S3_REGION (las credenciales llegan por el rol de la instancia). Se sirven por la API, así que el
+# bucket puede ser privado.
+MEDIA_ROOT = env("MEDIA_ROOT", default=str(BASE_DIR / "media"))
+_ARCHIVOS_BACKEND = env("ARCHIVOS_BACKEND", default="django.core.files.storage.FileSystemStorage")
+STORAGES = {
+    "default": {
+        "BACKEND": _ARCHIVOS_BACKEND,
+        "OPTIONS": {
+            "bucket_name": env("ARCHIVOS_S3_BUCKET", default=""),
+            "region_name": env("ARCHIVOS_S3_REGION", default="us-east-1"),
+        }
+        if _ARCHIVOS_BACKEND.endswith("S3Storage")
+        else {},
+    },
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 REST_FRAMEWORK = {
