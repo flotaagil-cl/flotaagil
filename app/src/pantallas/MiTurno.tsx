@@ -74,7 +74,7 @@ export function MiTurno({ cargar, volver }: Props) {
           </div>
           {resumen?.inicio && (
             <span className="barra-estado" data-estado={resumen.en_turno ? 'DISPONIBLE' : 'NO_DISPONIBLE'}>
-              <span className="barra-estado-punto" aria-hidden="true" />
+              <Icono nombre={resumen.en_turno ? 'check' : 'reloj'} tamano={14} />
               {resumen.en_turno ? 'En curso' : 'Finalizado'}
             </span>
           )}

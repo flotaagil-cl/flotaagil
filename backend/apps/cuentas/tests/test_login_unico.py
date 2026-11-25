@@ -107,13 +107,13 @@ class TestCorreo:
                 raise smtplib.SMTPServerDisconnected("se cortó")
             return 1
 
-        with mock.patch("apps.integraciones.correo.send_mail", side_effect=falla_una_vez):
+        with mock.patch("apps.integraciones.correo.EmailMultiAlternatives.send", side_effect=falla_una_vez):
             tareas.enviar_correo.apply(args=["ana@ejemplo.example", "A", "T"])
         assert len(llamadas) == 2
 
     def test_rechazo_definitivo_no_reintenta(self):
         error = smtplib.SMTPResponseException(554, b"Message rejected")
-        with mock.patch("apps.integraciones.correo.send_mail", side_effect=error) as envio:
+        with mock.patch("apps.integraciones.correo.EmailMultiAlternatives.send", side_effect=error) as envio:
             resultado = tareas.enviar_correo.apply(args=["ana@ejemplo.example", "A", "T"])
         assert envio.call_count == 1
         assert resultado.failed()

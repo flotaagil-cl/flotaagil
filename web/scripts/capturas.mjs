@@ -67,6 +67,18 @@ async function quienViajaConvenio(pagina) {
   await pagina.getByLabel('Tu teléfono').fill('+56900008001');
 }
 
+/** CC-27: ingresa en la app del conductor y espera el Inicio (y el logo, si la empresa tiene). */
+async function ingresarEnLaApp(pagina, correo, conLogo) {
+  // La sesión de la captura anterior queda en el navegador: se parte de cero.
+  await pagina.evaluate(() => localStorage.clear());
+  await pagina.reload();
+  await pagina.getByLabel('Correo').fill(correo);
+  await pagina.getByLabel('Contraseña', { exact: true }).fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+  await pagina.getByRole('button', { name: 'Ingresar' }).click();
+  await pagina.getByRole('heading', { name: /Hola|ubicación|Consentimiento|contraseña/i }).first().waitFor();
+  if (conLogo) await pagina.getByRole('img', { name: /^Logo de/ }).waitFor();
+}
+
 const PANTALLAS = {
   'HU-31': [{ nombre: 'panel-caja', ruta: '/caja', sesion: 'admin' }],
   'HU-32': [{ nombre: 'panel-reserva-contingencia', ruta: '/reservas/contingencia', sesion: 'despacho' }],
@@ -686,6 +698,21 @@ const PANTALLAS = {
     { nombre: 'portal-registro-convenio-indigo', ruta: `${PORTAL}/registro-empresa`, sesion: null },
     { nombre: 'mi-convenio-indigo', ruta: '/mi-convenio', sesion: 'convenio' },
     { nombre: 'portal-formulario-tiffany', ruta: '/solicitar/taxi-pacifico', sesion: null },
+  ],
+  // CC-27 (HU-80): la app con las dos empresas demo. Con CAPTURAS_URL en el servidor de la app (puerto 5174).
+  'HU-80': [
+    {
+      nombre: 'app-inicio-indigo',
+      ruta: '/',
+      sesion: null,
+      accion: (pagina) => ingresarEnLaApp(pagina, 'conductor1@transportes-andes.example', true),
+    },
+    {
+      nombre: 'app-inicio-tiffany',
+      ruta: '/',
+      sesion: null,
+      accion: (pagina) => ingresarEnLaApp(pagina, 'conductor1@taxi-pacifico.example', false),
+    },
   ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],

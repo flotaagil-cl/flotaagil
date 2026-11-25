@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { MensajeChat } from '../chat/canal';
 import { DeslizarParaActualizar } from '../componentes/DeslizarParaActualizar';
 import { Icono } from '../componentes/Icono';
+import { Marca } from '../componentes/Marca';
 import type { Asignacion } from '../conductor/canal';
 import type { Accion } from '../conductor/ejecucion';
 import type { EstadoEnvio } from '../gps/envio';
@@ -16,6 +17,8 @@ import { ViajeAsignado } from './ViajeAsignado';
 import { ViajeEnCurso } from './ViajeEnCurso';
 
 const ESTADOS = { DISPONIBLE: 'Disponible', NO_DISPONIBLE: 'No disponible', EN_VIAJE: 'En viaje' } as const;
+/** CC-27: cada estado se distingue por ícono y texto, no solo por el color. */
+const ICONO_ESTADO = { DISPONIBLE: 'check', NO_DISPONIBLE: 'reloj', EN_VIAJE: 'auto' } as const;
 
 interface Props {
   usuario: Usuario;
@@ -89,16 +92,14 @@ export function Inicio({
       <main className="app-pantalla">
         <header className="app-barra">
           <div className="barra-marca">
-            <div className="barra-logo" aria-hidden="true">
-              <Icono nombre="auto" tamano={20} />
-            </div>
+            <Marca clase="barra-logo" tamano={20} />
             <div className="barra-titulos">
               <h1>Hola, {usuario.nombre}</h1>
               <p className="barra-subtitulo">{usuario.empresa.razon_social}</p>
             </div>
           </div>
           <span className="barra-estado" data-estado={perfil.estado}>
-            <span className="barra-estado-punto" aria-hidden="true" />
+            <Icono nombre={ICONO_ESTADO[perfil.estado]} tamano={14} />
             {ESTADOS[perfil.estado]}
           </span>
         </header>
@@ -178,6 +179,7 @@ export function Inicio({
                     <span className="campo-error">Error GPS</span>
                   ) : rastreo.activo ? (
                     <span className="ok etiqueta-compacta">
+                      <Icono nombre="check" tamano={14} />{' '}
                       GPS activo ({perfil.estado === 'EN_VIAJE' ? '10 s' : '30 s'})
                       {envio.ultimoEnvio ? ` · ${horaDeChile(envio.ultimoEnvio)}` : ''}
                     </span>

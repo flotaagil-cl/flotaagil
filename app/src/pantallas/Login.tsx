@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Icono } from '../componentes/Icono';
+import { Marca } from '../componentes/Marca';
 import { ErrorApi, SinRed, type SesionApp } from '../sesion/sesion';
 
 const MENSAJES: Record<string, string> = {
@@ -42,9 +43,7 @@ export function Login({ sesion, motivo }: { sesion: SesionApp; motivo?: string }
       <header className="login-hero">
         <span className="login-circulo-grande" aria-hidden="true" />
         <span className="login-circulo-chico" aria-hidden="true" />
-        <div className="login-logo" aria-hidden="true">
-          <Icono nombre="auto" tamano={34} />
-        </div>
+        <Marca clase="login-logo" tamano={34} />
         <h1>FlotaÁgil</h1>
         <p className="login-subtitulo">App del conductor</p>
       </header>

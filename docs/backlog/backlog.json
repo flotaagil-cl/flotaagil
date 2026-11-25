@@ -1755,8 +1755,8 @@
       "responsable": "Renato",
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-27, autorizada por Renato, 2026-11-25)",
-      "estado": "Pendiente",
-      "estado_evidencia": "CC-27: en construcción."
+      "estado": "Hecha",
+      "estado_evidencia": "CC-27 (DC-85): la app guarda la paleta y el logo al ingresar o abrirse y los usa sin conexión; los correos de cada empresa salen con su paleta y su logo."
     }
   ],
   "tareas": [

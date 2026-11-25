@@ -95,5 +95,7 @@ def enviar(viaje: Viaje, tipo: str) -> bool:
         for suscripcion in suscripciones:
             tareas.enviar_push.delay(suscripcion, {"titulo": titulo, "cuerpo": cuerpo, "url": url})
     elif cuenta.acepta_avisos_correo:
-        enviar_correo.delay(cuenta.usuario.email, titulo, f"Hola {cuenta.nombre}:\n\n{cuerpo}")
+        enviar_correo.delay(
+            cuenta.usuario.email, titulo, f"Hola {cuenta.nombre}:\n\n{cuerpo}", viaje.empresa_id
+        )
     return True

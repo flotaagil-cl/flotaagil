@@ -109,8 +109,9 @@ function FormularioPassword({
   return (
     <>
       {errores.general && (
-        <p className="error" role="alert">
-          {errores.general}
+        <p className="error alerta-bloque" role="alert">
+          <Icono nombre="alerta" tamano={18} />
+          <span>{errores.general}</span>
         </p>
       )}
       <form onSubmit={cambiar} noValidate>

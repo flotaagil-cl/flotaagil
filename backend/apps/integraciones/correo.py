@@ -10,18 +10,35 @@ El envío corre en el worker (`apps.cuentas.tareas.enviar_correo`), con reintent
 """
 
 import smtplib
+from email.mime.image import MIMEImage
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+
+CID_LOGO = "logo-empresa"
 
 
 class CorreoTransitorio(Exception):
     """Falla que puede resolverse reintentando (red, SMTP 4xx)."""
 
 
-def enviar(destino: str, asunto: str, texto: str) -> None:
+def _componer(destino, asunto, texto, html, logo) -> EmailMultiAlternatives:
+    mensaje = EmailMultiAlternatives(asunto, texto, settings.DEFAULT_FROM_EMAIL, [destino])
+    if html:
+        mensaje.attach_alternative(html, "text/html")
+    if html and logo:
+        imagen = MIMEImage(logo, "png")
+        imagen.add_header("Content-ID", f"<{CID_LOGO}>")
+        imagen.add_header("Content-Disposition", "inline", filename="logo.png")
+        mensaje.mixed_subtype = "related"  # el HTML y su imagen van juntos
+        mensaje.attach(imagen)
+    return mensaje
+
+
+def enviar(destino: str, asunto: str, texto: str, html: str | None = None, logo: bytes | None = None) -> None:
+    """`html` y `logo` (PNG referenciado como `cid:logo-empresa`) visten el correo (CC-27)."""
     try:
-        send_mail(asunto, texto, settings.DEFAULT_FROM_EMAIL, [destino], fail_silently=False)
+        _componer(destino, asunto, texto, html, logo).send(fail_silently=False)
     except (TimeoutError, smtplib.SMTPServerDisconnected, smtplib.SMTPConnectError, ConnectionError) as error:
         raise CorreoTransitorio(str(error)) from error
     except smtplib.SMTPResponseException as error:

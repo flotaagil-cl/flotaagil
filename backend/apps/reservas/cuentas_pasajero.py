@@ -103,7 +103,9 @@ def enviar_activacion(cuenta: CuentaPasajero) -> None:
     from apps.portal.publico import enlace
 
     url = enlace(cuenta.empresa, "activar", token_activacion(cuenta))
-    al_confirmar_correo(cuenta.usuario.email, ASUNTO_ACTIVAR, texto_activacion(cuenta, url))
+    al_confirmar_correo(
+        cuenta.usuario.email, ASUNTO_ACTIVAR, texto_activacion(cuenta, url), cuenta.empresa_id
+    )
 
 
 class EnlaceActivacionInvalido(APIException):
