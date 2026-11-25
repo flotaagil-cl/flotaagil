@@ -198,6 +198,12 @@ export const pantallasDelPanel: RouteObject[] = [
     handle: { titulo: 'Usuarios', menu: true, seccion: 'administracion', icono: 'usuarios', roles: ROLES_ADMIN } satisfies Manejo,
   },
   {
+    // CC-27: exclusiva del administrador, como Usuarios (no es un módulo asignable).
+    path: 'apariencia',
+    lazy: async () => ({ Component: (await import('../apariencia/Apariencia')).Apariencia }),
+    handle: { titulo: 'Apariencia', menu: true, seccion: 'administracion', icono: 'paleta', roles: ROLES_ADMIN } satisfies Manejo,
+  },
+  {
     // DC-68: números de emergencia y parámetros de la reserva pública, solo el administrador.
     path: 'configuracion',
     lazy: async () => ({ Component: (await import('../configuracion/Configuracion')).Configuracion }),

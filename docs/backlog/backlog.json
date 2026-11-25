@@ -1705,8 +1705,8 @@
       "responsable": "Renato",
       "en_pareja": false,
       "estado_cambio": "Nueva (CC-27, autorizada por Renato, 2026-11-25)",
-      "estado": "Pendiente",
-      "estado_evidencia": "CC-27: en construcción."
+      "estado": "Hecha",
+      "estado_evidencia": "CC-27 (DC-84): pantalla Apariencia solo del administrador, con vista previa, logo y restablecer; el panel aplica el tema sin recargar."
     },
     {
       "id": "HU-79",

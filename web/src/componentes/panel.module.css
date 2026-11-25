@@ -640,3 +640,9 @@
   margin: 0;
   padding-left: 18px;
 }
+
+/* CC-27: ícono de las etiquetas de estado. */
+.iconoEtiqueta {
+  margin-right: 4px;
+  vertical-align: -2px;
+}

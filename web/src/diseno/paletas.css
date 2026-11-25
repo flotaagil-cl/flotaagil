@@ -1,0 +1,171 @@
+/* CC-27 (DC-84): paletas por empresa. Generado por scripts/generar-paletas.mjs desde backend/apps/cuentas/paletas.json. No editar a mano. */
+
+/* Tiffany */
+.tema-portal[data-paleta='tiffany'],
+.tema-portal [data-paleta='tiffany'],
+.tema-flotaagil[data-paleta='tiffany'],
+.tema-flotaagil [data-paleta='tiffany'] {
+  --color-primario-900: #0b4f5c;
+  --color-primario-700: #0c7f7d;
+  --color-tiffany: #81d8d0;
+  --color-tiffany-50: #e3f6f4;
+  --color-hero-fin: #2fa39c;
+  --fondo: #f2fbfa;
+  --borde: #cfe8e5;
+  --borde-campo: #5f8f8b;
+  --suave: #ddf3f1;
+  --mapa: #e1f0ee;
+}
+
+/* Océano */
+.tema-portal[data-paleta='oceano'],
+.tema-portal [data-paleta='oceano'],
+.tema-flotaagil[data-paleta='oceano'],
+.tema-flotaagil [data-paleta='oceano'] {
+  --color-primario-900: #0b3d6b;
+  --color-primario-700: #1f6fb5;
+  --color-tiffany: #b1cde5;
+  --color-tiffany-50: #e6f1fb;
+  --color-hero-fin: #1f6fb5;
+  --fondo: #f3f8fd;
+  --borde: #d7e5f2;
+  --borde-campo: #4185c0;
+  --suave: #e9f1f8;
+  --mapa: #e4eef6;
+}
+
+/* Cobalto */
+.tema-portal[data-paleta='cobalto'],
+.tema-portal [data-paleta='cobalto'],
+.tema-flotaagil[data-paleta='cobalto'],
+.tema-flotaagil [data-paleta='cobalto'] {
+  --color-primario-900: #12306e;
+  --color-primario-700: #2e5fd0;
+  --color-tiffany: #b6c7ef;
+  --color-tiffany-50: #e8eefc;
+  --color-hero-fin: #2e5fd0;
+  --fondo: #f4f7fe;
+  --borde: #d9e2f7;
+  --borde-campo: #4d77d7;
+  --suave: #eaeffa;
+  --mapa: #e6ecf9;
+}
+
+/* Índigo */
+.tema-portal[data-paleta='indigo'],
+.tema-portal [data-paleta='indigo'],
+.tema-flotaagil[data-paleta='indigo'],
+.tema-flotaagil [data-paleta='indigo'] {
+  --color-primario-900: #2b2a78;
+  --color-primario-700: #5b57d6;
+  --color-tiffany: #c6c4f1;
+  --color-tiffany-50: #edecfc;
+  --color-hero-fin: #5b57d6;
+  --fondo: #f6f6fe;
+  --borde: #e1e1f8;
+  --borde-campo: #7470dc;
+  --suave: #efeefb;
+  --mapa: #ebebfa;
+}
+
+/* Violeta */
+.tema-portal[data-paleta='violeta'],
+.tema-portal [data-paleta='violeta'],
+.tema-flotaagil[data-paleta='violeta'],
+.tema-flotaagil [data-paleta='violeta'] {
+  --color-primario-900: #3d2178;
+  --color-primario-700: #7a4bd0;
+  --color-tiffany: #d0c0ef;
+  --color-tiffany-50: #f0eafb;
+  --color-hero-fin: #7a4bd0;
+  --fondo: #f8f5fd;
+  --borde: #e7dff7;
+  --borde-campo: #8e66d7;
+  --suave: #f2edfa;
+  --mapa: #efe9f9;
+}
+
+/* Orquídea */
+.tema-portal[data-paleta='orquidea'],
+.tema-portal [data-paleta='orquidea'],
+.tema-flotaagil[data-paleta='orquidea'],
+.tema-flotaagil [data-paleta='orquidea'] {
+  --color-primario-900: #4a2062;
+  --color-primario-700: #9a44b8;
+  --color-tiffany: #dcbee6;
+  --color-tiffany-50: #f6eafa;
+  --color-hero-fin: #9a44b8;
+  --fondo: #fbf5fd;
+  --borde: #edddf2;
+  --borde-campo: #a960c3;
+  --suave: #f5ecf8;
+  --mapa: #f3e9f6;
+}
+
+/* Magenta */
+.tema-portal[data-paleta='magenta'],
+.tema-portal [data-paleta='magenta'],
+.tema-flotaagil[data-paleta='magenta'],
+.tema-flotaagil [data-paleta='magenta'] {
+  --color-primario-900: #5a1a4f;
+  --color-primario-700: #a8338f;
+  --color-tiffany: #e1b8d8;
+  --color-tiffany-50: #fae8f6;
+  --color-hero-fin: #a8338f;
+  --fondo: #fdf4fb;
+  --borde: #efdaeb;
+  --borde-campo: #b552a0;
+  --suave: #f6ebf4;
+  --mapa: #f5e7f2;
+}
+
+/* Pizarra */
+.tema-portal[data-paleta='pizarra'],
+.tema-portal [data-paleta='pizarra'],
+.tema-flotaagil[data-paleta='pizarra'],
+.tema-flotaagil [data-paleta='pizarra'] {
+  --color-primario-900: #1f3a44;
+  --color-primario-700: #4e7886;
+  --color-tiffany: #c1d0d5;
+  --color-tiffany-50: #eaf0f2;
+  --color-hero-fin: #4e7886;
+  --fondo: #f5f8f9;
+  --borde: #dfe7e9;
+  --borde-campo: #698c98;
+  --suave: #edf2f3;
+  --mapa: #eaeff0;
+}
+
+/* Grafito */
+.tema-portal[data-paleta='grafito'],
+.tema-portal [data-paleta='grafito'],
+.tema-flotaagil[data-paleta='grafito'],
+.tema-flotaagil [data-paleta='grafito'] {
+  --color-primario-900: #23272f;
+  --color-primario-700: #5a6270;
+  --color-tiffany: #c5c8cd;
+  --color-tiffany-50: #eef0f3;
+  --color-hero-fin: #5a6270;
+  --fondo: #f7f8f9;
+  --borde: #e1e3e5;
+  --borde-campo: #737a85;
+  --suave: #efeff1;
+  --mapa: #ebecee;
+}
+
+/* Cian */
+.tema-portal[data-paleta='cian'],
+.tema-portal [data-paleta='cian'],
+.tema-flotaagil[data-paleta='cian'],
+.tema-flotaagil [data-paleta='cian'] {
+  --color-primario-900: #0a3f55;
+  --color-primario-700: #0e78a0;
+  --color-tiffany: #abd0de;
+  --color-tiffany-50: #e5f4fa;
+  --color-hero-fin: #0e78a0;
+  --fondo: #f2fafd;
+  --borde: #d4e7ee;
+  --borde-campo: #328cae;
+  --suave: #e7f2f6;
+  --mapa: #e2eff4;
+}

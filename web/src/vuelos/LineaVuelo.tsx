@@ -5,8 +5,15 @@ import { Icono } from '../diseno/Icono';
 import type { EstadoDeVuelo, LineaDeVuelo } from './textos';
 import c from './vuelos.module.css';
 
+const ICONO_DE_TONO = { ok: 'check', revision: 'reloj', peligro: 'alerta', neutro: 'aterrizaje' } as const;
+
 export function EstadoVuelo({ estado }: { estado: EstadoDeVuelo }) {
-  return <span className={`${c.chip} ${c[estado.tono]}`}>{estado.texto}</span>;
+  return (
+    <span className={`${c.chip} ${c[estado.tono]}`}>
+      <Icono nombre={ICONO_DE_TONO[estado.tono]} tamano={13} className={c.iconoChip} />
+      {estado.texto}
+    </span>
+  );
 }
 
 export function LineaVuelo({ linea }: { linea: LineaDeVuelo }) {

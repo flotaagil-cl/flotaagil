@@ -59,7 +59,7 @@ describe('HU-37 · tokens del portal', () => {
 });
 
 describe('HU-37 · colores solo como tokens', () => {
-  const fuentes = import.meta.glob<string>(['./**/*.{ts,tsx,css}', '!./**/*.test.{ts,tsx}', '!./tokens.css'], {
+  const fuentes = import.meta.glob<string>(['./**/*.{ts,tsx,css}', '!./**/*.test.{ts,tsx}', '!./tokens.css', '!./paletas.css'], {
     query: '?raw',
     import: 'default',
     eager: true,

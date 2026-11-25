@@ -231,13 +231,24 @@ export class ServidorAuthFalso {
   /** DC-73: permite simular empresa sin módulo de cuentas en pruebas del panel. */
   moduloCuentas: boolean | null = null;
 
+  /** CC-27: apariencia de la empresa que trae la sesión en esta prueba. */
+  apariencia: Usuario['empresa']['apariencia'] | null = null;
+
   /** HU-75: módulos del despachador en esta prueba, por id de usuario. */
   modulos = new Map<number, Usuario['modulos']>();
 
   private efectivo(usuario: UsuarioFalso): UsuarioFalso {
     const aceptada = this.privacidad.has(usuario.id) ? { debe_aceptar_privacidad: false } : {};
     const empresa =
-      this.moduloCuentas !== null ? { empresa: { ...usuario.empresa, modulo_cuentas: this.moduloCuentas } } : {};
+      this.moduloCuentas !== null || this.apariencia !== null
+        ? {
+            empresa: {
+              ...usuario.empresa,
+              modulo_cuentas: this.moduloCuentas ?? usuario.empresa.modulo_cuentas,
+              apariencia: this.apariencia ?? usuario.empresa.apariencia,
+            },
+          }
+        : {};
     const modulos = this.modulos.has(usuario.id) ? { modulos: this.modulos.get(usuario.id)! } : {};
     return { ...usuario, ...this.cambios.get(usuario.id), ...aceptada, ...empresa, ...modulos };
   }

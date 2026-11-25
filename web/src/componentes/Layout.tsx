@@ -7,6 +7,8 @@ import { NoLeidosChat } from '../chat/NoLeidos';
 import { Icono } from '../diseno/Icono';
 import { formatearTitulo } from '../diseno/titulo';
 import '../diseno/tokens.css';
+import '../diseno/paletas.css';
+import { LogoEmpresa } from '../diseno/LogoEmpresa';
 import { SinPermiso } from '../paginas/SinPermiso';
 import { useRutas } from '../rutas/contexto';
 import type { EntradaMenu, Manejo, SeccionMenu } from '../rutas/tabla';
@@ -92,7 +94,8 @@ export function Layout() {
   }
 
   const marco = (
-    <div className={`${estilos.marco} tema-flotaagil`}>
+    // CC-27: la paleta de la empresa reemplaza los tokens de marca; al guardar en «Apariencia» cambia sin recargar.
+    <div className={`${estilos.marco} tema-flotaagil`} data-paleta={usuario.empresa.apariencia?.paleta}>
       <header className={estilos.cabecera}>
         <button
           type="button"
@@ -103,7 +106,7 @@ export function Layout() {
         >
           Menú
         </button>
-        <span className={estilos.marca}>FlotaÁgil</span>
+        <LogoEmpresa apariencia={usuario.empresa.apariencia} variante="panel" empresa={usuario.empresa.razon_social} respaldo={<span className={estilos.marca}>FlotaÁgil</span>} />
         <span className={estilos.empresa}>{usuario.empresa.razon_social}</span>
         <div className={estilos.usuario}>
           <span>
