@@ -35,6 +35,15 @@ def _geocodificador_sin_red(settings):
 
 
 @pytest.fixture(autouse=True)
+def _archivos_en_memoria(settings):
+    """CC-27: ninguna prueba escribe logos en el disco del desarrollo."""
+    settings.STORAGES = {
+        **settings.STORAGES,
+        "default": {"BACKEND": "django.core.files.storage.InMemoryStorage"},
+    }
+
+
+@pytest.fixture(autouse=True)
 def _capa_de_canales_en_memoria(settings):
     """Las pruebas no usan Redis para los WebSocket (HU-02)."""
     settings.CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}

@@ -5,6 +5,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from apps.comun.vistas import ConfiguracionPublicaView
+from apps.cuentas.apariencia import AparienciaPublicaView, AparienciaView, LogoPublicoView, LogoView
 from apps.cuentas.configuracion import ConfiguracionEmpresaView
 from apps.integraciones.sugerencias import SugerirDireccionesView
 
@@ -27,6 +28,14 @@ urlpatterns = [
     path("api/app/", include("apps.flota.app_urls")),
     path("api/chat/", include("apps.chat.urls")),
     path("api/configuracion-empresa/", ConfiguracionEmpresaView.as_view(), name="configuracion-empresa"),
+    path("api/apariencia/", AparienciaView.as_view(), name="apariencia"),
+    path("api/apariencia/logo/", LogoView.as_view(), name="apariencia-logo"),
+    path("api/publico/apariencia/<slug:slug>/", AparienciaPublicaView.as_view(), name="apariencia-publica"),
+    path(
+        "api/publico/apariencia/<slug:slug>/logo/<str:version>/<str:variante>.png",
+        LogoPublicoView.as_view(),
+        name="apariencia-logo-publico",
+    ),
     path("api/direcciones/sugerir/", SugerirDireccionesView.as_view(), name="sugerir-direcciones"),
     path("api/portal/", include("apps.portal.urls")),
     path("api/mi-convenio/", include("apps.convenios.cuenta_urls")),

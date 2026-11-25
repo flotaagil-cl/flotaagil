@@ -1,0 +1,15 @@
+{
+  "predeterminada": "tiffany",
+  "paletas": [
+    { "clave": "tiffany", "nombre": "Tiffany", "oscuro": "#0b4f5c", "medio": "#0c7f7d", "claro": "#e3f6f4" },
+    { "clave": "oceano", "nombre": "Océano", "oscuro": "#0b3d6b", "medio": "#1f6fb5", "claro": "#e6f1fb" },
+    { "clave": "cobalto", "nombre": "Cobalto", "oscuro": "#12306e", "medio": "#2e5fd0", "claro": "#e8eefc" },
+    { "clave": "indigo", "nombre": "Índigo", "oscuro": "#2b2a78", "medio": "#5b57d6", "claro": "#edecfc" },
+    { "clave": "violeta", "nombre": "Violeta", "oscuro": "#3d2178", "medio": "#7a4bd0", "claro": "#f0eafb" },
+    { "clave": "orquidea", "nombre": "Orquídea", "oscuro": "#4a2062", "medio": "#9a44b8", "claro": "#f6eafa" },
+    { "clave": "magenta", "nombre": "Magenta", "oscuro": "#5a1a4f", "medio": "#a8338f", "claro": "#fae8f6" },
+    { "clave": "pizarra", "nombre": "Pizarra", "oscuro": "#1f3a44", "medio": "#4e7886", "claro": "#eaf0f2" },
+    { "clave": "grafito", "nombre": "Grafito", "oscuro": "#23272f", "medio": "#5a6270", "claro": "#eef0f3" },
+    { "clave": "cian", "nombre": "Cian", "oscuro": "#0a3f55", "medio": "#0e78a0", "claro": "#e5f4fa" }
+  ]
+}

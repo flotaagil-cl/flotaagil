@@ -12,6 +12,8 @@ from django.db.models.functions import Now
 
 from apps.comun.validadores import validar_kebab, validar_no_vacio, validar_rut, validar_telefono_e164
 
+from .paletas import PREDETERMINADA
+
 
 class Plan(models.TextChoices):
     # DC-39: planes del modelo comercial del informe (CC-13). Antes BASICO y FLOTA_PLUS.
@@ -32,6 +34,10 @@ class Empresa(models.Model):
     # DC-51 (CC-22): módulo pagado con las cuentas de pasajero y convenio. Independiente del plan; solo lo
     # cambia el superusuario de la plataforma.
     modulo_cuentas = models.BooleanField(default=False, db_default=False)
+    # CC-27 (DC-83): apariencia. `paleta` es una clave del catálogo; `logo`, la carpeta de la versión vigente
+    # en el almacenamiento (NULL = logo de FlotaÁgil). Los edita el administrador desde el panel.
+    paleta = models.CharField(max_length=12, default=PREDETERMINADA, db_default=PREDETERMINADA)
+    logo = models.CharField(max_length=120, null=True, blank=True, editable=False)
     creado_en = models.DateTimeField(db_default=Now(), editable=False)
 
     class Meta:
