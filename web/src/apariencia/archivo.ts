@@ -7,3 +7,11 @@ export function revisarArchivo(archivo: File): string | null {
   if (archivo.size > MAXIMO_BYTES) return 'El logo pesa más de 2 MB.';
   return null;
 }
+
+export const MAXIMO_NOMBRE = 30;
+
+/** CC-21 (DC-86): de 1 a 3 letras o números; vacío = sin iniciales. */
+export const inicialesValidas = (valor: string) => /^[\p{L}\p{N}]{0,3}$/u.test(valor);
+
+/** Como lo guarda el servidor: sin espacios sobrantes. */
+export const limpiarNombre = (valor: string) => valor.trim().replace(/\s+/g, ' ');

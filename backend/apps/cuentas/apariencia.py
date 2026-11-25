@@ -1,9 +1,10 @@
-"""CC-27 (HU-77, DC-83): apariencia de la empresa (paleta del catálogo y logo).
+"""CC-27 (HU-77, DC-83) y CC-21 (DC-86): apariencia de la empresa (paleta, logo, nombre de marca e iniciales).
 
 La lee y la cambia solo el administrador («Apariencia» no es un módulo asignable al despachador) y cada
-cambio queda en AUDITORIA. El portal la obtiene de un endpoint público que solo entrega la paleta y las URL
-del logo.
+cambio queda en AUDITORIA. El portal la obtiene de un endpoint público que solo entrega esos datos de marca.
 """
+
+import unicodedata
 
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -37,7 +38,9 @@ class LogoSerializer(serializers.Serializer):
 
 class AparienciaSerializer(serializers.Serializer):
     paleta = serializers.ChoiceField(choices=OPCIONES)
-    logo = LogoSerializer(allow_null=True, help_text="Rutas de las versiones; null = logo de FlotaÁgil")
+    logo = LogoSerializer(allow_null=True, help_text="Rutas de las versiones; null = sin logo propio")
+    nombre_marca = serializers.CharField(allow_blank=True, help_text="Vacío = se muestra la razón social")
+    iniciales = serializers.CharField(allow_blank=True, help_text="Se muestran cuando no hay logo")
 
 
 def _version(carpeta: str) -> str:
@@ -55,7 +58,12 @@ def urls_del_logo(empresa: Empresa) -> dict[str, str] | None:
 
 
 def apariencia_de(empresa: Empresa) -> dict:
-    return {"paleta": empresa.paleta, "logo": urls_del_logo(empresa)}
+    return {
+        "paleta": empresa.paleta,
+        "logo": urls_del_logo(empresa),
+        "nombre_marca": empresa.nombre_marca,
+        "iniciales": empresa.iniciales,
+    }
 
 
 @extend_schema_field(AparienciaSerializer)
@@ -69,8 +77,24 @@ class CampoApariencia(serializers.Field):
         return apariencia_de(empresa)
 
 
-class PaletaEntradaSerializer(serializers.Serializer):
-    paleta = serializers.ChoiceField(choices=OPCIONES)
+class AparienciaEntradaSerializer(serializers.Serializer):
+    """Cambio parcial: solo se modifica lo que viene."""
+
+    paleta = serializers.ChoiceField(choices=OPCIONES, required=False)
+    nombre_marca = serializers.CharField(required=False, allow_blank=True, max_length=30)
+    iniciales = serializers.CharField(required=False, allow_blank=True, max_length=3)
+
+    def validate_nombre_marca(self, valor: str) -> str:
+        # Va en encabezados y en el asunto de los correos: sin saltos de línea ni caracteres de control.
+        if any(unicodedata.category(c)[0] == "C" or unicodedata.category(c) in ("Zl", "Zp") for c in valor):
+            raise serializers.ValidationError("El nombre de marca no admite saltos de línea.")
+        return " ".join(valor.split())
+
+    def validate_iniciales(self, valor: str) -> str:
+        valor = valor.upper()
+        if valor and (len(valor) > 3 or not valor.isalnum()):
+            raise serializers.ValidationError("Usa de 1 a 3 letras o números, sin espacios ni signos.")
+        return valor
 
 
 class LogoEntradaSerializer(serializers.Serializer):
@@ -100,20 +124,21 @@ class AparienciaView(_SoloAdministrador):
 
     @extend_schema(
         tags=["apariencia"],
-        summary="Cambiar la paleta (auditado)",
-        request=PaletaEntradaSerializer,
+        summary="Cambiar la paleta, el nombre de marca o las iniciales (auditado)",
+        request=AparienciaEntradaSerializer,
         responses=AparienciaSerializer,
     )
     def patch(self, request):
-        entrada = PaletaEntradaSerializer(data=request.data)
+        entrada = AparienciaEntradaSerializer(data=request.data)
         entrada.is_valid(raise_exception=True)
-        paleta = entrada.validated_data["paleta"]
         with transaction.atomic():
             empresa = self._empresa_bloqueada(request)
-            if empresa.paleta != paleta:
-                previos = {"paleta": empresa.paleta}
-                empresa.paleta = paleta
-                empresa.save(update_fields=["paleta"])
+            cambios = {c: v for c, v in entrada.validated_data.items() if getattr(empresa, c) != v}
+            if cambios:
+                previos = {campo: getattr(empresa, campo) for campo in cambios}
+                for campo, valor in cambios.items():
+                    setattr(empresa, campo, valor)
+                empresa.save(update_fields=list(cambios))
                 self._auditar(request, previos)
         return Response(apariencia_de(empresa))
 
@@ -179,7 +204,7 @@ def _empresa_activa(slug: str) -> Empresa:
 
 
 class AparienciaPublicaView(APIView):
-    """Sin sesión: solo la paleta y las URL del logo, sin otros datos de la empresa."""
+    """Sin sesión: solo la marca (paleta, URL del logo, nombre de marca e iniciales), sin otros datos."""
 
     permission_classes = [AllowAny]
     authentication_classes: list = []

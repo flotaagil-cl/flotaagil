@@ -9,8 +9,9 @@ from apps.auditoria.models import Auditoria, Entidad
 from . import logos
 from .models import Empresa
 
-# Empresa demo → paleta. Taxi Pacífico se queda con Tiffany y sin logo, para comparar.
-APARIENCIA_DEMO = {"transportes-andes": "indigo"}
+# Taxi Pacífico se queda con Tiffany y sin logo, para comparar: muestra sus iniciales.
+PALETA_Y_LOGO_DEMO = {"transportes-andes": "indigo"}
+MARCA_DEMO = {"transportes-andes": {"nombre_marca": "Andes Demo"}, "taxi-pacifico": {"iniciales": "TP"}}
 
 
 def logo_sintetico(texto: str = "ANDES DEMO") -> bytes:
@@ -28,13 +29,19 @@ def logo_sintetico(texto: str = "ANDES DEMO") -> bytes:
 
 def cargar(empresa: Empresa) -> None:
     """Solo si nadie ha tocado la apariencia: repetir datos_demo no pisa lo que eligió el administrador."""
-    paleta = APARIENCIA_DEMO.get(empresa.slug)
-    if paleta is None or empresa.logo or empresa.paleta != "tiffany":
-        return
     if Auditoria.objects.filter(
         entidad=Entidad.EMPRESA, entidad_id=empresa.pk, accion="EDITAR_APARIENCIA"
     ).exists():
         return
-    empresa.paleta = paleta
-    empresa.logo = logos.guardar(empresa.pk, logos.procesar(logo_sintetico()))
-    empresa.save(update_fields=["paleta", "logo"])
+    campos = []
+    paleta = PALETA_Y_LOGO_DEMO.get(empresa.slug)
+    if paleta and not empresa.logo and empresa.paleta == "tiffany":
+        empresa.paleta = paleta
+        empresa.logo = logos.guardar(empresa.pk, logos.procesar(logo_sintetico()))
+        campos += ["paleta", "logo"]
+    if not empresa.nombre_marca and not empresa.iniciales:
+        for campo, valor in MARCA_DEMO.get(empresa.slug, {}).items():
+            setattr(empresa, campo, valor)
+            campos.append(campo)
+    if campos:
+        empresa.save(update_fields=campos)

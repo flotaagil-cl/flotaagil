@@ -29,7 +29,7 @@ describe.each([
       responder: async (_peticion, camino) => {
         if (camino !== RUTA) return undefined;
         await espera;
-        return jsonPortal(200, { paleta: 'indigo', logo: LOGO });
+        return jsonPortal(200, { paleta: 'indigo', logo: LOGO, nombre_marca: '', iniciales: '' });
       },
     });
     expect(await screen.findByRole('status', { name: 'Cargando' })).toBeInTheDocument();
@@ -44,11 +44,21 @@ describe.each([
 describe('respaldos', () => {
   it('sin logo propio muestra el de FlotaÁgil', async () => {
     montarPortal('/solicitar/transportes-andes', {
-      responder: (_p, camino) => (camino === RUTA ? jsonPortal(200, { paleta: 'tiffany', logo: null }) : undefined),
+      responder: (_p, camino) => (camino === RUTA ? jsonPortal(200, { paleta: 'tiffany', logo: null, nombre_marca: '', iniciales: '' }) : undefined),
     });
     const barra = await screen.findByRole('banner');
     expect(within(barra).queryByRole('img', { name: /^Logo de/ })).not.toBeInTheDocument();
     expect(barra.querySelector('svg')).not.toBeNull();
+  });
+
+  it('CC-21: muestra el nombre de marca en el encabezado y, sin logo, las iniciales', async () => {
+    montarPortal('/solicitar/transportes-andes', {
+      responder: (_p, camino) => (camino === RUTA ? jsonPortal(200, { paleta: 'cian', logo: null, nombre_marca: 'Andes Traslados', iniciales: 'AT' }) : undefined),
+    });
+    const barra = await screen.findByRole('banner');
+    expect(await within(barra).findByText('Andes Traslados')).toBeInTheDocument();
+    expect(within(barra).getByRole('img', { name: 'Iniciales de Andes Traslados' })).toHaveTextContent('AT');
+    expect(barra).not.toHaveTextContent('Transportes Andes Demo SpA');
   });
 
   it('si la apariencia no responde, el portal carga igual con la predeterminada', async () => {
@@ -63,13 +73,13 @@ describe('respaldos', () => {
     const datos = new Map<string, string>();
     const almacen = { getItem: (c: string) => datos.get(c) ?? null, setItem: (c: string, v: string) => void datos.set(c, v), removeItem: () => undefined };
     expect(leerGuardada(almacen, 'x')).toBeNull();
-    guardar(almacen, 'x', { paleta: 'cian', logo: null });
-    expect(leerGuardada(almacen, 'x')).toEqual({ paleta: 'cian', logo: null });
+    guardar(almacen, 'x', { paleta: 'cian', logo: null, nombre_marca: '', iniciales: '' });
+    expect(leerGuardada(almacen, 'x')).toEqual({ paleta: 'cian', logo: null, nombre_marca: '', iniciales: '' });
     datos.set('flotaagil.apariencia.x', 'no es json');
     expect(leerGuardada(almacen, 'x')).toBeNull();
     const roto = { getItem: () => { throw new Error('bloqueado'); }, setItem: () => { throw new Error('lleno'); }, removeItem: () => undefined };
     expect(leerGuardada(roto, 'x')).toBeNull();
-    expect(() => guardar(roto, 'x', { paleta: 'cian', logo: null })).not.toThrow();
+    expect(() => guardar(roto, 'x', { paleta: 'cian', logo: null, nombre_marca: '', iniciales: '' })).not.toThrow();
   });
 });
 

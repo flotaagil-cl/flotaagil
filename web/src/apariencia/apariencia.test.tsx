@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import type { Apariencia } from '../diseno/LogoEmpresa';
 import { montarPanel } from '../pruebas/montar';
 import type { Respuesta, ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
-import { revisarArchivo } from './archivo';
+import { inicialesValidas, revisarArchivo } from './archivo';
 
 const LOGO = {
   panel: '/api/publico/apariencia/transportes-andes/logo/v1/panel.png',
@@ -17,7 +17,7 @@ const LOGO = {
 };
 
 class ServidorAparienciaFalso {
-  datos: Apariencia = { paleta: 'tiffany', logo: null };
+  datos: Apariencia = { paleta: 'tiffany', logo: null, nombre_marca: '', iniciales: '' };
   llamadas: string[] = [];
   siguiente: Respuesta | null = null;
   private readonly anterior: ServidorAuthFalso['api'];
@@ -36,9 +36,9 @@ class ServidorAparienciaFalso {
         return this.siguiente;
       }
       if (ruta === 'PATCH /api/apariencia/') {
-        const cuerpo = JSON.parse(await peticion.text()) as { paleta: Apariencia['paleta'] };
-        this.llamadas.push(`${ruta} ${cuerpo.paleta}`);
-        this.datos = { ...this.datos, paleta: cuerpo.paleta };
+        const cuerpo = JSON.parse(await peticion.text()) as Partial<Apariencia>;
+        this.llamadas.push(`${ruta} ${Object.values(cuerpo).join(' | ')}`);
+        this.datos = { ...this.datos, ...cuerpo };
       } else {
         this.llamadas.push(ruta);
         this.datos = { ...this.datos, logo: peticion.method === 'DELETE' ? null : LOGO };
@@ -111,7 +111,7 @@ describe('paleta', () => {
   it('«Restablecer a Tiffany» guarda la predeterminada', async () => {
     const contexto = montarPanel('/apariencia', { email: 'admin@andes.example' });
     const apariencia = new ServidorAparienciaFalso(contexto.servidor);
-    apariencia.datos = { paleta: 'grafito', logo: null };
+    apariencia.datos = { paleta: 'grafito', logo: null, nombre_marca: '', iniciales: '' };
     await userEvent.click(await screen.findByRole('button', { name: 'Restablecer a Tiffany' }));
     await waitFor(() => expect(apariencia.llamadas).toEqual(['PATCH /api/apariencia/ tiffany']));
     expect(await screen.findByRole('radio', { name: /Tiffany/ })).toBeChecked();
@@ -173,10 +173,76 @@ describe('logo', () => {
   });
 });
 
+describe('nombre de marca e iniciales (CC-21, CP-75)', () => {
+  it('se guardan juntos, el panel los muestra sin recargar y vaciarlos vuelve a lo anterior', async () => {
+    const { apariencia } = montar();
+    const nombre = await screen.findByLabelText('Nombre de marca');
+    expect(nombre).toHaveAttribute('placeholder', 'Transportes Andes Demo SpA');
+    expect(nombre).toHaveAttribute('maxlength', '30');
+
+    await userEvent.type(nombre, '  Andes   Traslados ');
+    await userEvent.type(screen.getByLabelText('Iniciales'), 'at');
+    const vista = screen.getByTestId('vista-previa');
+    expect(within(vista).getAllByText('Andes Traslados')).toHaveLength(3);
+    expect(within(vista).getAllByText('AT')).toHaveLength(3);
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await screen.findByText('Cambios guardados.');
+    expect(apariencia.llamadas).toEqual(['PATCH /api/apariencia/ Andes Traslados | AT']);
+
+    const cabecera = document.querySelector('header')!;
+    await waitFor(() => expect(within(cabecera).getByText('Andes Traslados')).toBeInTheDocument());
+    expect(within(cabecera).getByRole('img', { name: 'Iniciales de Andes Traslados' })).toHaveTextContent('AT');
+    expect(within(cabecera).queryByText('FlotaÁgil')).not.toBeInTheDocument();
+    expect(screen.getByText('Sin logo propio: se muestran las iniciales AT.')).toBeInTheDocument();
+
+    await userEvent.clear(nombre);
+    await userEvent.clear(screen.getByLabelText('Iniciales'));
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await waitFor(() => expect(within(cabecera).getByText('Transportes Andes Demo SpA')).toBeInTheDocument());
+    expect(within(cabecera).getByText('FlotaÁgil')).toBeInTheDocument();
+  });
+
+  it('con logo, el logo gana a las iniciales', async () => {
+    const contexto = montarPanel('/', { email: 'admin@andes.example' });
+    contexto.servidor.apariencia = { paleta: 'violeta', logo: LOGO, nombre_marca: 'Andes', iniciales: 'TA' };
+    contexto.recargar();
+    expect(await screen.findByRole('img', { name: 'Logo de Andes' })).toBeInTheDocument();
+    expect(screen.queryByText('TA')).not.toBeInTheDocument();
+  });
+
+  it('iniciales con signos: avisa y no deja guardar', async () => {
+    const { apariencia } = montar();
+    await userEvent.type(await screen.findByLabelText('Iniciales'), 'a.');
+    expect(screen.getByText('Usa solo letras o números, sin espacios ni signos.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeDisabled();
+    expect(apariencia.llamadas).toEqual([]);
+  });
+
+  it('«Restablecer a Tiffany» no borra el nombre que se está escribiendo', async () => {
+    const contexto = montarPanel('/apariencia', { email: 'admin@andes.example' });
+    const apariencia = new ServidorAparienciaFalso(contexto.servidor);
+    apariencia.datos = { paleta: 'grafito', logo: null, nombre_marca: '', iniciales: '' };
+    await userEvent.type(await screen.findByLabelText('Nombre de marca'), 'Andes');
+    await userEvent.click(screen.getByRole('button', { name: 'Restablecer a Tiffany' }));
+    await screen.findByText('Cambios guardados.');
+    expect(apariencia.llamadas).toEqual(['PATCH /api/apariencia/ tiffany']);
+    expect(screen.getByLabelText('Nombre de marca')).toHaveValue('Andes');
+  });
+
+  it.each([
+    ['', true],
+    ['AÑ1', true],
+    ['A B', false],
+    ['A-', false],
+  ])('iniciales «%s» válidas: %s', (valor, esperado) => {
+    expect(inicialesValidas(valor)).toBe(esperado);
+  });
+});
+
 describe('el despachador ve el resultado', () => {
   it('su panel toma la paleta y el logo de la sesión', async () => {
     const contexto = montarPanel('/', { email: 'despacho@andes.example' });
-    contexto.servidor.apariencia = { paleta: 'violeta', logo: LOGO };
+    contexto.servidor.apariencia = { paleta: 'violeta', logo: LOGO, nombre_marca: '', iniciales: '' };
     contexto.recargar();
     await waitFor(() => expect(document.querySelector('.tema-flotaagil')).toHaveAttribute('data-paleta', 'violeta'));
     expect(screen.getByRole('img', { name: 'Logo de Transportes Andes Demo SpA' })).toBeInTheDocument();

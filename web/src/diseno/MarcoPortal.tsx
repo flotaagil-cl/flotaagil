@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 import { iniciales } from './clases';
 import { LogoEmpresa, type Apariencia } from './LogoEmpresa';
+import { nombreVisible } from './marca';
 import './tokens.css';
 import './paletas.css';
 import e from './diseno.module.css';
@@ -45,6 +46,7 @@ interface Props {
  */
 export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], enlacesCuenta = [], usuario, onCerrarSesion, barraMovil = 'normal', apariencia, accion, pie, children }: Props) {
   const [menu, setMenu] = useState(false);
+  const nombre = nombreVisible(apariencia, marca);
   return (
     <div className={`tema-portal ${e.marco}`} data-paleta={apariencia?.paleta}>
       <a href="#contenido" className={e.saltar}>
@@ -55,14 +57,14 @@ export function MarcoPortal({ marca, logo, inicio = '/', enlaces = [], enlacesCu
           <LogoEmpresa
             apariencia={logo ? null : apariencia}
             variante="portal"
-            empresa={marca}
+            empresa={nombre}
             respaldo={
               <span className={e.logo} aria-hidden="true">
                 {logo ?? <Icono nombre="auto" />}
               </span>
             }
           />
-          <span className={e.marcaNombre}>{marca}</span>
+          <span className={e.marcaNombre}>{nombre}</span>
         </Link>
         {enlaces.length > 0 && (
           <nav aria-label="Principal" className={e.nav}>
