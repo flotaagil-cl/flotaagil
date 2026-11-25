@@ -1,0 +1,253 @@
+/* CC-27 (HU-78): pantalla Apariencia. Solo tokens; las muestras toman su color del atributo data-paleta. */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formulario fieldset {
+  margin: 0;
+}
+
+.formulario legend {
+  padding: 0 4px;
+  font-weight: 700;
+}
+
+.paletas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 12px;
+}
+
+.paleta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 2px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.paleta:has(input:checked) {
+  border-color: var(--color-primario-900);
+  box-shadow: 0 0 0 2px var(--color-primario-900);
+}
+
+.paleta:focus-within {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.paleta input {
+  align-self: flex-start;
+  margin: 0;
+  accent-color: var(--color-primario-700);
+}
+
+.muestra {
+  position: relative;
+  display: block;
+  height: 44px;
+  border-radius: var(--radio-campo);
+  background: var(--grad-boton);
+}
+
+.claro {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 22px;
+  height: 14px;
+  border-radius: 4px;
+  background: var(--color-tiffany-50);
+}
+
+.nombre {
+  font-weight: 600;
+}
+
+.predeterminada {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.logo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+}
+
+.marco {
+  display: grid;
+  place-items: center;
+  width: min(100%, 18rem);
+  min-height: 96px;
+  padding: 12px;
+  border: 1px dashed var(--borde-campo);
+  border-radius: var(--radio-tarjeta);
+  background: var(--superficie);
+}
+
+.marco img {
+  max-width: 100%;
+  max-height: 80px;
+  object-fit: contain;
+}
+
+.sinLogo {
+  color: var(--texto-suave);
+  text-align: center;
+}
+
+.acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.archivo {
+  font-weight: 600;
+}
+
+/* ---------- Vista previa ---------- */
+.vistas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 16px;
+}
+
+.vista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.vista figcaption {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.pantalla {
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  background: var(--fondo);
+}
+
+.telefono {
+  width: 100%;
+  max-width: 14rem;
+  align-self: center;
+  border-width: 4px;
+  border-color: var(--texto);
+  border-radius: var(--radio-hero);
+}
+
+.barraPanel {
+  padding: 8px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borde);
+}
+
+.cuerpoPanel {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+}
+
+.menuFalso {
+  margin: 0;
+  padding: 6px 0;
+  background: var(--superficie);
+  border-right: 1px solid var(--borde);
+  font-size: 0.75rem;
+  list-style: none;
+}
+
+.menuFalso li {
+  padding: 5px 8px;
+}
+
+.menuFalso li[data-activo='true'] {
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+  font-weight: 700;
+}
+
+.contenidoFalso {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.botonFalso {
+  align-self: flex-start;
+  padding: 7px 14px;
+  border-radius: var(--radio-boton);
+  background: var(--grad-boton);
+  color: var(--sobre-oscuro);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.estados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 12px;
+  background: var(--grad-hero);
+  color: var(--sobre-oscuro);
+  font-weight: 700;
+}
+
+.hero p {
+  margin: 0;
+}
+
+.campoFalso {
+  padding: 8px;
+  border: 1px solid var(--borde-campo);
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+}
+
+.destacadoFalso {
+  padding: 10px;
+  border-radius: var(--radio-campo);
+  background: var(--color-tiffany-50);
+  color: var(--color-primario-900);
+  font-weight: 700;
+}
+
+.base {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--radio-campo);
+  background: var(--superficie);
+  color: var(--color-primario-900);
+}
+
+.base img {
+  height: 28px;
+  max-width: 100%;
+  object-fit: contain;
+}

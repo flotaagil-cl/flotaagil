@@ -6,6 +6,7 @@
 import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
 import '../diseno/tokens.css';
+import '../diseno/paletas.css';
 import { conWhatsapp, enlaceWhatsapp, hayNumeros, type NumerosCentral } from './central';
 
 /** Los dos botones, con los números que lleguen (del backend o de los guardados). */

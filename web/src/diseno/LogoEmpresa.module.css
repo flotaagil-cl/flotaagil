@@ -1,0 +1,23 @@
+/* CC-27: base blanca del logo sobre cualquier encabezado. */
+.base {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: var(--superficie);
+  border-radius: var(--radio-campo);
+}
+
+.base img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.panel {
+  height: 36px;
+}
+
+.portal {
+  height: 40px;
+}

@@ -174,3 +174,8 @@ tbody > tr[data-con-vuelo='true'][data-con-vuelo] > td {
 .bloque {
   display: block;
 }
+
+.iconoChip {
+  margin-right: 4px;
+  vertical-align: -2px;
+}

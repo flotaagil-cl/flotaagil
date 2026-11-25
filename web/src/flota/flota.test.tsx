@@ -45,6 +45,7 @@ describe('menú y permisos', () => {
       'Cierre de caja',
       'Reportes',
       'Usuarios',
+      'Apariencia',
       'Configuración',
     ]);
     expect(within(menu).getByRole('group', { name: 'Operación' })).toBeInTheDocument();

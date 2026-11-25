@@ -2,9 +2,9 @@
  * HU-37: sistema visual del portal «Tiffany degradé» (docs/diseno/portal/README.md).
  *
  * Los colores viven solo aquí: los componentes usan las variables. Se aplican bajo .tema-portal y, desde CC-20
- * (DC-58), también bajo .tema-flotaagil: el panel y la app (copia generada) usan los mismos valores. El color por empresa queda preparado: basta con redefinir los tres tokens de marca
- * (--color-primario-900, --color-primario-700 y --color-tiffany) en el elemento .tema-portal y los degradés,
- * el foco y los pines los siguen.
+ * (DC-58), también bajo .tema-flotaagil: el panel y la app (copia generada) usan los mismos valores. La paleta de
+ * cada empresa (CC-27) reemplaza los tokens de marca con el atributo data-paleta (paletas.css, generado); los
+ * degradés, el foco y los pines los siguen.
  *
  * Plus Jakarta Sans se sirve desde el propio build (@fontsource, subconjunto latino), sin CDN.
  */
@@ -42,8 +42,8 @@
   /* Velo claro sobre el degradé (íconos y marco de la mini vista del panel). */
   --velo: rgb(255 255 255 / 16%);
 
-  /* Insignias de estado (fondo / texto). */
-  --insignia-info-fondo: var(--color-tiffany);
+  /* Insignias de estado (fondo / texto). No cambian con la paleta de la empresa (CC-27, DC-84). */
+  --insignia-info-fondo: #81d8d0;
   --insignia-info-texto: #0f2a2e;
   --insignia-ok-fondo: #d9f2e3;
   --insignia-ok-texto: #14532d;
@@ -51,30 +51,8 @@
   --insignia-revision-texto: #7a4b00;
   --insignia-peligro-fondo: #fde3e1;
   --insignia-peligro-texto: #8a1c12;
-  --insignia-neutra-fondo: var(--suave);
+  --insignia-neutra-fondo: #ddf3f1;
   --insignia-neutra-texto: var(--texto-suave);
-
-  /* Degradés. */
-  --grad-boton: linear-gradient(90deg, var(--color-primario-900), var(--color-primario-700));
-  --grad-destacado: linear-gradient(110deg, var(--color-tiffany-50), var(--color-tiffany));
-  --grad-hero: linear-gradient(
-    140deg,
-    var(--color-primario-900) 0%,
-    var(--color-primario-700) 65%,
-    var(--color-hero-fin) 100%
-  );
-
-  /* Nombres generales que también usan los componentes compartidos (Aviso, Cargando). */
-  --acento: var(--color-primario-700);
-  --acento-hover: var(--color-primario-900);
-  --acento-suave: var(--color-tiffany-50);
-  --sobre-acento: var(--sobre-oscuro);
-  --info-fondo: var(--color-tiffany-50);
-  --info-borde: var(--color-tiffany);
-  --error-fondo: var(--insignia-peligro-fondo);
-  --error-borde: var(--peligro);
-  --error-texto: var(--insignia-peligro-texto);
-  --foco: var(--color-primario-900);
 
   /* Tipografía. */
   --fuente: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -100,6 +78,34 @@
   color: var(--texto);
   font-family: var(--fuente);
   font-size: var(--texto-base);
+}
+
+/* Derivados de la marca: se resuelven de nuevo donde cambie la paleta (paletas.css, CC-27). */
+.tema-portal,
+.tema-flotaagil,
+.tema-portal [data-paleta],
+.tema-flotaagil [data-paleta] {
+  /* Degradés. */
+  --grad-boton: linear-gradient(90deg, var(--color-primario-900), var(--color-primario-700));
+  --grad-destacado: linear-gradient(110deg, var(--color-tiffany-50), var(--color-tiffany));
+  --grad-hero: linear-gradient(
+    140deg,
+    var(--color-primario-900) 0%,
+    var(--color-primario-700) 65%,
+    var(--color-hero-fin) 100%
+  );
+
+  /* Nombres generales que también usan los componentes compartidos (Aviso, Cargando). */
+  --acento: var(--color-primario-700);
+  --acento-hover: var(--color-primario-900);
+  --acento-suave: var(--color-tiffany-50);
+  --sobre-acento: var(--sobre-oscuro);
+  --info-fondo: var(--color-tiffany-50);
+  --info-borde: var(--color-tiffany);
+  --error-fondo: var(--insignia-peligro-fondo);
+  --error-borde: var(--peligro);
+  --error-texto: var(--insignia-peligro-texto);
+  --foco: var(--color-primario-900);
 }
 
 .tema-portal :focus-visible,

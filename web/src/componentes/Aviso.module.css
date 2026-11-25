@@ -17,3 +17,8 @@
   border-color: var(--error-borde);
   color: var(--error-texto);
 }
+
+.icono {
+  margin-right: 6px;
+  vertical-align: -3px;
+}
