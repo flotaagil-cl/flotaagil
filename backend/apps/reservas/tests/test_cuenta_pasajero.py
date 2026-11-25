@@ -338,6 +338,114 @@ class TestReservas:
 
 
 @pytest.mark.django_db
+class TestPedirParaOtros:
+    """CC-26 (HU-76, DC-82): pide para otra persona o con acompañantes (CP-69, CP-70)."""
+
+    OTRA = {"para": "OTRO", "pasajero_nombre": "Tomás Tercero", "pasajero_telefono": "+56900009302"}
+
+    def pedir(self, activa, **cambios):
+        return activa.post(
+            reverse("mi-cuenta-solicitudes"), TestReservas().solicitud(**cambios), format="json"
+        )
+
+    def test_para_otra_persona(self, activa, django_capture_on_commit_callbacks):
+        from apps.reservas.avisos_pasajero import cuenta_del_viaje
+
+        respuesta = self.pedir(activa, **self.OTRA, declara_informados=True)
+        assert respuesta.status_code == 201, respuesta.data
+        assert respuesta.data["viajes"] == 1
+        viaje = Viaje.objects.get()
+        assert (viaje.pasajero.nombre, viaje.pasajero.telefono) == ("Tomás Tercero", "+56900009302")
+        assert (viaje.solicitante_nombre, viaje.solicitante_telefono) == ("Paula Pasajera", TELEFONO)
+        assert viaje.terceros_informados_en is not None and viaje.pasajeros == 1
+        assert viaje.pasajero.privacidad_aceptada_en is None  # la otra persona no aceptó nada
+        # «Mis viajes» lo muestra y los avisos van a la cuenta que lo pidió.
+        assert [f["id"] for f in activa.get(reverse("mi-cuenta-reservas")).json()["results"]] == [viaje.pk]
+        assert cuenta_del_viaje(viaje) == CuentaPasajero.objects.get()
+
+    def test_otra_persona_y_terceros_exigen_datos_y_declaracion(self, activa):
+        respuesta = self.pedir(activa, para="OTRO")
+        assert {"pasajero_nombre", "pasajero_telefono", "declara_informados"} <= set(respuesta.data)
+        assert "pasajero_cargo" not in respuesta.data  # sin cargo: no es convenio
+        respuesta = self.pedir(activa, acompanantes=[{"nombre": "Ana"}])
+        assert set(respuesta.data) == {"declara_informados"}
+        assert not Viaje.objects.exists()
+
+    def test_acompanantes_en_el_mismo_vehiculo(self, activa):
+        respuesta = self.pedir(
+            activa,
+            acompanantes=[{"nombre": "Ana Acompañante", "telefono": "+56900009303"}, {"nombre": "Beto"}],
+            declara_informados=True,
+            maletas=2,
+        )
+        assert respuesta.status_code == 201, respuesta.data
+        viaje = Viaje.objects.get()
+        assert (viaje.pasajero.telefono, viaje.pasajeros, viaje.maletas, viaje.grupo) == (
+            TELEFONO,
+            3,
+            2,
+            None,
+        )
+        assert [a["nombre"] for a in viaje.acompanantes] == ["Ana Acompañante", "Beto"]
+        assert viaje.solicitante_nombre == "Paula Pasajera"
+
+    def test_mismo_vehiculo_hasta_la_capacidad(self, activa):
+        # DC-43: sin vehículos, 4 en total.
+        respuesta = self.pedir(
+            activa, acompanantes=[{"nombre": f"P{i}"} for i in range(4)], declara_informados=True
+        )
+        assert respuesta.status_code == 400 and "acompanantes" in respuesta.data
+        assert not Viaje.objects.exists()
+
+    def test_vehiculos_separados_un_viaje_por_persona(self, activa):
+        respuesta = self.pedir(
+            activa,
+            **self.OTRA,
+            vehiculos="SEPARADOS",
+            acompanantes=[{"nombre": "Ana", "telefono": "+56900009303"}],
+            declara_informados=True,
+            maletas=1,
+        )
+        assert respuesta.status_code == 201, respuesta.data
+        assert respuesta.data["viajes"] == 2
+        viajes = list(Viaje.objects.order_by("pk"))
+        assert respuesta.data["id"] == viajes[0].pk
+        assert [v.pasajero.nombre for v in viajes] == ["Tomás Tercero", "Ana"]
+        assert len({v.grupo for v in viajes}) == 1 and viajes[0].grupo is not None
+        assert [(v.pasajeros, v.maletas, v.acompanantes) for v in viajes] == [(1, 1, []), (1, 0, [])]
+        assert len(activa.get(reverse("mi-cuenta-reservas")).json()["results"]) == 2
+
+    def test_separados_todo_o_nada(self, activa, empresa):
+        # Sin teléfono de un acompañante no se crea ninguno; sobre el tope por solicitud, tampoco.
+        respuesta = self.pedir(
+            activa, vehiculos="SEPARADOS", acompanantes=[{"nombre": "Ana"}], declara_informados=True
+        )
+        assert respuesta.status_code == 400 and "acompanantes" in respuesta.data
+        tope = empresa.configuracion.convenio_max_personas
+        muchos = [{"nombre": f"P{i}", "telefono": f"+569000094{i:02d}"} for i in range(tope)]
+        respuesta = self.pedir(activa, vehiculos="SEPARADOS", acompanantes=muchos, declara_informados=True)
+        assert respuesta.status_code == 400 and "acompanantes" in respuesta.data
+        assert not Viaje.objects.exists()
+
+    def test_un_grupo_cuenta_como_una_solicitud_en_el_limite(self, activa):
+        grupo = {
+            "vehiculos": "SEPARADOS",
+            "acompanantes": [{"nombre": "Ana", "telefono": "+56900009303"}],
+            "declara_informados": True,
+        }
+        estados = [self.pedir(activa, **grupo).status_code for _ in range(3)]
+        estados.append(self.pedir(activa, **self.OTRA, declara_informados=True).status_code)
+        assert estados == [201, 201, 201, 429]
+        assert Viaje.objects.count() == 6
+
+    def test_no_ve_viajes_que_otra_cuenta_pidio(self, activa, empresa):
+        self.pedir(activa, **self.OTRA, declara_informados=True)
+        otra = ViajeFactory(empresa=empresa, estado=E.SOLICITADO, pasajero=Viaje.objects.get().pasajero)
+        ids = [f["id"] for f in activa.get(reverse("mi-cuenta-reservas")).json()["results"]]
+        assert otra.pk not in ids
+
+
+@pytest.mark.django_db
 class TestRecuperacion:
     def test_envia_el_enlace_y_permite_cambiarla(
         self, activa, cliente, empresa, django_capture_on_commit_callbacks

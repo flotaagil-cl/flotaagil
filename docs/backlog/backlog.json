@@ -1629,6 +1629,34 @@
       "estado_cambio": "Nueva (CC-24, autorizada por Renato, 2026-11-24)",
       "estado": "Hecha",
       "estado_evidencia": ""
+    },
+    {
+      "id": "HU-76",
+      "titulo": "Pedir para otra persona con mi cuenta",
+      "epica": "Módulo pasajero",
+      "label_epica": "epica:modulo-pasajero",
+      "historia": "Como pasajero con cuenta, quiero pedir un traslado para otra persona o con acompañantes, para coordinar el viaje de quienes viajan conmigo.",
+      "criterios": "En «Pedir traslado», sin paso nuevo: para mí o para otra persona (nombre y teléfono); con más de un pasajero, acompañantes en el mismo vehículo (hasta la capacidad de la flota) o en vehículos separados (un viaje por persona con el mismo grupo, teléfono obligatorio y tope por solicitud). Todo o nada; con una sola persona el pedido es el de siempre. «Revisa tu pedido» muestra quién viaja y los acompañantes; «Mis viajes» muestra los viajes pedidos para otros. El conductor ve solo los nombres.",
+      "sp": 5,
+      "reglas": [
+        "RN-13"
+      ],
+      "casos_prueba": [
+        "CP-69",
+        "CP-70"
+      ],
+      "depende_de": [
+        "HU-39",
+        "HU-42",
+        "HU-73"
+      ],
+      "prioridad": "Alta",
+      "sprint": "Sprint 5",
+      "responsable": "Renato",
+      "en_pareja": false,
+      "estado_cambio": "Nueva (CC-26, autorizada por Renato, 2026-11-24)",
+      "estado": "Hecha",
+      "estado_evidencia": "CC-26 (DC-82): el pasajero con cuenta pide para otra persona y con acompañantes con las reglas de HU-73."
     }
   ],
   "tareas": [

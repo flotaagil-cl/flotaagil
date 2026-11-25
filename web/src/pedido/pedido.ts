@@ -7,7 +7,10 @@ import type { components } from '../api/esquema';
 import { aIso, formatearFecha, formatearFechaHora, instanteDeCampo, paredDe } from '../hora/hora';
 
 export type EmpresaPublica = components['schemas']['EmpresaPublica'];
-export type CuerpoPedido = components['schemas']['SolicitudCuentaRequest'];
+type SolicitudCuenta = components['schemas']['SolicitudCuentaRequest'];
+/** CC-26: quién viaja lo suma `cuerpoPersonas` al enviar; el formulario del viaje no lo arma. */
+type CamposPersonas = 'para' | 'vehiculos' | 'declara_informados';
+export type CuerpoPedido = Omit<SolicitudCuenta, CamposPersonas> & Partial<Pick<SolicitudCuenta, CamposPersonas>>;
 export type TipoVuelo = components['schemas']['TipoVueloEnum'];
 
 export type TipoPedido = 'desde-aeropuerto' | 'al-aeropuerto' | 'en-la-ciudad';

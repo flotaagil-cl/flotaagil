@@ -1458,7 +1458,7 @@ export interface paths {
         put?: never;
         /**
          * Pedir un viaje con mi cuenta
-         * @description Queda SOLICITADO sin verificación por WhatsApp; se mantiene el límite por teléfono.
+         * @description Queda SOLICITADO sin verificación por WhatsApp; se mantiene el límite por cuenta. CC-26: para sí o para otra persona, con acompañantes, en el mismo vehículo o un viaje por persona (mismo `grupo`). Todo o nada.
          */
         post: operations["mi_cuenta_solicitudes_create"];
         delete?: never;
@@ -3404,6 +3404,8 @@ export interface components {
             mensaje: string;
             /** @description Número de la reserva, para «Ver mi viaje». */
             id: number;
+            /** @description CC-26: viajes creados (uno por persona en vehículos separados); `id` es el primero. */
+            viajes: number;
         };
         PerfilConductor: {
             readonly id: number;
@@ -3431,6 +3433,15 @@ export interface components {
         /** @description CC-23 (DC-76): acompañante o pasajero de una reserva con pase. Sin padrón de empleados. */
         PersonaConvenioRequest: {
             nombre: string;
+            cargo: string;
+            /** @description Obligatorio en vehículos separados. */
+            telefono?: string;
+            correo?: string;
+        };
+        /** @description CC-26 (HU-76): acompañante u otra persona por quien pide el pasajero con cuenta. Sin cargo. */
+        PersonaPasajeroRequest: {
+            nombre: string;
+            /** @default  */
             cargo: string;
             /** @description Obligatorio en vehículos separados. */
             telefono?: string;
@@ -3809,10 +3820,28 @@ export interface components {
             viajes: number;
         };
         /**
-         * @description Los datos del pasajero salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
+         * @description Los datos de quien pide salen de la cuenta: nombre y teléfono se ignoran si vienen. DC-44: el pedido no
          *     acepta nada (la cuenta ya aceptó una vez); las aceptaciones se ignoran si vienen.
+         *
+         *     CC-26 (HU-76, DC-82): como en CC-23 y CC-25, para sí o para otra persona (`para`, `pasajero_*`), con
+         *     `acompanantes` en el mismo vehículo o en vehículos separados (`vehiculos`), sin cargo. Por los terceros,
+         *     `declara_informados`. Sin acompañantes, `pasajeros` vale 1.
          */
         SolicitudCuentaRequest: {
+            /** @default MI */
+            para: components["schemas"]["ParaEnum"];
+            pasajero_nombre?: string;
+            pasajero_cargo?: string;
+            pasajero_telefono?: string;
+            pasajero_correo?: string;
+            acompanantes?: components["schemas"]["PersonaPasajeroRequest"][];
+            /** @default MISMO */
+            vehiculos: components["schemas"]["VehiculosEnum"];
+            /**
+             * @description Quien pide declara que informó del aviso de privacidad a las personas que viajan.
+             * @default false
+             */
+            declara_informados: boolean;
             nombre?: string;
             telefono?: string;
             origen_dir: string;

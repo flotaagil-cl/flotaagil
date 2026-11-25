@@ -11,6 +11,7 @@
   teléfono NULL y sus mensajes quedan sin contenido. Los viajes, pagos, historial y auditoría se conservan.
 """
 
+import uuid
 from datetime import timedelta
 
 from django.conf import settings
@@ -397,62 +398,121 @@ def viajes_del_correo(cuenta: CuentaPasajero):
     ).filter(_confirmados_por_correo())
 
 
+def _pedidos_por(usuario_id: int):
+    """CC-26: viajes que pidió la cuenta (su usuario registró el estado inicial), sean o no para ella."""
+    return Exists(HistorialEstado.objects.filter(viaje=OuterRef("pk"), usuario_id=usuario_id))
+
+
 def reservas_de(cuenta: CuentaPasajero):
     """Con el teléfono verificado por WhatsApp (cuentas anteriores a CC-19), todos los viajes de su PASAJERO;
     si no, los que pidió la cuenta y los públicos confirmados con su mismo correo (DC-65). Un número sin
-    verificar no da acceso a viajes de invitado."""
-    viajes = Viaje.objects.filter(pasajero=cuenta.pasajero)
+    verificar no da acceso a viajes de invitado. CC-26: también los que pidió para otras personas."""
+    propios = Q(pasajero=cuenta.pasajero)
     if not cuenta.telefono_verificado:
-        pedidos = HistorialEstado.objects.filter(viaje=OuterRef("pk"), usuario_id=cuenta.usuario_id)
         del_correo = Q(contacto_correo__iexact=cuenta.usuario.email) & Q(_confirmados_por_correo())
-        viajes = viajes.filter(Q(Exists(pedidos)) | del_correo)
-    return viajes.order_by("-recogida_en", "-id")
+        propios &= Q(_pedidos_por(cuenta.usuario_id)) | del_correo
+    pedidos = Q(empresa_id=cuenta.empresa_id) & Q(_pedidos_por(cuenta.usuario_id))
+    return Viaje.objects.filter(propios | pedidos).order_by("-recogida_en", "-id")
 
 
-def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[Viaje, dict]:
-    """Sin verificación (el teléfono se confirmó al crear la cuenta). Mantiene el límite por teléfono."""
-    from apps.portal.servicios import _verificar_limite_telefono, validar_capacidad, vuelo_y_recogida
+def _verificar_limite(cuenta: CuentaPasajero) -> None:
+    """Máximo de solicitudes por cuenta en la ventana (como el límite por teléfono). CC-26: cuenta las que
+    pidió para otras personas y un grupo de vehículos separados vale una solicitud."""
+    from apps.portal.servicios import LimiteTelefono
+
+    desde = timezone.now() - settings.PORTAL_VENTANA_TELEFONO
+    recientes = Viaje.objects.filter(
+        empresa_id=cuenta.empresa_id, canal=Canal.WEB, creado_en__gte=desde
+    ).filter(Q(pasajero__telefono=cuenta.pasajero.telefono) | Q(_pedidos_por(cuenta.usuario_id)))
+    solicitudes = (
+        recientes.filter(grupo__isnull=True).count()
+        + recientes.filter(grupo__isnull=False).values("grupo").distinct().count()
+    )
+    if solicitudes >= settings.PORTAL_MAX_SOLICITUDES_POR_TELEFONO:
+        raise LimiteTelefono(wait=settings.PORTAL_VENTANA_TELEFONO.total_seconds())
+
+
+def solicitar(cuenta: CuentaPasajero, datos: dict, *, usuario) -> tuple[list[Viaje], dict]:
+    """Sin verificación (el teléfono se confirmó al crear la cuenta). Mantiene el límite por cuenta.
+
+    CC-26 (HU-76, DC-82), con las reglas de CC-23 (DC-76): viaja quien tiene la cuenta o la otra persona, con
+    acompañantes en el mismo vehículo o un viaje por persona con el mismo `grupo`. Todo o nada. Si viajan
+    otras personas, la cuenta queda en `solicitante_*` y la declaración de que les informó del aviso de
+    privacidad, en `terceros_informados_en`. Los avisos del viaje van a la cuenta que pidió.
+    """
+    from apps.portal.publico import _acompanante, _personas, _validar_personas
+    from apps.portal.servicios import validar_capacidad, vuelo_y_recogida
 
     if not privacidad_vigente(cuenta):
         raise PrivacidadPendiente()
     empresa = cuenta.empresa
-    validar_capacidad(empresa, datos.get("pasajeros", 1))  # DC-43
-    _verificar_limite_telefono(empresa, cuenta.pasajero.telefono)
+    datos = {**datos, "nombre": cuenta.pasajero.nombre, "telefono": cuenta.pasajero.telefono}
+    personas = _personas(datos)
+    _validar_personas(empresa, datos, personas)
+    separados = datos["vehiculos"] == "SEPARADOS" and len(personas) > 1
+    viajantes = personas if separados else personas[:1]
+    validar_capacidad(empresa, 1 if separados else len(personas))  # DC-43
+    _verificar_limite(cuenta)
     vuelo, recogida = vuelo_y_recogida(empresa, datos)
+    grupo = uuid.uuid4() if separados else None
+    terceros = len(personas) > 1 or datos["para"] == "OTRO"
+    ahora = timezone.now()
+    viajes = []
     with transaction.atomic():
-        viaje = reservas.crear_viaje(
-            empresa=empresa,
-            datos={
-                "pasajero": {"nombre": cuenta.pasajero.nombre, "telefono": cuenta.pasajero.telefono},
-                "sentido": datos["sentido"],
-                "origen_dir": datos["origen_dir"],
-                "destino_dir": datos["destino_dir"],
-                "origen_coordenadas": datos.get("origen_coordenadas"),  # HU-71
-                "destino_coordenadas": datos.get("destino_coordenadas"),
-                "recogida_en": recogida,
-                "vuelo": vuelo,
-                # HU-39 (DC-42).
-                "pasajeros": datos.get("pasajeros", 1),
-                "maletas": datos.get("maletas", 0),
-                "vuelo_salida": datos.get("vuelo_salida"),
-            },
-            canal=Canal.WEB,
-            estado_inicial=EstadoViaje.SOLICITADO,
-            actor=Actor.PASAJERO,
-            usuario=usuario,
-        )
-        # DC-44: el pedido no vuelve a aceptar; el PASAJERO lleva la aceptación de la cuenta.
-        aceptada = cuenta.privacidad_aceptada_en
-        Pasajero.objects.filter(pk=cuenta.pasajero_id).update(
-            opt_in_en=aceptada, privacidad_aceptada_en=aceptada
-        )
-        avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21
-    return viaje, {
-        "estado": viaje.estado,
-        "recogida_en": viaje.recogida_en,
+        for indice, persona in enumerate(viajantes):
+            viaje = reservas.crear_viaje(
+                empresa=empresa,
+                datos={
+                    "pasajero": {"nombre": persona["nombre"], "telefono": persona["telefono"]},
+                    "sentido": datos["sentido"],
+                    "origen_dir": datos["origen_dir"],
+                    "destino_dir": datos["destino_dir"],
+                    "origen_coordenadas": datos.get("origen_coordenadas"),  # HU-71
+                    "destino_coordenadas": datos.get("destino_coordenadas"),
+                    "recogida_en": recogida,
+                    "vuelo": vuelo,
+                    # HU-39 (DC-42): las maletas van en el primer viaje.
+                    "pasajeros": 1 if separados else len(personas),
+                    "maletas": datos.get("maletas", 0) if indice == 0 else 0,
+                    "vuelo_salida": datos.get("vuelo_salida"),
+                },
+                canal=Canal.WEB,
+                estado_inicial=EstadoViaje.SOLICITADO,
+                actor=Actor.PASAJERO,
+                usuario=usuario,
+            )
+            if terceros:
+                viaje.solicitante_nombre = cuenta.pasajero.nombre
+                viaje.solicitante_telefono = cuenta.pasajero.telefono
+                viaje.acompanantes = [] if separados else [_acompanante(a) for a in personas[1:]]
+                viaje.grupo = grupo
+                viaje.terceros_informados_en = ahora
+                viaje.save(
+                    update_fields=[
+                        "solicitante_nombre",
+                        "solicitante_telefono",
+                        "acompanantes",
+                        "grupo",
+                        "terceros_informados_en",
+                    ]
+                )
+            viajes.append(viaje)
+        if datos["para"] == "MI":
+            # DC-44: el pedido no vuelve a aceptar; el PASAJERO lleva la aceptación de la cuenta.
+            aceptada = cuenta.privacidad_aceptada_en
+            Pasajero.objects.filter(pk=cuenta.pasajero_id).update(
+                opt_in_en=aceptada, privacidad_aceptada_en=aceptada
+            )
+        for viaje in viajes:
+            avisos.programar(viaje.pk, AVISO_CONFIRMACION)  # HU-21
+    return viajes, {
+        "estado": viajes[0].estado,
+        "recogida_en": viajes[0].recogida_en,
         "expira_en": None,
+        "viajes": len(viajes),
         "mensaje": (
-            "Tu solicitud quedó registrada. Te avisaremos por WhatsApp cuando la central asigne un conductor."
+            "Tu solicitud quedó registrada. Te avisaremos cuando la central asigne "
+            + ("un conductor a cada viaje." if separados else "un conductor.")
         ),
     }
 

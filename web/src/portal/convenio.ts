@@ -89,12 +89,13 @@ export type ErroresConvenio = Partial<Record<string, string>>;
 
 const CORREO = /^\S+@\S+\.\S+$/;
 
-/** Errores por campo: `pasajero.nombre`, `acompanantes.0.telefono`, `declara_informados`… */
-export function validarConvenio(d: DatosConvenio, capacidad: number, tope: number): ErroresConvenio {
+/** Errores por campo: `pasajero.nombre`, `acompanantes.0.telefono`, `declara_informados`… CC-26: el pasajero con
+ * cuenta no informa cargo (`conCargo: false`). */
+export function validarConvenio(d: DatosConvenio, capacidad: number, tope: number, { conCargo = true } = {}): ErroresConvenio {
   const errores: ErroresConvenio = {};
   const persona = (p: Persona, prefijo: string, telefonoObligatorio: boolean) => {
     if (!p.nombre.trim()) errores[`${prefijo}.nombre`] = 'Escribe el nombre.';
-    if (!p.cargo.trim()) errores[`${prefijo}.cargo`] = 'Escribe el cargo.';
+    if (conCargo && !p.cargo.trim()) errores[`${prefijo}.cargo`] = 'Escribe el cargo.';
     if (telefonoObligatorio && !p.telefono.trim()) errores[`${prefijo}.telefono`] = 'Escribe el teléfono.';
     if (p.correo.trim() && !CORREO.test(p.correo.trim())) errores[`${prefijo}.correo`] = 'Revisa el correo.';
   };

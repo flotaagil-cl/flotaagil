@@ -48,6 +48,14 @@ const ANCHOS = [
  * `destino`: ruta a la que debe llegar (por defecto, la misma `ruta`); si termina en otra, la captura falla.
  * `accion`: lo que se hace en la página antes de capturar (abrir un diálogo, por ejemplo).
  */
+/** HU-76: llena un viaje en la ciudad en «Pedir traslado» (en el celular el formulario ya está en su pantalla). */
+async function viajeEnLaCiudad(pagina) {
+  await pagina.getByLabel('Origen').fill('Av. Providencia 1208, Providencia');
+  await pagina.getByLabel('Origen').press('Escape');
+  await pagina.getByLabel('Destino').fill('Plaza de Armas, Santiago');
+  await pagina.getByLabel('Destino').press('Escape');
+}
+
 /** HU-47: llena el viaje y llega a «Quién viaja» con los datos de quien pide. */
 async function quienViajaConvenio(pagina) {
   await pagina.getByRole('tab', { name: 'En la ciudad' }).click();
@@ -668,6 +676,57 @@ const PANTALLAS = {
   ],
   // DC-68 (validación de CC-19): configuración de la empresa, solo el administrador.
   'DC-68': [{ nombre: 'panel-configuracion-empresa', ruta: '/configuracion', sesion: 'admin' }],
+  // HU-76 (CC-26): el pasajero con cuenta pide para otra persona y con acompañantes, sin paso nuevo.
+  'HU-76': [
+    {
+      nombre: 'pedir-otra-persona',
+      ruta: '/pedir/en-la-ciudad',
+      sesion: 'pasajero',
+      accion: async (pagina) => {
+        await viajeEnLaCiudad(pagina);
+        await pagina.getByRole('radio', { name: 'Para otra persona' }).click();
+        const quien = pagina.locator('section', { has: pagina.getByRole('heading', { name: 'Quién viaja', exact: true }) });
+        await quien.getByLabel('Nombre y apellido').fill('Teresa Tercera');
+        await quien.getByLabel('Teléfono').fill('+56900009010');
+        await pagina.getByRole('button', { name: 'Agregar un pasajero' }).click();
+        const acompanante = pagina.locator('section', { has: pagina.getByRole('heading', { name: 'Acompañante 1' }) });
+        await acompanante.getByLabel('Nombre y apellido').fill('Ana Acompañante');
+        await pagina.getByRole('checkbox', { name: /Declaro que informé/ }).check();
+      },
+    },
+    {
+      nombre: 'pedir-separados',
+      ruta: '/pedir/en-la-ciudad',
+      sesion: 'pasajero',
+      accion: async (pagina) => {
+        await viajeEnLaCiudad(pagina);
+        await pagina.getByRole('button', { name: 'Agregar un pasajero' }).click();
+        await pagina.getByRole('radio', { name: 'Vehículos separados' }).click();
+        const acompanante = pagina.locator('section', { has: pagina.getByRole('heading', { name: 'Acompañante 1' }) });
+        await acompanante.getByLabel('Nombre y apellido').fill('Ana Acompañante');
+        await acompanante.getByLabel('Teléfono').fill('+56900009021');
+        await pagina.getByRole('checkbox', { name: /Declaro que informé/ }).check();
+      },
+    },
+    {
+      nombre: 'revisa-tu-pedido-quien-viaja',
+      ruta: '/pedir/en-la-ciudad',
+      sesion: 'pasajero',
+      accion: async (pagina) => {
+        await viajeEnLaCiudad(pagina);
+        await pagina.getByRole('radio', { name: 'Para otra persona' }).click();
+        const quien = pagina.locator('section', { has: pagina.getByRole('heading', { name: 'Quién viaja', exact: true }) });
+        await quien.getByLabel('Nombre y apellido').fill('Teresa Tercera');
+        await quien.getByLabel('Teléfono').fill('+56900009010');
+        await pagina.getByRole('button', { name: 'Agregar un pasajero' }).click();
+        const acompanante = pagina.locator('section', { has: pagina.getByRole('heading', { name: 'Acompañante 1' }) });
+        await acompanante.getByLabel('Nombre y apellido').fill('Ana Acompañante');
+        await pagina.getByRole('checkbox', { name: /Declaro que informé/ }).check();
+        await pagina.getByRole('button', { name: 'Pedir mi traslado' }).click();
+        await pagina.getByRole('heading', { name: 'Revisa tu pedido' }).waitFor();
+      },
+    },
+  ],
   'HU-45': [
     { nombre: 'mi-perfil', ruta: '/mi-perfil', sesion: 'pasajero' },
     {

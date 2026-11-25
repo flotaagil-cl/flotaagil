@@ -39,10 +39,26 @@ interface Props {
   publico?: boolean;
   /** HU-46: nota propia bajo el botón (la cuenta del convenio no tiene «Mis viajes»). */
   nota?: ReactNode;
+  /** CC-26: quién viaja, en el mismo formulario (reemplaza el contador de pasajeros). */
+  quienViaja?: ReactNode;
+  /** CC-26: valida quién viaja al revisar; false detiene el paso a «Revisa tu pedido». */
+  validarQuienViaja?: () => boolean;
 }
 
 /** HU-39: datos de cada tipo de viaje, con pasajeros y maletas. */
-export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, alRevisar, sinPasajeros = false, textoBoton, publico = false, nota }: Props) {
+export function FormularioPedido({
+  tipo,
+  empresa,
+  iniciales,
+  erroresIniciales,
+  alRevisar,
+  sinPasajeros = false,
+  textoBoton,
+  publico = false,
+  nota,
+  quienViaja,
+  validarQuienViaja,
+}: Props) {
   const [v, setV] = useState<ValoresPedido>(iniciales ?? VALORES_INICIALES);
   const [errores, setErrores] = useState<Errores>(erroresIniciales ?? {});
   // La API de vuelos no respondió: el servidor pidió la hora de llegada para no inventarla.
@@ -65,8 +81,13 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
   function revisar(evento: FormEvent) {
     evento.preventDefault();
     const armado = armarPedido(tipo, v, empresa);
+    const personasOk = validarQuienViaja ? validarQuienViaja() : true;
     if ('errores' in armado) {
       setErrores(armado.errores);
+      return;
+    }
+    if (!personasOk) {
+      setErrores({});
       return;
     }
     setErrores({});
@@ -75,7 +96,7 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
 
   const contadores = (
     <div className={e.filaContadores}>
-      {!sinPasajeros && (
+      {!sinPasajeros && !quienViaja && (
         <Contador etiqueta="Pasajeros" unidad="un pasajero" valor={v.pasajeros} min={1} max={maximo} onCambiar={(n) => cambiar('pasajeros', n)} error={errores.pasajeros} />
       )}
       <Contador etiqueta="Maletas" unidad="una maleta" valor={v.maletas} min={0} max={20} onCambiar={(n) => cambiar('maletas', n)} error={errores.maletas} />
@@ -189,6 +210,8 @@ export function FormularioPedido({ tipo, empresa, iniciales, erroresIniciales, a
           {contadores}
         </>
       )}
+
+      {quienViaja}
 
       <Boton type="submit" ancho>
         {textoBoton ?? 'Pedir mi traslado'}

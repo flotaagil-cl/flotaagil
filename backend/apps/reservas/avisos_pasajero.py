@@ -5,13 +5,15 @@
   navegador; si no, por correo solo con la casilla de avisos del viaje (`acepta_avisos_correo`). Sin WhatsApp.
 - Solo para los viajes que la cuenta puede ver (DC-65): un teléfono sin verificar no recibe avisos de viajes
   de invitado de ese número.
+- CC-26: un viaje pedido para otra persona avisa a la cuenta que lo pidió.
 """
 
 from django.db import transaction
+from django.db.models import Q
 
 from apps.integraciones import push
 
-from .models import CuentaPasajero, EstadoViaje, SuscripcionPush, Viaje
+from .models import CuentaPasajero, EstadoViaje, HistorialEstado, SuscripcionPush, Viaje
 from .tipos_aviso import AVISO_CANCELACION, AVISO_CONDUCTOR, AVISO_EN_ZONA
 
 CLAVE = (AVISO_CONDUCTOR, AVISO_EN_ZONA, AVISO_CANCELACION)
@@ -20,14 +22,23 @@ CLAVE = (AVISO_CONDUCTOR, AVISO_EN_ZONA, AVISO_CANCELACION)
 def cuenta_del_viaje(viaje: Viaje) -> CuentaPasajero | None:
     from .cuentas_pasajero import reservas_de
 
-    cuenta = (
-        CuentaPasajero.objects.select_related("usuario", "empresa")
-        .filter(pasajero_id=viaje.pasajero_id, confirmada_en__isnull=False, empresa__modulo_cuentas=True)
+    # CC-26: la cuenta que pidió el viaje (estado inicial con su usuario), primero; luego la del pasajero.
+    creador = (
+        HistorialEstado.objects.filter(viaje_id=viaje.pk, estado_anterior__isnull=True)
+        .values_list("usuario_id", flat=True)
         .first()
     )
-    if cuenta is None or not reservas_de(cuenta).filter(pk=viaje.pk).exists():
-        return None
-    return cuenta
+    candidatas = CuentaPasajero.objects.select_related("usuario", "empresa").filter(
+        Q(pasajero_id=viaje.pasajero_id) | Q(usuario_id=creador)
+        if creador
+        else Q(pasajero_id=viaje.pasajero_id),
+        confirmada_en__isnull=False,
+        empresa__modulo_cuentas=True,
+    )
+    for cuenta in sorted(candidatas, key=lambda c: c.usuario_id != creador):
+        if reservas_de(cuenta).filter(pk=viaje.pk).exists():
+            return cuenta
+    return None
 
 
 def en_vivo(viaje_id: int) -> None:

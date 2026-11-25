@@ -32,18 +32,20 @@ interface PropsPersona {
   errores: ErroresConvenio;
   /** En el mismo vehículo el teléfono de un acompañante es opcional; quien es Pasajero de un viaje, no (D4). */
   telefonoObligatorio: boolean;
-  ayudaCorreo: string;
+  /** CC-26: el pasajero con cuenta pide sin cargo ni correo de terceros. */
+  ayudaCorreo?: string;
+  conCargo?: boolean;
   onCambiar: (persona: Persona) => void;
 }
 
-function DatosPersona({ titulo, persona, prefijo, errores, telefonoObligatorio, ayudaCorreo, onCambiar }: PropsPersona) {
+export function DatosPersona({ titulo, persona, prefijo, errores, telefonoObligatorio, ayudaCorreo, conCargo = true, onCambiar }: PropsPersona) {
   const cambiar = (campo: keyof Persona) => (ev: { target: { value: string } }) => onCambiar({ ...persona, [campo]: ev.target.value });
   return (
     <Tarjeta como="section" className={e.formulario}>
       <h3 className={e.resumenTitulo}>{titulo}</h3>
       <div className={e.filaPersona}>
         <Campo etiqueta="Nombre y apellido" value={persona.nombre} error={errores[`${prefijo}.nombre`]} onChange={cambiar('nombre')} />
-        <Campo etiqueta="Cargo" value={persona.cargo} error={errores[`${prefijo}.cargo`]} onChange={cambiar('cargo')} />
+        {conCargo && <Campo etiqueta="Cargo" value={persona.cargo} error={errores[`${prefijo}.cargo`]} onChange={cambiar('cargo')} />}
         <Campo
           etiqueta={telefonoObligatorio ? 'Teléfono' : 'Teléfono (opcional, medio de contacto)'}
           type="tel"
@@ -52,7 +54,9 @@ function DatosPersona({ titulo, persona, prefijo, errores, telefonoObligatorio, 
           ayuda={telefonoObligatorio ? 'Solo lo ve la central, nunca el conductor.' : undefined}
           onChange={cambiar('telefono')}
         />
-        <Campo etiqueta="Correo (opcional)" type="email" value={persona.correo} error={errores[`${prefijo}.correo`]} ayuda={ayudaCorreo} onChange={cambiar('correo')} />
+        {ayudaCorreo !== undefined && (
+          <Campo etiqueta="Correo (opcional)" type="email" value={persona.correo} error={errores[`${prefijo}.correo`]} ayuda={ayudaCorreo} onChange={cambiar('correo')} />
+        )}
       </div>
     </Tarjeta>
   );

@@ -16,10 +16,15 @@ const SUGERENCIAS: Sugerencia[] = [
   { texto: 'Providencia 99, Ñuñoa', lat: -33.45, lon: -70.6 },
 ];
 
-function Prueba({ buscar, alElegir = vi.fn() }: { buscar: Buscar; alElegir?: (s: Sugerencia) => void }) {
+function Prueba({ buscar, alElegir = vi.fn(), alEnviar = vi.fn() }: { buscar: Buscar; alElegir?: (s: Sugerencia) => void; alEnviar?: () => void }) {
   const [valor, setValor] = useState('');
   return (
-    <form onSubmit={(e) => e.preventDefault()}>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        alEnviar();
+      }}
+    >
       <CampoDireccionPortal
         etiqueta="Origen"
         valor={valor}
@@ -85,6 +90,23 @@ describe('campo con sugerencias', () => {
     await usuario.keyboard('{Escape}');
     expect(campo).toHaveAttribute('aria-expanded', 'false');
     expect(alElegir).toHaveBeenCalledTimes(1);
+  });
+
+  it('Enter en la dirección nunca envía el formulario: sin lista, con la lista abierta o sin elegir', async () => {
+    const alEnviar = vi.fn();
+    const alElegir = vi.fn();
+    const usuario = userEvent.setup();
+    render(<Prueba buscar={async () => SUGERENCIAS} alElegir={alElegir} alEnviar={alEnviar} />);
+    const campo = screen.getByRole('combobox', { name: 'Origen' });
+    await usuario.type(campo, 'Av{Enter}');
+    await usuario.type(campo, 'enida');
+    await screen.findAllByRole('option', {}, { timeout: 3000 });
+    await usuario.keyboard('{Enter}');
+    expect(campo).toHaveAttribute('aria-expanded', 'false');
+    await usuario.keyboard('{Enter}');
+    expect(alEnviar).not.toHaveBeenCalled();
+    expect(alElegir).not.toHaveBeenCalled();
+    expect(campo).toHaveValue('Avenida');
   });
 
   it('con el mouse también se elige', async () => {

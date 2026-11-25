@@ -276,8 +276,20 @@ class PersonaConvenioSerializer(serializers.Serializer):
         return (valor or "").strip().lower()
 
 
+class PersonaPasajeroSerializer(PersonaConvenioSerializer):
+    """CC-26 (HU-76): acompañante u otra persona por quien pide el pasajero con cuenta. Sin cargo."""
+
+    cargo = serializers.CharField(max_length=80, required=False, allow_blank=True, default="")
+
+    def validate_cargo(self, valor):
+        return (valor or "").strip()
+
+
 class ReservaConPaseMixin(serializers.Serializer):
-    """CC-23 (HU-72): con `pase` la reserva es del convenio y queda a nombre de quien la pide (D7)."""
+    """CC-23 (HU-72): con `pase` la reserva es del convenio y queda a nombre de quien la pide (D7). CC-26: el
+    pasajero con cuenta usa los mismos campos sin cargo (`pide_cargo = False`)."""
+
+    pide_cargo = True
 
     pase = serializers.CharField(
         max_length=300, required=False, allow_blank=True, help_text="Pase de `convenio/pase/` (CC-23)."
@@ -307,7 +319,10 @@ class ReservaConPaseMixin(serializers.Serializer):
             errores["es_empresa"] = "Con el pase de convenio no se informan RUT ni razón social."
         if datos["para"] == "OTRO":
             _texto_obligatorio(datos, "pasajero_nombre", "Ingresa el nombre del pasajero.", errores)
-            _texto_obligatorio(datos, "pasajero_cargo", "Ingresa el cargo del pasajero.", errores)
+            if self.pide_cargo:
+                _texto_obligatorio(datos, "pasajero_cargo", "Ingresa el cargo del pasajero.", errores)
+            else:
+                datos["pasajero_cargo"] = (datos.get("pasajero_cargo") or "").strip()[:80]
             telefono = normalizar_telefono(datos.get("pasajero_telefono") or "")
             try:
                 validar_telefono_e164(telefono)

@@ -190,6 +190,98 @@ describe('HU-39 · pantalla del pedido', () => {
     expect(await screen.findByLabelText('Número de vuelo')).toHaveValue('');
   });
 
+  /** CC-26 (HU-76): quién viaja, en el mismo formulario (CP-69, CP-70). */
+  const enLaCiudad = async () => {
+    await userEvent.type(await screen.findByLabelText('Origen'), 'Av. Providencia 1208');
+    await userEvent.type(screen.getByLabelText('Destino'), 'Plaza de Armas');
+  };
+
+  it('para otra persona: nombre y teléfono obligatorios, declaración y «Revisa tu pedido» con quién viaja', async () => {
+    const { enviados } = montarPedido('/pedir/en-la-ciudad');
+    await enLaCiudad();
+    await userEvent.click(screen.getByRole('radio', { name: 'Para otra persona' }));
+    expect(screen.queryByLabelText('Cargo')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Correo (opcional)')).not.toBeInTheDocument();
+    await pedir();
+    expect(screen.queryByRole('heading', { name: 'Revisa tu pedido' })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre y apellido')).toHaveAccessibleDescription('Escribe el nombre.');
+    expect(screen.getByLabelText('Teléfono')).toHaveAccessibleDescription(/Escribe el teléfono/);
+    expect(screen.getByText('Declara que informaste a las personas que viajan.')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Nombre y apellido'), 'Teresa Tercera');
+    await userEvent.type(screen.getByLabelText('Teléfono'), '+56911112222');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Declaro que informé/ }));
+    await pedir();
+    await screen.findByRole('heading', { name: 'Revisa tu pedido' });
+    await waitFor(() => expect(filas()).toMatchObject({ Pide: 'Pablo Pasajero' }));
+    expect(filas()).toMatchObject({ 'Quién viaja': 'Teresa Tercera', Teléfono: '+56 9 1111 2222', Pasajeros: '1 · 0 maletas' });
+    expect(filas()).not.toHaveProperty('Nombre');
+    await confirmar();
+    await screen.findByRole('heading', { name: '¡Listo! Recibimos tu pedido' });
+    expect(enviados[0]).toMatchObject({ para: 'OTRO', pasajero_nombre: 'Teresa Tercera', pasajero_telefono: '+56911112222', acompanantes: [], declara_informados: true });
+  });
+
+  it('con acompañantes en el mismo vehículo: el contador agrega personas y el resumen las nombra', async () => {
+    const { enviados } = montarPedido('/pedir/en-la-ciudad');
+    await enLaCiudad();
+    expect(screen.queryByText('¿Cómo viajan?')).not.toBeInTheDocument(); // con uno, como siempre
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
+    expect(screen.getAllByRole('heading', { name: /Acompañante \d/ })).toHaveLength(2);
+    expect(screen.getAllByLabelText('Teléfono (opcional, medio de contacto)')).toHaveLength(2);
+    const nombres = screen.getAllByLabelText('Nombre y apellido');
+    await userEvent.type(nombres[0], 'Ana Acompañante');
+    await userEvent.type(nombres[1], 'Beto Acompañante');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Declaro que informé/ }));
+    await pedir();
+    await waitFor(() => expect(filas()).toMatchObject({ 'Quién viaja': 'Pablo Pasajero (tú)' }));
+    expect(filas()).toMatchObject({ Pasajeros: '3 · 0 maletas', Acompañantes: 'Ana Acompañante, Beto Acompañante' });
+    expect(filas()).not.toHaveProperty('Pide');
+    await confirmar();
+    await screen.findByRole('heading', { name: '¡Listo! Recibimos tu pedido' });
+    expect(enviados[0]).toMatchObject({ para: 'MI', vehiculos: 'MISMO', acompanantes: [{ nombre: 'Ana Acompañante' }, { nombre: 'Beto Acompañante' }] });
+  });
+
+  it('en vehículos separados: teléfono obligatorio, hasta el tope y «Recibimos N viajes»; el servidor puede devolver errores por persona', async () => {
+    const { enviados } = montarPedido('/pedir/en-la-ciudad', [
+      () => json(400, { acompanantes: [{ telefono: ['Ingresa un teléfono válido.'] }] }),
+      () => json(201, { id: 30001, viajes: 2, estado: 'SOLICITADO', recogida_en: '2026-11-12T12:00:00Z', expira_en: null, mensaje: 'ok' }),
+    ]);
+    await enLaCiudad();
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Vehículos separados' }));
+    expect(screen.getByText(/Un vehículo por persona.*hasta 10 personas/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Nombre y apellido'), 'Ana Acompañante');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Declaro que informé/ }));
+    await pedir();
+    expect(screen.getByLabelText('Teléfono')).toHaveAccessibleDescription(/Escribe el teléfono/);
+    await userEvent.type(screen.getByLabelText('Teléfono'), '+5691');
+    await pedir();
+    await waitFor(() => expect(filas()).toMatchObject({ Vehículos: 'Uno por persona (2 viajes)' }));
+    expect(filas()).toMatchObject({ Pasajeros: '2 en vehículos separados · 0 maletas' });
+    await confirmar();
+    // El error del servidor vuelve al formulario, en el campo de esa persona y con lo escrito.
+    expect(await screen.findByLabelText('Teléfono')).toHaveAccessibleDescription(/Ingresa un teléfono válido/);
+    expect(screen.getByLabelText('Origen')).toHaveValue('Av. Providencia 1208');
+    await userEvent.clear(screen.getByLabelText('Teléfono'));
+    await userEvent.type(screen.getByLabelText('Teléfono'), '+56933334444');
+    await pedir();
+    await confirmar();
+    expect(await screen.findByRole('heading', { name: '¡Listo! Recibimos 2 viajes' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver mis viajes' })).toHaveAttribute('href', '/mis-viajes');
+    expect(enviados[1]).toMatchObject({ vehiculos: 'SEPARADOS', acompanantes: [{ nombre: 'Ana Acompañante', telefono: '+56933334444' }] });
+  });
+
+  it('volver al mismo vehículo recorta a la capacidad', async () => {
+    montarPedido('/pedir/en-la-ciudad');
+    await enLaCiudad();
+    await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Vehículos separados' }));
+    for (let i = 0; i < 5; i += 1) await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
+    expect(screen.getAllByRole('heading', { name: /Acompañante \d/ })).toHaveLength(6);
+    await userEvent.click(screen.getByRole('radio', { name: 'Mismo vehículo' }));
+    expect(screen.getAllByRole('heading', { name: /Acompañante \d/ })).toHaveLength(3);
+  });
+
   it('editar datos vuelve al formulario con lo escrito', async () => {
     montarPedido('/pedir/en-la-ciudad');
     await userEvent.type(await screen.findByLabelText('Origen'), 'Av. Providencia 1208');
@@ -206,7 +298,6 @@ describe('HU-39 · pantalla del pedido', () => {
     await userEvent.type(await screen.findByLabelText('Número de vuelo'), 'LA 845');
     fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-11-20' } });
     await userEvent.type(screen.getByLabelText('¿A dónde vas?'), 'Av. Apoquindo 3000');
-    await userEvent.click(screen.getByRole('button', { name: 'Agregar un pasajero' }));
     await pedir();
     await confirmar();
     const hora = await screen.findByLabelText('Hora de llegada');
@@ -217,7 +308,7 @@ describe('HU-39 · pantalla del pedido', () => {
     expect(filas()).toMatchObject({ Llegada: 'vie 20-11-2026 19:05' });
     await confirmar();
     await screen.findByRole('heading', { name: '¡Listo! Recibimos tu pedido' });
-    expect(enviados[0]).toMatchObject({ vuelo: { numero: 'LA 845', fecha: '2026-11-20' }, pasajeros: 2 });
+    expect(enviados[0]).toMatchObject({ vuelo: { numero: 'LA 845', fecha: '2026-11-20' }, para: 'MI', acompanantes: [] });
     expect(enviados[1]).toMatchObject({ vuelo: { numero: 'LA 845', hora_llegada: '2026-11-20T22:05:00.000Z' } });
   });
 
