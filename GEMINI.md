@@ -23,7 +23,11 @@ Si algo de este archivo choca con `CLAUDE.md`, manda `CLAUDE.md`.
 
 Todo cambio en el código, diseño o documentación del repositorio sigue estos 5 pasos obligatorios:
 
-1. **Trazabilidad previa:** Crea el issue en GitHub (`gh issue create`), agrégalo al proyecto `FlotaÁgil — Backlog` (`orgs/flotaagil-cl/projects/1`) y mueve su tarjeta a `En curso`.
+1. **Trazabilidad previa:** Antes de crear un issue nuevo o abrir una rama, identifica a qué Historia de Usuario (`HU-XX`) o Solicitud de Cambio (`CC-XX`) corresponde la tarea, manteniendo la convención del tablero `FlotaÁgil — Backlog`:
+   - Consulta `"C:\Program Files\GitHub CLI\gh.exe" issue list --state open` y revisa `CLAUDE.md` y `docs/estado-para-informe.md` para identificar a qué `HU-XX` o `CC-XX` existente pertenece el módulo afectado.
+   - Si ya existe un issue abierto para esa historia/cambio, enlaza el trabajo a ese número (`Refs #<N>` o `Closes #<N>`) sin duplicar tarjetas.
+   - Si no existe y es una mejora sobre alcance vigente, crea el issue con el formato `<HU-XX o CC-XX> · <Título funcional>` (por ejemplo `CC-20 · Pulir UX/UI de Mapa en tiempo real`), agrégalo al proyecto `FlotaÁgil — Backlog` (`orgs/flotaagil-cl/projects/1`) y mueve su tarjeta a `En curso`.
+   - Si agrega una funcionalidad nueva fuera del alcance aprobado, abre primero un issue con la plantilla de Solicitud de cambio (`RFC: CC-XX` correlativo) antes de implementar.
 2. **Rama limpia:** Crea una rama nueva desde `main` actualizado (`git checkout main && git pull origin main && git checkout -b <tipo>/<descripcion>`).
 3. **Implementación, documentación y pruebas:** Implementa los cambios, registra la Decisión de Cambio correlativa (`DC-XX`) en `docs/diccionario-cambios.md` cuando corresponda, y ejecuta las validaciones y pruebas puntuales en modo no interactivo (`npx vitest run ...`, `pytest <ruta_puntual>`, lint/typecheck según el área).
 4. **Commit y PR:** Usa Conventional Commits en español con scope (con `Refs #<N>` en los commits de la rama), haz push (`git push -u origin <rama>`) y abre el PR hacia `main` con `Closes #<N>` (si termina el issue) o `Refs #<N>` (si es parcial). Verifica `gh pr view <PR> --json baseRefName,closingIssuesReferences`.
