@@ -234,10 +234,13 @@ class TestGrupos:
             cliente.patch(reverse("chat-grupo", args=[id_grupo]), {"nombre": "Aeropuerto SCL"}).status_code
             == 200
         )
+        despachador.nombre = "Álvaro Aguilera"
+        despachador.save(update_fields=["nombre"])
         agregado = cliente.post(reverse("chat-integrantes", args=[id_grupo]), {"usuario": despachador.pk})
-        assert [i["nombre"] for i in agregado.data["integrantes"]] == sorted(
-            [chofer.usuario.nombre, chofer2.usuario.nombre, despachador.nombre]
-        )
+        # Orden de la base (en_US.utf8: «Álvaro» va con la A). `sorted()` de Python deja las tildes al final,
+        # así que se compara con la lista escrita y todos los nombres son fijos.
+        nombres = [i["nombre"] for i in agregado.data["integrantes"]]
+        assert nombres == ["Álvaro Aguilera", "Ana Rojas", "Pedro Soto"]
         assert not Auditoria.objects.exists()  # Los integrantes no dejan auditoría al gestionar.
         # Quitar a otro: solo quien lo creó o el administrador.
         quitar = reverse("chat-integrante", args=[id_grupo, despachador.pk])
