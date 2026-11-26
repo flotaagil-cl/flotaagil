@@ -19,6 +19,7 @@ import { esDiaFuturo, formatearFecha, formatearHora } from '../hora/hora';
 import { useDecidirRecogida } from '../reservas/api';
 import { ContactoPasajero } from '../reservas/componentes/ContactoPasajero';
 import { DialogoAsignar } from '../reservas/componentes/DialogoAsignar';
+import { EstadoEtiqueta } from '../reservas/componentes/EstadoEtiqueta';
 import { mensajeDeErrorApi } from '../reservas/errores';
 import { ESTADOS_VUELO } from '../reservas/etiquetas';
 import { useApi } from '../sesion/SesionProvider';
@@ -404,6 +405,11 @@ function CeldaConductor({ viaje, alAsignar }: { viaje: Viaje; alAsignar: (v: Via
             <span className={c.patente}>{viaje.vehiculo.patente}</span>
           </div>
         )}
+        {viaje.estado && (
+          <div className={c.estadoConductor}>
+            <EstadoEtiqueta estado={viaje.estado} sinConfirmar={viaje.sin_confirmar} />
+          </div>
+        )}
       </>
     );
   }
@@ -447,15 +453,18 @@ function Fila({
 
   if (vuelo) {
     const llegada = llegadaDe(vuelo);
+    const falta = minutosHasta(llegada, ahora);
     const regresiva =
       vuelo.estado_vuelo === 'ATERRIZADO'
         ? `aterrizó ${cuentaRegresiva(llegada, Math.max(ahora, Date.parse(llegada)))}`
-        : enEspera(vuelo) && minutosHasta(llegada, ahora) > 0
-          ? `aterriza ${cuentaRegresiva(llegada, ahora)}`
+        : enEspera(vuelo)
+          ? falta > 0
+            ? `aterriza ${cuentaRegresiva(llegada, ahora)}`
+            : <span className={c.sinConfirmarAterrizaje}>sin confirmar aterrizaje</span>
           : '—';
     return (
       <tr data-urgencia={urgencia}>
-        <Celda titulo="Vuelo">
+        <Celda titulo="Vuelo" clase={c.colVuelo}>
           <div className={c.vueloPrincipal}>
             <Icono nombre="aterrizaje" tamano={15} className={c.icono} aria-hidden="true" />
             <Link to={detalle}>{vuelo.numero}</Link>
@@ -466,8 +475,12 @@ function Fila({
             {mostrarFecha ? ` · ${formatearFecha(vuelo.fecha)}` : ''}
           </span>
         </Celda>
-        <Celda titulo="Programada">{formatearHora(vuelo.hora_programada, ahora)}</Celda>
-        <Celda titulo="Estimada">{vuelo.hora_estimada ? formatearHora(vuelo.hora_estimada, ahora) : '—'}</Celda>
+        <Celda titulo="Programada" clase={c.colHora}>
+          {formatearHora(vuelo.hora_programada, ahora)}
+        </Celda>
+        <Celda titulo="Estimada" clase={c.colHora}>
+          {vuelo.hora_estimada ? formatearHora(vuelo.hora_estimada, ahora) : '—'}
+        </Celda>
         <Celda titulo="Estado">
           <EstadoVuelo estado={estadoDeVuelo(vuelo, ahora)} />
         </Celda>
@@ -485,7 +498,7 @@ function Fila({
           {vuelo.recogida_propuesta ? (
             <PropuestaEnFila viaje={viaje} propuesta={vuelo.recogida_propuesta} ahora={ahora} />
           ) : (
-            formatearHora(viaje.recogida_en, ahora)
+            <span className={c.horaConfirmada}>{formatearHora(viaje.recogida_en, ahora)}</span>
           )}
         </Celda>
       </tr>
@@ -495,7 +508,7 @@ function Fila({
   const despegue = viaje.vuelo_salida_en ?? viaje.recogida_en;
   return (
     <tr data-urgencia={urgencia}>
-      <Celda titulo="Vuelo">
+      <Celda titulo="Vuelo" clase={c.colVuelo}>
         <div className={c.vueloPrincipal}>
           <Icono nombre="despegue" tamano={15} className={c.icono} aria-hidden="true" />
           <Link to={detalle}>
@@ -508,8 +521,12 @@ function Fila({
           {mostrarFecha ? ` · ${formatearFecha(despegue)}` : ''}
         </span>
       </Celda>
-      <Celda titulo="Programada">{formatearHora(despegue, ahora)}</Celda>
-      <Celda titulo="Estimada">—</Celda>
+      <Celda titulo="Programada" clase={c.colHora}>
+        {formatearHora(despegue, ahora)}
+      </Celda>
+      <Celda titulo="Estimada" clase={c.colHora}>
+        —
+      </Celda>
       <Celda titulo="Estado">
         <span className={estilos.secundario}>No se monitorea</span>
       </Celda>
@@ -524,7 +541,7 @@ function Fila({
         <CeldaConductor viaje={viaje} alAsignar={alAsignar} />
       </Celda>
       <Celda titulo="Recogida">
-        {formatearHora(viaje.recogida_en, ahora)}
+        <span className={c.horaConfirmada}>{formatearHora(viaje.recogida_en, ahora)}</span>
         {viaje.en_aeropuerto_a_las && (
           <span className={estilos.secundario}>Debe estar en el aeropuerto a las {formatearHora(viaje.en_aeropuerto_a_las, ahora)}</span>
         )}
@@ -584,6 +601,10 @@ function PropuestaEnFila({ viaje, propuesta, ahora }: { viaje: Viaje; propuesta:
   );
 }
 
-function Celda({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return <td data-titulo={titulo}>{children}</td>;
+function Celda({ titulo, clase, children }: { titulo: string; clase?: string; children: React.ReactNode }) {
+  return (
+    <td data-titulo={titulo} className={clase}>
+      {children}
+    </td>
+  );
 }

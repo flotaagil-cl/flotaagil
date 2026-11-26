@@ -4,6 +4,8 @@ import estilos from '../../componentes/panel.module.css';
 import { formatearFechaHora } from '../../hora/hora';
 import { useAsignarViaje, useCandidatos, type Viaje } from '../api';
 import { mensajeDeErrorApi } from '../errores';
+import d from './DialogosReserva.module.css';
+import { CabeceraDialogo, ResumenViajeDialogo } from './ResumenViajeDialogo';
 
 function distancia(metros: number | null): string {
   if (metros === null) return 'sin posición';
@@ -60,21 +62,19 @@ export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: Viaje; a
       }}
     >
       <div className={estilos.formularioDialogo}>
-        <h2 id="titulo-asignar">Asignar la reserva #{viaje.id}</h2>
-        <p>
-          {viaje.pasajero.nombre} · {viaje.origen.direccion} → {viaje.destino.direccion}
-        </p>
+        <CabeceraDialogo tituloId="titulo-asignar" titulo={`Asignar la reserva #${viaje.id}`} alCerrar={alCerrar} deshabilitado={asignar.isPending} />
+        <ResumenViajeDialogo viaje={viaje} />
         {falla && <Aviso tipo="error">{falla}</Aviso>}
         {candidatos.isPending ? (
-          <p>Buscando conductores disponibles…</p>
+          <p className={d.notaPie}>Buscando conductores disponibles…</p>
         ) : candidatos.isError ? (
           <Aviso tipo="error">{mensajeDeErrorApi(candidatos.error)}</Aviso>
         ) : lista.length === 0 ? (
-          <p>No hay conductores Disponibles sin viaje en este momento.</p>
+          <p className={d.notaSugerencia}>No hay conductores Disponibles sin viaje en este momento.</p>
         ) : (
           <>
             {sugerido ? (
-              <ul className={estilos.listaAcciones} aria-label="Conductor sugerido">
+              <ul className={d.tarjetaSugerido} aria-label="Conductor sugerido">
                 <li>
                   <span>
                     <strong>Sugerido: {sugerido.nombre}</strong> · {sugerido.patente}
@@ -84,50 +84,56 @@ export function DialogoAsignar({ viaje, alCerrar, alAsignar }: { viaje: Viaje; a
                       {sugerido.ultimo_viaje_en ? `último viaje ${formatearFechaHora(sugerido.ultimo_viaje_en)}` : 'sin viajes terminados'}
                     </span>
                   </span>
-                  <button type="button" className={estilos.boton} disabled={asignar.isPending} aria-label={`Asignar a ${sugerido.nombre}`} onClick={() => void confirmar(sugerido.id, sugerido.nombre)}>
+                  <button
+                    type="button"
+                    className={estilos.boton}
+                    disabled={asignar.isPending}
+                    aria-label={`Asignar a ${sugerido.nombre}`}
+                    onClick={() => void confirmar(sugerido.id, sugerido.nombre)}
+                  >
                     Asignar
                   </button>
                 </li>
               </ul>
             ) : (
-              <p>
+              <p className={d.notaSugerencia}>
                 {viaje.sentido === 'DESDE_AEROPUERTO'
                   ? 'Sin sugerencia: no hay conductores en la fila del aeropuerto. Elige uno de la lista.'
                   : 'Sin sugerencia: ningún conductor tiene una posición reciente y precisa. Elige uno de la lista.'}
               </p>
             )}
             {otros.length > 0 && (
-              <div className={estilos.acciones}>
-                <label>
-                  {sugerido ? 'Otro conductor disponible' : 'Conductor disponible'}{' '}
-                  <select value={elegido} disabled={asignar.isPending} onChange={(evento) => setElegido(evento.target.value)}>
-                    <option value="">Elige un conductor…</option>
-                    {otros.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} · {c.patente} · {c.posicion_fila !== null ? `fila ${c.posicion_fila} · ` : ''}
-                        {distancia(c.distancia_m)}
-                        {c.confiable ? '' : ' (no reciente)'}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  className={estilos.botonSecundario}
-                  disabled={!otroElegido || asignar.isPending}
-                  onClick={() => otroElegido && void confirmar(otroElegido.id, otroElegido.nombre)}
-                >
-                  Asignar al elegido
-                </button>
-              </div>
+              <label className={d.campo}>
+                {sugerido ? 'Otro conductor disponible' : 'Conductor disponible'}
+                <select className={d.control} value={elegido} disabled={asignar.isPending} onChange={(evento) => setElegido(evento.target.value)}>
+                  <option value="">Elige un conductor…</option>
+                  {otros.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre} · {c.patente} · {c.posicion_fila !== null ? `fila ${c.posicion_fila} · ` : ''}
+                      {distancia(c.distancia_m)}
+                      {c.confiable ? '' : ' (no reciente)'}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
           </>
         )}
-        <p className={estilos.explicacion}>El conductor tiene 60 s para aceptar en la app; si no responde, la reserva vuelve a Solicitado.</p>
-        <div className={estilos.acciones}>
+        <p className={d.notaPie}>El conductor tiene 60 s para aceptar en la app; si no responde, la reserva vuelve a Solicitado.</p>
+        <div className={d.pie}>
           <button type="button" className={estilos.botonSecundario} onClick={alCerrar} disabled={asignar.isPending}>
             Volver
           </button>
+          {otros.length > 0 && (
+            <button
+              type="button"
+              className={estilos.boton}
+              disabled={!otroElegido || asignar.isPending}
+              onClick={() => otroElegido && void confirmar(otroElegido.id, otroElegido.nombre)}
+            >
+              Asignar al elegido
+            </button>
+          )}
         </div>
       </div>
     </dialog>

@@ -503,16 +503,17 @@
 /* --- Diálogo --- */
 
 .dialogo {
-  width: min(32rem, calc(100vw - 2 * var(--espacio-4)));
+  width: min(34rem, calc(100vw - 2 * var(--espacio-4)));
   padding: 0;
   border: 1px solid var(--borde);
-  border-radius: var(--radio);
+  border-radius: var(--radio-tarjeta, 16px);
   background: var(--superficie);
   color: var(--texto);
+  box-shadow: 0 20px 50px rgb(15 42 46 / 22%);
 }
 
 .dialogo::backdrop {
-  background: rgb(0 0 0 / 0.45);
+  background: rgb(15 42 46 / 0.45);
 }
 
 .dialogo form {

@@ -1,0 +1,209 @@
+/* Estilos compartidos de los diálogos operativos de Reservas y Vuelos (sistema visual Tiffany degradé). */
+
+.cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding-bottom: var(--espacio-2);
+  border-bottom: 1px solid var(--borde);
+}
+
+.cabecera h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--texto);
+}
+
+.botonCerrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.botonCerrar:hover:not(:disabled) {
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--texto);
+}
+
+.resumenViaje {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo);
+}
+
+.resumenSuperior {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+
+.pasajero {
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.horaBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--acento));
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.trayecto {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.tarjetaSugerido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  padding: 14px;
+  margin: 0;
+  list-style: none;
+  border: 1px solid var(--color-tiffany, var(--borde));
+  border-radius: 12px;
+  background: var(--color-tiffany-50, var(--acento-suave));
+}
+
+.tarjetaSugerido li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  width: 100%;
+}
+
+.notaSugerencia {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--info-borde, var(--borde));
+  border-radius: 10px;
+  background: var(--info-fondo, var(--fondo));
+  color: var(--texto);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.control,
+.textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.925rem;
+  font-weight: 400;
+}
+
+.control {
+  height: var(--toque, 44px);
+  padding: 0 12px;
+}
+
+.textarea {
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.control:hover:not(:disabled),
+.textarea:hover:not(:disabled) {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.opcionesRadio {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.opcionesRadio legend {
+  margin-bottom: 8px;
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.listaOpciones {
+  display: grid;
+  gap: 8px;
+}
+
+.opcionRadio {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 10px;
+  background: var(--superficie);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.opcionRadio:has(input:checked) {
+  border-color: var(--color-primario-700, var(--acento));
+  background: var(--color-tiffany-50, var(--acento-suave));
+  font-weight: 700;
+}
+
+.notaPie {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.825rem;
+  line-height: 1.4;
+}
+
+.pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--borde);
+}

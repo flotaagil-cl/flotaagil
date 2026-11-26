@@ -251,4 +251,20 @@ describe('tabla', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Asignar a Macarena Gutiérrez' }));
     expect(await screen.findByText('Reserva #31 asignada a Macarena Gutiérrez.')).toBeInTheDocument();
   });
+
+  it('muestra aviso si la hora ya pasó sin confirmación de aterrizaje y estado del viaje junto al conductor', async () => {
+    const { viajes } = montar();
+    viajes.agregar(
+      llegada(
+        34,
+        { hora_programada: en(-30), estado_vuelo: 'PROGRAMADO' },
+        { estado: 'EN_CAMINO', conductor: { id: 4, nombre: 'Pedro Soto' }, vehiculo: { id: 8, patente: 'ZXCV99' } },
+      ),
+    );
+    const tabla = await screen.findByRole('table', { name: 'Vuelos de hoy' });
+    expect(within(tabla).getByText('sin confirmar aterrizaje')).toBeInTheDocument();
+    expect(within(tabla).getByText('Pedro Soto')).toBeInTheDocument();
+    expect(within(tabla).getByText('ZXCV99')).toBeInTheDocument();
+    expect(within(tabla).getByText('En camino')).toBeInTheDocument();
+  });
 });
