@@ -21,21 +21,37 @@ export function ContactoPasajero({
 }) {
   if (!telefono) return <span className={compacto ? estilos.secundario : undefined}>Sin teléfono</span>;
   const sufijo = nombre ? ` a ${nombre}` : '';
-  return (
-    <span className={estilos.contacto}>
-      <span>{telefono}</span>
-      <a href={`tel:${telefono}`} className={estilos.enlaceContacto} aria-label={compacto ? `Llamar${sufijo}` : undefined}>
+  const claseEnlace = compacto ? estilos.enlaceContactoCompacto : estilos.enlaceContacto;
+  const enlaces = (
+    <>
+      <a href={`tel:${telefono}`} className={claseEnlace} aria-label={compacto ? `Llamar${sufijo}` : undefined}>
         Llamar
       </a>
       <a
         href={`https://wa.me/${soloDigitos(telefono)}`}
         target="_blank"
         rel="noopener noreferrer"
-        className={estilos.enlaceContacto}
+        className={claseEnlace}
         aria-label={compacto ? `WhatsApp${sufijo}` : undefined}
       >
         {compacto ? 'WhatsApp' : 'Abrir en WhatsApp'}
       </a>
+    </>
+  );
+
+  if (compacto) {
+    return (
+      <div className={estilos.contactoCompacto}>
+        <span className={estilos.telefonoCompacto}>{telefono}</span>
+        <div className={estilos.accionesContacto}>{enlaces}</div>
+      </div>
+    );
+  }
+
+  return (
+    <span className={estilos.contacto}>
+      <span>{telefono}</span>
+      {enlaces}
     </span>
   );
 }

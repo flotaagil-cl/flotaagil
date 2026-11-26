@@ -622,6 +622,50 @@
   text-decoration: none;
 }
 
+.contactoCompacto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.telefonoCompacto {
+  color: var(--texto-suave);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.accionesContacto {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.enlaceContactoCompacto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 2px 10px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--color-primario-700, var(--acento));
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 130ms ease, border-color 130ms ease;
+}
+
+.enlaceContactoCompacto:hover {
+  background: var(--acento-suave);
+  border-color: var(--color-primario-700, var(--acento));
+}
+
 /* HU-69: propuesta de recogida dentro de la tarjeta de vuelo del detalle. */
 .propuestaIncrustada {
   margin-top: var(--espacio-3);
