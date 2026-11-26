@@ -110,6 +110,21 @@ async function puntosEnElMapa(pagina, origen = 'Origen', destino = 'Destino') {
   await mapaEncuadrado(pagina);
 }
 
+/** Editar reserva: los datos de solo lectura del pasajero quedan dentro de su tarjeta (si no, falla). */
+async function pasajeroDentroDeSuTarjeta(pagina) {
+  const sobra = await pagina.evaluate(() => {
+    const tarjeta = [...document.querySelectorAll('form fieldset')].find((f) => f.querySelector('legend')?.textContent === 'Pasajero');
+    // La caja puede quedar con ancho casi cero: se mide el texto de cada dato.
+    const textos = [...tarjeta.querySelectorAll('dt, dd')].map((nodo) => {
+      const rango = document.createRange();
+      rango.selectNodeContents(nodo);
+      return rango.getBoundingClientRect().right;
+    });
+    return Math.round(Math.max(...textos) - tarjeta.getBoundingClientRect().right);
+  });
+  if (sobra > 0) throw new Error(`Los datos del pasajero se salen ${sobra} px de su tarjeta.`);
+}
+
 const PANTALLAS = {
   'HU-31': [{ nombre: 'panel-caja', ruta: '/caja', sesion: 'admin' }],
   'HU-32': [{ nombre: 'panel-reserva-contingencia', ruta: '/reservas/contingencia', sesion: 'despacho' }],
@@ -748,7 +763,10 @@ const PANTALLAS = {
       ruta: () => `/reservas/${process.env.CAPTURAS_VIAJE ?? '0'}/editar`,
       sesion: 'despacho',
       destino: /^\/reservas\/\d+\/editar$/,
-      accion: (pagina) => mapaEncuadrado(pagina),
+      accion: async (pagina) => {
+        await pasajeroDentroDeSuTarjeta(pagina);
+        await mapaEncuadrado(pagina);
+      },
     },
     {
       nombre: 'portal-publico-sugerencias',
