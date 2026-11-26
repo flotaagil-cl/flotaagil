@@ -337,7 +337,7 @@
 
 .tablaReservas th,
 .tablaReservas td {
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid var(--borde);
   text-align: left;
   vertical-align: top;
@@ -404,7 +404,7 @@
 }
 
 .colTrayecto {
-  min-width: 13rem;
+  min-width: 11rem;
   overflow-wrap: anywhere;
 }
 
@@ -465,7 +465,7 @@
 
 .colAccion {
   width: 1%;
-  white-space: nowrap;
+  white-space: normal;
   text-align: right;
 }
 
@@ -486,6 +486,7 @@
   font: inherit;
   font-size: 0.825rem;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   transition: opacity 140ms ease;
 }
@@ -509,14 +510,16 @@
 
 .badgeFuturo {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 999px;
+  max-width: 11rem;
+  padding: 3px 8px;
+  border-radius: 8px;
   background: var(--insignia-revision-fondo, var(--info-fondo));
   color: var(--insignia-revision-texto, var(--texto));
   font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.3;
-  white-space: nowrap;
+  text-align: right;
+  white-space: normal;
 }
 
 .enlaceDetalle {
@@ -531,6 +534,7 @@
   color: var(--color-primario-700, var(--acento));
   font-size: 0.825rem;
   font-weight: 600;
+  white-space: nowrap;
   text-decoration: none;
   transition: background-color 140ms ease, border-color 140ms ease;
 }
