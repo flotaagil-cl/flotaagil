@@ -191,4 +191,64 @@ describe('tabla', () => {
     await act(() => vi.advanceTimersByTimeAsync(REFRESCO_MS));
     await waitFor(() => expect(vuelos.consultas.length).toBeGreaterThan(antes));
   });
+
+  it('los contadores interactivos y la búsqueda rápida filtran sin perder la vista', async () => {
+    montar();
+    const tabla = await screen.findByRole('table', { name: 'Vuelos de hoy' });
+    expect(within(tabla).getAllByRole('row').slice(1)).toHaveLength(3);
+
+    const sinConductor = screen.getByRole('button', { name: /2 sin conductor/ });
+    await userEvent.click(sinConductor);
+    expect(sinConductor).toHaveAttribute('aria-pressed', 'true');
+    expect(within(screen.getByRole('table', { name: 'Vuelos de hoy' })).getAllByRole('row').slice(1)).toHaveLength(2);
+
+    const cancelados = screen.getByRole('button', { name: /1 cancelados o desviados/ });
+    await userEvent.click(cancelados);
+    expect(cancelados).toHaveAttribute('aria-pressed', 'true');
+    expect(sinConductor).toHaveAttribute('aria-pressed', 'false');
+    const filasCanceladas = within(screen.getByRole('table', { name: 'Vuelos de hoy' })).getAllByRole('row').slice(1);
+    expect(filasCanceladas).toHaveLength(1);
+    expect(filasCanceladas[0]).toHaveTextContent('LA32');
+
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(within(screen.getByRole('table', { name: 'Vuelos de hoy' })).getAllByRole('row').slice(1)).toHaveLength(3);
+
+    const buscador = screen.getByLabelText('Buscar vuelo o pasajero');
+    await userEvent.type(buscador, 'ZZZ999');
+    expect(screen.getByText('Ningún vuelo coincide con el filtro rápido o la búsqueda.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver todos los vuelos' }));
+    expect(within(screen.getByRole('table', { name: 'Vuelos de hoy' })).getAllByRole('row').slice(1)).toHaveLength(3);
+  });
+
+  it('asigna conductor desde la fila, respeta días futuros y ofrece contacto rápido al pasajero', async () => {
+    const { viajes } = montar();
+    const futuro = new Date(Date.now() + 2 * 86_400_000).toISOString();
+    viajes.agregar(llegada(33, { estado_vuelo: 'PROGRAMADO' }, { recogida_en: futuro }));
+    viajes.candidatos = [
+      {
+        id: 5,
+        nombre: 'Macarena Gutiérrez',
+        patente: 'DMAA10',
+        distancia_m: 320,
+        posicion_en: null,
+        confiable: true,
+        posicion_fila: 1,
+        ultimo_viaje_en: null,
+        sugerido: true,
+      },
+    ];
+
+    await screen.findByRole('table', { name: 'Vuelos de hoy' });
+    expect(screen.getByRole('link', { name: 'Llamar a Pasajera 32' })).toHaveAttribute('href', 'tel:+56900000001');
+    expect(screen.getByRole('link', { name: 'WhatsApp a Pasajera 32' })).toHaveAttribute('href', 'https://wa.me/56900000001');
+
+    const botonFuturo = screen.getByRole('button', { name: 'Asignar conductor a la reserva 33' });
+    expect(botonFuturo).toBeDisabled();
+    expect(screen.getByText('Disponible el día del viaje')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar conductor a la reserva 31' }));
+    expect(await screen.findByRole('heading', { name: 'Asignar la reserva #31' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Asignar a Macarena Gutiérrez' }));
+    expect(await screen.findByText('Reserva #31 asignada a Macarena Gutiérrez.')).toBeInTheDocument();
+  });
 });

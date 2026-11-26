@@ -1,5 +1,32 @@
 /* HU-69: información de vuelos (sistema visual CC-20: solo tokens de diseno/tokens.css). */
 
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+.subtitulo {
+  margin: 4px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.botonConsultar {
+  gap: 8px;
+}
+
 .linea {
   display: flex;
   flex-wrap: wrap;
@@ -30,17 +57,23 @@
 }
 
 .aviso {
+  display: block;
   color: var(--insignia-revision-texto, var(--texto));
-  font-weight: 600;
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 /* Insignias del estado del vuelo: el texto dice el estado; el color solo acompaña. */
 .chip {
-  display: inline-block;
-  padding: 1px var(--espacio-2);
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px var(--espacio-2);
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
+  line-height: 1.3;
 }
 
 .ok {
@@ -102,80 +135,343 @@ tbody > tr[data-con-vuelo='true'][data-con-vuelo] > td {
   }
 }
 
-/* Tarjeta del detalle */
+/* Tarjeta del detalle de reserva */
+.tarjetaVuelo {
+  border-radius: var(--radio-tarjeta, 16px);
+}
+
+.encabezadoTarjeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: var(--espacio-3);
+}
+
+.encabezadoTarjeta h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.iconoTarjeta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--acento));
+  flex: none;
+}
+
 .horas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--espacio-3);
-  margin: var(--espacio-3) 0;
+  margin: 0 0 var(--espacio-3);
 }
 
 .hora {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  margin: 0;
+  padding: 12px 14px;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.hora[data-atencion='true'] {
+  background: var(--insignia-revision-fondo);
+  border-color: var(--insignia-revision-texto);
 }
 
 .hora span:first-child {
   color: var(--texto-suave);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .hora strong {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
+  color: var(--texto);
 }
 
-/* Vuelos de hoy */
+.datosTarjeta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--espacio-3);
+  margin: 0;
+}
+
+.datoItem {
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo);
+}
+
+.datoItem[data-destacado='true'] {
+  border-color: var(--color-tiffany, var(--borde));
+  background: var(--color-tiffany-50, var(--acento-suave));
+}
+
+.datoItem dt {
+  margin: 0 0 4px;
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.datoItem dd {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+/* Vuelos de hoy: contadores interactivos */
 .contadores {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--espacio-2);
-  margin: 0 0 var(--espacio-4);
+  margin: 0 0 var(--espacio-3);
   padding: 0;
   list-style: none;
 }
 
+.contadorItem {
+  display: flex;
+}
+
 .contador {
-  padding: var(--espacio-3);
+  width: 100%;
+  padding: var(--espacio-3) var(--espacio-4);
   background: var(--superficie);
   border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde);
   border-radius: var(--radio-tarjeta, var(--radio));
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 3px var(--sombra, rgb(0 0 0 / 0.05));
+  transition: border-color 140ms ease, background-color 140ms ease, transform 120ms ease;
+}
+
+.contador:hover {
+  border-color: var(--color-primario-700, var(--acento));
+  transform: translateY(-1px);
 }
 
 .contador strong {
   display: block;
-  font-size: 1.5rem;
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1.2;
 }
 
-.contador[data-atencion='true'] {
-  border-color: var(--insignia-revision-texto);
+.contador[data-atencion='true'][data-nivel='aviso'] {
+  border-left-color: var(--insignia-revision-texto);
+}
+
+.contador[data-atencion='true'][data-nivel='peligro'] {
+  border-left-color: var(--insignia-peligro-texto);
+}
+
+.contador[aria-pressed='true'] {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+  border-left-color: var(--color-primario-900, var(--acento));
+}
+
+/* Vuelos de hoy: barra de filtros en tarjeta */
+.panelFiltros {
+  margin-bottom: var(--espacio-3);
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra, rgb(0 0 0 / 0.05));
 }
 
 .filtros {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--espacio-3);
-  margin-bottom: var(--espacio-3);
+  gap: var(--espacio-3) var(--espacio-4);
+}
+
+.campoFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 11rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.campoBusqueda {
+  flex: 1 1 15rem;
+}
+
+.control {
+  height: var(--toque, 44px);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.control:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.barraActivos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-3);
+  padding-top: var(--espacio-2);
+  border-top: 1px solid var(--borde);
+}
+
+.conteoVisible {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Vuelos de hoy: tabla operativa */
+.tablaVuelos tbody tr[data-urgencia='peligro'] td:first-child {
+  box-shadow: inset 4px 0 0 var(--insignia-peligro-texto);
+}
+
+.tablaVuelos tbody tr[data-urgencia='peligro'] {
+  background: rgb(253 227 225 / 35%);
+}
+
+.tablaVuelos tbody tr[data-urgencia='atencion'] td:first-child {
+  box-shadow: inset 4px 0 0 var(--insignia-revision-texto);
+}
+
+.vueloPrincipal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pasajeroNombre {
+  display: block;
+  font-weight: 600;
+}
+
+.contactoCompacto {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+.conductorPendiente {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .sinAsignar {
   color: var(--insignia-peligro-texto);
+  font-weight: 700;
+}
+
+.patente {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--suave, var(--acento-suave));
+  color: var(--color-primario-900, var(--texto));
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.botonAsignar {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--grad-boton, var(--acento));
+  color: var(--sobre-acento);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.botonAsignar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.notaFuturo {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--insignia-revision-fondo);
+  color: var(--insignia-revision-texto);
+  font-size: 0.75rem;
   font-weight: 600;
+}
+
+.horaActual {
+  display: block;
+  font-weight: 600;
+}
+
+.cajaPropuesta {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--insignia-revision-texto);
+  border-radius: 10px;
+  background: var(--insignia-revision-fondo);
 }
 
 .botonesFila {
   display: flex;
   flex-wrap: wrap;
   gap: var(--espacio-1);
-  margin-top: var(--espacio-1);
+  margin-top: 6px;
 }
 
-.bloque {
-  display: block;
+.botonesFila button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.8125rem;
 }
 
 .iconoChip {
-  margin-right: 4px;
-  vertical-align: -2px;
+  margin-right: 2px;
 }

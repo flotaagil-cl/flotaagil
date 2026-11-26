@@ -1,14 +1,17 @@
 .alertas {
   margin-bottom: var(--espacio-3);
-  padding: var(--espacio-2) var(--espacio-3);
+  padding: var(--espacio-3) var(--espacio-4);
   border: 1px solid var(--error-borde);
-  border-radius: 8px;
+  border-left: 4px solid var(--peligro, var(--error-texto));
+  border-radius: var(--radio-tarjeta, 12px);
   background: var(--error-fondo);
   color: var(--error-texto);
+  box-shadow: 0 2px 6px var(--sombra, rgb(0 0 0 / 0.08));
 }
 
 .alertas p {
   margin: 0 0 var(--espacio-2);
+  font-weight: 600;
 }
 
 .alertas ul {
@@ -27,21 +30,39 @@
   gap: var(--espacio-2);
 }
 
+.alertas li + li {
+  padding-top: var(--espacio-2);
+  border-top: 1px solid rgb(180 35 24 / 15%);
+}
+
 .alertas a {
   color: inherit;
-  font-weight: 600;
+  font-weight: 700;
+  text-underline-offset: 2px;
 }
 
 .alertas button {
-  min-height: 44px;
+  min-height: 36px;
   padding: 0 var(--espacio-3);
   border: 1px solid var(--error-borde);
-  border-radius: 8px;
+  border-radius: var(--radio-boton, 8px);
   background: var(--superficie);
   color: var(--error-texto);
   font: inherit;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
+}
+
+.alertas button:hover:not(:disabled) {
+  background: var(--error-texto);
+  color: var(--sobre-oscuro, #ffffff);
+  border-color: var(--error-texto);
+}
+
+.alertas button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* HU-63: la llegada al origen es informativa, no un problema. */
