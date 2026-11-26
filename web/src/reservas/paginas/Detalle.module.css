@@ -17,6 +17,10 @@
 }
 
 .tituloGrupo h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
   margin: 0;
   font-size: 1.55rem;
   font-weight: 800;
@@ -52,21 +56,6 @@
   margin: 0;
   color: var(--texto-suave);
   font-size: 0.875rem;
-}
-
-.alertaVueloBanner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: var(--espacio-3);
-  padding: 10px 14px;
-  border: 1px solid var(--insignia-revision-texto);
-  border-left-width: 4px;
-  border-radius: 10px;
-  background: var(--insignia-revision-fondo);
-  color: var(--insignia-revision-texto);
-  font-size: 0.9rem;
-  font-weight: 600;
 }
 
 .resumenGrid {

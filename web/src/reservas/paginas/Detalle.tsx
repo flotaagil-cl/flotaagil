@@ -13,7 +13,6 @@ import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
 import { ACTORES, ALERTAS_VUELO, CANALES, CIERRES_FORZADOS, ESTADOS, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
-import { Icono } from '../../diseno/Icono';
 import { TarjetaVuelo } from '../../vuelos/TarjetaVuelo';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
@@ -70,19 +69,13 @@ function DetalleDe({ id }: { id: number }) {
         <div className={s.tituloGrupo}>
           <h1>
             Reserva #{viaje.id} {viaje.estado && <EstadoEtiqueta estado={viaje.estado} sinConfirmar={viaje.sin_confirmar} />}
+            {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
           </h1>
         </div>
         <Link to="/reservas" className={estilos.botonSecundario}>
           Volver a las reservas
         </Link>
       </div>
-
-      {viaje.alerta_vuelo && (
-        <div className={s.alertaVueloBanner}>
-          <Icono nombre="alerta" tamano={18} />
-          <span>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>
-        </div>
-      )}
 
       {cancelada && <Aviso>Reserva cancelada.</Aviso>}
       {forzado && <Aviso>{forzado}</Aviso>}
