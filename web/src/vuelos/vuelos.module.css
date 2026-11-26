@@ -363,6 +363,50 @@ tbody > tr[data-con-vuelo='true'][data-con-vuelo] > td {
 }
 
 /* Vuelos de hoy: tabla operativa */
+.tablaVuelos th {
+  white-space: nowrap;
+}
+
+.tablaVuelos td a:not([class]) {
+  text-decoration: none;
+}
+
+.tablaVuelos td a:not([class]):hover {
+  text-decoration: underline;
+}
+
+.colVuelo {
+  min-width: 11.5rem;
+}
+
+.colHora {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.horaConfirmada {
+  display: inline-block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sinConfirmarAterrizaje {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--insignia-revision-fondo);
+  color: var(--insignia-revision-texto);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.estadoConductor {
+  margin-top: 6px;
+}
+
 .tablaVuelos tbody tr[data-urgencia='peligro'] td:first-child {
   box-shadow: inset 4px 0 0 var(--insignia-peligro-texto);
 }
