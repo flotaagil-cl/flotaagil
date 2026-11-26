@@ -54,6 +54,11 @@
   color: var(--texto);
 }
 
+/* La leyenda flota para quedar dentro de la tarjeta: lo que sigue empieza debajo; si no, queda a su lado sin ancho. */
+.leyenda + * {
+  clear: both;
+}
+
 .gridCampos {
   clear: both;
   display: grid;
