@@ -3,10 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Aviso } from '../../componentes/Aviso';
-import { useCancelarViaje, type ViajeDetalle } from '../api';
-import { mensajeDeErrorApi } from '../errores';
 import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
+import { useCancelarViaje, type ViajeDetalle } from '../api';
+import { mensajeDeErrorApi } from '../errores';
+import d from './DialogosReserva.module.css';
+import { CabeceraDialogo, ResumenViajeDialogo } from './ResumenViajeDialogo';
 
 const MAXIMO = 200;
 
@@ -72,10 +74,8 @@ export function DialogoCancelar({ viaje, alCerrar, alCancelar }: Props) {
       }}
     >
       <form onSubmit={handleSubmit(confirmar)} noValidate>
-        <h2 id="titulo-cancelar">Cancelar la reserva #{viaje.id}</h2>
-        <p>
-          {viaje.pasajero.nombre} · {viaje.origen.direccion} → {viaje.destino.direccion}
-        </p>
+        <CabeceraDialogo tituloId="titulo-cancelar" titulo={`Cancelar la reserva #${viaje.id}`} alCerrar={alCerrar} deshabilitado={cancelar.isPending} />
+        <ResumenViajeDialogo viaje={viaje} />
         {viaje.conductor && (
           <Aviso tipo="error">El conductor {viaje.conductor.nombre} ya está asignado a esta reserva.</Aviso>
         )}
@@ -86,12 +86,12 @@ export function DialogoCancelar({ viaje, alCerrar, alCancelar }: Props) {
         <span className={estilos.contador} aria-live="polite">
           {motivo.length}/{MAXIMO}
         </span>
-        <div className={estilos.acciones}>
-          <button type="submit" className={estilos.botonPeligro} disabled={cancelar.isPending}>
-            {cancelar.isPending ? 'Cancelando…' : 'Cancelar reserva'}
-          </button>
+        <div className={d.pie}>
           <button type="button" className={estilos.botonSecundario} onClick={alCerrar} disabled={cancelar.isPending}>
             Volver
+          </button>
+          <button type="submit" className={estilos.botonPeligro} disabled={cancelar.isPending}>
+            {cancelar.isPending ? 'Cancelando…' : 'Cancelar reserva'}
           </button>
         </div>
       </form>

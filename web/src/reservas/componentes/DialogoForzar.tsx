@@ -5,10 +5,11 @@ import { z } from 'zod';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
-import estilosFormulario from '../../formularios/formularios.module.css';
 import { useForzarCierre, type ViajeDetalle } from '../api';
 import { mensajeDeErrorApi } from '../errores';
 import { METODOS_PAGO } from '../etiquetas';
+import d from './DialogosReserva.module.css';
+import { CabeceraDialogo, ResumenViajeDialogo } from './ResumenViajeDialogo';
 
 const MAXIMO_MOTIVO = 200;
 const MONTO_MAXIMO = 500_000;
@@ -100,20 +101,25 @@ export function DialogoForzar({ viaje, alCerrar, alTerminar }: Props) {
       }}
     >
       <form onSubmit={handleSubmit(confirmar)} noValidate>
-        <h2 id="titulo-forzar">Cierre o anulación forzada de la reserva #{viaje.id}</h2>
-        <p>
-          {viaje.pasajero.nombre} · {viaje.conductor?.nombre ?? 'Sin conductor'} · {viaje.origen.direccion} → {viaje.destino.direccion}
-        </p>
+        <CabeceraDialogo
+          tituloId="titulo-forzar"
+          titulo={`Cierre o anulación forzada de la reserva #${viaje.id}`}
+          alCerrar={alCerrar}
+          deshabilitado={forzar.isPending}
+        />
+        <ResumenViajeDialogo viaje={viaje} conductorNombre={viaje.conductor?.nombre ?? 'Sin conductor'} />
         <Aviso tipo="error">Úsalo solo si el conductor no puede hacerlo desde la app. Queda en auditoría con tu nombre y el conductor vuelve a Disponible.</Aviso>
         {falla && <Aviso tipo="error">{falla}</Aviso>}
-        <fieldset className={estilosFormulario.opciones}>
+        <fieldset className={d.opcionesRadio}>
           <legend>Qué hacer</legend>
-          <label>
-            <input type="radio" value="CERRAR" {...register('accion')} /> Cerrar: el viaje se hizo y se cobró
-          </label>
-          <label>
-            <input type="radio" value="ANULAR" {...register('accion')} /> Anular: el viaje no se completó
-          </label>
+          <div className={d.listaOpciones}>
+            <label className={d.opcionRadio}>
+              <input type="radio" value="CERRAR" {...register('accion')} /> Cerrar: el viaje se hizo y se cobró
+            </label>
+            <label className={d.opcionRadio}>
+              <input type="radio" value="ANULAR" {...register('accion')} /> Anular: el viaje no se completó
+            </label>
+          </div>
         </fieldset>
         <Campo etiqueta="Motivo" error={errors.motivo?.message}>
           {(control) => <textarea rows={3} maxLength={MAXIMO_MOTIVO} {...control} {...register('motivo')} />}
@@ -140,12 +146,12 @@ export function DialogoForzar({ viaje, alCerrar, alTerminar }: Props) {
             </Campo>
           </>
         )}
-        <div className={estilos.acciones}>
-          <button type="submit" className={estilos.botonPeligro} disabled={forzar.isPending}>
-            {forzar.isPending ? 'Guardando…' : accion === 'ANULAR' ? 'Anular viaje' : 'Cerrar viaje'}
-          </button>
+        <div className={d.pie}>
           <button type="button" className={estilos.botonSecundario} onClick={alCerrar} disabled={forzar.isPending}>
             Volver
+          </button>
+          <button type="submit" className={estilos.botonPeligro} disabled={forzar.isPending}>
+            {forzar.isPending ? 'Guardando…' : accion === 'ANULAR' ? 'Anular viaje' : 'Cerrar viaje'}
           </button>
         </div>
       </form>
