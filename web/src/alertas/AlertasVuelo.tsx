@@ -34,6 +34,7 @@ export function AlertasVuelo() {
       setFalla(false);
       void cliente.invalidateQueries({ queryKey: CLAVE });
       void cliente.invalidateQueries({ queryKey: ['viajes'] });
+      void cliente.invalidateQueries({ queryKey: ['vuelos-de-hoy'] });
     },
     onError: () => setFalla(true),
   });
@@ -48,6 +49,7 @@ export function AlertasVuelo() {
     if (conocidas.current && [...actuales].some((id) => !conocidas.current?.has(id))) {
       sonarAlerta();
       void cliente.invalidateQueries({ queryKey: ['viajes'] });
+      void cliente.invalidateQueries({ queryKey: ['vuelos-de-hoy'] });
     }
     conocidas.current = actuales;
   }, [consulta.isSuccess, ids, cliente]);

@@ -10,16 +10,31 @@ function soloDigitos(telefono: string): string {
  * el WhatsApp del propio despachador: FlotaÁgil no envía nada ni usa ninguna API. Sin teléfono (cuenta eliminada,
  * DC-50) no hay botones.
  */
-export function ContactoPasajero({ telefono }: { telefono: string | null | undefined }) {
-  if (!telefono) return <span>Sin teléfono</span>;
+export function ContactoPasajero({
+  telefono,
+  compacto = false,
+  nombre,
+}: {
+  telefono: string | null | undefined;
+  compacto?: boolean;
+  nombre?: string;
+}) {
+  if (!telefono) return <span className={compacto ? estilos.secundario : undefined}>Sin teléfono</span>;
+  const sufijo = nombre ? ` a ${nombre}` : '';
   return (
     <span className={estilos.contacto}>
-      {telefono}{' '}
-      <a href={`tel:${telefono}`} className={estilos.enlaceContacto}>
+      <span>{telefono}</span>
+      <a href={`tel:${telefono}`} className={estilos.enlaceContacto} aria-label={compacto ? `Llamar${sufijo}` : undefined}>
         Llamar
-      </a>{' '}
-      <a href={`https://wa.me/${soloDigitos(telefono)}`} target="_blank" rel="noopener noreferrer" className={estilos.enlaceContacto}>
-        Abrir en WhatsApp
+      </a>
+      <a
+        href={`https://wa.me/${soloDigitos(telefono)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={estilos.enlaceContacto}
+        aria-label={compacto ? `WhatsApp${sufijo}` : undefined}
+      >
+        {compacto ? 'WhatsApp' : 'Abrir en WhatsApp'}
       </a>
     </span>
   );
