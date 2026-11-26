@@ -10,6 +10,7 @@ import { ESTADOS } from '../etiquetas';
 import { cuerpoEditar, valoresDeViaje } from '../formulario';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
+import s from '../componentes/FormularioReserva.module.css';
 
 export function Editar() {
   const id = useIdDeRuta();
@@ -64,8 +65,11 @@ function Edicion({ viaje, conflicto, alConflicto }: PropsEdicion) {
   const volverA = `/reservas/${viaje.id}`;
   return (
     <section>
-      <div className={estilos.encabezado}>
+      <div className={s.cabecera}>
         <h1>Editar reserva #{viaje.id}</h1>
+        <Link to={volverA} className={estilos.botonSecundario}>
+          Volver a la reserva
+        </Link>
       </div>
       <FormularioReserva
         modo="editar"

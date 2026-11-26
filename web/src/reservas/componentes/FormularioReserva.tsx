@@ -17,13 +17,13 @@ import {
   type Modo,
   type ValoresReserva,
 } from '../formulario';
-import campos from '../../formularios/formularios.module.css';
 import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 import { CampoFechaHora } from '../../formularios/CampoFechaHora';
 import { CampoDireccionFormulario } from '../../direcciones/CampoDireccionFormulario';
 import { buscarConSesion } from '../../direcciones/sugerencias';
 import { useApi } from '../../sesion/SesionProvider';
+import s from './FormularioReserva.module.css';
 
 interface Props {
   modo: Modo;
@@ -94,7 +94,7 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
   const bloqueado = Boolean(bloqueo);
 
   return (
-    <form className={estilos.formulario} onSubmit={alEnviarFormulario} noValidate>
+    <form className={s.formulario} onSubmit={alEnviarFormulario} noValidate>
       {bloqueo && <Aviso tipo="error">{bloqueo}</Aviso>}
       {falla && <Aviso tipo="error">{falla}</Aviso>}
       {generales.map((mensaje) => (
@@ -103,10 +103,10 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
         </Aviso>
       ))}
 
-      <fieldset disabled={bloqueado}>
-        <legend>Pasajero</legend>
+      <fieldset className={s.seccion} disabled={bloqueado}>
+        <legend className={s.leyenda}>Pasajero</legend>
         {modo === 'crear' ? (
-          <>
+          <div className={s.gridCampos}>
             <Campo etiqueta="Nombre" error={errors.pasajero?.nombre?.message}>
               {(control) => <input autoComplete="off" {...control} {...register('pasajero.nombre')} />}
             </Campo>
@@ -125,102 +125,118 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
                 />
               )}
             </Campo>
-            <fieldset className={campos.opciones}>
-              <legend>Canal</legend>
-              {CANALES_PANEL.map((canal) => (
-                <label key={canal} className={campos.opcion}>
-                  <input type="radio" value={canal} {...register('canal')} />
-                  {CANALES[canal]}
-                </label>
-              ))}
+            <fieldset className={`${s.grupoOpciones} ${s.ancho}`}>
+              <legend className={s.leyendaOpciones}>Canal</legend>
+              <div className={s.pastillas}>
+                {CANALES_PANEL.map((canal) => (
+                  <label key={canal} className={s.pastilla}>
+                    <input type="radio" className={s.radioOculto} value={canal} {...register('canal')} />
+                    {CANALES[canal]}
+                  </label>
+                ))}
+              </div>
             </fieldset>
-          </>
+          </div>
         ) : (
           viaje && (
-            <dl className={`${estilos.soloLectura} ${campos.ancho}`}>
-              <dt>Nombre</dt>
-              <dd>{viaje.pasajero.nombre}</dd>
-              <dt>Teléfono</dt>
-              <dd>{viaje.pasajero.telefono ?? 'Sin teléfono'}</dd>
-              <dt>Canal</dt>
-              <dd>{CANALES[viaje.canal]}</dd>
-              <dd className={campos.ayuda}>El pasajero, su teléfono y el canal no se pueden cambiar al editar.</dd>
-            </dl>
+            <div className={s.ancho}>
+              <dl className={s.soloLectura}>
+                <div>
+                  <dt>Nombre</dt>
+                  <dd>{viaje.pasajero.nombre}</dd>
+                </div>
+                <div>
+                  <dt>Teléfono</dt>
+                  <dd>{viaje.pasajero.telefono ?? 'Sin teléfono'}</dd>
+                </div>
+                <div>
+                  <dt>Canal</dt>
+                  <dd>{CANALES[viaje.canal]}</dd>
+                </div>
+              </dl>
+              <p className={s.notaSoloLectura}>El pasajero, su teléfono y el canal no se pueden cambiar al editar.</p>
+            </div>
           )
         )}
       </fieldset>
 
-      <fieldset disabled={bloqueado}>
-        <legend>Trayecto</legend>
-        <fieldset className={`${campos.opciones} ${campos.ancho}`}>
-          <legend>Sentido</legend>
-          {SENTIDOS_FORMULARIO.map((valor) => (
-            <label key={valor} className={campos.opcion}>
-              <input type="radio" value={valor} {...register('sentido')} />
-              {SENTIDOS[valor]}
-            </label>
-          ))}
-        </fieldset>
-        {/* HU-71: con sugerencias mientras se escribe; elegir una guarda sus coordenadas. */}
-        <CampoDireccionFormulario
-          control={control}
-          name="origen_dir"
-          coordenadas="origen_coordenadas"
-          etiqueta="Origen"
-          error={errors.origen_dir?.message ?? errors.origen_coordenadas?.message}
-          ancho
-          buscar={buscar}
-        />
-        <CampoDireccionFormulario
-          control={control}
-          name="destino_dir"
-          coordenadas="destino_coordenadas"
-          etiqueta="Destino"
-          error={errors.destino_dir?.message ?? errors.destino_coordenadas?.message}
-          ancho
-          buscar={buscar}
-        />
-        <Controller
-          control={control}
-          name="recogida"
-          render={({ field }) => (
-            <CampoFechaHora
-              etiqueta="Recogida"
-              nombre="recogida"
-              valor={field.value}
-              alCambiar={field.onChange}
-              alSalir={field.onBlur}
-              refCampo={field.ref}
-              error={errors.recogida?.message}
-              ayuda="Hora de Chile continental (Santiago)."
-            />
-          )}
-        />
-      </fieldset>
-
-      {sentido === 'DESDE_AEROPUERTO' ? (
-        <fieldset disabled={bloqueado}>
-          <legend>Vuelo (opcional)</legend>
-          <Campo etiqueta="Número de vuelo" error={errors.vuelo?.numero?.message}>
-            {(control) => (
-              <input autoComplete="off" autoCapitalize="characters" placeholder="LA123" {...control} {...register('vuelo.numero')} />
-            )}
-          </Campo>
+      <fieldset className={s.seccion} disabled={bloqueado}>
+        <legend className={s.leyenda}>Trayecto</legend>
+        <div className={s.gridCampos}>
+          <fieldset className={`${s.grupoOpciones} ${s.ancho}`}>
+            <legend className={s.leyendaOpciones}>Sentido</legend>
+            <div className={s.pastillas}>
+              {SENTIDOS_FORMULARIO.map((valor) => (
+                <label key={valor} className={s.pastilla}>
+                  <input type="radio" className={s.radioOculto} value={valor} {...register('sentido')} />
+                  {SENTIDOS[valor]}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {/* HU-71: con sugerencias mientras se escribe; elegir una guarda sus coordenadas. */}
+          <CampoDireccionFormulario
+            control={control}
+            name="origen_dir"
+            coordenadas="origen_coordenadas"
+            etiqueta="Origen"
+            error={errors.origen_dir?.message ?? errors.origen_coordenadas?.message}
+            ancho
+            buscar={buscar}
+          />
+          <CampoDireccionFormulario
+            control={control}
+            name="destino_dir"
+            coordenadas="destino_coordenadas"
+            etiqueta="Destino"
+            error={errors.destino_dir?.message ?? errors.destino_coordenadas?.message}
+            ancho
+            buscar={buscar}
+          />
           <Controller
             control={control}
-            name="vuelo.hora"
+            name="recogida"
             render={({ field }) => (
               <CampoFechaHora
-                etiqueta="Llegada programada"
-                nombre="vuelo-hora"
+                etiqueta="Recogida"
+                nombre="recogida"
                 valor={field.value}
                 alCambiar={field.onChange}
                 alSalir={field.onBlur}
                 refCampo={field.ref}
-                error={errors.vuelo?.hora?.message}
+                error={errors.recogida?.message}
+                ayuda="Hora de Chile continental (Santiago)."
               />
             )}
           />
+        </div>
+      </fieldset>
+
+      {sentido === 'DESDE_AEROPUERTO' ? (
+        <fieldset className={`${s.seccion} ${s.seccionVuelo}`} disabled={bloqueado}>
+          <legend className={s.leyenda}>Vuelo (opcional)</legend>
+          <div className={s.gridCampos}>
+            <Campo etiqueta="Número de vuelo" error={errors.vuelo?.numero?.message}>
+              {(control) => (
+                <input autoComplete="off" autoCapitalize="characters" placeholder="LA123" {...control} {...register('vuelo.numero')} />
+              )}
+            </Campo>
+            <Controller
+              control={control}
+              name="vuelo.hora"
+              render={({ field }) => (
+                <CampoFechaHora
+                  etiqueta="Llegada programada"
+                  nombre="vuelo-hora"
+                  valor={field.value}
+                  alCambiar={field.onChange}
+                  alSalir={field.onBlur}
+                  refCampo={field.ref}
+                  error={errors.vuelo?.hora?.message}
+                />
+              )}
+            />
+          </div>
         </fieldset>
       ) : (
         modo === 'editar' &&
@@ -230,41 +246,45 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
       {sentido === 'HACIA_AEROPUERTO' && (
         // HU-69 (DC-70): los mismos datos opcionales del portal; no se monitorean. Con la hora y el tipo, la
         // reserva muestra a qué hora debe estar el pasajero en el aeropuerto.
-        <fieldset disabled={bloqueado}>
-          <legend>Vuelo de salida (opcional)</legend>
-          <Campo etiqueta="Número de vuelo (opcional)" error={errors.vuelo_salida_numero?.message}>
-            {(control) => (
-              <input autoComplete="off" autoCapitalize="characters" placeholder="Por ejemplo, LA 601" {...control} {...register('vuelo_salida_numero')} />
-            )}
-          </Campo>
-          <Controller
-            control={control}
-            name="vuelo_salida_hora"
-            render={({ field }) => (
-              <CampoFechaHora
-                etiqueta="Hora de salida"
-                nombre="vuelo-salida-hora"
-                valor={field.value}
-                alCambiar={field.onChange}
-                alSalir={field.onBlur}
-                refCampo={field.ref}
-                error={errors.vuelo_salida_hora?.message}
-              />
-            )}
-          />
-          <fieldset className={campos.opciones}>
-            <legend>Tipo de vuelo</legend>
-            {(['NACIONAL', 'INTERNACIONAL'] as const).map((tipoVuelo) => (
-              <label key={tipoVuelo} className={campos.opcion}>
-                <input type="radio" value={tipoVuelo} {...register('vuelo_salida_tipo')} />
-                {tipoVuelo === 'NACIONAL' ? 'Nacional' : 'Internacional'}
-              </label>
-            ))}
-          </fieldset>
+        <fieldset className={`${s.seccion} ${s.seccionVuelo}`} disabled={bloqueado}>
+          <legend className={s.leyenda}>Vuelo de salida (opcional)</legend>
+          <div className={s.gridCampos}>
+            <Campo etiqueta="Número de vuelo (opcional)" error={errors.vuelo_salida_numero?.message}>
+              {(control) => (
+                <input autoComplete="off" autoCapitalize="characters" placeholder="Por ejemplo, LA 601" {...control} {...register('vuelo_salida_numero')} />
+              )}
+            </Campo>
+            <Controller
+              control={control}
+              name="vuelo_salida_hora"
+              render={({ field }) => (
+                <CampoFechaHora
+                  etiqueta="Hora de salida"
+                  nombre="vuelo-salida-hora"
+                  valor={field.value}
+                  alCambiar={field.onChange}
+                  alSalir={field.onBlur}
+                  refCampo={field.ref}
+                  error={errors.vuelo_salida_hora?.message}
+                />
+              )}
+            />
+            <fieldset className={`${s.grupoOpciones} ${s.ancho}`}>
+              <legend className={s.leyendaOpciones}>Tipo de vuelo</legend>
+              <div className={s.pastillas}>
+                {(['NACIONAL', 'INTERNACIONAL'] as const).map((tipoVuelo) => (
+                  <label key={tipoVuelo} className={s.pastilla}>
+                    <input type="radio" className={s.radioOculto} value={tipoVuelo} {...register('vuelo_salida_tipo')} />
+                    {tipoVuelo === 'NACIONAL' ? 'Nacional' : 'Internacional'}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
         </fieldset>
       )}
 
-      <div className={estilos.pie}>
+      <div className={s.pie}>
         <button type="submit" className={estilos.boton} disabled={bloqueado || isSubmitting}>
           {isSubmitting ? 'Guardando…' : modo === 'crear' ? 'Guardar reserva' : 'Guardar cambios'}
         </button>
