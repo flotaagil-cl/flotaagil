@@ -10,6 +10,7 @@ import { CampoFechaHora } from '../../formularios/CampoFechaHora';
 import campos from '../../formularios/formularios.module.css';
 import { aIso, instanteDeCampo, type ValorFechaHora } from '../../hora/hora';
 import { useApi } from '../../sesion/SesionProvider';
+import s from '../componentes/FormularioReserva.module.css';
 import { mensajeDeErrorApi } from '../errores';
 
 type Cuerpo = components['schemas']['ReservaContingenciaRequest'];
@@ -122,84 +123,114 @@ export function Contingencia() {
     }
   }
 
-  const texto = (campo: keyof typeof datos, etiqueta: string, props: Record<string, unknown> = {}) => (
-    <Campo etiqueta={etiqueta} error={errores[campo === 'nombre' ? 'nombre' : campo]}>
+  const texto = (campo: keyof typeof datos, etiqueta: string, props: Record<string, unknown> = {}, ancho = false) => (
+    <Campo etiqueta={etiqueta} error={errores[campo === 'nombre' ? 'nombre' : campo]} ancho={ancho}>
       {(control) => <input {...control} {...props} value={datos[campo]} onChange={(e) => cambiar(campo)(e.target.value)} />}
     </Campo>
   );
 
   return (
     <section>
-      <div className={estilos.encabezado}>
+      <div className={s.cabecera}>
         <h1>Reserva de contingencia</h1>
+        <Link to="/reservas" className={estilos.botonSecundario}>
+          Volver a las reservas
+        </Link>
       </div>
-      <p>Para los viajes anotados en papel durante una caída del sistema. Usa las horas reales de la hoja; se aceptan hasta 7 días atrás.</p>
+      <p className={s.notaSoloLectura} style={{ marginBottom: 'var(--espacio-3)' }}>
+        Para los viajes anotados en papel durante una caída del sistema. Usa las horas reales de la hoja; se aceptan hasta 7 días atrás.
+      </p>
       {falla && <Aviso tipo="error">{falla}</Aviso>}
-      <form className={estilos.tarjeta} onSubmit={(e) => void enviar(e)} noValidate>
-        {texto('folio', 'Folio de la hoja')}
-        {texto('nombre', 'Nombre del pasajero', { autoComplete: 'off' })}
-        {texto('telefono', 'Teléfono (WhatsApp)', { type: 'tel' })}
-        <label className={campos.campo}>
-          Sentido
-          <select value={datos.sentido} onChange={(e) => cambiar('sentido')(e.target.value)}>
-            {SENTIDOS.map((s) => (
-              <option key={s.valor} value={s.valor}>
-                {s.texto}
-              </option>
-            ))}
-          </select>
-        </label>
-        {texto('origen_dir', 'Origen')}
-        {texto('destino_dir', 'Destino')}
-        <fieldset className={campos.campo}>
-          <legend>Resultado</legend>
-          <label>
-            <input type="radio" name="resultado" checked={finalizado} onChange={() => setResultadoViaje('FINALIZADO')} /> Finalizado
-          </label>
-          <label>
-            <input type="radio" name="resultado" checked={!finalizado} onChange={() => setResultadoViaje('CANCELADO')} /> Cancelado
-          </label>
+      <form className={s.formulario} onSubmit={(e) => void enviar(e)} noValidate>
+        <fieldset className={s.seccion}>
+          <legend className={s.leyenda}>Hoja y pasajero</legend>
+          <div className={s.gridCampos}>
+            {texto('folio', 'Folio de la hoja', { placeholder: 'Ej.: C-0001' })}
+            {texto('nombre', 'Nombre del pasajero', { autoComplete: 'off' })}
+            {texto('telefono', 'Teléfono (WhatsApp)', { type: 'tel', inputMode: 'tel', placeholder: '+56912345678' })}
+          </div>
         </fieldset>
-        <CampoFechaHora etiqueta="Recogida real" nombre="recogida_en" valor={recogida} alCambiar={setRecogida} error={errores.recogida_en} />
-        <CampoFechaHora
-          etiqueta={finalizado ? 'Término real' : 'Hora de la cancelación'}
-          nombre="termino_en"
-          valor={termino}
-          alCambiar={setTermino}
-          error={errores.termino_en}
-        />
-        <Campo etiqueta="Conductor" error={errores.conductor}>
-          {(control) => (
-            <select {...control} value={datos.conductor} onChange={(e) => cambiar('conductor')(e.target.value)}>
-              <option value="">{finalizado ? 'Elige el conductor' : 'Sin conductor'}</option>
-              {(conductores.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
-          )}
-        </Campo>
-        {finalizado ? (
-          <>
-            <label className={campos.campo}>
-              Método de pago
-              <select value={datos.metodo} onChange={(e) => cambiar('metodo')(e.target.value)}>
-                {METODOS.map((m) => (
-                  <option key={m.valor} value={m.valor}>
-                    {m.texto}
+
+        <fieldset className={s.seccion}>
+          <legend className={s.leyenda}>Trayecto</legend>
+          <div className={s.gridCampos}>
+            <label className={`${campos.campo} ${s.ancho}`}>
+              Sentido
+              <select value={datos.sentido} onChange={(e) => cambiar('sentido')(e.target.value)}>
+                {SENTIDOS.map((item) => (
+                  <option key={item.valor} value={item.valor}>
+                    {item.texto}
                   </option>
                 ))}
               </select>
             </label>
-            {texto('monto', 'Monto cobrado (CLP)', { inputMode: 'numeric' })}
-          </>
-        ) : (
-          <Campo etiqueta="Motivo de la cancelación" error={errores.motivo}>
-            {(control) => <textarea {...control} rows={3} maxLength={200} value={datos.motivo} onChange={(e) => cambiar('motivo')(e.target.value)} />}
-          </Campo>
-        )}
-        <div className={estilos.acciones}>
+            {texto('origen_dir', 'Origen', {}, true)}
+            {texto('destino_dir', 'Destino', {}, true)}
+          </div>
+        </fieldset>
+
+        <fieldset className={s.seccion}>
+          <legend className={s.leyenda}>Resultado y cierre</legend>
+          <div className={s.gridCampos}>
+            <fieldset className={`${s.grupoOpciones} ${s.ancho}`}>
+              <legend className={s.leyendaOpciones}>Resultado</legend>
+              <div className={s.pastillas}>
+                <label className={s.pastilla}>
+                  <input type="radio" className={s.radioOculto} name="resultado" checked={finalizado} onChange={() => setResultadoViaje('FINALIZADO')} />
+                  Finalizado
+                </label>
+                <label className={s.pastilla}>
+                  <input type="radio" className={s.radioOculto} name="resultado" checked={!finalizado} onChange={() => setResultadoViaje('CANCELADO')} />
+                  Cancelado
+                </label>
+              </div>
+            </fieldset>
+
+            <CampoFechaHora etiqueta="Recogida real" nombre="recogida_en" valor={recogida} alCambiar={setRecogida} error={errores.recogida_en} />
+            <CampoFechaHora
+              etiqueta={finalizado ? 'Término real' : 'Hora de la cancelación'}
+              nombre="termino_en"
+              valor={termino}
+              alCambiar={setTermino}
+              error={errores.termino_en}
+            />
+
+            <Campo etiqueta="Conductor" error={errores.conductor}>
+              {(control) => (
+                <select {...control} value={datos.conductor} onChange={(e) => cambiar('conductor')(e.target.value)}>
+                  <option value="">{finalizado ? 'Elige el conductor' : 'Sin conductor'}</option>
+                  {(conductores.data ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Campo>
+
+            {finalizado ? (
+              <>
+                <label className={campos.campo}>
+                  Método de pago
+                  <select value={datos.metodo} onChange={(e) => cambiar('metodo')(e.target.value)}>
+                    {METODOS.map((m) => (
+                      <option key={m.valor} value={m.valor}>
+                        {m.texto}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {texto('monto', 'Monto cobrado (CLP)', { inputMode: 'numeric' })}
+              </>
+            ) : (
+              <Campo etiqueta="Motivo de la cancelación" error={errores.motivo} ancho>
+                {(control) => <textarea {...control} rows={3} maxLength={200} value={datos.motivo} onChange={(e) => cambiar('motivo')(e.target.value)} />}
+              </Campo>
+            )}
+          </div>
+        </fieldset>
+
+        <div className={s.pie}>
           <button type="submit" className={estilos.boton} disabled={crear.isPending}>
             {crear.isPending ? 'Guardando…' : 'Ingresar reserva'}
           </button>
