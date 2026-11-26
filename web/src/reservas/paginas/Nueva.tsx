@@ -4,14 +4,18 @@ import { FormularioReserva } from '../componentes/FormularioReserva';
 import { mensajeDeErrorApi, sinRespuesta } from '../errores';
 import { cuerpoCrear, VALORES_NUEVA } from '../formulario';
 import estilos from '../../componentes/panel.module.css';
+import s from '../componentes/FormularioReserva.module.css';
 
 export function Nueva() {
   const crear = useCrearViaje();
   const navegar = useNavigate();
   return (
     <section>
-      <div className={estilos.encabezado}>
+      <div className={s.cabecera}>
         <h1>Nueva reserva</h1>
+        <Link to="/reservas" className={estilos.botonSecundario}>
+          Volver a las reservas
+        </Link>
       </div>
       <FormularioReserva
         modo="crear"
