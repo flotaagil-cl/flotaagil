@@ -1,0 +1,14 @@
+/* HU-71: mapa chico bajo las direcciones. Solo tokens. */
+.chico {
+  height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta);
+  isolation: isolate;
+}
+
+@media (min-width: 900px) {
+  .chico {
+    height: 280px;
+  }
+}

@@ -1,9 +1,11 @@
-import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { Boton } from '../diseno/Boton';
 import { Campo, DatoFijo } from '../diseno/Campo';
 import { Contador } from '../diseno/Contador';
 import e from '../diseno/diseno.module.css';
+import type { PuntosDelViaje } from '../diseno/mapa/direcciones';
+import { MapaDirecciones } from '../diseno/mapa/MapaDirecciones';
 import { Segmentado } from '../diseno/Segmentado';
 import { Destacado } from '../diseno/Tarjeta';
 import { hoy } from '../hora/hora';
@@ -43,6 +45,10 @@ interface Props {
   quienViaja?: ReactNode;
   /** CC-26: valida quién viaja al revisar; false detiene el paso a «Revisa tu pedido». */
   validarQuienViaja?: () => boolean;
+  /** HU-71: mapa chico bajo las direcciones con los puntos elegidos. */
+  conMapa?: boolean;
+  /** HU-71: avisa las coordenadas elegidas, para un mapa fuera del formulario. Debe ser estable (un setState). */
+  alCambiarPuntos?: (puntos: PuntosDelViaje) => void;
 }
 
 /** HU-39: datos de cada tipo de viaje, con pasajeros y maletas. */
@@ -58,6 +64,8 @@ export function FormularioPedido({
   nota,
   quienViaja,
   validarQuienViaja,
+  conMapa = false,
+  alCambiarPuntos,
 }: Props) {
   const [v, setV] = useState<ValoresPedido>(iniciales ?? VALORES_INICIALES);
   const [errores, setErrores] = useState<Errores>(erroresIniciales ?? {});
@@ -76,6 +84,13 @@ export function FormularioPedido({
       alElegir: (s: Sugerencia) => setV((actual) => ({ ...actual, [campo]: s.texto, [coordenadas]: { lat: s.lat, lon: s.lon } })),
     };
   };
+  // El extremo del aeropuerto no tiene coordenadas propias: el mapa pone SCL.
+  const origenElegido = tipo === 'desde-aeropuerto' ? null : v.origenCoordenadas;
+  const destinoElegido = tipo === 'al-aeropuerto' ? null : v.destinoCoordenadas;
+  useEffect(() => {
+    alCambiarPuntos?.({ origen: origenElegido, destino: destinoElegido });
+  }, [alCambiarPuntos, origenElegido, destinoElegido]);
+  const mapa = conMapa && <MapaDirecciones tipo={tipo} origen={origenElegido} destino={destinoElegido} chico />;
   const minimoFecha = hoy();
 
   function revisar(evento: FormEvent) {
@@ -126,6 +141,7 @@ export function FormularioPedido({
           )}
           <Destacado titulo="Seguimos tu vuelo por ti">Si se atrasa, tu conductor ya lo sabe. No tienes que avisarnos.</Destacado>
           <CampoDireccionPortal etiqueta="¿A dónde vas?" placeholder="Dirección de destino" valor={v.destino} error={errores.destino} {...direccion('destino')} />
+          {mapa}
           {contadores}
         </>
       )}
@@ -134,6 +150,7 @@ export function FormularioPedido({
         <>
           <CampoDireccionPortal etiqueta="¿Dónde te recogemos?" placeholder="Dirección de recogida" valor={v.origen} error={errores.origen} {...direccion('origen')} />
           <DatoFijo etiqueta="Destino" valor={AEROPUERTO} />
+          {mapa}
           <div className={e.fila}>
             <Campo etiqueta="Fecha del vuelo" type="date" min={minimoFecha} value={v.salidaFecha} onChange={texto('salidaFecha')} error={errores.salidaFecha} />
             <Campo etiqueta="Hora de salida" type="time" value={v.salidaHora} onChange={texto('salidaHora')} error={errores.salidaHora} />
@@ -189,6 +206,7 @@ export function FormularioPedido({
         <>
           <CampoDireccionPortal etiqueta="Origen" placeholder="¿Dónde te recogemos?" valor={v.origen} error={errores.origen} {...direccion('origen')} />
           <CampoDireccionPortal etiqueta="Destino" placeholder="¿A dónde vas?" valor={v.destino} error={errores.destino} {...direccion('destino')} />
+          {mapa}
           <Segmentado
             etiqueta="¿Cuándo?"
             forma="pastillas"

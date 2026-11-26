@@ -7,6 +7,7 @@ import { montarPanel } from '../pruebas/montar';
 import { ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
 import { EMPRESA_PORTAL } from '../pruebas/servidorPortalFalso';
 import { armarPedido, erroresDelServidor, horaDe, recogidaSugerida, resumenPedido, textoAntelacion, VALORES_INICIALES, type EmpresaPublica } from './pedido';
+import { elegirSugerencia, hayRuta, MAPA_AEROPUERTO, MAPA_CIUDAD, pines, simularSugerencias } from '../pruebas/mapa';
 
 const EMPRESA: EmpresaPublica = { ...EMPRESA_PORTAL, capacidad_maxima: 4 };
 const json = (estado: number, cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: estado, headers: { 'Content-Type': 'application/json' } });
@@ -389,5 +390,30 @@ describe('HU-39 · otros roles', () => {
   it('el despachador que entra a /pedir vuelve al panel', async () => {
     const { router } = montarPanel('/pedir');
     await waitFor(() => expect(router.state.location.pathname).toBe('/'));
+  });
+});
+
+describe('HU-71 · mapa al costado de /pedir', () => {
+  it('muestra el punto elegido, la línea con los dos y quita el pin al escribir a mano', async () => {
+    simularSugerencias();
+    montarPedido('/pedir/en-la-ciudad');
+    const origen = await screen.findByRole('combobox', { name: 'Origen' });
+    expect(pines(MAPA_CIUDAD)).toEqual([]);
+    await elegirSugerencia(origen, 0);
+    expect(pines(MAPA_CIUDAD)).toEqual(['Punto de recogida']);
+    await elegirSugerencia(screen.getByRole('combobox', { name: 'Destino' }), 1);
+    expect(pines(MAPA_CIUDAD)).toEqual(['Punto de recogida', 'Destino']);
+    expect(hayRuta(MAPA_CIUDAD)).toBe(true);
+    await userEvent.type(origen, ' depto 4');
+    expect(pines(MAPA_CIUDAD)).toEqual(['Destino']);
+    expect(hayRuta(MAPA_CIUDAD)).toBe(false);
+  });
+
+  it('desde el aeropuerto: SCL y el destino elegido', async () => {
+    simularSugerencias();
+    montarPedido('/pedir/desde-aeropuerto');
+    await elegirSugerencia(await screen.findByRole('combobox', { name: '¿A dónde vas?' }), 1);
+    expect(pines(MAPA_AEROPUERTO)).toEqual(['Aeropuerto de Santiago (SCL)', 'Destino']);
+    expect(hayRuta(MAPA_AEROPUERTO)).toBe(true);
   });
 });

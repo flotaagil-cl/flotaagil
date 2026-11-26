@@ -336,6 +336,7 @@ export function ReservaPublica() {
           empresa={empresa}
           sinPasajeros={empresaConPase}
           publico
+          conMapa
           textoBoton={empresaConPase ? 'Siguiente: quién viaja' : undefined}
           iniciales={etapa.valores}
           alRevisar={(valores, cuerpo) => {
