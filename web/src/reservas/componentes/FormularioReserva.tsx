@@ -21,6 +21,8 @@ import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 import { CampoFechaHora } from '../../formularios/CampoFechaHora';
 import { CampoDireccionFormulario } from '../../direcciones/CampoDireccionFormulario';
+import type { TipoDeViaje } from '../../diseno/mapa/direcciones';
+import { MapaDirecciones } from '../../diseno/mapa/MapaDirecciones';
 import { buscarConSesion } from '../../direcciones/sugerencias';
 import { useApi } from '../../sesion/SesionProvider';
 import s from './FormularioReserva.module.css';
@@ -29,6 +31,15 @@ const AEROPUERTO_DIRECCION = 'Aeropuerto de Santiago (SCL)';
 /** Coordenadas oficiales de SCL usadas también por el geocodificador del backend. */
 const AEROPUERTO_COORDENADAS = { lat: -33.393, lon: -70.7858 };
 type SentidoFormulario = (typeof SENTIDOS_FORMULARIO)[number];
+
+function tipoDeMapa(sentido: ValoresReserva['sentido']): TipoDeViaje {
+  if (sentido === 'DESDE_AEROPUERTO') return 'desde-aeropuerto';
+  return sentido === 'HACIA_AEROPUERTO' ? 'al-aeropuerto' : 'en-la-ciudad';
+}
+
+function puntoGuardado(ubicacion: ViajeDetalle['origen'] | undefined, texto: string) {
+  return ubicacion && ubicacion.direccion === texto ? { lat: ubicacion.lat, lon: ubicacion.lon } : null;
+}
 
 interface Props {
   modo: Modo;
@@ -60,6 +71,13 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
     formState: { errors, isSubmitting, dirtyFields, isDirty },
   } = useForm<ValoresReserva>({ resolver: zodResolver(esquemaReserva(modo)), defaultValues: iniciales });
   const sentido = useWatch({ control, name: 'sentido' });
+  // HU-71: el mapa muestra el punto elegido. Al editar, el guardado sigue a la vista mientras no cambie el texto.
+  const [origenDir, destinoDir, origenElegido, destinoElegido] = useWatch({
+    control,
+    name: ['origen_dir', 'destino_dir', 'origen_coordenadas', 'destino_coordenadas'],
+  });
+  const puntoOrigen = origenElegido ?? puntoGuardado(viaje?.origen, origenDir);
+  const puntoDestino = destinoElegido ?? puntoGuardado(viaje?.destino, destinoDir);
 
   function completar() {
     const telefono = getValues('pasajero.telefono');
@@ -236,6 +254,9 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
             ancho
             buscar={buscar}
           />
+          <div className={s.ancho}>
+            <MapaDirecciones tipo={tipoDeMapa(sentido)} origen={puntoOrigen} destino={puntoDestino} chico />
+          </div>
           <Controller
             control={control}
             name="recogida"

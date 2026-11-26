@@ -4,13 +4,14 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { render } from '@testing-library/react';
 import { createMemoryRouter } from 'react-router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { crearEntorno, crearLocks } from '../pruebas/entornoFalso';
 import { montarPanel } from '../pruebas/montar';
 import { EMPRESA_PORTAL, ServidorPortalFalso } from '../pruebas/servidorPortalFalso';
 import type { Respuesta, ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
 import { crearRutas } from '../rutas/tabla';
+import { elegirSugerencia, MAPA_CIUDAD, pines, simularSugerencias } from '../pruebas/mapa';
 
 const CONVENIO = {
   id: 9,
@@ -228,5 +229,17 @@ describe('registro de empresa en el portal', () => {
     await llenar();
     await userEvent.click(screen.getByRole('button', { name: 'Registrar empresa' }));
     await waitFor(() => expect(screen.getByText('No se pudo registrar con ese correo.')).toBeInTheDocument());
+  });
+});
+
+describe('HU-71 · mapa en «Mi convenio»', () => {
+  it('muestra el punto elegido bajo las direcciones', async () => {
+    simularSugerencias();
+    const { servidor } = montarPanel('/mi-convenio', { email: 'convenio@andes.example' });
+    instalar(servidor, CONVENIO);
+    await userEvent.click(await screen.findByRole('tab', { name: 'En la ciudad' }));
+    await elegirSugerencia(await screen.findByRole('combobox', { name: 'Destino' }), 1);
+    expect(pines(MAPA_CIUDAD)).toEqual(['Destino']);
+    vi.unstubAllGlobals();
   });
 });

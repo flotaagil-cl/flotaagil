@@ -79,6 +79,37 @@ async function ingresarEnLaApp(pagina, correo, conLogo) {
   if (conLogo) await pagina.getByRole('img', { name: /^Logo de/ }).waitFor();
 }
 
+/** HU-71: escribe en un campo de dirección y elige la primera sugerencia. */
+async function elegirDireccion(pagina, campo, texto) {
+  const entrada = pagina.getByRole('combobox', { name: campo });
+  await entrada.pressSequentially(texto, { delay: 40 });
+  await pagina.getByRole('option').first().waitFor({ timeout: 20000 });
+  await pagina.getByRole('option').first().click();
+}
+
+/** HU-71: espera el encuadre: los dos pines dentro del mapa y todas las teselas cargadas (si no, falla). */
+async function mapaEncuadrado(pagina) {
+  await pagina.waitForFunction(
+    () => {
+      const mapa = document.querySelector('.leaflet-container')?.getBoundingClientRect();
+      const pines = [...document.querySelectorAll('.leaflet-marker-icon')].map((p) => p.getBoundingClientRect());
+      const dentro = (r) => r.left >= mapa.left && r.right <= mapa.right && r.top >= mapa.top && r.bottom <= mapa.bottom;
+      return Boolean(mapa) && pines.length === 2 && pines.every(dentro) && !document.querySelector('.leaflet-zoom-anim .leaflet-zoom-animated.leaflet-zoom-anim') && !document.querySelector('.leaflet-tile:not(.leaflet-tile-loaded)');
+    },
+    null,
+    { timeout: 20000 },
+  );
+  await pagina.waitForTimeout(1200); // fin de la animación y del fundido de las teselas
+}
+
+/** HU-71: elige origen y destino y espera el mapa encuadrado. */
+async function puntosEnElMapa(pagina, origen = 'Origen', destino = 'Destino') {
+  await elegirDireccion(pagina, origen, 'Avenida Providencia 1208');
+  await elegirDireccion(pagina, destino, 'Plaza de Armas Santiago');
+  await pagina.locator('.leaflet-marker-icon[title="Destino"]').waitFor({ state: 'attached', timeout: 20000 });
+  await mapaEncuadrado(pagina);
+}
+
 const PANTALLAS = {
   'HU-31': [{ nombre: 'panel-caja', ruta: '/caja', sesion: 'admin' }],
   'HU-32': [{ nombre: 'panel-reserva-contingencia', ruta: '/reservas/contingencia', sesion: 'despacho' }],
@@ -667,6 +698,58 @@ const PANTALLAS = {
   ],
   // HU-71 (DC-72): sugerencias de direcciones abiertas (backend con SUGERIDOR_DIRECCIONES=photon e internet).
   'HU-71': [
+    // HU-71 (mapa): CAPTURAS_SOLO con los nombres «mapa-*». CAPTURAS_VIAJE: una reserva editable de transportes-andes.
+    {
+      nombre: 'mapa-pedir',
+      ruta: '/pedir/en-la-ciudad',
+      sesion: 'pasajero',
+      accion: (pagina) => puntosEnElMapa(pagina),
+    },
+    {
+      nombre: 'mapa-reserva-sin-cuenta',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        await pagina.getByRole('tab', { name: 'En la ciudad' }).click();
+        await puntosEnElMapa(pagina);
+      },
+    },
+    {
+      nombre: 'mapa-convenio-sin-cuenta',
+      ruta: '/solicitar/taxi-pacifico',
+      sesion: null,
+      accion: async (pagina) => {
+        // La clave del convenio demo no queda a la vista: la pantalla siguiente solo muestra el pase.
+        await pagina.getByRole('radio', { name: 'Empresa con convenio' }).click();
+        await pagina.getByLabel('Correo de la empresa').fill('convenio@taxi-pacifico.example');
+        await pagina.getByLabel('Clave del convenio').fill(process.env.DATOS_DEMO_PASSWORD ?? '');
+        await pagina.getByRole('button', { name: 'Continuar' }).click();
+        await pagina.getByRole('tab', { name: 'En la ciudad' }).click();
+        await puntosEnElMapa(pagina);
+      },
+    },
+    {
+      nombre: 'mapa-mi-convenio',
+      ruta: '/mi-convenio',
+      sesion: 'convenio',
+      accion: async (pagina) => {
+        await pagina.getByRole('tab', { name: 'En la ciudad' }).click();
+        await puntosEnElMapa(pagina);
+      },
+    },
+    {
+      nombre: 'mapa-despacho-nueva',
+      ruta: '/reservas/nueva',
+      sesion: 'despacho',
+      accion: (pagina) => puntosEnElMapa(pagina),
+    },
+    {
+      nombre: 'mapa-despacho-editar',
+      ruta: () => `/reservas/${process.env.CAPTURAS_VIAJE ?? '0'}/editar`,
+      sesion: 'despacho',
+      destino: /^\/reservas\/\d+\/editar$/,
+      accion: (pagina) => mapaEncuadrado(pagina),
+    },
     {
       nombre: 'portal-publico-sugerencias',
       ruta: '/solicitar/taxi-pacifico',

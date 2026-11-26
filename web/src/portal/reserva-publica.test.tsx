@@ -2,8 +2,9 @@
 
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { jsonPortal, montarPortal } from '../pruebas/montarPortal';
+import { elegirSugerencia, hayRuta, MAPA_CIUDAD, pines, simularSugerencias } from '../pruebas/mapa';
 
 const RESPUESTA = {
   id: 501,
@@ -88,5 +89,20 @@ describe('HU-51 · reserva pública', () => {
     });
     expect(await screen.findByRole('heading', { name: titulo })).toBeInTheDocument();
     await waitFor(() => expect(peticiones[0].cuerpo).toEqual({ token: 'abc:firma' }));
+  });
+});
+
+describe('HU-71 · mapa en la reserva sin cuenta', () => {
+  it('bajo las direcciones muestra lo elegido y lo conserva al volver a editar el viaje', async () => {
+    simularSugerencias();
+    montarPortal('/solicitar/transportes-andes/reservar');
+    await elegirSugerencia(await screen.findByRole('combobox', { name: 'Origen' }), 0);
+    await elegirSugerencia(screen.getByRole('combobox', { name: 'Destino' }), 1);
+    expect(pines(MAPA_CIUDAD)).toEqual(['Punto de recogida', 'Destino']);
+    expect(hayRuta(MAPA_CIUDAD)).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: 'Pedir mi traslado' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Editar el viaje' }));
+    expect(pines(MAPA_CIUDAD)).toEqual(['Punto de recogida', 'Destino']);
+    vi.unstubAllGlobals();
   });
 });

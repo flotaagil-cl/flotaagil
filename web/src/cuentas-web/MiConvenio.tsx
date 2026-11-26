@@ -306,6 +306,7 @@ function PedirTraslado({ convenio }: { convenio: MiConvenioDatos }) {
           iniciales={borrador.valores}
           erroresIniciales={borrador.errores}
           sinPasajeros
+          conMapa
           textoBoton="Siguiente: quién viaja"
           nota={<>Sigue los pedidos en «Viajes del convenio».</>}
           alRevisar={(valores, cuerpo) => {

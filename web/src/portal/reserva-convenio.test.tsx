@@ -2,8 +2,9 @@
 
 import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { jsonPortal, montarPortal } from '../pruebas/montarPortal';
+import { elegirSugerencia, MAPA_CIUDAD, pines, simularSugerencias } from '../pruebas/mapa';
 
 const PORTAL = '/solicitar/transportes-andes';
 const RUTA_PASE = 'POST /api/portal/transportes-andes/convenio/pase/';
@@ -204,5 +205,16 @@ describe('CC-23 · quién viaja', () => {
     expect(await screen.findByText(/Tu acceso de convenio venció/)).toBeInTheDocument();
     expect(screen.getByLabelText('Clave del convenio')).toBeInTheDocument();
     expect(sessionStorage.length).toBe(0);
+  });
+});
+
+describe('HU-71 · mapa en la reserva de convenio sin cuenta', () => {
+  it('con el pase, el punto elegido se ve bajo las direcciones', async () => {
+    simularSugerencias();
+    montar();
+    await entrarConClave();
+    await elegirSugerencia(await screen.findByRole('combobox', { name: 'Origen' }), 0);
+    expect(pines(MAPA_CIUDAD)).toEqual(['Punto de recogida']);
+    vi.unstubAllGlobals();
   });
 });

@@ -9,8 +9,8 @@ import { claseBoton } from '../diseno/clases';
 import e from '../diseno/diseno.module.css';
 import { Icono } from '../diseno/Icono';
 import type { NombreIcono } from '../diseno/iconos';
-import { Mapa } from '../diseno/mapa/Mapa';
-import type { PropsMapa } from '../diseno/mapa/tipos';
+import { SIN_PUNTOS, type PuntosDelViaje } from '../diseno/mapa/direcciones';
+import { MapaDirecciones } from '../diseno/mapa/MapaDirecciones';
 import { MarcoPortal } from '../diseno/MarcoPortal';
 import { PantallaConMapa } from '../diseno/PantallaConMapa';
 import { Pestanas } from '../diseno/Pestanas';
@@ -25,7 +25,6 @@ import { cuerpoPersonas, DATOS_CONVENIO, erroresConvenioDelServidor, totalPerson
 import { QuienViaja } from './QuienViaja';
 import { erroresDelServidor, esTipo, resumenPedido, TIPOS, type CuerpoPedido, type Errores, type TipoPedido, type ValoresPedido } from './pedido';
 
-const SCL = { lat: -33.393, lng: -70.794 };
 
 type Etapa =
   | { fase: 'formulario'; valores?: ValoresPedido; errores?: Errores }
@@ -69,14 +68,6 @@ function filasQuienViaja(d: DatosConvenio, cuenta: { nombre: string; telefono: s
   return filas;
 }
 
-function mapaDe(tipo: TipoPedido | null): PropsMapa {
-  if (tipo === 'en-la-ciudad') return { etiqueta: 'Mapa de Santiago', marcadores: [] };
-  return {
-    etiqueta: 'Mapa con el aeropuerto de Santiago',
-    marcadores: [{ id: 'scl', punto: SCL, tipo: 'aeropuerto', etiqueta: 'Aeropuerto de Santiago (SCL)' }],
-  };
-}
-
 /**
  * HU-39: inicio y pedido del pasajero con cuenta (/pedir y /pedir/:tipo), con el marco del portal y la marca de
  * su empresa. En el computador, pestañas con los tres tipos; en el celular, el inicio con las tres opciones y
@@ -90,6 +81,8 @@ export function Pedir() {
   const navegar = useNavigate();
   const { tipo: parametro } = useParams();
   const angosto = useAngosto();
+  // HU-71: los puntos elegidos en las direcciones, para el mapa del costado.
+  const [puntos, setPuntos] = useState<PuntosDelViaje>(SIN_PUNTOS);
   // HU-42: formulario → «Revisa tu pedido» → «Pedido recibido».
   const [etapa, setEtapa] = useState<Etapa>({ fase: 'formulario' });
   const [falla, setFalla] = useState<string | null>(null);
@@ -246,6 +239,7 @@ export function Pedir() {
         key={`${tipo}-${borrador.valores ? 'borrador' : 'nuevo'}`}
         tipo={tipo}
         empresa={empresa.data}
+        alCambiarPuntos={setPuntos}
         iniciales={borrador.valores}
         erroresIniciales={borrador.errores}
         quienViaja={
@@ -334,7 +328,7 @@ export function Pedir() {
       barraMovil={conFormulario ? 'oculta' : 'flotante'}
     >
       <PantallaConMapa
-        mapa={<Mapa {...mapaDe(tipo)} />}
+        mapa={<MapaDirecciones tipo={tipo} {...(tipo ? puntos : SIN_PUNTOS)} />}
         volver={conFormulario ? { a: '/pedir', texto: 'Volver a los tipos de viaje' } : undefined}
         estado={tipo === 'desde-aeropuerto' && conFormulario ? 'SCL · Llegadas' : tipo === 'al-aeropuerto' && conFormulario ? 'SCL · Salidas' : undefined}
       >
