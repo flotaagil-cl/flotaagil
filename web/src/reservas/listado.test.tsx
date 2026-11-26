@@ -293,4 +293,40 @@ describe('listado de reservas', () => {
     await userEvent.click(within(vistas).getByRole('button', { name: 'Sin confirmar' }));
     await waitFor(() => expect(router.state.location.search).toBe('?desde=&sin_confirmar=true'));
   });
+
+  it('muestra Ver detalle y contacto rápido en filas Solicitado y evita repetir insignia de vuelo', async () => {
+    const { viajes } = montarPanel('/reservas?desde=');
+    viajes.agregar(
+      viajeDePrueba({
+        id: 50,
+        estado: 'SOLICITADO',
+        sentido: 'DESDE_AEROPUERTO',
+        pasajero: { id: 6, nombre: 'Tomás Herrera', telefono: '+56900090006' },
+        vuelo: {
+          numero: 'JA 712',
+          fecha: '2026-11-26',
+          hora_programada: new Date(Date.now() + 2 * 3600_000).toISOString(),
+          hora_estimada: null,
+          estado_vuelo: 'PROGRAMADO',
+          ultima_consulta_en: new Date().toISOString(),
+          origen_icao: 'SAEZ',
+          origen_ciudad: 'Buenos Aires',
+          recogida_propuesta: null,
+          propuesta_en: null,
+          internacional: true,
+          margen_min: 35,
+          recogida_sugerida: new Date(Date.now() + 2.5 * 3600_000).toISOString(),
+        },
+      }),
+    );
+    await esperarListado();
+
+    const fila = screen.getByRole('row', { name: /Tomás Herrera/ });
+    expect(within(fila).getByRole('link', { name: 'Ver detalle' })).toHaveAttribute('href', '/reservas/50');
+    expect(within(fila).getByRole('link', { name: 'Llamar a Tomás Herrera' })).toHaveAttribute('href', 'tel:+56900090006');
+    expect(within(fila).getByRole('link', { name: 'WhatsApp a Tomás Herrera' })).toHaveAttribute('href', 'https://wa.me/56900090006');
+    // La insignia del vuelo no se duplica dentro de Trayecto porque ya va la subfila de vuelo debajo.
+    expect(within(fila).queryByText('JA 712')).not.toBeInTheDocument();
+    expect(screen.getByRole('row', { name: 'Vuelo de la reserva 50' })).toHaveTextContent('Vuelo asociado JA 712');
+  });
 });
