@@ -10,6 +10,7 @@ import { lineaDeVuelo } from '../../vuelos/textos';
 import { useAhora } from '../../vuelos/useAhora';
 import cv from '../../vuelos/vuelos.module.css';
 import { useViajes, type Canal, type EstadoViaje, type Sentido, type Viaje } from '../api';
+import { ContactoPasajero } from '../componentes/ContactoPasajero';
 import { DialogoAsignar } from '../componentes/DialogoAsignar';
 import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { mensajeDeErrorApi } from '../errores';
@@ -489,15 +490,15 @@ export function Listado() {
                           </Celda>
                           <Celda titulo="Pasajero">
                             <span className={s.pasajeroNombre}>{viaje.pasajero.nombre}</span>
-                            <span className={estilos.secundario}>{viaje.pasajero.telefono ?? 'Sin teléfono'}</span>
+                            <ContactoPasajero telefono={viaje.pasajero.telefono} compacto nombre={viaje.pasajero.nombre} />
                             {viaje.solicitante_nombre && <span className={estilos.secundario}>Solicitado por {viaje.solicitante_nombre}</span>}
                           </Celda>
                           <Celda titulo="Trayecto" clase={s.colTrayecto}>
                             {viaje.origen.direccion}
                             <span className={estilos.secundario}>→ {viaje.destino.direccion}</span>
-                            {(viaje.vuelo || viaje.convenio || viaje.grupo) && (
+                            {((viaje.vuelo && !linea) || viaje.convenio || viaje.grupo) && (
                               <div className={s.insigniasTrayecto}>
-                                {viaje.vuelo && (
+                                {viaje.vuelo && !linea && (
                                   <span className={s.badgeVuelo}>
                                     <Icono nombre="avion" tamano={13} />
                                     {viaje.vuelo.numero}
@@ -537,7 +538,9 @@ export function Listado() {
                                 )}
                               </>
                             ) : (
-                              <span className={s.sinAsignar}>Sin asignar</span>
+                              <span className={urgencia === 'asignar' || urgencia === 'alerta' ? s.sinAsignarUrgente : s.sinAsignar}>
+                                Sin asignar
+                              </span>
                             )}
                           </Celda>
                           <Celda titulo="Acción" clase={s.colAccion}>
@@ -554,6 +557,9 @@ export function Listado() {
                                 {esDiaFuturo(viaje.recogida_en) && (
                                   <span className={s.badgeFuturo}>Disponible para asignar el día del viaje</span>
                                 )}
+                                <Link to={`/reservas/${viaje.id}`} className={s.enlaceDetalleDiscreto}>
+                                  Ver detalle
+                                </Link>
                               </div>
                             ) : (
                               <Link to={`/reservas/${viaje.id}`} className={s.enlaceDetalle}>
@@ -563,7 +569,7 @@ export function Listado() {
                           </Celda>
                         </tr>
                         {linea && (
-                          <tr className={cv.filaVuelo} aria-label={`Vuelo de la reserva ${viaje.id}`}>
+                          <tr className={`${cv.filaVuelo} ${s.filaVueloListado}`} data-urgencia={urgencia} aria-label={`Vuelo de la reserva ${viaje.id}`}>
                             <td colSpan={COLUMNAS_TABLA}>
                               <LineaVuelo linea={linea} />
                             </td>

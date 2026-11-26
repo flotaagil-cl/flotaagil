@@ -463,8 +463,14 @@
   font-size: 0.85rem;
 }
 
+.sinAsignarUrgente {
+  color: var(--insignia-peligro-texto);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .colAccion {
-  width: 1%;
+  min-width: 9.75rem;
   white-space: normal;
   text-align: right;
 }
@@ -505,21 +511,47 @@
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 4px;
+  gap: 5px;
 }
 
 .badgeFuturo {
   display: inline-block;
-  max-width: 11rem;
+  min-width: 8.75rem;
+  max-width: 11.5rem;
   padding: 3px 8px;
   border-radius: 8px;
   background: var(--insignia-revision-fondo, var(--info-fondo));
   color: var(--insignia-revision-texto, var(--texto));
   font-size: 0.72rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
   text-align: right;
   white-space: normal;
+}
+
+.enlaceDetalleDiscreto {
+  color: var(--color-primario-700, var(--acento));
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.enlaceDetalleDiscreto:hover {
+  text-decoration: underline;
+}
+
+.filaVueloListado td {
+  background: var(--fondo);
+  border-bottom: 2px solid var(--borde);
+}
+
+.filaVueloListado[data-urgencia='alerta'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--insignia-peligro-texto, var(--error-texto));
+}
+
+.filaVueloListado[data-urgencia='asignar'] td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-primario-700, var(--acento));
 }
 
 .enlaceDetalle {
@@ -639,6 +671,16 @@
   .colAccion {
     white-space: normal;
     width: auto;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .accionesFila {
+    align-items: flex-start;
+  }
+
+  .badgeFuturo {
+    min-width: 0;
     text-align: left;
   }
 }
