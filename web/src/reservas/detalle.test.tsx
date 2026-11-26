@@ -177,7 +177,7 @@ describe('cancelar con motivo (CP-06)', () => {
     viajes.agregar(viajeDePrueba({ id: 13, pasajero: { id: 1, nombre: 'Rita Ruiz', telefono: '+56900000002' } }));
     await esperarListado();
     expect(screen.getByRole('row', { name: /Rita Ruiz/ })).toHaveTextContent('Solicitado');
-    await userEvent.click(within(screen.getByRole('row', { name: /Rita Ruiz/ })).getByRole('link'));
+    await userEvent.click(within(screen.getByRole('row', { name: /Rita Ruiz/ })).getByRole('link', { name: 'Ver detalle' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Cancelar reserva…' }));
     await userEvent.type(within(screen.getByRole('dialog')).getByLabelText('Motivo'), 'Duplicada');
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancelar reserva' }));
