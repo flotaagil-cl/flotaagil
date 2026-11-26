@@ -207,6 +207,57 @@ describe('crear reserva', () => {
     expect(await screen.findByRole('row', { name: /Pía Pasajera/ })).toBeInTheDocument();
     expect(consultasDelListado(servidor).length).toBe(antes + 1);
   });
+
+  it('al elegir sentido aeropuerto autocompleta dirección y coordenadas de SCL sin buscar sugerencias', async () => {
+    const { viajes, servidor } = await abrirNueva();
+    const usuario = userEvent.setup();
+
+    await usuario.click(screen.getByLabelText('Hacia el aeropuerto'));
+    expect(screen.getByLabelText('Origen')).toHaveValue('');
+    expect(screen.getByLabelText('Destino')).toHaveValue('Aeropuerto de Santiago (SCL)');
+
+    await usuario.click(screen.getByLabelText('Desde el aeropuerto'));
+    expect(screen.getByLabelText('Origen')).toHaveValue('Aeropuerto de Santiago (SCL)');
+    expect(screen.getByLabelText('Destino')).toHaveValue('');
+
+    // Completa el resto sin escribir manualmente en Origen y verifica las coordenadas enviadas.
+    await usuario.type(screen.getByLabelText('Nombre'), 'Pía Pasajera');
+    await usuario.type(screen.getByLabelText('Teléfono (WhatsApp)'), '912345678');
+    await usuario.type(screen.getByLabelText('Destino'), 'Av. Providencia 1234');
+    fijarHora('Recogida', '2026-11-02T14:30');
+    await usuario.click(screen.getByRole('button', { name: 'Guardar reserva' }));
+
+    await waitFor(() => expect(cuerpos(viajes, 'POST /api/viajes/')).toHaveLength(1));
+    expect(cuerpos(viajes, 'POST /api/viajes/')[0]).toMatchObject({
+      sentido: 'DESDE_AEROPUERTO',
+      origen_dir: 'Aeropuerto de Santiago (SCL)',
+      origen_coordenadas: { lat: -33.393, lon: -70.7858 },
+      destino_dir: 'Av. Providencia 1234',
+    });
+
+    // Ninguna sugerencia fue consultada solo por cambiar el sentido.
+    const sugerenciasAeropuerto = servidor.urls.filter(
+      (u) => u.includes('/api/direcciones/sugerir/') && u.includes('Aeropuerto'),
+    );
+    expect(sugerenciasAeropuerto).toEqual([]);
+  });
+
+  it('al volver a Urbano limpia solo el aeropuerto autocompletado y no pisa direcciones manuales', async () => {
+    await abrirNueva();
+    const usuario = userEvent.setup();
+
+    await usuario.type(screen.getByLabelText('Origen'), 'Hotel Costanera');
+    await usuario.click(screen.getByLabelText('Desde el aeropuerto'));
+    // No sobrescribe el origen escrito manualmente.
+    expect(screen.getByLabelText('Origen')).toHaveValue('Hotel Costanera');
+
+    await usuario.click(screen.getByLabelText('Hacia el aeropuerto'));
+    expect(screen.getByLabelText('Destino')).toHaveValue('Aeropuerto de Santiago (SCL)');
+
+    await usuario.click(screen.getByLabelText('Urbano'));
+    expect(screen.getByLabelText('Origen')).toHaveValue('Hotel Costanera');
+    expect(screen.getByLabelText('Destino')).toHaveValue('');
+  });
 });
 
 describe('hora repetida, con el navegador en Asia/Tokyo', () => {

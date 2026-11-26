@@ -25,6 +25,11 @@ import { buscarConSesion } from '../../direcciones/sugerencias';
 import { useApi } from '../../sesion/SesionProvider';
 import s from './FormularioReserva.module.css';
 
+const AEROPUERTO_DIRECCION = 'Aeropuerto de Santiago (SCL)';
+/** Coordenadas oficiales de SCL usadas también por el geocodificador del backend. */
+const AEROPUERTO_COORDENADAS = { lat: -33.393, lon: -70.7858 };
+type SentidoFormulario = (typeof SENTIDOS_FORMULARIO)[number];
+
 interface Props {
   modo: Modo;
   iniciales: ValoresReserva;
@@ -60,6 +65,37 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
     const telefono = getValues('pasajero.telefono');
     const completo = completarTelefono(telefono);
     if (completo !== telefono) setValue('pasajero.telefono', completo, { shouldDirty: true });
+  }
+
+  function actualizarDireccionAeropuerto(
+    campoTexto: 'origen_dir' | 'destino_dir',
+    campoCoords: 'origen_coordenadas' | 'destino_coordenadas',
+    debeLlenar: boolean,
+  ) {
+    const actual = getValues(campoTexto);
+    if (debeLlenar) {
+      if (!actual.trim() || actual === AEROPUERTO_DIRECCION) {
+        setValue(campoTexto, AEROPUERTO_DIRECCION, {
+          shouldDirty: true,
+          shouldValidate: Boolean(errors[campoTexto]),
+        });
+        setValue(campoCoords, AEROPUERTO_COORDENADAS, { shouldDirty: true });
+      }
+      return;
+    }
+    if (actual === AEROPUERTO_DIRECCION) {
+      setValue(campoTexto, '', {
+        shouldDirty: true,
+        shouldValidate: Boolean(errors[campoTexto]),
+      });
+      setValue(campoCoords, null, { shouldDirty: true });
+    }
+  }
+
+  function alCambiarSentido(nuevo: SentidoFormulario) {
+    if (modo !== 'crear') return;
+    actualizarDireccionAeropuerto('origen_dir', 'origen_coordenadas', nuevo === 'DESDE_AEROPUERTO');
+    actualizarDireccionAeropuerto('destino_dir', 'destino_coordenadas', nuevo === 'HACIA_AEROPUERTO');
   }
 
   async function alEnviar(valores: ValoresReserva) {
@@ -168,7 +204,14 @@ export function FormularioReserva({ modo, iniciales, viaje, enviar, describirFal
             <div className={s.pastillas}>
               {SENTIDOS_FORMULARIO.map((valor) => (
                 <label key={valor} className={s.pastilla}>
-                  <input type="radio" className={s.radioOculto} value={valor} {...register('sentido')} />
+                  <input
+                    type="radio"
+                    className={s.radioOculto}
+                    value={valor}
+                    {...register('sentido', {
+                      onChange: (evento) => alCambiarSentido(evento.target.value as SentidoFormulario),
+                    })}
+                  />
                   {SENTIDOS[valor]}
                 </label>
               ))}
