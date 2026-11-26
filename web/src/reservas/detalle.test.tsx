@@ -52,6 +52,8 @@ describe('detalle', () => {
       'Solicitadomié 15-07-2026 08:00 · Despachador · Diego Despacho',
       'Solicitado → Asignadomié 15-07-2026 08:01 · Sistema',
     ]);
+    const resumen = screen.getByRole('region', { name: 'Resumen operativo' });
+    expect(resumen).toHaveTextContent('Carla Conductora · ABCD12');
     // ASIGNADO: ni editar ni cancelar, con la explicación.
     expect(screen.queryByRole('link', { name: 'Editar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Cancelar reserva…' })).not.toBeInTheDocument();

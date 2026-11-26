@@ -47,7 +47,79 @@
   display: flex;
   flex-direction: column;
   gap: var(--espacio-3);
-  padding: var(--espacio-4);
+  padding: var(--espacio-3) var(--espacio-4);
+}
+
+.atajosBarra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+}
+
+.atajosRapidos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.atajo {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease;
+}
+
+.atajo:hover {
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.atajo[aria-pressed='true'] {
+  background: var(--color-primario-700, var(--acento));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--sobre-acento);
+}
+
+.atajosSecundarios {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.botonFechas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botonFechas:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.flechaArriba {
+  transform: rotate(180deg);
 }
 
 .fila1 {
@@ -66,7 +138,7 @@
 
 .fila3 {
   display: grid;
-  grid-template-columns: minmax(10.5rem, 1fr) minmax(14rem, 1.25fr) minmax(14rem, 1.25fr) auto;
+  grid-template-columns: minmax(10.5rem, 1fr) repeat(2, minmax(14rem, 1.25fr));
   gap: var(--espacio-3);
   align-items: end;
 }
@@ -222,14 +294,14 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 40px;
-  padding: 0 14px;
+  height: 32px;
+  padding: 0 12px;
   border: 1px solid var(--borde);
   border-radius: 8px;
   background: var(--fondo);
   color: var(--texto-suave);
   font: inherit;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -283,6 +355,14 @@
 
 .tablaReservas tbody tr {
   transition: background-color 120ms ease;
+}
+
+.tablaReservas tbody tr[data-urgencia='alerta'] > td:first-child {
+  box-shadow: inset 4px 0 0 var(--peligro, var(--error-texto));
+}
+
+.tablaReservas tbody tr[data-urgencia='asignar'] > td:first-child {
+  box-shadow: inset 4px 0 0 var(--color-primario-700, var(--acento));
 }
 
 .tablaReservas tbody tr:hover {

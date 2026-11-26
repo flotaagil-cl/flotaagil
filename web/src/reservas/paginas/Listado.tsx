@@ -4,7 +4,7 @@ import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
 import { Icono } from '../../diseno/Icono';
-import { esDiaFuturo, formatearFecha, formatearFechaHora, formatearPared } from '../../hora/hora';
+import { esDiaFuturo, formatearFecha, formatearFechaHora, formatearPared, hoy } from '../../hora/hora';
 import { LineaVuelo } from '../../vuelos/LineaVuelo';
 import { lineaDeVuelo } from '../../vuelos/textos';
 import { useAhora } from '../../vuelos/useAhora';
@@ -113,8 +113,24 @@ export function Listado() {
 
   // En celular los filtros quedan plegados; en escritorio siempre a la vista (CSS).
   const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
+  // El rango de fechas (fila 3) parte colapsado salvo que ya venga filtrado en la URL.
+  const [fechasAbiertas, setFechasAbiertas] = useState(() => Boolean(filtros.fecha || filtros.desde || filtros.hasta));
   const chips = chipsDe(filtros, errores);
   const conFiltrosActivos = hayFiltros(filtros);
+  const hoyLocal = hoy();
+  const esVistaTodas =
+    filtros.desdeHoy && filtros.estado.length === 0 && !filtros.sinConfirmar && !filtros.fecha && !filtros.desde && !filtros.hasta;
+  const esVistaPorAsignarHoy =
+    filtros.estado.length === 1 &&
+    filtros.estado[0] === 'SOLICITADO' &&
+    filtros.fecha === hoyLocal &&
+    !filtros.sinConfirmar;
+  const ESTADOS_EN_CURSO: EstadoViaje[] = ['ASIGNADO', 'ACEPTADO', 'EN_CAMINO', 'EN_ZONA', 'PASAJERO_A_BORDO'];
+  const esVistaEnCurso =
+    filtros.estado.length === ESTADOS_EN_CURSO.length &&
+    ESTADOS_EN_CURSO.every((e) => filtros.estado.includes(e)) &&
+    !filtros.sinConfirmar;
+  const esVistaSinConfirmar = filtros.sinConfirmar && filtros.estado.length === 0;
   const datos = lista.data;
   const paginas = datos ? Math.max(1, Math.ceil(datos.count / POR_PAGINA)) : 1;
   const paginaInexistente = lista.error instanceof ErrorApi && lista.error.estado === 404 && filtros.pagina > 1;
@@ -153,6 +169,77 @@ export function Listado() {
         </button>
 
         <div id="campos-filtro" className={s.camposFiltro} data-abierto={filtrosAbiertos} role="search">
+          <div className={s.atajosBarra}>
+            <div className={s.atajosRapidos} role="group" aria-label="Vistas rápidas">
+              <button
+                type="button"
+                className={s.atajo}
+                aria-pressed={esVistaTodas}
+                onClick={() =>
+                  aplicar({ estado: [], sinConfirmar: false, fecha: null, desde: null, hasta: null, desdeHoy: true })
+                }
+              >
+                Todas desde hoy
+              </button>
+              <button
+                type="button"
+                className={s.atajo}
+                aria-pressed={esVistaPorAsignarHoy}
+                onClick={() =>
+                  aplicar({ estado: ['SOLICITADO'], fecha: hoyLocal, desde: null, hasta: null, sinConfirmar: false, desdeHoy: false })
+                }
+              >
+                Por asignar hoy
+              </button>
+              <button
+                type="button"
+                className={s.atajo}
+                aria-pressed={esVistaEnCurso}
+                onClick={() =>
+                  aplicar({
+                    estado: ESTADOS_EN_CURSO,
+                    sinConfirmar: false,
+                    fecha: null,
+                    desde: null,
+                    hasta: null,
+                    desdeHoy: true,
+                  })
+                }
+              >
+                En curso
+              </button>
+              <button
+                type="button"
+                className={s.atajo}
+                aria-pressed={esVistaSinConfirmar}
+                onClick={() =>
+                  aplicar({ sinConfirmar: true, estado: [], fecha: null, desde: null, hasta: null, desdeHoy: false })
+                }
+              >
+                Sin confirmar
+              </button>
+            </div>
+            <div className={s.atajosSecundarios}>
+              <button
+                type="button"
+                className={s.botonFechas}
+                aria-expanded={fechasAbiertas}
+                aria-controls="filtro-fechas"
+                onClick={() => setFechasAbiertas((abierto) => !abierto)}
+              >
+                <Icono nombre="calendario" tamano={14} />
+                <span>Fechas</span>
+                <Icono nombre="abajo" tamano={14} className={fechasAbiertas ? s.flechaArriba : undefined} />
+              </button>
+              {conFiltrosActivos && (
+                <button type="button" className={s.botonLimpiar} onClick={limpiarFiltros}>
+                  <Icono nombre="cerrar" tamano={14} />
+                  Limpiar filtros
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className={s.fila1}>
             <label className={s.campoFiltro}>
               Buscar
@@ -253,48 +340,43 @@ export function Listado() {
             </label>
           </div>
 
-          <div className={s.fila3}>
-            <label className={s.campoFiltro}>
-              Día de recogida
-              <input
-                type="date"
-                className={s.control}
-                value={filtros.fecha ?? ''}
-                onChange={(evento) => aplicar({ fecha: evento.target.value || null })}
-              />
-            </label>
+          {(fechasAbiertas || filtros.fecha || filtros.desde || filtros.hasta) && (
+            <div id="filtro-fechas" className={s.fila3}>
+              <label className={s.campoFiltro}>
+                Día de recogida
+                <input
+                  type="date"
+                  className={s.control}
+                  value={filtros.fecha ?? ''}
+                  onChange={(evento) => aplicar({ fecha: evento.target.value || null })}
+                />
+              </label>
 
-            <label className={s.campoFiltro}>
-              Desde
-              <input
-                type="datetime-local"
-                className={s.control}
-                step={60}
-                value={filtros.desde ?? ''}
-                aria-invalid={errores.desde ? true : undefined}
-                onChange={(evento) => aplicar({ desde: evento.target.value || null })}
-              />
-            </label>
+              <label className={s.campoFiltro}>
+                Desde
+                <input
+                  type="datetime-local"
+                  className={s.control}
+                  step={60}
+                  value={filtros.desde ?? ''}
+                  aria-invalid={errores.desde ? true : undefined}
+                  onChange={(evento) => aplicar({ desde: evento.target.value || null })}
+                />
+              </label>
 
-            <label className={s.campoFiltro}>
-              Hasta
-              <input
-                type="datetime-local"
-                className={s.control}
-                step={60}
-                value={filtros.hasta ?? ''}
-                aria-invalid={errores.hasta ? true : undefined}
-                onChange={(evento) => aplicar({ hasta: evento.target.value || null })}
-              />
-            </label>
-
-            {conFiltrosActivos && (
-              <button type="button" className={s.botonLimpiar} onClick={limpiarFiltros}>
-                <Icono nombre="cerrar" tamano={14} />
-                Limpiar filtros
-              </button>
-            )}
-          </div>
+              <label className={s.campoFiltro}>
+                Hasta
+                <input
+                  type="datetime-local"
+                  className={s.control}
+                  step={60}
+                  value={filtros.hasta ?? ''}
+                  aria-invalid={errores.hasta ? true : undefined}
+                  onChange={(evento) => aplicar({ hasta: evento.target.value || null })}
+                />
+              </label>
+            </div>
+          )}
         </div>
       </div>
 
@@ -388,9 +470,15 @@ export function Listado() {
                     // HU-69: la línea de vuelo va en su propia fila, pegada a la de la reserva.
                     const linea = lineaDeVuelo(viaje, ahora);
                     const estado = viaje.estado ?? 'SOLICITADO';
+                    const urgencia =
+                      viaje.alerta_vuelo || viaje.sin_confirmar
+                        ? 'alerta'
+                        : estado === 'SOLICITADO' && !esDiaFuturo(viaje.recogida_en)
+                          ? 'asignar'
+                          : undefined;
                     return (
                       <Fragment key={viaje.id}>
-                        <tr data-con-vuelo={linea ? 'true' : undefined}>
+                        <tr data-con-vuelo={linea ? 'true' : undefined} data-urgencia={urgencia}>
                           <Celda titulo="N°" clase={s.colId}>
                             <strong className={s.numeroId}>#{viaje.id}</strong>
                           </Celda>

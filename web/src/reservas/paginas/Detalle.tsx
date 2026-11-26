@@ -13,10 +13,12 @@ import { EstadoEtiqueta } from '../componentes/EstadoEtiqueta';
 import { NoEncontradaReserva } from '../componentes/NoEncontradaReserva';
 import { mensajeDeErrorApi } from '../errores';
 import { ACTORES, ALERTAS_VUELO, CANALES, CIERRES_FORZADOS, ESTADOS, ORIGENES_CANCELACION, SENTIDOS } from '../etiquetas';
+import { Icono } from '../../diseno/Icono';
 import { TarjetaVuelo } from '../../vuelos/TarjetaVuelo';
 import estilos from '../../componentes/panel.module.css';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 import { LecturaViaje } from '../../chat/LecturaViaje';
+import s from './Detalle.module.css';
 
 /** HU-66: estados en que puede existir el chat entre el conductor y el pasajero. */
 const CON_CHAT: string[] = ['ACEPTADO', 'EN_CAMINO', 'EN_ZONA', 'PASAJERO_A_BORDO', 'FINALIZADO', 'CANCELADO'];
@@ -64,15 +66,23 @@ function DetalleDe({ id }: { id: number }) {
 
   return (
     <section>
-      <div className={estilos.encabezado}>
-        <h1>
-          Reserva #{viaje.id} {viaje.estado && <EstadoEtiqueta estado={viaje.estado} sinConfirmar={viaje.sin_confirmar} />}
-          {viaje.alerta_vuelo && <span className={estilos.alerta}>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>}
-        </h1>
+      <div className={s.cabecera}>
+        <div className={s.tituloGrupo}>
+          <h1>
+            Reserva #{viaje.id} {viaje.estado && <EstadoEtiqueta estado={viaje.estado} sinConfirmar={viaje.sin_confirmar} />}
+          </h1>
+        </div>
         <Link to="/reservas" className={estilos.botonSecundario}>
           Volver a las reservas
         </Link>
       </div>
+
+      {viaje.alerta_vuelo && (
+        <div className={s.alertaVueloBanner}>
+          <Icono nombre="alerta" tamano={18} />
+          <span>{ALERTAS_VUELO[viaje.alerta_vuelo]}</span>
+        </div>
+      )}
 
       {cancelada && <Aviso>Reserva cancelada.</Aviso>}
       {forzado && <Aviso>{forzado}</Aviso>}
@@ -85,7 +95,7 @@ function DetalleDe({ id }: { id: number }) {
         </Aviso>
       )}
 
-      <div className={estilos.tarjeta}>
+      <div className={`${s.tarjeta} ${s.barraAcciones}`}>
         <div className={estilos.acciones}>
           {viaje.estado === 'PENDIENTE_CONFIRMACION' && <ConfirmarPorTelefono id={viaje.id} />}
           {viaje.estado === 'SOLICITADO' && (
@@ -112,13 +122,50 @@ function DetalleDe({ id }: { id: number }) {
             </button>
           )}
         </div>
-        {!(viaje.editable && viaje.cancelable) && <p className={estilos.explicacion}>{porQueNo(viaje)}</p>}
+        {!(viaje.editable && viaje.cancelable) && <p className={s.notaEstado}>{porQueNo(viaje)}</p>}
       </div>
+
+      <section className={s.tarjeta} aria-label="Resumen operativo">
+        <h2>Resumen operativo</h2>
+        <dl className={s.resumenGrid}>
+          <div className={s.resumenItem} data-destacado="true">
+            <dt>Recogida</dt>
+            <dd>{formatearFechaHora(viaje.recogida_en)}</dd>
+          </div>
+          <div className={s.resumenItem}>
+            <dt>Pasajero</dt>
+            <dd>
+              {viaje.pasajero.nombre}
+              {viaje.pasajero_cargo ? ` (${viaje.pasajero_cargo})` : ''} · <ContactoPasajero telefono={viaje.pasajero.telefono} />
+              {viaje.pasajero_correo ? ` · ${viaje.pasajero_correo}` : ''}
+            </dd>
+          </div>
+          <div className={s.resumenItem}>
+            <dt>Trayecto</dt>
+            <dd>
+              {viaje.origen.direccion} → {viaje.destino.direccion}
+            </dd>
+          </div>
+          <div className={s.resumenItem} data-destacado={!viaje.conductor ? 'true' : undefined}>
+            <dt>Conductor</dt>
+            <dd>
+              {viaje.conductor || viaje.vehiculo ? (
+                <span className={s.conductorTexto}>
+                  {viaje.conductor?.nombre ?? 'Sin asignar'}
+                  {viaje.vehiculo ? ` · ${viaje.vehiculo.patente}` : ''}
+                </span>
+              ) : (
+                <span className={s.sinAsignar}>Sin asignar</span>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       {/* HU-69: vuelo con la propuesta de recogida integrada (o la salida con su hora en el aeropuerto). */}
       <TarjetaVuelo viaje={viaje} />
 
-      <div className={estilos.tarjeta}>
+      <div className={s.tarjeta}>
         <h2>Datos</h2>
         <dl className={estilos.datos}>
           {viaje.cierre_forzado && (
@@ -132,18 +179,6 @@ function DetalleDe({ id }: { id: number }) {
               </dd>
             </div>
           )}
-          <div>
-            <dt>Recogida</dt>
-            <dd>{formatearFechaHora(viaje.recogida_en)}</dd>
-          </div>
-          <div>
-            <dt>Pasajero</dt>
-            <dd>
-              {viaje.pasajero.nombre}
-              {viaje.pasajero_cargo ? ` (${viaje.pasajero_cargo})` : ''} · <ContactoPasajero telefono={viaje.pasajero.telefono} />
-              {viaje.pasajero_correo ? ` · ${viaje.pasajero_correo}` : ''}
-            </dd>
-          </div>
           {viaje.solicitante_nombre && (
             <div>
               <dt>Solicitado por</dt>
@@ -169,14 +204,6 @@ function DetalleDe({ id }: { id: number }) {
           )}
           {viaje.grupo && <ViajesDelGrupo grupo={viaje.grupo} actual={viaje.id} />}
           <div>
-            <dt>Origen</dt>
-            <dd>{viaje.origen.direccion}</dd>
-          </div>
-          <div>
-            <dt>Destino</dt>
-            <dd>{viaje.destino.direccion}</dd>
-          </div>
-          <div>
             <dt>Sentido</dt>
             <dd>{viaje.sentido ? SENTIDOS[viaje.sentido] : '—'}</dd>
           </div>
@@ -185,13 +212,6 @@ function DetalleDe({ id }: { id: number }) {
             <dd>
               {CANALES[viaje.canal]}
               {viaje.convenio ? ` · ${viaje.convenio.cliente_nombre}` : ''}
-            </dd>
-          </div>
-          <div>
-            <dt>Conductor</dt>
-            <dd>
-              {viaje.conductor?.nombre ?? 'Sin asignar'}
-              {viaje.vehiculo ? ` · ${viaje.vehiculo.patente}` : ''}
             </dd>
           </div>
           {viaje.calificacion !== null && (
@@ -218,9 +238,9 @@ function DetalleDe({ id }: { id: number }) {
 
       {CON_CHAT.includes(viaje.estado ?? '') && <LecturaViaje viaje={viaje.id} />}
 
-      <div className={estilos.tarjeta}>
+      <div className={s.tarjeta}>
         <h2 id="titulo-historial">Historial de estados</h2>
-        <ol className={estilos.historial} aria-labelledby="titulo-historial">
+        <ol className={s.historial} aria-labelledby="titulo-historial">
           {historial.map((cambio, indice) => (
             <li key={`${cambio.creado_en}-${indice}`}>
               <strong>

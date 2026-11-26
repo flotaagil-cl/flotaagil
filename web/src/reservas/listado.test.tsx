@@ -267,4 +267,30 @@ describe('listado de reservas', () => {
     expect(within(fila).getByRole('button', { name: 'Asignar' })).toBeDisabled();
     expect(within(fila).getByText('Disponible para asignar el día del viaje')).toBeInTheDocument();
   });
+
+  it('atajos rápidos de despacho y despliegue de rango de fechas', async () => {
+    const { router, viajes } = montarPanel('/reservas');
+    viajes.agregar(
+      viajeDePrueba({ id: 31, estado: 'SOLICITADO', alerta_vuelo: 'ETA_CAMBIADA', pasajero: { id: 4, nombre: 'Elena Alerta', telefono: '+56900000031' } }),
+    );
+    await esperarListado();
+
+    const filaUrgente = screen.getByRole('row', { name: /Elena Alerta/ });
+    expect(filaUrgente).toHaveAttribute('data-urgencia', 'alerta');
+
+    expect(screen.queryByLabelText('Día de recogida')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Fechas' }));
+    expect(screen.getByLabelText('Día de recogida')).toBeInTheDocument();
+
+    const vistas = screen.getByRole('group', { name: 'Vistas rápidas' });
+    await userEvent.click(within(vistas).getByRole('button', { name: 'Por asignar hoy' }));
+    await waitFor(() => expect(router.state.location.search).toContain('estado=SOLICITADO'));
+    expect(router.state.location.search).toContain(`fecha=${hoy()}`);
+
+    await userEvent.click(within(vistas).getByRole('button', { name: 'En curso' }));
+    await waitFor(() => expect(router.state.location.search).toContain('estado=EN_CAMINO'));
+
+    await userEvent.click(within(vistas).getByRole('button', { name: 'Sin confirmar' }));
+    await waitFor(() => expect(router.state.location.search).toBe('?desde=&sin_confirmar=true'));
+  });
 });
