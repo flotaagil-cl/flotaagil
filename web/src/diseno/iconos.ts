@@ -38,6 +38,7 @@ export const ICONOS = {
   paleta: 'M12 3a9 9 0 1 0 0 18c1.4 0 2-.8 2-1.8 0-1.6-1.2-1.7-1.2-3 0-1 .8-1.7 2-1.7H17a4 4 0 0 0 4-4C21 6 17 3 12 3ZM7.5 12h.01M9.5 7.5h.01M14.5 7.5h.01',
   flechaDerecha: 'M5 12h14m-5-5 5 5-5 5',
   enlace: 'M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4.93M14 11a5 5 0 0 0-7.07 0l-2.83 2.83a5 5 0 0 0 7.07 7.07L13 19.07',
+  descargar: 'M12 4v11m0 0-4-4m4 4 4-4M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2',
 } as const;
 
 export type NombreIcono = keyof typeof ICONOS;

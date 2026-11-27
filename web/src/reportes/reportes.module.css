@@ -1,9 +1,488 @@
-/* Los reportes tienen muchas columnas: en escritorio la tabla se desplaza dentro de su contenedor. */
-.desplazable {
+/* Estilos UX/UI del módulo Reportes (tokens «Tiffany degradé», sin colores literales). */
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
+.tituloBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 20rem;
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+.subtitulo {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.925rem;
+  line-height: 1.45;
+}
+
+.botonExportar {
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.botonExportar svg {
+  flex: none;
+}
+
+/* --- R1: Filtros en 2 filas sin truncar + atajos de fechas --- */
+
+.filtros {
+  margin-bottom: var(--espacio-3);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.botonFiltros {
+  display: none;
+}
+
+.camposFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
+  padding: var(--espacio-4);
+}
+
+.filaPrincipal {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.8fr) repeat(2, minmax(10.5rem, 1fr));
+  gap: var(--espacio-3);
+}
+
+.filaSecundaria {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(12rem, 1fr));
+  gap: var(--espacio-3);
+}
+
+.campoFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.control {
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
+  transition: border-color 140ms ease;
+}
+
+.control:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.barraAtajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+  padding-top: var(--espacio-2);
+  border-top: 1px solid var(--borde);
+}
+
+.etiquetaAtajos {
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-right: var(--espacio-1);
+}
+
+.chipRango,
+.botonLimpiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 4px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.chipRango:hover,
+.botonLimpiar:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.chipRango[aria-pressed='true'] {
+  background: var(--acento-suave);
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+  font-weight: 700;
+}
+
+.botonLimpiar {
+  margin-left: auto;
+  border-radius: 8px;
+}
+
+/* --- R2: Franja KPI del período y estado vacío accionable --- */
+
+.resumenMetricas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-3);
+}
+
+.tarjetaMetrica {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+  min-width: 0;
+}
+
+.tarjetaMetricaDestacada {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-tiffany, var(--borde));
+}
+
+.etiquetaMetrica {
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.valorMetrica {
+  color: var(--color-primario-900, var(--texto));
+  font-size: 1.25rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-6) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  text-align: center;
+}
+
+.vacio p {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.iconoVacio {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-tiffany-50, var(--acento-suave));
+  color: var(--color-primario-900, var(--acento));
+}
+
+.accionesVacio {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espacio-2);
+}
+
+/* --- R3: Tabla homologada, desplazamiento claro y formato legible --- */
+
+.barraTabla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  margin-bottom: var(--espacio-2);
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+}
+
+.pistaScroll {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--color-primario-700, var(--texto-suave));
+}
+
+.contenedorTabla {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
   overflow-x: auto;
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.tablaReporte {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--superficie);
+  font-size: 0.88rem;
+}
+
+.tablaReporte[aria-busy='true'] {
+  opacity: 0.6;
+}
+
+.tablaReporte th,
+.tablaReporte td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tablaReporte th {
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tablaReporte tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.tablaReporte tbody tr:hover {
+  background: var(--color-tiffany-50, var(--fondo));
+}
+
+.tablaReporte tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .totales td {
-  border-top: 2px solid var(--borde);
+  border-top: 2px solid var(--color-tiffany, var(--borde));
+  border-bottom: 0;
+  background: var(--color-tiffany-50, var(--fondo));
+  color: var(--color-primario-900, var(--texto));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.sinCorte {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.textoTotal {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.celdaTotalVacia {
+  /* En escritorio ocupa su columna en la fila de totales; en móvil se oculta para no pintar celdas en blanco. */
+}
+
+.montoPositivo {
+  color: var(--color-primario-900, var(--texto));
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.montoCero {
+  color: var(--texto-suave);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.celdaDireccion {
+  min-width: 13rem;
+  max-width: 22rem;
+  line-height: 1.4;
+}
+
+.pieTabla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-3);
+}
+
+.infoPagina {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Móvil (< 48rem) --- */
+
+@media (max-width: 47.99rem) {
+  .botonFiltros {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: var(--toque);
+    padding: 0 var(--espacio-4);
+    border: 0;
+    background: transparent;
+    color: var(--texto);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .camposFiltro {
+    padding: 0 var(--espacio-3) var(--espacio-3);
+  }
+
+  .camposFiltro[data-abierto='false'] {
+    display: none;
+  }
+
+  .filaPrincipal,
+  .filaSecundaria {
+    grid-template-columns: 1fr;
+  }
+
+  .etiquetaAtajos {
+    flex-basis: 100%;
+  }
+
+  .botonLimpiar {
+    margin-left: 0;
+  }
+
+  .resumenMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tarjetaMetricaDestacada {
+    grid-column: 1 / -1;
+  }
+
+  .pistaScroll {
+    display: none;
+  }
+
+  .contenedorTabla {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .tablaReporte,
+  .tablaReporte tbody,
+  .tablaReporte tfoot,
+  .tablaReporte tr,
+  .tablaReporte td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .tablaReporte {
+    background: transparent;
+  }
+
+  .tablaReporte thead {
+    display: none;
+  }
+
+  .tablaReporte tbody tr {
+    margin-bottom: var(--espacio-2);
+    padding: var(--espacio-2) 0;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-tarjeta, var(--radio));
+    box-shadow: 0 1px 3px var(--sombra);
+  }
+
+  .tablaReporte tfoot tr.totales {
+    margin-top: var(--espacio-2);
+    padding: var(--espacio-2) 0;
+    background: var(--color-tiffany-50, var(--acento-suave));
+    border: 1px solid var(--color-tiffany, var(--borde));
+    border-radius: var(--radio-tarjeta, var(--radio));
+    box-shadow: 0 1px 3px var(--sombra);
+  }
+
+  .tablaReporte td {
+    display: grid;
+    grid-template-columns: 9.25rem minmax(0, 1fr);
+    gap: var(--espacio-2);
+    padding: var(--espacio-1) var(--espacio-3);
+    border: 0;
+    align-items: center;
+    background: transparent;
+  }
+
+  .tablaReporte tfoot td.celdaTotalVacia {
+    display: none;
+  }
+
+  .tablaReporte td::before {
+    content: attr(data-titulo);
+    color: var(--texto-suave);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .celdaDireccion {
+    min-width: 0;
+    max-width: none;
+  }
 }
