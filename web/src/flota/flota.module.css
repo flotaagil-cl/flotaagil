@@ -851,10 +851,7 @@ a.patente:hover {
   }
 
   .pieFormulario {
-    position: sticky;
-    bottom: 0;
-    padding: var(--espacio-3) 0;
-    background: var(--fondo);
+    padding-top: var(--espacio-3);
     border-top: 1px solid var(--borde);
   }
 

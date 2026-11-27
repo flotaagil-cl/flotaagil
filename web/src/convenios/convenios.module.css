@@ -833,10 +833,20 @@
 
   .tablaConvenios td {
     display: grid;
-    grid-template-columns: 7rem 1fr;
+    grid-template-columns: 5.5rem minmax(0, 1fr);
     gap: var(--espacio-2);
     padding: var(--espacio-1) var(--espacio-3);
     border: 0;
+  }
+
+  .tablaConvenios td > div {
+    min-width: 0;
+  }
+
+  .badgeAuditoria {
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.35;
   }
 
   .tablaConvenios td::before {
