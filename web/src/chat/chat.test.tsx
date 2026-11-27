@@ -67,6 +67,49 @@ describe('bandeja', () => {
     chat.conversaciones = [];
     expect(await screen.findByText('Aún no hay conversaciones.')).toBeInTheDocument();
   });
+
+  it('filtra la bandeja por buscador y chips de tipo o sin leer', async () => {
+    const { chat } = montar('/chat');
+    chat.conversaciones = [
+      conversacionChat({ id: 1, tipo: 'CENTRAL', titulo: 'Pedro Soto', no_leidos: 2 }),
+      conversacionChat({
+        id: 2,
+        tipo: 'DIRECTO',
+        titulo: 'Ana Admin',
+        no_leidos: 0,
+        ultimo: { texto: 'Revisar turno', autor: 'Ana Admin', creado_en: '2026-11-17T12:10:00Z' },
+      }),
+      conversacionChat({
+        id: 3,
+        tipo: 'GRUPO',
+        titulo: 'Turno noche',
+        no_leidos: 0,
+        ultimo: null,
+        ultimo_mensaje_en: null,
+      }),
+    ];
+    await screen.findByRole('link', { name: /Pedro Soto/ });
+    const lista = screen.getByRole('list', { name: 'Conversaciones' });
+    expect(within(lista).getAllByRole('link')).toHaveLength(3);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sin leer (1)' }));
+    expect(within(lista).getAllByRole('link')).toHaveLength(1);
+    expect(within(lista).getByRole('link', { name: /Pedro Soto/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Equipo' }));
+    expect(within(lista).getAllByRole('link')).toHaveLength(2);
+    expect(within(lista).getByRole('link', { name: /Ana Admin/ })).toBeInTheDocument();
+    expect(within(lista).getByRole('link', { name: /Turno noche/ })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Todos' }));
+    const buscador = screen.getByLabelText('Buscar conversación');
+    await userEvent.type(buscador, 'revisar');
+    expect(within(lista).getAllByRole('link')).toHaveLength(1);
+    expect(within(lista).getByRole('link', { name: /Ana Admin/ })).toBeInTheDocument();
+
+    await userEvent.type(buscador, 'zzz');
+    expect(screen.getByText('Ninguna conversación coincide con el filtro.')).toBeInTheDocument();
+  });
 });
 
 describe('hilo', () => {
@@ -83,6 +126,22 @@ describe('hilo', () => {
     expect(chat.recibidas).toContainEqual({ ruta: 'POST /api/chat/conversaciones/1/mensajes/', cuerpo: { texto: 'Ok, avisamos al pasajero' } });
     const enviado = await screen.findByText('Ok, avisamos al pasajero');
     expect(enviado.parentElement).toHaveTextContent('Leído');
+    expect(area).toHaveValue('');
+  });
+
+  it('envía con Enter y permite salto de línea con Shift+Enter', async () => {
+    const { chat } = montar('/chat/1');
+    const area = await screen.findByLabelText('Mensaje');
+    await userEvent.type(area, 'Primera línea{Shift>}{Enter}{/Shift}Segunda línea');
+    expect(area).toHaveValue('Primera línea\nSegunda línea');
+    expect(chat.recibidas.filter((r) => r.ruta.endsWith('/mensajes/'))).toHaveLength(0);
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(chat.recibidas).toContainEqual({
+        ruta: 'POST /api/chat/conversaciones/1/mensajes/',
+        cuerpo: { texto: 'Primera línea\nSegunda línea' },
+      }),
+    );
     expect(area).toHaveValue('');
   });
 
@@ -118,7 +177,11 @@ describe('directos y grupos', () => {
   it('abre un directo con alguien del personal', async () => {
     const { chat, router } = montar('/chat');
     await userEvent.click(await screen.findByRole('button', { name: 'Nuevo directo' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Escribir a Carla Conductora' }));
+    const dialogo = await screen.findByRole('dialog', { name: 'Nuevo directo' });
+    expect(within(dialogo).getByText('Administrador')).toBeInTheDocument();
+    await userEvent.type(within(dialogo).getByLabelText('Buscar persona'), 'carla');
+    expect(within(dialogo).queryByText('Ana Admin')).not.toBeInTheDocument();
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Escribir a Carla Conductora' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/chat/50'));
     expect(chat.recibidas).toContainEqual({ ruta: 'POST /api/chat/directos/', cuerpo: { usuario: 3 } });
     expect(await screen.findByRole('heading', { name: 'Carla Conductora', level: 2 })).toBeInTheDocument();
@@ -131,6 +194,7 @@ describe('directos y grupos', () => {
     expect(screen.getByText('Ponle un nombre al grupo y elige al menos a una persona.')).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Nombre del grupo'), 'Turno noche');
     await userEvent.click(await screen.findByLabelText('Carla Conductora'));
+    expect(screen.getByText('1 seleccionado')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Crear grupo' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/chat/60'));
     expect(chat.recibidas).toContainEqual({ ruta: 'POST /api/chat/grupos/', cuerpo: { nombre: 'Turno noche', ids_integrantes: [3] } });
@@ -220,6 +284,7 @@ describe('moderación (CP-53)', () => {
     const { chat } = montar('/chat', 'admin@andes.example');
     chat.grupos.set(9, { id: 9, nombre: 'Turno noche', integrantes: [{ id: 3, nombre: 'Carla Conductora', rol: 'CONDUCTOR' }], creado_por: 'Carla Conductora', creado_en: '2026-11-17T12:00:00Z', ultimo_mensaje_en: null });
     await userEvent.click(await screen.findByRole('link', { name: 'Moderación de grupos' }));
+    expect(await screen.findByText('1 grupo registrado')).toBeInTheDocument();
     const fila = (await screen.findByRole('cell', { name: 'Turno noche' })).closest('tr')!;
     expect(fila).toHaveTextContent('Carla Conductora');
     expect(fila).toHaveTextContent('Sin mensajes');
