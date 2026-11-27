@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Aviso } from '../componentes/Aviso';
-import estilos from '../componentes/panel.module.css';
+import panel from '../componentes/panel.module.css';
+import { Icono } from '../diseno/Icono';
 import { Campo } from '../formularios/Campo';
 import { formatearFechaHora } from '../hora/hora';
 import { mensajeDeErrorApi } from '../reservas/errores';
 import { useCerrarCaja, type CierreCaja, type TurnoPorCerrar } from './api';
+import caja from './caja.module.css';
 
 const pesos = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 const MAXIMO = 200;
@@ -37,12 +39,13 @@ export function DialogoCierreCaja({ turno, alCerrar, alTerminar }: Props) {
 
   const monto = /^\d{1,8}$/.test(rendido.trim()) ? Number(rendido.trim()) : null;
   const diferencia = monto === null ? null : monto - turno.efectivo_registrado;
+  const requiereObservacion = diferencia !== null && diferencia !== 0;
 
   async function enviar(evento: FormEvent) {
     evento.preventDefault();
     const nuevos: typeof errores = {};
     if (monto === null) nuevos.rendido = 'Ingresa el efectivo rendido, en pesos enteros.';
-    if (diferencia !== null && diferencia !== 0 && !observacion.trim()) {
+    if (requiereObservacion && !observacion.trim()) {
       nuevos.observacion = 'Explica la diferencia entre lo rendido y lo registrado.';
     }
     setErrores(nuevos);
@@ -59,7 +62,7 @@ export function DialogoCierreCaja({ turno, alCerrar, alTerminar }: Props) {
   return (
     <dialog
       ref={dialogo}
-      className={estilos.dialogo}
+      className={panel.dialogo}
       aria-labelledby="titulo-cierre-caja"
       onCancel={(evento) => {
         evento.preventDefault();
@@ -68,37 +71,70 @@ export function DialogoCierreCaja({ turno, alCerrar, alTerminar }: Props) {
     >
       <form onSubmit={(evento) => void enviar(evento)} noValidate>
         <h2 id="titulo-cierre-caja">Cerrar la caja del turno de {turno.conductor}</h2>
-        <p>
-          {turno.patente ?? 'Vehículo sin registrar'} · {formatearFechaHora(turno.hora_inicio)} a{' '}
-          {turno.hora_termino ? formatearFechaHora(turno.hora_termino) : '—'}
+        <p className={caja.subtituloDialogo}>
+          {turno.patente ? <span className={caja.patente}>{turno.patente}</span> : <span>Vehículo sin registrar</span>}
+          <span className={caja.rangoTurno}>
+            <span className={caja.fechaHora}>{formatearFechaHora(turno.hora_inicio)}</span>
+            <span className={caja.conector}>a</span>
+            <span className={caja.fechaHora}>{turno.hora_termino ? formatearFechaHora(turno.hora_termino) : '—'}</span>
+          </span>
         </p>
-        <p>
-          Efectivo registrado: <strong>{pesos.format(turno.efectivo_registrado)}</strong> en {turno.viajes_finalizados}{' '}
-          {turno.viajes_finalizados === 1 ? 'viaje finalizado' : 'viajes finalizados'}.
-        </p>
+        <div className={caja.resumenDialogo}>
+          <span className={caja.etiquetaResumen}>Efectivo registrado:</span>
+          <strong className={caja.montoResumen}>{pesos.format(turno.efectivo_registrado)}</strong>
+          <span className={caja.viajesResumen}>
+            en {turno.viajes_finalizados} {turno.viajes_finalizados === 1 ? 'viaje finalizado' : 'viajes finalizados'}.
+          </span>
+        </div>
         {falla && <Aviso tipo="error">{falla}</Aviso>}
-        <Campo etiqueta="Efectivo rendido (CLP)" error={errores.rendido}>
-          {(control) => <input {...control} inputMode="numeric" value={rendido} onChange={(e) => setRendido(e.target.value)} />}
-        </Campo>
+        <div className={caja.filaRendicion}>
+          <Campo etiqueta="Efectivo rendido (CLP)" error={errores.rendido}>
+            {(control) => <input {...control} inputMode="numeric" value={rendido} onChange={(e) => setRendido(e.target.value)} />}
+          </Campo>
+          {turno.efectivo_registrado > 0 && (
+            <button
+              type="button"
+              className={caja.botonIgualar}
+              onClick={() => {
+                setRendido(String(turno.efectivo_registrado));
+                setErrores((prev) => ({ ...prev, rendido: undefined, observacion: undefined }));
+              }}
+              disabled={cerrar.isPending}
+            >
+              <Icono nombre="check" tamano={14} />
+              <span>Igualar monto registrado ({pesos.format(turno.efectivo_registrado)})</span>
+            </button>
+          )}
+        </div>
         {diferencia !== null && (
-          <p aria-live="polite">
-            {diferencia === 0
-              ? 'Cuadra con lo registrado.'
-              : diferencia < 0
-                ? `Faltan ${pesos.format(-diferencia)}.`
-                : `Sobran ${pesos.format(diferencia)}.`}
-          </p>
+          <div
+            className={caja.diferenciaPill}
+            data-estado={diferencia === 0 ? 'ok' : diferencia < 0 ? 'peligro' : 'info'}
+            aria-live="polite"
+          >
+            <Icono nombre={diferencia === 0 ? 'check' : diferencia < 0 ? 'alerta' : 'info'} tamano={16} />
+            <span>
+              {diferencia === 0
+                ? 'Cuadra con lo registrado.'
+                : diferencia < 0
+                  ? `Faltan ${pesos.format(-diferencia)}.`
+                  : `Sobran ${pesos.format(diferencia)}.`}
+            </span>
+          </div>
         )}
         <Campo etiqueta="Observación" error={errores.observacion}>
           {(control) => (
             <textarea {...control} rows={3} maxLength={MAXIMO} value={observacion} onChange={(e) => setObservacion(e.target.value)} />
           )}
         </Campo>
-        <div className={estilos.acciones}>
-          <button type="submit" className={estilos.boton} disabled={cerrar.isPending}>
+        {requiereObservacion && (
+          <p className={caja.ayudaCampo}>Obligatoria cuando el monto rendido no coincide con lo registrado.</p>
+        )}
+        <div className={panel.acciones}>
+          <button type="submit" className={panel.boton} disabled={cerrar.isPending}>
             {cerrar.isPending ? 'Cerrando…' : 'Cerrar caja'}
           </button>
-          <button type="button" className={estilos.botonSecundario} onClick={alCerrar} disabled={cerrar.isPending}>
+          <button type="button" className={panel.botonSecundario} onClick={alCerrar} disabled={cerrar.isPending}>
             Volver
           </button>
         </div>

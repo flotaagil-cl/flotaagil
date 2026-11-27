@@ -1,0 +1,540 @@
+/* Estilos UX/UI del módulo Cierre de caja (tokens «Tiffany degradé», sin colores literales). */
+
+.encabezado {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-4);
+}
+
+.tituloBloque {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.encabezado h1 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--texto);
+}
+
+.subtitulo {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.925rem;
+  line-height: 1.45;
+}
+
+/* --- CA1: Resumen operativo y filtros rápidos --- */
+
+.resumenMetricas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espacio-3);
+  margin-bottom: var(--espacio-3);
+}
+
+.tarjetaMetrica {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.tarjetaMetricaDestacada {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-tiffany, var(--borde));
+}
+
+.etiquetaMetrica {
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.valorMetrica {
+  color: var(--color-primario-900, var(--texto));
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.filtros {
+  margin-bottom: var(--espacio-3);
+  padding: var(--espacio-3) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.filaFiltros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espacio-3);
+}
+
+.campoBuscar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 16rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.control {
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 400;
+  transition: border-color 140ms ease;
+}
+
+.control:hover {
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.accionesFiltro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espacio-2);
+}
+
+.chipFiltro,
+.botonLimpiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.chipFiltro:hover,
+.botonLimpiar:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.chipFiltro[aria-pressed='true'] {
+  background: var(--acento-suave);
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+  font-weight: 700;
+}
+
+/* --- CA2: Tabla en tarjeta, patentes, montos e insignias DC-84 --- */
+
+.contenedorTabla {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  overflow-x: auto;
+  box-shadow: 0 1px 3px var(--sombra);
+}
+
+.tablaCaja {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--superficie);
+  font-size: 0.9rem;
+}
+
+.tablaCaja th,
+.tablaCaja td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tablaCaja th {
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tablaCaja tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.tablaCaja tbody tr:hover {
+  background: var(--color-tiffany-50, var(--fondo));
+}
+
+.tablaCaja tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.nombreConductor {
+  color: var(--texto);
+  font-weight: 700;
+}
+
+.patente {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: var(--fondo);
+  color: var(--color-primario-900, var(--texto));
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.sinDato {
+  color: var(--texto-suave);
+}
+
+.celdaTurno {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.rangoTurno {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 4px;
+}
+
+.fechaHora {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.conector {
+  color: var(--texto-suave);
+}
+
+.numeroTabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.montoPositivo {
+  color: var(--color-primario-900, var(--texto));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.montoCero {
+  color: var(--texto-suave);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.badge[data-tono='revision'] {
+  background: var(--insignia-revision-fondo, var(--info-fondo));
+  color: var(--insignia-revision-texto, var(--texto));
+}
+
+.badge[data-tono='neutro'] {
+  background: var(--insignia-neutra-fondo, var(--fondo));
+  color: var(--insignia-neutra-texto, var(--texto-suave));
+}
+
+.colAccion {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.tablaCaja th.colAccion {
+  text-align: right;
+}
+
+.botonCerrarCaja {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: var(--radio-boton, var(--radio));
+  background: var(--superficie);
+  color: var(--color-primario-900, var(--texto));
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.botonCerrarCaja svg {
+  flex: none;
+}
+
+.botonCerrarCaja:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.vacioFiltrado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espacio-3);
+  padding: var(--espacio-6) var(--espacio-4);
+  background: var(--superficie);
+  border: 1px dashed var(--borde);
+  border-radius: var(--radio-tarjeta, var(--radio));
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+.vacioFiltrado p {
+  margin: 0;
+}
+
+/* --- CA3: Diálogo de cierre homologado --- */
+
+.subtituloDialogo {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+}
+
+.resumenDialogo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: var(--espacio-3);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--fondo);
+}
+
+.etiquetaResumen {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.montoResumen {
+  color: var(--color-primario-900, var(--texto));
+  font-size: 1.15rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.viajesResumen {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.filaRendicion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.botonIgualar {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 2px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--color-primario-900, var(--acento));
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.botonIgualar:hover {
+  background: var(--color-tiffany-50, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.diferenciaPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  padding: var(--espacio-2) var(--espacio-3);
+  border-radius: var(--radio);
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.diferenciaPill[data-estado='ok'] {
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--texto));
+}
+
+.diferenciaPill[data-estado='peligro'] {
+  background: var(--insignia-peligro-fondo, var(--error-fondo));
+  color: var(--insignia-peligro-texto, var(--error-texto));
+}
+
+.diferenciaPill[data-estado='info'] {
+  background: var(--insignia-info-fondo, var(--info-fondo));
+  color: var(--insignia-info-texto, var(--texto));
+}
+
+.ayudaCampo {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+}
+
+/* --- Móvil --- */
+
+@media (max-width: 47.99rem) {
+  .resumenMetricas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tarjetaMetricaDestacada {
+    grid-column: 1 / -1;
+  }
+
+  .filtros {
+    padding: var(--espacio-3);
+  }
+
+  .campoBuscar {
+    flex-basis: 100%;
+  }
+
+  .accionesFiltro {
+    width: 100%;
+  }
+
+  .chipFiltro,
+  .botonLimpiar {
+    flex: 1 1 auto;
+  }
+
+  .contenedorTabla {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .tablaCaja,
+  .tablaCaja tbody,
+  .tablaCaja tr,
+  .tablaCaja td {
+    display: block;
+  }
+
+  .tablaCaja {
+    background: transparent;
+  }
+
+  .tablaCaja thead {
+    display: none;
+  }
+
+  .tablaCaja tbody tr {
+    margin-bottom: var(--espacio-2);
+    padding: var(--espacio-2) 0;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-tarjeta, var(--radio));
+    box-shadow: 0 1px 3px var(--sombra);
+  }
+
+  .tablaCaja td {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: var(--espacio-2);
+    padding: var(--espacio-1) var(--espacio-3);
+    border: 0;
+    align-items: center;
+  }
+
+  .tablaCaja td::before {
+    content: attr(data-titulo);
+    color: var(--texto-suave);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .colAccion {
+    width: auto;
+    text-align: left;
+    margin-top: var(--espacio-1);
+    padding-top: var(--espacio-2);
+    border-top: 1px solid var(--borde);
+  }
+
+  .botonCerrarCaja {
+    width: 100%;
+    min-height: var(--toque);
+  }
+}
