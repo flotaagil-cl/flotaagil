@@ -3,7 +3,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { hoy } from '../hora/hora';
+import { hoy, sumarDias } from '../hora/hora';
 import { montarPanel } from '../pruebas/montar';
 import { LIQUIDACION, ServidorReportesFalso } from '../pruebas/servidorReportesFalso';
 
@@ -158,5 +158,48 @@ describe('exportar CSV', () => {
     await tabla('Liquidación por conductor');
     await userEvent.click(screen.getByRole('button', { name: 'Exportar CSV' }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+});
+
+describe('mejoras UX/UI (CC-20)', () => {
+  it('muestra resumen KPI y atajos rápidos de rango de fechas con restablecer', async () => {
+    const { reportes } = montar();
+    await tabla('Liquidación por conductor');
+    const resumen = screen.getByLabelText('Resumen del reporte');
+    expect(within(resumen).getByText('$13.000')).toBeInTheDocument();
+    expect(within(resumen).getByText('2')).toBeInTheDocument();
+
+    const usuario = userEvent.setup();
+    await usuario.click(screen.getByRole('button', { name: 'Últimos 7 días' }));
+    const esperadoDesde = sumarDias(hoy(), -6);
+    await waitFor(() => expect(reportes.consultas.at(-1)).toBe(`liquidacion?desde=${esperadoDesde}&hasta=${hoy()}`));
+    expect(screen.getByRole('button', { name: 'Últimos 7 días' })).toHaveAttribute('aria-pressed', 'true');
+
+    await usuario.click(screen.getByRole('button', { name: 'Restablecer' }));
+    await waitFor(() => expect(reportes.consultas.at(-1)).toBe(`liquidacion?desde=${hoy()}&hasta=${hoy()}`));
+  });
+
+  it('en estado vacío de un día ofrece ampliar rango y en historial pinta EstadoEtiqueta', async () => {
+    const { reportes } = montar('/reportes?tipo=facturacion');
+    expect(await screen.findByText('Sin datos en este período.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Ver últimos 7 días' }));
+    await waitFor(() => expect(reportes.consultas.at(-1)).toContain(`desde=${sumarDias(hoy(), -6)}`));
+
+    reportes.reportes.historial = {
+      columnas: [
+        { clave: 'id', titulo: 'Reserva', tipo: 'entero' },
+        { clave: 'estado', titulo: 'Estado', tipo: 'texto' },
+        { clave: 'monto', titulo: 'Monto', tipo: 'pesos' },
+      ],
+      filas: [{ id: 42, estado: 'Finalizado', monto: 18000 }],
+      totales: { id: 1, monto: 18000 },
+      count: 1,
+      next: null,
+      previous: null,
+    };
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Reporte' }), 'Historial de viajes');
+    const contenido = await tabla('Historial de viajes');
+    expect(within(contenido).getByText('Finalizado').querySelector('svg')).not.toBeNull();
+    expect(within(contenido).getByText('Total: 1', { selector: 'tfoot *' })).toBeInTheDocument();
   });
 });

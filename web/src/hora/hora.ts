@@ -265,6 +265,13 @@ export function formatearFecha(fecha: string): string {
   return `${dia}-${mes}-${anio}`;
 }
 
+/** Fecha «YYYY-MM-DD» desplazada `dias` días calendario desde `fecha` (p. ej. -6 para últimos 7 días). */
+export function sumarDias(fecha: string, dias: number): string {
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  const resultado = new Date(Date.UTC(anio, mes - 1, dia + dias));
+  return `${resultado.getUTCFullYear()}-${dos(resultado.getUTCMonth() + 1)}-${dos(resultado.getUTCDate())}`;
+}
+
 /** «04-04-2026 23:30» a partir de una pared «2026-04-04T23:30» (para mostrar filtros). */
 export function formatearPared(pared: string): string {
   const p = leerPared(pared);
