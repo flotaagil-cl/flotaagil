@@ -99,15 +99,14 @@ describe('chat de la app', () => {
     render(<Chat pedir={pedir} canal={canal} enViaje={false} volver={() => {}} />);
     fireEvent.click(await screen.findByRole('button', { name: /Central/ }));
     expect(await screen.findByText('Te espera el pasajero')).toBeTruthy();
-    const scrollsIniciales = scroll.mock.calls.length;
-    expect(scrollsIniciales).toBe(1);
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(1));
 
     const entrante = mensaje({ id: 50, texto: 'Pasajero en puerta 4' });
     canal.emitir({ tipo: 'mensaje', mensaje: entrante });
     canal.emitir({ tipo: 'mensaje', mensaje: entrante });
     expect(await screen.findAllByText('Pasajero en puerta 4')).toHaveLength(1);
     await waitFor(() => expect(llamadas).toContainEqual({ metodo: 'POST', ruta: '/api/chat/conversaciones/1/leido/', cuerpo: { hasta: 50 } }));
-    expect(scroll.mock.calls.length).toBe(2);
+    await waitFor(() => expect(scroll).toHaveBeenCalledTimes(2));
 
     // Cargar mensajes anteriores no fuerza scroll al final.
     fireEvent.click(screen.getByRole('button', { name: 'Ver mensajes anteriores' }));

@@ -31,6 +31,13 @@ def _patente(n: int) -> str:
     return f"{cuatro}{n % 100:02d}"
 
 
+def _recogida_hoy():
+    """Dos horas desde ahora sin cruzar la medianoche local de Santiago."""
+    ahora = timezone.localtime(timezone.now())
+    fin_dia = ahora.replace(hour=23, minute=59, second=59, microsecond=0)
+    return min(ahora + timedelta(hours=2), max(ahora, fin_dia))
+
+
 class VehiculoFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Vehiculo
@@ -83,7 +90,7 @@ class ViajeFactory(factory.django.DjangoModelFactory):
     origen_geo = SANTIAGO
     destino_dir = "Plaza de Armas, Santiago"
     destino_geo = SANTIAGO
-    recogida_en = factory.LazyFunction(lambda: timezone.now() + timedelta(hours=2))
+    recogida_en = factory.LazyFunction(_recogida_hoy)
     estado = EstadoViaje.SOLICITADO
 
 
