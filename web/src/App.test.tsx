@@ -243,3 +243,35 @@ describe('error al cargar una pantalla', () => {
     expect(screen.getByRole('button', { name: 'Recargar' })).toBeInTheDocument();
   });
 });
+
+describe('estructura del panel (CC-20)', () => {
+  it('mantiene Cerrar sesión en el lateral, footer institucional y drawer móvil con Escape', async () => {
+    const servidor = new ServidorAuthFalso();
+    servidor.sembrarSesion();
+    montar('/', { servidor, pantallas: pantallasDePrueba });
+
+    const botonMenu = await screen.findByRole('button', { name: 'Menú' });
+    const cabecera = document.querySelector('header')!;
+    expect(within(cabecera).queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
+
+    const lateral = document.getElementById('lateral-panel')!;
+    expect(lateral).toHaveAttribute('data-abierto', 'false');
+    expect(within(lateral).getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Cerrar sesión' })).toHaveLength(1);
+
+    const pie = screen.getByRole('contentinfo');
+    expect(pie).toHaveTextContent('FlotaÁgil · Panel de operación');
+    expect(pie).toHaveTextContent('Transportes Andes Demo SpA');
+
+    const usuario = userEvent.setup();
+    await usuario.click(botonMenu);
+    expect(lateral).toHaveAttribute('data-abierto', 'true');
+    await usuario.keyboard('{Escape}');
+    expect(lateral).toHaveAttribute('data-abierto', 'false');
+
+    await usuario.click(botonMenu);
+    expect(lateral).toHaveAttribute('data-abierto', 'true');
+    await usuario.click(screen.getByRole('button', { name: 'Cerrar menú' }));
+    expect(lateral).toHaveAttribute('data-abierto', 'false');
+  });
+});

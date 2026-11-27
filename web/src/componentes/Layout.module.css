@@ -1,20 +1,34 @@
 .marco {
+  --alto-cabecera: 3.75rem;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: auto auto 1fr;
-  grid-template-areas: 'cabecera' 'menu' 'contenido';
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'cabecera' 'principal';
 }
 
 .cabecera {
   grid-area: cabecera;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: var(--alto-cabecera);
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--espacio-2) var(--espacio-3);
+  gap: var(--espacio-3);
   padding: var(--espacio-2) var(--espacio-4);
   background: var(--superficie);
   border-bottom: 1px solid var(--borde);
+  box-shadow: 0 2px 8px var(--sombra);
+}
+
+.identidad {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-3);
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .marca {
@@ -27,49 +41,156 @@
   color: var(--sobre-acento);
   font-weight: 800;
   letter-spacing: -0.2px;
+  white-space: nowrap;
 }
 
 .empresa {
+  padding-left: var(--espacio-3);
+  border-left: 1px solid var(--borde);
   color: var(--texto-suave);
   font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
+/* En móvil los datos del usuario viven dentro del drawer para dejar la cabecera en una sola fila. */
 .usuario {
+  display: none;
   margin-left: auto;
-  display: flex;
   align-items: center;
-  gap: var(--espacio-3);
-  font-size: 0.9rem;
+  gap: var(--espacio-2);
+  flex: none;
+  font-size: 0.88rem;
 }
 
-.salir,
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  background: var(--acento-suave);
+  border: 1px solid var(--borde);
+  color: var(--color-primario-900, var(--acento));
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.nombreUsuario {
+  color: var(--texto);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rolInsignia {
+  padding: 2px var(--espacio-2);
+  border-radius: 999px;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  color: var(--color-primario-900, var(--texto-suave));
+  font-size: var(--texto-etiqueta, 0.75rem);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .botonMenu {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  flex: none;
   min-height: var(--toque);
   padding: 0 var(--espacio-3);
   border: 1px solid var(--borde-campo, var(--borde));
-  font-weight: 600;
   border-radius: var(--radio);
-  background: transparent;
+  background: var(--superficie);
   color: var(--texto);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
 }
 
-.menu {
-  grid-area: menu;
-  display: none;
-  padding: var(--espacio-3) var(--espacio-2);
+.botonMenu:hover {
+  background: var(--suave, var(--acento-suave));
+}
+
+.telon {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--texto) 45%, transparent);
+}
+
+.lateral {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 40;
+  width: min(19rem, 86vw);
+  display: flex;
+  flex-direction: column;
   background: var(--superficie);
+  border-right: 1px solid var(--borde);
+  box-shadow: 0 12px 32px var(--sombra);
+  transform: translateX(-100%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 180ms ease, visibility 180ms ease;
+}
+
+.lateral[data-abierto='true'] {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.cabeceraLateral {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--alto-cabecera);
+  padding: var(--espacio-2) var(--espacio-3);
   border-bottom: 1px solid var(--borde);
 }
 
-.menu[data-abierto='true'] {
-  display: block;
+.tituloLateral {
+  color: var(--texto-suave);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cerrarLateral {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--toque);
+  height: var(--toque);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: transparent;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.cerrarLateral:hover {
+  background: var(--suave, var(--acento-suave));
+}
+
+.menu {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--espacio-2) var(--espacio-2) var(--espacio-4);
 }
 
 .grupoMenu + .grupoMenu {
-  margin-top: var(--espacio-4);
-  padding-top: var(--espacio-3);
+  margin-top: var(--espacio-3);
+  padding-top: var(--espacio-2);
   border-top: 1px solid var(--borde);
 }
 
@@ -142,36 +263,144 @@
   color: var(--color-primario-700, var(--acento));
 }
 
-.contenido h1 {
-  font-weight: 800;
-  letter-spacing: -0.4px;
+.pieLateral {
+  flex: none;
+  margin-top: auto;
+  padding: var(--espacio-3);
+  border-top: 1px solid var(--borde);
+  background: var(--fondo);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+}
+
+.perfilLateral {
+  display: flex;
+  align-items: center;
+  gap: var(--espacio-2);
+  min-width: 0;
+}
+
+.datosPerfil {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nombrePerfil {
+  color: var(--texto);
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rolPerfil {
+  color: var(--texto-suave);
+  font-size: var(--texto-etiqueta, 0.75rem);
+  font-weight: 600;
+}
+
+.salir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espacio-2);
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 var(--espacio-3);
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: var(--radio);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.salir:hover {
+  background: var(--suave, var(--acento-suave));
+  border-color: var(--color-primario-700, var(--acento));
+}
+
+.principal {
+  grid-area: principal;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .contenido {
-  grid-area: contenido;
-  padding: var(--espacio-4) var(--espacio-6);
+  flex: 1 0 auto;
+  padding: var(--espacio-4);
   /* Ocupa todo el ancho junto al menú; min-width: 0 evita que tablas o el mapa ensanchen la columna. */
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-/* Escritorio: menú lateral fijo. */
+.contenido h1 {
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.piePanel {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio-2) var(--espacio-4);
+  padding: var(--espacio-3) var(--espacio-4);
+  border-top: 1px solid var(--borde);
+  background: var(--superficie);
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+}
+
+/* Escritorio: barra lateral sticky bajo cabecera fija y contenido más holgado. */
 @media (min-width: 48rem) {
   .marco {
-    grid-template-columns: 15.5rem minmax(0, 1fr);
+    grid-template-columns: 14.75rem minmax(0, 1fr);
     grid-template-rows: auto 1fr;
-    grid-template-areas: 'cabecera cabecera' 'menu contenido';
+    grid-template-areas: 'cabecera cabecera' 'lateral principal';
   }
 
-  .botonMenu {
+  .botonMenu,
+  .cabeceraLateral,
+  .telon,
+  .perfilLateral {
     display: none;
   }
 
-  .menu {
-    display: block;
-    border-bottom: 0;
-    border-right: 1px solid var(--borde);
+  .usuario {
+    display: flex;
+  }
+
+  .lateral {
+    grid-area: lateral;
+    position: sticky;
+    top: var(--alto-cabecera);
+    height: calc(100dvh - var(--alto-cabecera));
+    width: auto;
+    z-index: 10;
+    transform: none;
+    visibility: visible;
+    pointer-events: auto;
+    box-shadow: none;
+    transition: none;
+  }
+
+  .contenido {
+    padding: var(--espacio-4) var(--espacio-6);
+  }
+
+  .piePanel {
+    padding: var(--espacio-3) var(--espacio-6);
   }
 }
 
