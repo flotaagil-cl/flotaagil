@@ -1,6 +1,6 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MENSAJES } from '../api/errores';
 import { aIso, hoy, inicioDelDia } from '../hora/hora';
 import { consultasDelListado, esperarListado, montarPanel } from '../pruebas/montar';
@@ -14,6 +14,15 @@ function ultimaConsulta(servidor: ServidorAuthFalso): [string, string][] {
 }
 
 const HOY_00 = () => aIso(inicioDelDia(hoy()));
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(new Date('2026-11-26T14:00:00-03:00'));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('listado de reservas', () => {
   it('vista por defecto: «desde hoy 00:00» visible y aplicado; filas con la hora en Santiago', async () => {
