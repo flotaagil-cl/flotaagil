@@ -6,9 +6,11 @@ import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
+import type { NombreIcono } from '../../diseno/iconos';
 import { Campo } from '../../formularios/Campo';
-import campos from '../../formularios/formularios.module.css';
 import { formatearFecha, formatearFechaHora, hoy } from '../../hora/hora';
+import { ContactoPasajero } from '../../reservas/componentes/ContactoPasajero';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 import {
   useAsociarVehiculo,
@@ -17,16 +19,34 @@ import {
   useQuitarVehiculo,
   useVehiculos,
   type Conductor as TipoConductor,
+  type EstadoConductor,
 } from '../api';
 import { FallaDeCarga, NoEncontrado } from '../componentes/comunes';
 import { CuentaConductor } from '../componentes/CuentaConductor';
 import { TerminarTurno } from '../componentes/TerminarTurno';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 import { useEstadoEnVivo } from '../estadoEnVivo';
-import { avisoLicencia, ESTADOS_CONDUCTOR, LICENCIAS } from '../etiquetas';
+import { ACCESOS_APP, avisoLicencia, ESTADOS_CONDUCTOR, LICENCIAS } from '../etiquetas';
+import s from '../flota.module.css';
 import { cuerpoEditarConductor, esquemaConductor, type DatosConductor, type ValoresConductor } from '../formularios';
 
 const CAMPOS = ['nombre', 'rut', 'telefono', 'licencia_clase', 'licencia_vence'] as const;
+
+type Tono = 'ok' | 'info' | 'revision' | 'peligro' | 'neutro';
+
+const ESTILO_ESTADO: Record<EstadoConductor, { tono: Tono; icono: NombreIcono }> = {
+  DISPONIBLE: { tono: 'ok', icono: 'check' },
+  EN_VIAJE: { tono: 'info', icono: 'auto' },
+  NO_DISPONIBLE: { tono: 'neutro', icono: 'menos' },
+};
+
+const ESTILO_ACCESO: Record<keyof typeof ACCESOS_APP, { tono: Tono; icono: NombreIcono }> = {
+  ACTIVA: { tono: 'ok', icono: 'llave' },
+  TEMPORAL: { tono: 'revision', icono: 'reloj' },
+  TEMPORAL_VENCIDA: { tono: 'peligro', icono: 'alerta' },
+  SIN_PASSWORD: { tono: 'peligro', icono: 'candado' },
+  DESHABILITADA: { tono: 'neutro', icono: 'cerrar' },
+};
 
 export function Conductor() {
   const id = useIdDeRuta();
@@ -57,79 +77,118 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
   const ubicacion = useLocation();
   const [aviso, setAviso] = useState<string | null>((ubicacion.state as { aviso?: string } | null)?.aviso ?? null);
   const alertaLicencia = avisoLicencia(conductor.licencia_vence, hoy());
+  const claveAcceso = conductor.activo ? conductor.acceso : 'DESHABILITADA';
+  const estiloEstado = ESTILO_ESTADO[conductor.estado];
+  const estiloAcceso = ESTILO_ACCESO[claveAcceso];
 
   return (
     <section>
-      <div className={estilos.encabezado}>
-        <h1>{conductor.nombre}</h1>
-        <Link to="/conductores" className={estilos.botonSecundario}>
-          Volver a los conductores
-        </Link>
+      <div className={s.encabezado}>
+        <div className={s.tituloBloque}>
+          <h1>{conductor.nombre}</h1>
+          <div className={s.metaFicha}>
+            <span className={s.badge} data-tono={estiloAcceso.tono}>
+              <Icono nombre={estiloAcceso.icono} tamano={13} />
+              {ACCESOS_APP[claveAcceso]}
+            </span>
+            <span className={s.metaTexto}>
+              Licencia clase {LICENCIAS[conductor.licencia_clase]} ·{' '}
+              {conductor.vehiculos.length === 1 ? '1 vehículo asociado' : `${conductor.vehiculos.length} vehículos asociados`}
+            </span>
+          </div>
+        </div>
+        <div className={s.accionesEncabezado}>
+          <Link to="/conductores" className={`${estilos.botonSecundario} ${s.botonConIcono}`}>
+            <Icono nombre="atras" tamano={16} />
+            Volver a los conductores
+          </Link>
+        </div>
       </div>
+
       {aviso && <Aviso>{aviso}</Aviso>}
 
-      {editando ? (
-        <EditarDatos
-          conductor={conductor}
-          alTerminar={(mensaje) => {
-            setEditando(false);
-            setAviso(mensaje);
-          }}
-        />
-      ) : (
-        <div className={estilos.tarjeta}>
-          <h2>Datos</h2>
-          <dl className={estilos.datos}>
-            <div>
-              <dt>RUT</dt>
-              <dd>{conductor.rut}</dd>
-            </div>
-            <div>
-              <dt>Teléfono</dt>
-              <dd>{conductor.telefono}</dd>
-            </div>
-            <div>
-              <dt>Licencia</dt>
-              <dd>
-                Clase {LICENCIAS[conductor.licencia_clase]} · vence {formatearFecha(conductor.licencia_vence)}
-                {alertaLicencia && <span className={estilos.alerta}>{alertaLicencia}</span>}
-              </dd>
-            </div>
-            <div>
-              <dt>Estado</dt>
-              <dd>
-                {ESTADOS_CONDUCTOR[conductor.estado]}
-                {conductor.vehiculo_activo ? ` · declaró ${conductor.vehiculo_activo.patente}` : ''}
-              </dd>
-            </div>
-            <div>
-              <dt>Consentimiento de ubicación</dt>
-              <dd>
-                {conductor.consentimiento_gps_en ? `Aceptado el ${formatearFechaHora(conductor.consentimiento_gps_en)}` : 'Pendiente'}
-              </dd>
-            </div>
-          </dl>
-          <div className={estilos.acciones}>
-            <button
-              type="button"
-              className={estilos.boton}
-              onClick={() => {
-                setAviso(null);
-                setEditando(true);
+      <div className={s.cuadriculaFicha}>
+        <div className={s.columnaPrincipal}>
+          {editando ? (
+            <EditarDatos
+              conductor={conductor}
+              alTerminar={(mensaje) => {
+                setEditando(false);
+                setAviso(mensaje);
               }}
-            >
-              Editar datos
-            </button>
-          </div>
-          <p className={estilos.explicacion}>El correo de acceso se cambia en «Acceso a la app».</p>
+            />
+          ) : (
+            <div className={s.tarjeta}>
+              <div className={s.cabeceraTarjeta}>
+                <h2>Datos</h2>
+                <button
+                  type="button"
+                  className={estilos.boton}
+                  onClick={() => {
+                    setAviso(null);
+                    setEditando(true);
+                  }}
+                >
+                  Editar datos
+                </button>
+              </div>
+              <dl className={s.datosGrid}>
+                <div className={s.datoItem}>
+                  <dt>RUT</dt>
+                  <dd className={s.tabular}>{conductor.rut}</dd>
+                </div>
+                <div className={s.datoItem}>
+                  <dt>Teléfono</dt>
+                  <dd>
+                    <ContactoPasajero telefono={conductor.telefono} compacto nombre={conductor.nombre} />
+                  </dd>
+                </div>
+                <div className={s.datoItem}>
+                  <dt>Licencia</dt>
+                  <dd>
+                    <span>
+                      Clase {LICENCIAS[conductor.licencia_clase]} · vence {formatearFecha(conductor.licencia_vence)}
+                    </span>
+                    {alertaLicencia && (
+                      <div>
+                        <span className={s.badgeLicencia} data-tono={alertaLicencia === 'Licencia vencida' ? 'peligro' : 'revision'}>
+                          <Icono nombre="alerta" tamano={12} />
+                          {alertaLicencia}
+                        </span>
+                      </div>
+                    )}
+                  </dd>
+                </div>
+                <div className={s.datoItem}>
+                  <dt>Estado</dt>
+                  <dd>
+                    {/* Texto continuo requerido por turno.test.tsx («Disponible · declaró BCDF10»). */}
+                    <span className={s.badge} data-tono={estiloEstado.tono}>
+                      <Icono nombre={estiloEstado.icono} tamano={13} />
+                      {ESTADOS_CONDUCTOR[conductor.estado]}
+                      {conductor.vehiculo_activo ? ` · declaró ${conductor.vehiculo_activo.patente}` : ''}
+                    </span>
+                  </dd>
+                </div>
+                <div className={s.datoItem}>
+                  <dt>Consentimiento de ubicación</dt>
+                  <dd>
+                    {conductor.consentimiento_gps_en ? `Aceptado el ${formatearFechaHora(conductor.consentimiento_gps_en)}` : 'Pendiente'}
+                  </dd>
+                </div>
+              </dl>
+              <p className={estilos.explicacion}>El correo de acceso se cambia en «Acceso a la app».</p>
+            </div>
+          )}
+
+          <Vehiculos conductor={conductor} />
         </div>
-      )}
 
-      <CuentaConductor conductor={conductor} />
-
-      <TerminarTurno conductor={conductor} />
-
-      <Vehiculos conductor={conductor} />
+        <aside className={s.columnaLateral}>
+          <CuentaConductor conductor={conductor} />
+          <TerminarTurno conductor={conductor} />
+        </aside>
+      </div>
     </section>
   );
 }
@@ -171,13 +230,13 @@ function EditarDatos({ conductor, alTerminar }: { conductor: TipoConductor; alTe
   }
 
   return (
-    <form className={estilos.formulario} onSubmit={handleSubmit(guardar)} noValidate>
+    <form className={s.formularioTarjeta} onSubmit={handleSubmit(guardar)} noValidate>
       {falla.map((mensaje) => (
         <Aviso key={mensaje} tipo="error">
           {mensaje}
         </Aviso>
       ))}
-      <fieldset>
+      <fieldset className={s.fieldsetLimpio}>
         <legend>Datos del conductor</legend>
         <Campo etiqueta="Nombre" error={errors.nombre?.message}>
           {(control) => <input {...control} {...register('nombre')} maxLength={80} autoComplete="off" />}
@@ -203,7 +262,7 @@ function EditarDatos({ conductor, alTerminar }: { conductor: TipoConductor; alTe
           {(control) => <input {...control} {...register('licencia_vence')} type="date" />}
         </Campo>
       </fieldset>
-      <div className={estilos.pie}>
+      <div className={s.pieFormulario}>
         <button type="submit" className={estilos.boton} disabled={isSubmitting}>
           {isSubmitting ? 'Guardando…' : 'Guardar datos'}
         </button>
@@ -240,16 +299,26 @@ function Vehiculos({ conductor }: { conductor: TipoConductor }) {
   }
 
   return (
-    <div className={estilos.tarjeta}>
-      <h2>Vehículos</h2>
+    <div className={s.tarjeta}>
+      <div className={s.cabeceraTarjeta}>
+        <h2>Vehículos</h2>
+        {conductor.vehiculos.length > 0 && (
+          <span className={s.badge} data-tono="neutro">
+            {conductor.vehiculos.length} {conductor.vehiculos.length === 1 ? 'asociado' : 'asociados'}
+          </span>
+        )}
+      </div>
       {falla && <Aviso tipo="error">{falla}</Aviso>}
       {conductor.vehiculos.length ? (
-        <ul className={estilos.listaAcciones} aria-label="Vehículos asociados">
+        <ul className={s.listaAsociados} aria-label="Vehículos asociados">
           {conductor.vehiculos.map((vehiculo) => (
             <li key={vehiculo.id}>
               <span>
-                <Link to={`/vehiculos/${vehiculo.id}`}>{vehiculo.patente}</Link> · {vehiculo.marca_modelo}
-                <span className={estilos.secundario}>
+                <Link to={`/vehiculos/${vehiculo.id}`} className={s.patente}>
+                  {vehiculo.patente}
+                </Link>{' '}
+                <span>· {vehiculo.marca_modelo}</span>
+                <span className={s.secundario}>
                   Desde {formatearFecha(vehiculo.desde)}
                   {vehiculo.activo ? '' : ' · inactivo'}
                   {conductor.vehiculo_activo?.id === vehiculo.id ? ' · declarado para el turno' : ''}
@@ -268,40 +337,48 @@ function Vehiculos({ conductor }: { conductor: TipoConductor }) {
           ))}
         </ul>
       ) : (
-        <p>Sin vehículos asociados: no podrá quedar Disponible hasta tener uno.</p>
+        <p className={s.notaEstado}>Sin vehículos asociados: no podrá quedar Disponible hasta tener uno.</p>
       )}
 
-      <h3>Asociar un vehículo</h3>
-      <label className={`${campos.campo} ${estilos.busqueda}`}>
-        Buscar vehículo activo
-        <input type="search" placeholder="Patente o marca y modelo" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
-      </label>
-      {candidatos.isError ? (
-        <p role="alert">{mensajeDeError(candidatos.error, 'la página')}</p>
-      ) : candidatos.isPending ? (
-        <p>Buscando…</p>
-      ) : disponibles.length === 0 ? (
-        <p>No hay vehículos activos sin asociar{busqueda.trim() ? ' que coincidan' : ''}.</p>
-      ) : (
-        <ul className={estilos.listaAcciones} aria-label="Vehículos para asociar">
-          {disponibles.map((vehiculo) => (
-            <li key={vehiculo.id}>
-              <span>
-                {vehiculo.patente} · {vehiculo.marca_modelo}
-              </span>
-              <button
-                type="button"
-                className={estilos.boton}
-                disabled={ocupado}
-                aria-label={`Asociar ${vehiculo.patente}`}
-                onClick={() => void hacer(() => asociar.mutateAsync(vehiculo.id))}
-              >
-                Asociar
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <div className={s.seccionAsociar}>
+        <h3>Asociar un vehículo</h3>
+        <label className={s.campoFiltro}>
+          Buscar vehículo activo
+          <input
+            type="search"
+            className={s.control}
+            placeholder="Patente o marca y modelo"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </label>
+        {candidatos.isError ? (
+          <p role="alert">{mensajeDeError(candidatos.error, 'la página')}</p>
+        ) : candidatos.isPending ? (
+          <p className={s.secundario}>Buscando…</p>
+        ) : disponibles.length === 0 ? (
+          <p className={s.secundario}>No hay vehículos activos sin asociar{busqueda.trim() ? ' que coincidan' : ''}.</p>
+        ) : (
+          <ul className={s.listaCandidatos} aria-label="Vehículos para asociar">
+            {disponibles.map((vehiculo) => (
+              <li key={vehiculo.id}>
+                <span>
+                  <span className={s.patente}>{vehiculo.patente}</span> · {vehiculo.marca_modelo}
+                </span>
+                <button
+                  type="button"
+                  className={estilos.boton}
+                  disabled={ocupado}
+                  aria-label={`Asociar ${vehiculo.patente}`}
+                  onClick={() => void hacer(() => asociar.mutateAsync(vehiculo.id))}
+                >
+                  Asociar
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

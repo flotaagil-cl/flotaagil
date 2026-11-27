@@ -1,12 +1,14 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
 import { mensajeDeError } from '../errores';
+import s from '../flota.module.css';
 
 /** Celda con su título: en celular la tabla pasa a tarjetas y el título va a la izquierda (CSS). */
-export function Celda({ titulo, children }: { titulo: string; children: ReactNode }) {
+export function Celda({ titulo, children, className }: { titulo: string; children: ReactNode; className?: string }) {
   return (
-    <td data-titulo={titulo}>
+    <td data-titulo={titulo} className={className}>
       <div>{children}</div>
     </td>
   );
@@ -15,7 +17,10 @@ export function Celda({ titulo, children }: { titulo: string; children: ReactNod
 /** Error de una consulta con «Reintentar». */
 export function FallaDeCarga({ error, que, reintentar }: { error: unknown; que: string; reintentar: () => void }) {
   return (
-    <div className={estilos.vacio} role="alert">
+    <div className={s.vacio} role="alert">
+      <div className={s.iconoVacio} aria-hidden="true">
+        <Icono nombre="alerta" tamano={24} />
+      </div>
       <p>{mensajeDeError(error, que)}</p>
       <button type="button" className={estilos.boton} onClick={reintentar}>
         Reintentar
@@ -27,9 +32,16 @@ export function FallaDeCarga({ error, que, reintentar }: { error: unknown; que: 
 export function NoEncontrado({ que, volverA, texto }: { que: string; volverA: string; texto: string }) {
   return (
     <section>
-      <h1>No encontrado</h1>
-      <p>No existe {que} o no es de tu empresa.</p>
-      <Link to={volverA}>{texto}</Link>
+      <div className={s.vacio}>
+        <div className={s.iconoVacio} aria-hidden="true">
+          <Icono nombre="info" tamano={24} />
+        </div>
+        <h1>No encontrado</h1>
+        <p>No existe {que} o no es de tu empresa.</p>
+        <Link to={volverA} className={estilos.botonSecundario}>
+          {texto}
+        </Link>
+      </div>
     </section>
   );
 }
@@ -37,17 +49,19 @@ export function NoEncontrado({ que, volverA, texto }: { que: string; volverA: st
 /** Filas de espera de una tabla mientras llega la primera página. */
 export function Esqueleto({ etiqueta, columnas }: { etiqueta: string; columnas: number }) {
   return (
-    <table className={estilos.tabla} aria-busy="true" aria-label={etiqueta}>
-      <tbody>
-        {Array.from({ length: 5 }, (_, i) => (
-          <tr key={i} className={estilos.esqueleto}>
-            <td colSpan={columnas}>
-              <span />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className={s.contenedorTabla}>
+      <table className={s.tablaFlota} aria-busy="true" aria-label={etiqueta}>
+        <tbody>
+          {Array.from({ length: 5 }, (_, i) => (
+            <tr key={i} className={estilos.esqueleto}>
+              <td colSpan={columnas}>
+                <span />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

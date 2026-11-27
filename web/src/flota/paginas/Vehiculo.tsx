@@ -4,11 +4,13 @@ import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
 import { useIdDeRuta } from '../../rutas/idDeRuta';
 import { useEditarVehiculo, useVehiculo, type Vehiculo as TipoVehiculo } from '../api';
 import { FallaDeCarga, NoEncontrado } from '../componentes/comunes';
 import { FormularioVehiculo } from '../componentes/FormularioVehiculo';
 import { mensajeDeError } from '../errores';
+import s from '../flota.module.css';
 import { cuerpoEditarVehiculo, type DatosVehiculo } from '../formularios';
 
 export function Vehiculo() {
@@ -46,6 +48,7 @@ function Ficha({ vehiculo }: { vehiculo: TipoVehiculo }) {
   const [falla, setFalla] = useState<string | null>(null);
   // Los valores del formulario se toman una vez, para que un guardado no reinicie lo escrito.
   const [antes, setAntes] = useState(() => datosDe(vehiculo));
+  const capacidad = vehiculo.capacidad ?? 4;
 
   async function cambiarActivo() {
     setAviso(null);
@@ -60,68 +63,107 @@ function Ficha({ vehiculo }: { vehiculo: TipoVehiculo }) {
 
   return (
     <section>
-      <div className={estilos.encabezado}>
-        <h1>
-          Vehículo {vehiculo.patente}{' '}
-          <span className={`${estilos.etiqueta} ${vehiculo.activo ? estilos.curso : estilos.cancelado}`}>
-            {vehiculo.activo ? 'Activo' : 'Inactivo'}
-          </span>
-        </h1>
-        <Link to="/vehiculos" className={estilos.botonSecundario}>
-          Volver a los vehículos
-        </Link>
+      <div className={s.encabezado}>
+        <div className={s.tituloBloque}>
+          <h1>Vehículo {vehiculo.patente}</h1>
+          <div className={s.metaFicha}>
+            <span className={s.badge} data-tono={vehiculo.activo ? 'ok' : 'peligro'}>
+              <Icono nombre={vehiculo.activo ? 'check' : 'cerrar'} tamano={13} />
+              {vehiculo.activo ? 'Activo' : 'Inactivo'}
+            </span>
+            <span className={s.metaTexto}>
+              {vehiculo.marca_modelo}
+              {vehiculo.color ? ` · ${vehiculo.color}` : ''} · {vehiculo.anio} · {capacidad} {capacidad === 1 ? 'pasajero' : 'pasajeros'}
+            </span>
+          </div>
+        </div>
+        <div className={s.accionesEncabezado}>
+          <Link to="/vehiculos" className={`${estilos.botonSecundario} ${s.botonConIcono}`}>
+            <Icono nombre="atras" tamano={16} />
+            Volver a los vehículos
+          </Link>
+        </div>
       </div>
+
       {aviso && <Aviso>{aviso}</Aviso>}
       {falla && <Aviso tipo="error">{falla}</Aviso>}
 
-      <div className={estilos.tarjeta}>
-        <h2>Conductores asociados</h2>
-        {vehiculo.conductores.length ? (
-          <ul>
-            {vehiculo.conductores.map((conductor) => (
-              <li key={conductor.id}>
-                <Link to={`/conductores/${conductor.id}`}>{conductor.nombre}</Link>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Ninguno. Se asocian desde la ficha de cada conductor.</p>
-        )}
-        <div className={estilos.acciones}>
-          <button
-            type="button"
-            className={vehiculo.activo ? estilos.botonPeligro : estilos.boton}
-            disabled={editar.isPending}
-            onClick={() => void cambiarActivo()}
-          >
-            {vehiculo.activo ? 'Desactivar' : 'Activar'}
-          </button>
+      <div className={s.cuadriculaFicha}>
+        <div className={s.columnaPrincipal}>
+          <FormularioVehiculo
+            key={JSON.stringify(antes)}
+            modo="editar"
+            iniciales={{ ...antes, color: antes.color ?? '', anio: String(antes.anio), capacidad: String(antes.capacidad) }}
+            volverA="/vehiculos"
+            enviar={async (datos) => {
+              setAviso(null);
+              setFalla(null);
+              const cambios = cuerpoEditarVehiculo(datos, antes);
+              if (Object.keys(cambios).length === 0) {
+                setAviso('No hay cambios que guardar.');
+                return;
+              }
+              const nuevo = await editar.mutateAsync(cambios);
+              setAntes(datosDe(nuevo));
+              setAviso('Cambios guardados.');
+            }}
+          />
         </div>
-        <p className={estilos.explicacion}>
-          {vehiculo.activo
-            ? 'Un vehículo inactivo no se puede declarar para un turno. No se desactiva si un conductor lo tiene declarado en turno o tiene un viaje en curso.'
-            : 'Inactivo: no se puede declarar para un turno ni asociar a un conductor.'}
-        </p>
-      </div>
 
-      <FormularioVehiculo
-        key={JSON.stringify(antes)}
-        modo="editar"
-        iniciales={{ ...antes, color: antes.color ?? '', anio: String(antes.anio), capacidad: String(antes.capacidad) }}
-        volverA="/vehiculos"
-        enviar={async (datos) => {
-          setAviso(null);
-          setFalla(null);
-          const cambios = cuerpoEditarVehiculo(datos, antes);
-          if (Object.keys(cambios).length === 0) {
-            setAviso('No hay cambios que guardar.');
-            return;
-          }
-          const nuevo = await editar.mutateAsync(cambios);
-          setAntes(datosDe(nuevo));
-          setAviso('Cambios guardados.');
-        }}
-      />
+        <aside className={s.columnaLateral}>
+          <div className={s.tarjeta}>
+            <div className={s.cabeceraTarjeta}>
+              <h2>Estado operativo</h2>
+              <span className={s.badge} data-tono={vehiculo.activo ? 'ok' : 'peligro'}>
+                <Icono nombre={vehiculo.activo ? 'check' : 'cerrar'} tamano={13} />
+                {vehiculo.activo ? 'Activo' : 'Inactivo'}
+              </span>
+            </div>
+            <p className={s.notaEstado}>
+              {vehiculo.activo
+                ? 'Un vehículo inactivo no se puede declarar para un turno. No se desactiva si un conductor lo tiene declarado en turno o tiene un viaje en curso.'
+                : 'Inactivo: no se puede declarar para un turno ni asociar a un conductor.'}
+            </p>
+            <div className={estilos.acciones}>
+              <button
+                type="button"
+                className={vehiculo.activo ? estilos.botonPeligro : estilos.boton}
+                disabled={editar.isPending}
+                onClick={() => void cambiarActivo()}
+              >
+                {vehiculo.activo ? 'Desactivar' : 'Activar'}
+              </button>
+            </div>
+          </div>
+
+          <div className={s.tarjeta}>
+            <div className={s.cabeceraTarjeta}>
+              <h2>Conductores asociados</h2>
+              {vehiculo.conductores.length > 0 && (
+                <span className={s.badge} data-tono="neutro">
+                  {vehiculo.conductores.length}
+                </span>
+              )}
+            </div>
+            {vehiculo.conductores.length ? (
+              <ul className={s.listaAsociados}>
+                {vehiculo.conductores.map((conductor) => (
+                  <li key={conductor.id}>
+                    <Link to={`/conductores/${conductor.id}`} className={s.enlacePrincipal}>
+                      {conductor.nombre}
+                    </Link>
+                    <Link to={`/conductores/${conductor.id}`} className={s.enlaceDetalle}>
+                      Ver ficha
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className={s.notaEstado}>Ninguno. Se asocian desde la ficha de cada conductor.</p>
+            )}
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }

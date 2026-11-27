@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
 import { mensajeDeErrorApi } from '../../reservas/errores';
 import { useTerminarTurno, type Conductor } from '../api';
+import s from '../flota.module.css';
 
 const MAXIMO = 200;
 
@@ -37,20 +39,29 @@ export function TerminarTurno({ conductor }: { conductor: Conductor }) {
   }
 
   return (
-    <div className={estilos.tarjeta}>
-      <h2>Turno</h2>
+    <div className={s.tarjeta}>
+      <div className={s.cabeceraTarjeta}>
+        <h2>Turno</h2>
+        <span className={s.badge} data-tono={conductor.estado === 'EN_VIAJE' ? 'info' : 'ok'}>
+          <Icono nombre={conductor.estado === 'EN_VIAJE' ? 'auto' : 'reloj'} tamano={13} />
+          {conductor.estado === 'EN_VIAJE' ? 'En viaje' : 'En turno'}
+        </span>
+      </div>
       {conductor.estado === 'EN_VIAJE' ? (
-        <p>Está en un viaje: el turno termina cuando lo cierre (RN-03).</p>
+        <p className={s.notaEstado}>Está en un viaje: el turno termina cuando lo cierre (RN-03).</p>
       ) : abierto ? (
-        <div role="alertdialog" aria-labelledby="pregunta-turno">
+        <div className={s.panelPeligro} role="alertdialog" aria-labelledby="pregunta-turno">
           <p id="pregunta-turno">
             {conductor.nombre} quedará No disponible y su turno se cerrará como cierre administrativo. Queda en auditoría.
           </p>
           {error && <Aviso tipo="error">{error}</Aviso>}
-          <label>
+          <label className={s.campoTextarea}>
             Motivo
-            <textarea rows={3} maxLength={MAXIMO} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+            <textarea className={s.textarea} rows={3} maxLength={MAXIMO} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
           </label>
+          <span className={s.contadorMotivo}>
+            {motivo.length}/{MAXIMO}
+          </span>
           <div className={estilos.acciones}>
             <button type="button" className={estilos.botonPeligro} disabled={terminar.isPending} onClick={() => void confirmar()}>
               {terminar.isPending ? 'Terminando…' : 'Terminar turno'}
@@ -62,7 +73,7 @@ export function TerminarTurno({ conductor }: { conductor: Conductor }) {
         </div>
       ) : (
         <>
-          <p>Está en turno. Si olvidó terminarlo, puedes terminarlo tú para cuadrar su caja.</p>
+          <p className={s.notaEstado}>Está en turno. Si olvidó terminarlo, puedes terminarlo tú para cuadrar su caja.</p>
           <div className={estilos.acciones}>
             <button type="button" className={estilos.botonSecundario} onClick={() => setAbierto(true)}>
               Terminar turno…

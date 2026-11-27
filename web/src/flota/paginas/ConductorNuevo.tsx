@@ -5,12 +5,14 @@ import { Link, useNavigate } from 'react-router';
 import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
 import { Campo } from '../../formularios/Campo';
 import { hoy } from '../../hora/hora';
 import { useCrearConductor } from '../api';
 import { DialogoPassword } from '../componentes/CuentaConductor';
 import { erroresDelBackend, mensajeDeError } from '../errores';
 import { LICENCIAS } from '../etiquetas';
+import s from '../flota.module.css';
 import { CONDUCTOR_VACIO, esquemaConductorNuevo, type DatosConductorNuevo, type ValoresConductorNuevo } from '../formularios';
 
 const CAMPOS = ['nombre', 'email', 'rut', 'telefono', 'licencia_clase', 'licencia_vence'] as const;
@@ -53,14 +55,28 @@ export function ConductorNuevo() {
 
   return (
     <section>
-      <h1>Nuevo conductor</h1>
-      <form className={estilos.formulario} onSubmit={handleSubmit(registrar)} noValidate>
+      <div className={s.encabezado}>
+        <div className={s.tituloBloque}>
+          <h1>Nuevo conductor</h1>
+          <p className={s.subtitulo}>
+            Al registrarlo se generará una contraseña temporal válida por 72 horas para su primer ingreso en la app.
+          </p>
+        </div>
+        <div className={s.accionesEncabezado}>
+          <Link to="/conductores" className={`${estilos.botonSecundario} ${s.botonConIcono}`}>
+            <Icono nombre="atras" tamano={16} />
+            Volver a los conductores
+          </Link>
+        </div>
+      </div>
+
+      <form className={s.formularioTarjeta} onSubmit={handleSubmit(registrar)} noValidate>
         {falla.map((mensaje) => (
           <Aviso key={mensaje} tipo="error">
             {mensaje}
           </Aviso>
         ))}
-        <fieldset>
+        <fieldset className={s.fieldsetLimpio}>
           <legend>Datos del conductor</legend>
           <Campo etiqueta="Nombre" error={errors.nombre?.message}>
             {(control) => <input {...control} {...register('nombre')} maxLength={80} autoComplete="off" />}
@@ -89,7 +105,7 @@ export function ConductorNuevo() {
             {(control) => <input {...control} {...register('licencia_vence')} type="date" />}
           </Campo>
         </fieldset>
-        <div className={estilos.pie}>
+        <div className={s.pieFormulario}>
           <button type="submit" className={estilos.boton} disabled={isSubmitting}>
             {isSubmitting ? 'Guardando…' : 'Registrar conductor'}
           </button>

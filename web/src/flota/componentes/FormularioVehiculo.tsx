@@ -8,6 +8,7 @@ import estilos from '../../componentes/panel.module.css';
 import { Campo } from '../../formularios/Campo';
 import { hoy } from '../../hora/hora';
 import { erroresDelBackend, mensajeDeError } from '../errores';
+import s from '../flota.module.css';
 import { esquemaVehiculo, type DatosVehiculo, type ValoresVehiculo } from '../formularios';
 
 const CAMPOS = ['patente', 'marca_modelo', 'color', 'anio', 'capacidad'] as const;
@@ -49,15 +50,19 @@ export function FormularioVehiculo({ modo, iniciales, volverA, enviar }: Props) 
   }
 
   return (
-    <form className={estilos.formulario} onSubmit={handleSubmit(alEnviar)} noValidate>
+    <form className={s.formularioTarjeta} onSubmit={handleSubmit(alEnviar)} noValidate>
       {falla.map((mensaje) => (
         <Aviso key={mensaje} tipo="error">
           {mensaje}
         </Aviso>
       ))}
-      <fieldset>
+      <fieldset className={s.fieldsetLimpio}>
         <legend>Vehículo</legend>
-        <Campo etiqueta="Patente" error={errors.patente?.message} ayuda={modo === 'editar' ? 'No se cambia: otra patente es otro vehículo.' : 'AB1234 o ABCD12.'}>
+        <Campo
+          etiqueta="Patente"
+          error={errors.patente?.message}
+          ayuda={modo === 'editar' ? 'No se cambia: otra patente es otro vehículo.' : 'AB1234 o ABCD12.'}
+        >
           {(control) => (
             <input {...control} {...register('patente')} autoComplete="off" readOnly={modo === 'editar'} autoCapitalize="characters" />
           )}
@@ -75,7 +80,7 @@ export function FormularioVehiculo({ modo, iniciales, volverA, enviar }: Props) 
           {(control) => <input {...control} {...register('capacidad')} inputMode="numeric" maxLength={1} />}
         </Campo>
       </fieldset>
-      <div className={estilos.pie}>
+      <div className={s.pieFormulario}>
         <button type="submit" className={estilos.boton} disabled={isSubmitting}>
           {isSubmitting ? 'Guardando…' : modo === 'crear' ? 'Registrar vehículo' : 'Guardar cambios'}
         </button>
