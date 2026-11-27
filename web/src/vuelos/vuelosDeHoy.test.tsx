@@ -2,7 +2,7 @@
 
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '../api/esquema';
 import { montarPanel } from '../pruebas/montar';
 import type { Respuesta, ServidorAuthFalso } from '../pruebas/servidorAuthFalso';
@@ -105,6 +105,11 @@ function montar(email = 'despacho@andes.example', ruta = '/vuelos-de-hoy') {
   );
   return { ...contexto, vuelos: new ServidorVuelosFalso(contexto.servidor, contexto.viajes) };
 }
+
+beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(new Date('2026-11-26T14:00:00-03:00'));
+});
 
 afterEach(() => {
   vi.useRealTimers();
