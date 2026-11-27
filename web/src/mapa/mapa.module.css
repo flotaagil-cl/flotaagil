@@ -159,7 +159,58 @@
   border: 1px solid var(--borde);
   border-radius: var(--radio-tarjeta, 16px);
   overflow: hidden;
+  isolation: isolate;
   box-shadow: 0 1px 3px var(--sombra);
+}
+
+.leyendaMapa {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 400;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 6px 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(4px);
+  color: var(--texto);
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px var(--sombra);
+  pointer-events: none;
+}
+
+.leyendaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leyendaPunto {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 0 0 1px rgb(15 42 46 / 15%);
+}
+
+.leyendaDisponible {
+  background: #15803d;
+}
+
+.leyendaEnViaje {
+  background: #b45309;
+}
+
+.leyendaNoConfiable {
+  background: #9ca3af;
+  border-color: #4b5563;
+  border-style: dashed;
 }
 
 @media (min-width: 60rem) {
@@ -339,7 +390,34 @@
   color: var(--sobre-acento);
 }
 
-/* --- Cuerpo scrollable y ficha del seleccionado --- */
+.conteoChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.chipFiltro[aria-pressed='true'] .conteoChip {
+  background: rgb(255 255 255 / 22%);
+  color: var(--sobre-acento);
+}
+
+/* --- Ficha fija del seleccionado y cuerpo scrollable --- */
+
+.fichaFija {
+  padding: var(--espacio-3);
+  border-bottom: 1px solid var(--borde);
+  background: var(--superficie);
+  flex: none;
+}
 
 .cuerpoPanel {
   flex: 1;
@@ -414,6 +492,46 @@
 
 .fichaPosicion {
   grid-column: 1 / -1;
+}
+
+.fichaAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-tiffany, var(--borde));
+}
+
+.botonFicha,
+.enlaceFicha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--borde-campo, var(--borde));
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--color-primario-900, var(--texto));
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.botonFicha:hover:not(:disabled),
+.enlaceFicha:hover {
+  border-color: var(--color-primario-700, var(--acento));
+  background: var(--fondo);
+}
+
+.botonFicha:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* --- Lista y tarjetas de conductores --- */
