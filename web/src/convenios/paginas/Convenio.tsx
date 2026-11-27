@@ -1,15 +1,16 @@
-import { useSesion } from '../../sesion/SesionProvider';
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
+import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import estilos from '../../componentes/panel.module.css';
 import { Icono } from '../../diseno/Icono';
 import { Esqueleto, FallaDeCarga, NoEncontrado, Paginacion } from '../../flota/componentes/comunes';
 import { formatearFechaHora } from '../../hora/hora';
-import { ErrorApi } from '../../api/resultado';
-import { useIdDeRuta } from '../../rutas/idDeRuta';
+import { ContactoPasajero } from '../../reservas/componentes/ContactoPasajero';
 import { mensajeDeErrorApi } from '../../reservas/errores';
+import { useIdDeRuta } from '../../rutas/idDeRuta';
+import { useSesion } from '../../sesion/SesionProvider';
 import {
   useAccionConvenio,
   useAprobarConvenio,
@@ -60,6 +61,15 @@ const ACCIONES_AUDITORIA: Record<string, string> = {
   RECHAZO: 'Rechazo',
 };
 
+const ACCIONES_OK = new Set(['APROBACION', 'ACTIVACION', 'DESBLOQUEO_LINK']);
+const ACCIONES_PELIGRO = new Set(['RECHAZO', 'DESACTIVACION', 'REVOCACION_CLAVE', 'BLOQUEO_CLAVE', 'BLOQUEO_LINK']);
+
+function tonoAuditoria(accion: string): 'ok' | 'peligro' | 'neutro' {
+  if (ACCIONES_OK.has(accion)) return 'ok';
+  if (ACCIONES_PELIGRO.has(accion)) return 'peligro';
+  return 'neutro';
+}
+
 /** HU-12: solo lectura, del más nuevo al más antiguo (RN-12). */
 function Auditoria({ id }: { id: number }) {
   const [pagina, setPagina] = useState(1);
@@ -94,7 +104,9 @@ function Auditoria({ id }: { id: number }) {
                     </td>
                     <td data-titulo="Acción">
                       <div>
-                        <span className={s.badgeAuditoria}>{ACCIONES_AUDITORIA[registro.accion] ?? registro.accion}</span>
+                        <span className={s.badgeAuditoria} data-tono={tonoAuditoria(registro.accion)}>
+                          {ACCIONES_AUDITORIA[registro.accion] ?? registro.accion}
+                        </span>
                       </div>
                     </td>
                     <td data-titulo="Usuario">
@@ -114,15 +126,23 @@ function Auditoria({ id }: { id: number }) {
 
 type Confirmando = 'aprobar' | 'desactivar' | 'activar' | 'restablecer' | 'clave' | 'revocar' | null;
 
-const PREGUNTAS: Record<Exclude<Confirmando, null>, { texto: string; boton: string }> = {
+const PREGUNTAS: Record<Exclude<Confirmando, null>, { texto: string; boton: string; peligro?: boolean }> = {
   aprobar: { texto: 'Aprobar el convenio: podrá pedir viajes y se le avisará por correo.', boton: 'Aprobar' },
-  desactivar: { texto: 'Desactivar: la cuenta o la clave pierden el acceso al instante. Las reservas no se borran (RN-08).', boton: 'Desactivar' },
+  desactivar: {
+    texto: 'Desactivar: la cuenta o la clave pierden el acceso al instante. Las reservas no se borran (RN-08).',
+    boton: 'Desactivar',
+    peligro: true,
+  },
   activar: { texto: 'Reactivar el convenio.', boton: 'Activar' },
   clave: {
     texto: 'Se generará una clave nueva y se enviará al correo de contacto. La anterior deja de servir al instante.',
     boton: 'Generar clave',
   },
-  revocar: { texto: 'Revocar la clave: nadie podrá pedir con el convenio en el portal hasta generar otra.', boton: 'Revocar' },
+  revocar: {
+    texto: 'Revocar la clave: nadie podrá pedir con el convenio en el portal hasta generar otra.',
+    boton: 'Revocar',
+    peligro: true,
+  },
   restablecer: { texto: 'Se generará una contraseña temporal y se cerrarán sus sesiones.', boton: 'Restablecer' },
 };
 
@@ -167,6 +187,11 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
   const [aviso, setAviso] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
   const ocupado = accion.isPending || aprobar.isPending || rechazar.isPending || restablecer.isPending || editar.isPending;
+
+  const puedeRechazar = convenio.estado === 'EN_REVISION';
+  const puedeRevocar = esAdmin && convenio.admite_clave && convenio.clave_vigente;
+  const puedeDesactivar = esAdmin && convenio.estado === 'APROBADO';
+  const tienePeligro = puedeRechazar || puedeRevocar || puedeDesactivar;
 
   async function ejecutar(fn: () => Promise<unknown>, exito: string) {
     setFalla(null);
@@ -263,9 +288,33 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                 </Dato>
                 <Dato titulo="Dirección">{convenio.direccion || '—'}</Dato>
                 <Dato titulo="Encargado">{convenio.encargado_nombre || '—'}</Dato>
-                <Dato titulo="Correo">{convenio.encargado_email || 'Sin cuenta'}</Dato>
-                <Dato titulo="Teléfono">{convenio.encargado_telefono || '—'}</Dato>
-                {convenio.contacto_correo && <Dato titulo="Correo de contacto">{convenio.contacto_correo}</Dato>}
+                <Dato titulo="Correo">
+                  {convenio.encargado_email ? (
+                    <a href={`mailto:${convenio.encargado_email}`} className={s.enlaceContactoDato}>
+                      {convenio.encargado_email}
+                    </a>
+                  ) : (
+                    'Sin cuenta'
+                  )}
+                </Dato>
+                <Dato titulo="Teléfono">
+                  {convenio.encargado_telefono ? (
+                    <ContactoPasajero
+                      telefono={convenio.encargado_telefono}
+                      compacto
+                      nombre={convenio.encargado_nombre ?? convenio.cliente_nombre}
+                    />
+                  ) : (
+                    '—'
+                  )}
+                </Dato>
+                {convenio.contacto_correo && (
+                  <Dato titulo="Correo de contacto">
+                    <a href={`mailto:${convenio.contacto_correo}`} className={s.enlaceContactoDato}>
+                      {convenio.contacto_correo}
+                    </a>
+                  </Dato>
+                )}
                 {convenio.viajes_estimados_mes != null && <Dato titulo="Viajes al mes (estimado)">{numero.format(convenio.viajes_estimados_mes)}</Dato>}
                 <Dato titulo="Correos autorizados">
                   {convenio.correos_autorizados.length ? (
@@ -320,14 +369,21 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
               </p>
             )}
             {convenio.admite_clave && convenio.estado !== 'EN_REVISION' && convenio.estado !== 'RECHAZADO' && (
-              <p className={s.notaEstado}>
-                {convenio.clave_vigente && convenio.clave_generada_en
-                  ? `Clave vigente, generada el ${formatearFechaHora(convenio.clave_generada_en)}. Nunca se muestra aquí.`
-                  : 'Sin clave vigente: nadie puede pedir con el convenio en el portal.'}
-              </p>
+              <div className={s.estadoClave} data-vigente={String(convenio.clave_vigente)}>
+                <Icono nombre={convenio.clave_vigente ? 'llave' : 'alerta'} tamano={16} />
+                <span>
+                  {convenio.clave_vigente && convenio.clave_generada_en
+                    ? `Clave vigente, generada el ${formatearFechaHora(convenio.clave_generada_en)}. Nunca se muestra aquí.`
+                    : 'Sin clave vigente: nadie puede pedir con el convenio en el portal.'}
+                </span>
+              </div>
             )}
             {confirmando ? (
-              <div className={s.panelConfirmacion} role="alertdialog" aria-labelledby="pregunta-convenio">
+              <div
+                className={PREGUNTAS[confirmando].peligro ? s.panelConfirmacionPeligro : s.panelConfirmacion}
+                role="alertdialog"
+                aria-labelledby="pregunta-convenio"
+              >
                 <p id="pregunta-convenio">
                   {confirmando === 'aprobar' && convenio.admite_clave
                     ? 'Aprobar el convenio: se generará su clave y se enviará al correo de contacto con el aviso de aprobación.'
@@ -340,7 +396,12 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                   </label>
                 )}
                 <div className={estilos.acciones}>
-                  <button type="button" className={estilos.boton} disabled={ocupado} onClick={() => void confirmar()}>
+                  <button
+                    type="button"
+                    className={PREGUNTAS[confirmando].peligro ? estilos.botonPeligro : estilos.boton}
+                    disabled={ocupado}
+                    onClick={() => void confirmar()}
+                  >
                     {confirmando === 'clave' && convenio.clave_vigente ? 'Regenerar clave' : PREGUNTAS[confirmando].boton}
                   </button>
                   <button type="button" className={estilos.botonSecundario} disabled={ocupado} onClick={() => setConfirmando(null)}>
@@ -364,36 +425,25 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                 </div>
               </div>
             ) : (
-              <div className={s.accionesColumna}>
+              <div className={s.accionesApiladas}>
                 {convenio.estado === 'EN_REVISION' && (
-                  <>
-                    <button type="button" className={estilos.boton} onClick={() => setConfirmando('aprobar')}>
-                      Aprobar
-                    </button>
-                    <button type="button" className={estilos.botonSecundario} onClick={() => setRechazando(true)}>
-                      Rechazar…
-                    </button>
-                  </>
-                )}
-                {esAdmin && convenio.estado === 'APROBADO' && (
-                  <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('desactivar')}>
-                    Desactivar convenio
-                  </button>
-                )}
-                {esAdmin && convenio.estado === 'APROBADO' && convenio.admite_clave && (
-                  <button type="button" className={`${estilos.botonSecundario} ${s.botonConIcono}`} onClick={() => setConfirmando('clave')}>
-                    <Icono nombre="llave" tamano={16} />
-                    {convenio.clave_vigente ? 'Regenerar clave' : 'Generar clave'}
-                  </button>
-                )}
-                {esAdmin && convenio.admite_clave && convenio.clave_vigente && (
-                  <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('revocar')}>
-                    Revocar clave
+                  <button type="button" className={estilos.boton} onClick={() => setConfirmando('aprobar')}>
+                    Aprobar
                   </button>
                 )}
                 {esAdmin && convenio.estado === 'INACTIVO' && (convenio.tiene_cuenta || convenio.admite_clave) && (
-                  <button type="button" className={estilos.botonSecundario} onClick={() => setConfirmando('activar')}>
+                  <button type="button" className={estilos.boton} onClick={() => setConfirmando('activar')}>
                     Activar convenio
+                  </button>
+                )}
+                {esAdmin && convenio.estado === 'APROBADO' && convenio.admite_clave && (
+                  <button
+                    type="button"
+                    className={`${convenio.clave_vigente ? estilos.botonSecundario : estilos.boton} ${s.botonConIcono}`}
+                    onClick={() => setConfirmando('clave')}
+                  >
+                    <Icono nombre="llave" tamano={16} />
+                    {convenio.clave_vigente ? 'Regenerar clave' : 'Generar clave'}
                   </button>
                 )}
                 {esAdmin && convenio.tiene_cuenta && (
@@ -405,6 +455,25 @@ function Ficha({ convenio }: { convenio: ConvenioDetalle }) {
                     <Icono nombre="llave" tamano={16} />
                     Restablecer contraseña
                   </button>
+                )}
+                {tienePeligro && (
+                  <div className={s.grupoPeligro}>
+                    {puedeRechazar && (
+                      <button type="button" className={estilos.botonPeligro} onClick={() => setRechazando(true)}>
+                        Rechazar…
+                      </button>
+                    )}
+                    {puedeRevocar && (
+                      <button type="button" className={estilos.botonPeligro} onClick={() => setConfirmando('revocar')}>
+                        Revocar clave
+                      </button>
+                    )}
+                    {puedeDesactivar && (
+                      <button type="button" className={estilos.botonPeligro} onClick={() => setConfirmando('desactivar')}>
+                        Desactivar convenio
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
             )}
