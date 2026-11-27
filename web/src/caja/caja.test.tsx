@@ -55,6 +55,42 @@ describe('listado', () => {
     caja.turnos = [];
     expect(await screen.findByText('No hay turnos terminados por cerrar.')).toBeInTheDocument();
   });
+
+  it('muestra resumen de caja y filtra por texto o solo con efectivo (CC-20)', async () => {
+    const { caja } = montar();
+    caja.turnos = [
+      ...caja.turnos,
+      {
+        id: 8,
+        conductor_id: 22,
+        conductor: 'Pedro Sin Efectivo',
+        patente: 'WXYZ99',
+        hora_inicio: '2026-11-24T10:00:00-03:00',
+        hora_termino: '2026-11-24T14:00:00-03:00',
+        motivo_termino: 'CIERRE_ADMINISTRATIVO',
+        viajes_finalizados: 0,
+        efectivo_registrado: 0,
+        con_viaje_en_ejecucion: false,
+      },
+    ];
+
+    const resumen = await screen.findByLabelText('Resumen de caja');
+    expect(within(resumen).getByText('2')).toBeInTheDocument();
+    expect(within(resumen).getByText('1')).toBeInTheDocument();
+    expect(within(resumen).getByText('$48.000')).toBeInTheDocument();
+    expect(screen.getByText('Cierre administrativo')).toBeInTheDocument();
+
+    const usuario = userEvent.setup();
+    await usuario.click(screen.getByRole('button', { name: /Solo con efectivo \(1\)/ }));
+    const tabla = screen.getByRole('table', { name: 'Turnos por cerrar' });
+    expect(within(tabla).getByText('Ana Conductora')).toBeInTheDocument();
+    expect(within(tabla).queryByText('Pedro Sin Efectivo')).not.toBeInTheDocument();
+
+    await usuario.type(screen.getByLabelText('Buscar turno'), 'inexistente');
+    expect(screen.getByText('Ningún turno coincide con el filtro actual.')).toBeInTheDocument();
+    await usuario.click(screen.getByRole('button', { name: 'Limpiar filtros' }));
+    expect(within(screen.getByRole('table', { name: 'Turnos por cerrar' })).getByText('Pedro Sin Efectivo')).toBeInTheDocument();
+  });
 });
 
 describe('cierre (CP-36)', () => {
@@ -106,5 +142,13 @@ describe('cierre (CP-36)', () => {
     await userEvent.type(within(dialogo).getByLabelText('Efectivo rendido (CLP)'), '48000');
     await userEvent.click(within(dialogo).getByRole('button', { name: 'Cerrar caja' }));
     expect(await within(dialogo).findByRole('alert')).toHaveTextContent('Este turno ya tiene su cierre de caja.');
+  });
+
+  it('ofrece igualar monto registrado para cuadrar rápido en el diálogo (CC-20)', async () => {
+    montar();
+    const dialogo = await abrirDialogo();
+    await userEvent.click(within(dialogo).getByRole('button', { name: /Igualar monto registrado/ }));
+    expect(within(dialogo).getByLabelText('Efectivo rendido (CLP)')).toHaveValue('48000');
+    expect(within(dialogo).getByText('Cuadra con lo registrado.')).toBeInTheDocument();
   });
 });
