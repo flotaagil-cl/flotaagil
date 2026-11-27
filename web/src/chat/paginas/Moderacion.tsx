@@ -7,6 +7,7 @@ import { claseBoton } from '../../diseno/clases';
 import { FallaDeCarga } from '../../flota/componentes/comunes';
 import { formatearFechaHora } from '../../hora/hora';
 import { useModeracion } from '../api';
+import c from '../chat.module.css';
 import { GestionGrupo } from './GestionGrupo';
 
 /** HU-62: el administrador modera los grupos con sus metadatos (nombre, integrantes y fechas), sin leer los mensajes. */
@@ -17,7 +18,7 @@ export function Moderacion() {
     <section>
       <div className={estilos.encabezado}>
         <h1>Moderación del chat</h1>
-        <Link to="/chat" className={claseBoton('secundario')}>
+        <Link to="/chat" className={`${claseBoton('secundario')} ${c.botonCompacto}`}>
           Volver al chat
         </Link>
       </div>
@@ -32,37 +33,57 @@ export function Moderacion() {
       ) : consulta.data.length === 0 ? (
         <p className={estilos.vacio}>No hay grupos.</p>
       ) : (
-        <table className={estilos.tabla}>
-          <thead>
-            <tr>
-              <th scope="col">Grupo</th>
-              <th scope="col">Integrantes</th>
-              <th scope="col">Creado</th>
-              <th scope="col">Último mensaje</th>
-              <th scope="col">
-                <span className="solo-lector">Acciones</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {consulta.data.map((grupo) => (
-              <tr key={grupo.id}>
-                <td>{grupo.nombre}</td>
-                <td>{grupo.integrantes.map((i) => i.nombre).join(', ')}</td>
-                <td>
-                  {formatearFechaHora(grupo.creado_en)}
-                  {grupo.creado_por && ` · ${grupo.creado_por}`}
-                </td>
-                <td>{grupo.ultimo_mensaje_en ? formatearFechaHora(grupo.ultimo_mensaje_en) : 'Sin mensajes'}</td>
-                <td>
-                  <Boton variante="texto" onClick={() => setGestionar(grupo.id)}>
-                    {`Gestionar ${grupo.nombre}`}
-                  </Boton>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <p className={c.moderacionResumen}>
+            {`${consulta.data.length} ${consulta.data.length === 1 ? 'grupo registrado' : 'grupos registrados'}`}
+          </p>
+          <div className={c.tablaTarjeta}>
+            <div className={c.tablaEnvoltura}>
+              <table className={estilos.tabla}>
+                <thead>
+                  <tr>
+                    <th scope="col">Grupo</th>
+                    <th scope="col">Integrantes</th>
+                    <th scope="col">Creado</th>
+                    <th scope="col">Último mensaje</th>
+                    <th scope="col">
+                      <span className="solo-lector">Acciones</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consulta.data.map((grupo) => (
+                    <tr key={grupo.id}>
+                      <td data-titulo="Grupo" className={c.celdaNombre}>
+                        {grupo.nombre}
+                      </td>
+                      <td data-titulo="Integrantes">
+                        {`${grupo.integrantes.length} · ${grupo.integrantes.map((i) => i.nombre).join(', ')}`}
+                      </td>
+                      <td data-titulo="Creado">
+                        {formatearFechaHora(grupo.creado_en)}
+                        {grupo.creado_por && ` · ${grupo.creado_por}`}
+                      </td>
+                      <td data-titulo="Último mensaje" className={grupo.ultimo_mensaje_en ? undefined : c.celdaTenue}>
+                        {grupo.ultimo_mensaje_en ? formatearFechaHora(grupo.ultimo_mensaje_en) : 'Sin mensajes'}
+                      </td>
+                      <td data-titulo="Acciones">
+                        <Boton
+                          variante="secundario"
+                          className={c.botonFila}
+                          aria-label={`Gestionar ${grupo.nombre}`}
+                          onClick={() => setGestionar(grupo.id)}
+                        >
+                          Gestionar
+                        </Boton>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
       {gestionar !== null && <GestionGrupo id={gestionar} abierto cerrar={() => setGestionar(null)} puedeAgregar={false} puedeBorrar />}
     </section>

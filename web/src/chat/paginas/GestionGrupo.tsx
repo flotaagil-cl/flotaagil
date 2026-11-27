@@ -3,10 +3,13 @@ import { Aviso } from '../../componentes/Aviso';
 import { Cargando } from '../../componentes/Cargando';
 import { Boton } from '../../diseno/Boton';
 import { Campo } from '../../diseno/Campo';
+import { iniciales } from '../../diseno/clases';
 import { Dialogo } from '../../diseno/Dialogo';
+import { Avatar } from '../../diseno/Tarjeta';
 import { useSesion } from '../../sesion/SesionProvider';
 import { mensajeDelChat, useGestionGrupo, useGrupo, usePersonal } from '../api';
 import c from '../chat.module.css';
+import { etiquetaRol } from '../formatos';
 
 interface Props {
   id: number;
@@ -56,28 +59,51 @@ export function GestionGrupo({ id, abierto, cerrar, puedeAgregar, puedeBorrar, a
       {!datos ? (
         <Cargando />
       ) : (
-        <>
-          <form onSubmit={renombrar} noValidate>
-            <Campo etiqueta="Nombre del grupo" maxLength={60} value={nombre ?? datos.nombre} onChange={(e) => setNombre(e.target.value)} />
-            <Boton type="submit" variante="secundario" cargando={gestion.renombrar.isPending} disabled={nombre === null}>
+        <div className={c.gestionSecciones}>
+          <form className={c.renombrarFila} onSubmit={renombrar} noValidate>
+            <div className={c.renombrarCampo}>
+              <Campo etiqueta="Nombre del grupo" maxLength={60} value={nombre ?? datos.nombre} onChange={(e) => setNombre(e.target.value)} />
+            </div>
+            <Boton
+              type="submit"
+              variante="secundario"
+              className={c.botonCompacto}
+              cargando={gestion.renombrar.isPending}
+              disabled={nombre === null || !nombre.trim()}
+            >
               Guardar nombre
             </Boton>
           </form>
-          <h3>Integrantes</h3>
-          <ul className={c.personas} aria-label="Integrantes">
-            {datos.integrantes.map((integrante) => (
-              <li key={integrante.id} className={c.integrante}>
-                <span>{integrante.nombre}</span>
-                <Boton
-                  variante="texto"
-                  disabled={gestion.quitar.isPending}
-                  onClick={() => void intentar(() => gestion.quitar.mutateAsync(integrante.id), integrante.id === yo ? alSalir : undefined)}
-                >
-                  {integrante.id === yo ? 'Salir del grupo' : `Quitar a ${integrante.nombre}`}
-                </Boton>
-              </li>
-            ))}
-          </ul>
+
+          <div>
+            <h3 className={c.subtituloModal}>{`Integrantes (${datos.integrantes.length})`}</h3>
+            <ul className={c.personas} aria-label="Integrantes">
+              {datos.integrantes.map((integrante) => {
+                const esYo = integrante.id === yo;
+                return (
+                  <li key={integrante.id} className={c.integrante}>
+                    <span className={c.personaInfo}>
+                      <Avatar texto={iniciales(integrante.nombre)} />
+                      <span className={c.personaTexto}>
+                        <span className={c.personaNombre}>{integrante.nombre}</span>
+                        <span className={c.personaRol}>{esYo ? `${etiquetaRol(integrante.rol)} · Tú` : etiquetaRol(integrante.rol)}</span>
+                      </span>
+                    </span>
+                    <Boton
+                      variante="secundario"
+                      className={`${c.botonFila} ${c.botonPeligroTexto}`}
+                      aria-label={esYo ? 'Salir del grupo' : `Quitar a ${integrante.nombre}`}
+                      disabled={gestion.quitar.isPending}
+                      onClick={() => void intentar(() => gestion.quitar.mutateAsync(integrante.id), esYo ? alSalir : undefined)}
+                    >
+                      {esYo ? 'Salir del grupo' : 'Quitar'}
+                    </Boton>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
           {puedeAgregar && disponibles.length > 0 && (
             <div className={c.agregar}>
               <label>
@@ -86,26 +112,46 @@ export function GestionGrupo({ id, abierto, cerrar, puedeAgregar, puedeBorrar, a
                   <option value="">Elige a una persona</option>
                   {disponibles.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.nombre}
+                      {`${p.nombre} (${etiquetaRol(p.rol)})`}
                     </option>
                   ))}
                 </select>
               </label>
-              <Boton variante="secundario" disabled={!nuevo} cargando={gestion.agregar.isPending} onClick={() => void intentar(() => gestion.agregar.mutateAsync(Number(nuevo)), () => setNuevo(''))}>
+              <Boton
+                variante="secundario"
+                className={c.botonCompacto}
+                disabled={!nuevo}
+                cargando={gestion.agregar.isPending}
+                onClick={() => void intentar(() => gestion.agregar.mutateAsync(Number(nuevo)), () => setNuevo(''))}
+              >
                 Agregar
               </Boton>
             </div>
           )}
+
           {puedeBorrar && (
-            <Boton
-              variante="peligro"
-              cargando={gestion.borrar.isPending}
-              onClick={() => (confirmarBorrado ? void intentar(() => gestion.borrar.mutateAsync(), () => (cerrar(), alSalir?.())) : setConfirmarBorrado(true))}
-            >
-              {confirmarBorrado ? 'Confirmar: borrar el grupo' : 'Borrar grupo'}
-            </Boton>
+            <div className={c.zonaPeligro}>
+              <p className={c.zonaPeligroTexto}>Si borras el grupo, dejará de estar disponible para todos sus integrantes.</p>
+              <div className={c.accionesModal}>
+                {confirmarBorrado && (
+                  <Boton variante="secundario" className={c.botonCompacto} onClick={() => setConfirmarBorrado(false)}>
+                    Cancelar
+                  </Boton>
+                )}
+                <Boton
+                  variante="peligro"
+                  className={c.botonCompacto}
+                  cargando={gestion.borrar.isPending}
+                  onClick={() =>
+                    confirmarBorrado ? void intentar(() => gestion.borrar.mutateAsync(), () => (cerrar(), alSalir?.())) : setConfirmarBorrado(true)
+                  }
+                >
+                  {confirmarBorrado ? 'Confirmar: borrar el grupo' : 'Borrar grupo'}
+                </Boton>
+              </div>
+            </div>
           )}
-        </>
+        </div>
       )}
     </Dialogo>
   );
