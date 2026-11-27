@@ -201,7 +201,8 @@ export function Conductores() {
                       </Celda>
                       <Celda titulo="Licencia">
                         <span>
-                          {conductor.licencia_clase} · vence {formatearFecha(conductor.licencia_vence)}
+                          {conductor.licencia_clase} · vence{' '}
+                          <span className={s.sinCorte}>{formatearFecha(conductor.licencia_vence)}</span>
                         </span>
                         {aviso && (
                           <div>
