@@ -2,16 +2,29 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ErrorApi } from '../../api/resultado';
 import { Aviso } from '../../componentes/Aviso';
 import estilos from '../../componentes/panel.module.css';
+import { Icono } from '../../diseno/Icono';
 import { Campo } from '../../formularios/Campo';
 import { formatearFechaHora } from '../../hora/hora';
 import { useCambiarCorreo, useGenerarPassword, useHabilitacion, type Acceso, type Conductor } from '../api';
 import { mensajeDeError } from '../errores';
+import { ACCESOS_APP } from '../etiquetas';
+import s from '../flota.module.css';
 
 const ACCESOS: Record<Acceso, string> = {
   SIN_PASSWORD: 'Sin contraseña: todavía no puede ingresar a la app.',
   TEMPORAL: 'Con contraseña temporal: debe cambiarla al ingresar.',
   TEMPORAL_VENCIDA: 'La contraseña temporal venció sin usarse: genera otra.',
   ACTIVA: 'Con contraseña propia.',
+};
+
+type Tono = 'ok' | 'revision' | 'peligro' | 'neutro';
+
+const TONO_ACCESO: Record<keyof typeof ACCESOS_APP, Tono> = {
+  ACTIVA: 'ok',
+  TEMPORAL: 'revision',
+  TEMPORAL_VENCIDA: 'peligro',
+  SIN_PASSWORD: 'peligro',
+  DESHABILITADA: 'neutro',
 };
 
 type Confirmando = 'password' | 'deshabilitar' | null;
@@ -31,6 +44,7 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
   const [temporal, setTemporal] = useState<{ password: string; vence: string } | null>(null);
   const ocupado = generar.isPending || habilitacion.isPending;
   const primera = conductor.acceso === 'SIN_PASSWORD';
+  const claveAcceso = conductor.activo ? conductor.acceso : 'DESHABILITADA';
 
   async function confirmar() {
     setFalla(null);
@@ -62,27 +76,30 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
   }
 
   return (
-    <div className={estilos.tarjeta}>
+    <div className={s.tarjeta}>
+      {/* Nota: <h2> permanece hijo directo de la tarjeta (cuentas.test.tsx busca parentElement). */}
       <h2>Acceso a la app</h2>
       {aviso && <Aviso>{aviso}</Aviso>}
       {falla && <Aviso tipo="error">{falla}</Aviso>}
-      <dl className={estilos.datos}>
-        <div>
+      <dl className={s.datosGrid}>
+        <div className={s.datoItem}>
           <dt>Correo de acceso</dt>
           <dd>{conductor.email}</dd>
         </div>
-        <div>
-          <dt>Estado</dt>
-          <dd>
-            {conductor.activo ? ACCESOS[conductor.acceso] : 'Deshabilitada: no puede ingresar a la app.'}
-            {conductor.activo && conductor.acceso === 'TEMPORAL' && conductor.password_temporal_vence && (
-              <span className={estilos.secundario}> Vence el {formatearFechaHora(conductor.password_temporal_vence)}.</span>
-            )}
-          </dd>
-        </div>
-        <div>
+        <div className={s.datoItem}>
           <dt>Último ingreso</dt>
           <dd>{conductor.ultimo_ingreso ? formatearFechaHora(conductor.ultimo_ingreso) : 'Todavía no ingresa'}</dd>
+        </div>
+        <div className={s.datoItem}>
+          <dt>Estado</dt>
+          <dd>
+            <span className={s.estadoDetalleAcceso} data-tono={TONO_ACCESO[claveAcceso]}>
+              {conductor.activo ? ACCESOS[conductor.acceso] : 'Deshabilitada: no puede ingresar a la app.'}
+            </span>
+            {conductor.activo && conductor.acceso === 'TEMPORAL' && conductor.password_temporal_vence && (
+              <span className={s.secundario}>Vence el {formatearFechaHora(conductor.password_temporal_vence)}.</span>
+            )}
+          </dd>
         </div>
       </dl>
 
@@ -95,7 +112,7 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
           }}
         />
       ) : confirmando ? (
-        <div className={estilos.confirmacion} role="group" aria-label="Confirmar">
+        <div className={confirmando === 'deshabilitar' ? s.panelPeligro : s.panelConfirmacion} role="group" aria-label="Confirmar">
           <p>
             {confirmando === 'password'
               ? primera
@@ -118,9 +135,15 @@ export function CuentaConductor({ conductor }: { conductor: Conductor }) {
           </div>
         </div>
       ) : (
-        <div className={estilos.acciones}>
+        <div className={s.bloqueAcciones}>
           {conductor.activo && (
-            <button type="button" className={estilos.boton} disabled={ocupado} onClick={() => setConfirmando('password')}>
+            <button
+              type="button"
+              className={`${estilos.boton} ${s.botonConIcono}`}
+              disabled={ocupado}
+              onClick={() => setConfirmando('password')}
+            >
+              <Icono nombre="llave" tamano={16} />
               {primera ? 'Generar contraseña temporal' : 'Restablecer contraseña'}
             </button>
           )}
@@ -189,7 +212,7 @@ function CambiarCorreo({ conductor, alCerrar }: { conductor: Conductor; alCerrar
   }
 
   return (
-    <form className={estilos.confirmacion} onSubmit={(e) => void enviar(e)} noValidate aria-label="Cambiar correo de acceso">
+    <form className={s.panelConfirmacion} onSubmit={(e) => void enviar(e)} noValidate aria-label="Cambiar correo de acceso">
       {falla && <Aviso tipo="error">{falla}</Aviso>}
       <Campo etiqueta="Correo de acceso nuevo" error={error} ayuda="Se cerrarán sus sesiones y deberá entrar a la app con este correo.">
         {(control) => (
@@ -256,15 +279,18 @@ export function DialogoPassword({
       }}
     >
       <div className={estilos.formularioDialogo}>
-        <h2 id="titulo-password">Contraseña temporal</h2>
-        <p>
+        <div className={s.dialogoHeader}>
+          <Icono nombre="llave" tamano={20} />
+          <h2 id="titulo-password">Contraseña temporal</h2>
+        </div>
+        <p className={s.subtitulo}>
           Entrégasela {quien} para su primer ingreso con <strong>{correo}</strong>. No se volverá a mostrar: si se
           pierde, genera otra.
         </p>
-        <p className={estilos.password} aria-label="Contraseña temporal">
+        <p className={s.cajaPassword} aria-label="Contraseña temporal">
           {password}
         </p>
-        <p className={estilos.secundario}>Vence el {formatearFechaHora(vence)} si no se usa. Al ingresar, deberá cambiarla.</p>
+        <p className={s.secundario}>Vence el {formatearFechaHora(vence)} si no se usa. Al ingresar, deberá cambiarla.</p>
         {copiada === true && <Aviso>Copiada.</Aviso>}
         {copiada === false && <Aviso tipo="error">No se pudo copiar: selecciónala y cópiala a mano.</Aviso>}
         <div className={estilos.acciones}>

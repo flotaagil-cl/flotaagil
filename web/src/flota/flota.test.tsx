@@ -170,6 +170,20 @@ describe('vehículos', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Reintentar' }));
     expect(await screen.findByText('Aún no hay vehículos registrados.')).toBeInTheDocument();
   });
+
+  it('muestra el color, enlace Ver ficha y botón Limpiar cuando hay filtros activos', async () => {
+    const { flota, router } = montar('/vehiculos');
+    flota.vehiculos.push(vehiculoDePrueba({ id: 12, patente: 'BCDF10', color: 'Blanco' }));
+    const tabla = await tablaConDatos();
+    expect(within(tabla).getByText('Blanco')).toBeInTheDocument();
+    expect(within(tabla).getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/vehiculos/12');
+    expect(screen.queryByRole('button', { name: 'Limpiar' })).not.toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText('Estado'), 'true');
+    await waitFor(() => expect(router.state.location.search).toBe('?activo=true'));
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+  });
 });
 
 describe('carga por CSV', () => {
@@ -341,5 +355,22 @@ describe('conductores', () => {
   it('conductor inexistente', async () => {
     montar('/conductores/abc');
     expect(await screen.findByText('No existe el conductor o no es de tu empresa.')).toBeInTheDocument();
+  });
+
+  it('listado ofrece Ver ficha y Limpiar; ficha ofrece llamar y WhatsApp al conductor', async () => {
+    const { flota, router } = montar('/conductores');
+    flota.conductores.push(conductorDePrueba({ id: 44, nombre: 'Rosa Pérez', telefono: '+56912345678' }));
+    const tabla = await tablaConDatos();
+    expect(within(tabla).getByRole('link', { name: 'Ver ficha' })).toHaveAttribute('href', '/conductores/44');
+
+    await userEvent.selectOptions(screen.getByLabelText('Cuenta'), 'true');
+    await waitFor(() => expect(router.state.location.search).toBe('?activo=true'));
+    await userEvent.click(screen.getByRole('button', { name: 'Limpiar' }));
+    await waitFor(() => expect(router.state.location.search).toBe(''));
+
+    await userEvent.click(within(await tablaConDatos()).getByRole('link', { name: 'Ver ficha' }));
+    await screen.findByRole('heading', { name: 'Rosa Pérez' });
+    expect(screen.getByRole('link', { name: 'Llamar a Rosa Pérez' })).toHaveAttribute('href', 'tel:+56912345678');
+    expect(screen.getByRole('link', { name: 'WhatsApp a Rosa Pérez' })).toHaveAttribute('href', 'https://wa.me/56912345678');
   });
 });
