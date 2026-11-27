@@ -278,4 +278,43 @@ describe('pantalla del mapa', () => {
     expect(within(lista).getAllByRole('button')).toHaveLength(1);
     expect(within(lista).getByRole('button', { name: /Ana Ríos/ })).toBeInTheDocument();
   });
+
+  it('muestra tiempo legible en horas/días, leyenda del mapa, conteos y acciones de ficha', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true, now: AHORA });
+    vi.stubGlobal('WebSocket', SocketFalso);
+    montarPanel('/mapa', { email: 'despacho@andes.example' });
+    await waitFor(() => expect(SocketFalso.creados).toHaveLength(1));
+
+    const hace52Horas = new Date(AHORA - 3173 * 60_000).toISOString();
+    act(() =>
+      SocketFalso.creados[0].abrir({
+        tipo: 'inicial',
+        conductores: [
+          conductor({
+            id: 1,
+            nombre: 'Macarena Gutiérrez',
+            patente: 'DMAA10',
+            estado: 'DISPONIBLE',
+            posicion: { lat: -33.45, lon: -70.66, precision_m: 12, registrada_en: hace52Horas },
+          }),
+          conductor({ id: 2, nombre: 'Ricardo Zamorano', patente: 'DMAB11', estado: 'EN_VIAJE', posicion: null }),
+        ],
+      }),
+    );
+
+    expect(await screen.findByText(/1 en mapa \(0 activos\)/)).toBeInTheDocument();
+    expect(screen.getByText('Señal antigua · hace 2 d 4 h')).toBeInTheDocument();
+    expect(screen.getByLabelText('Leyenda del mapa')).toBeInTheDocument();
+
+    // Al seleccionar al conductor sin GPS, Centrar en mapa queda deshabilitado y muestra Viajes en curso.
+    const lista = screen.getByRole('list', { name: 'Conductores en turno' });
+    await userEvent.click(within(lista).getByRole('button', { name: /Ricardo Zamorano/ }));
+    const ficha = screen.getByRole('region', { name: 'Conductor seleccionado' });
+    expect(within(ficha).getByRole('button', { name: 'Centrar en mapa' })).toBeDisabled();
+    expect(within(ficha).getByRole('link', { name: 'Viajes en curso' })).toHaveAttribute('href', '/reservas?estado=EN_CAMINO');
+
+    // Al seleccionar a Macarena (con GPS), Centrar en mapa se habilita.
+    await userEvent.click(within(lista).getByRole('button', { name: /Macarena Gutiérrez/ }));
+    expect(within(screen.getByRole('region', { name: 'Conductor seleccionado' })).getByRole('button', { name: 'Centrar en mapa' })).toBeEnabled();
+  });
 });
