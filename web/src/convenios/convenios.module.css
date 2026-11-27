@@ -87,14 +87,6 @@
   white-space: nowrap;
 }
 
-.puntoEstado {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
-  flex: none;
-}
-
 .badgeEstado[data-estado='APROBADO'] {
   background: var(--insignia-ok-fondo, var(--acento-suave));
   color: var(--insignia-ok-texto, var(--texto));
@@ -183,7 +175,43 @@
 }
 
 .camposFiltro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-3);
   padding: var(--espacio-4);
+}
+
+.atajosBarra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.atajo {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo);
+  color: var(--texto-suave);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 130ms ease, border-color 130ms ease, color 130ms ease;
+}
+
+.atajo:hover {
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--color-primario-900, var(--texto));
+}
+
+.atajo[aria-pressed='true'] {
+  background: var(--color-primario-700, var(--acento));
+  border-color: var(--color-primario-700, var(--acento));
+  color: var(--sobre-acento);
 }
 
 .filaFiltros {
@@ -298,6 +326,14 @@
 
 .tablaConvenios tbody tr:hover {
   background: var(--color-tiffany-50, var(--fondo));
+}
+
+.tablaConvenios tbody tr[data-pendiente='true'] {
+  background: var(--insignia-revision-fondo, var(--info-fondo));
+}
+
+.tablaConvenios tbody tr[data-pendiente='true'] td:first-child {
+  box-shadow: inset 4px 0 0 var(--insignia-revision-texto, var(--acento));
 }
 
 .tablaConvenios tbody tr:last-child td {
@@ -522,7 +558,35 @@
   line-height: 1.45;
 }
 
+.estadoClave {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: var(--espacio-3) 0;
+  padding: var(--espacio-3);
+  border-radius: var(--radio);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.estadoClave svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.estadoClave[data-vigente='true'] {
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--texto));
+}
+
+.estadoClave[data-vigente='false'] {
+  background: var(--insignia-revision-fondo, var(--info-fondo));
+  color: var(--insignia-revision-texto, var(--texto));
+}
+
 .panelConfirmacion,
+.panelConfirmacionPeligro,
 .panelRechazo {
   display: flex;
   flex-direction: column;
@@ -534,12 +598,14 @@
   background: var(--fondo);
 }
 
+.panelConfirmacionPeligro,
 .panelRechazo {
   border-color: var(--error-borde);
   background: var(--error-fondo);
 }
 
 .panelConfirmacion p,
+.panelConfirmacionPeligro p,
 .panelRechazo p {
   margin: 0;
   font-size: 0.925rem;
@@ -581,6 +647,42 @@
   margin-top: var(--espacio-3);
 }
 
+.accionesApiladas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-3);
+}
+
+.accionesApiladas > button {
+  width: 100%;
+}
+
+.grupoPeligro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espacio-2);
+  margin-top: var(--espacio-2);
+  padding-top: var(--espacio-3);
+  border-top: 1px solid var(--borde);
+}
+
+.grupoPeligro > button {
+  width: 100%;
+}
+
+.enlaceContactoDato {
+  color: var(--color-primario-700, var(--acento));
+  font-weight: 600;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.enlaceContactoDato:hover {
+  color: var(--color-primario-900, var(--texto));
+  text-decoration: underline;
+}
+
 /* --- Auditoría --- */
 
 .badgeAuditoria {
@@ -589,11 +691,23 @@
   padding: 2px 9px;
   border: 1px solid var(--borde);
   border-radius: 999px;
-  background: var(--color-tiffany-50, var(--fondo));
-  color: var(--color-primario-900, var(--texto));
+  background: var(--insignia-neutra-fondo, var(--fondo));
+  color: var(--insignia-neutra-texto, var(--texto-suave));
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.badgeAuditoria[data-tono='ok'] {
+  border-color: transparent;
+  background: var(--insignia-ok-fondo, var(--acento-suave));
+  color: var(--insignia-ok-texto, var(--texto));
+}
+
+.badgeAuditoria[data-tono='peligro'] {
+  border-color: transparent;
+  background: var(--insignia-peligro-fondo, var(--error-fondo));
+  color: var(--insignia-peligro-texto, var(--error-texto));
 }
 
 .fechaAuditoria {

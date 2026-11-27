@@ -114,6 +114,27 @@ export function Convenios() {
         </button>
 
         <div id="campos-filtro-convenios" className={s.camposFiltro} data-abierto={filtrosAbiertos} role="search">
+          <div className={s.atajosBarra} role="group" aria-label="Atajos de estado">
+            <button
+              type="button"
+              className={s.atajo}
+              aria-pressed={!estado}
+              onClick={() => filtros.cambiar({ estado: '' })}
+            >
+              Todos
+            </button>
+            {Object.entries(ESTADOS_CONVENIO).map(([valor, texto]) => (
+              <button
+                key={valor}
+                type="button"
+                className={s.atajo}
+                aria-pressed={estado === valor}
+                onClick={() => filtros.cambiar({ estado: estado === valor ? '' : valor })}
+              >
+                {texto}
+              </button>
+            ))}
+          </div>
           <div className={s.filaFiltros}>
             <label className={s.campoFiltro}>
               Buscar
@@ -198,7 +219,7 @@ export function Convenios() {
               </thead>
               <tbody>
                 {lista.data.results.map((convenio) => (
-                  <tr key={convenio.id}>
+                  <tr key={convenio.id} data-pendiente={convenio.estado === 'EN_REVISION' || undefined}>
                     <td data-titulo="Cliente">
                       <div>
                         <Link to={`/convenios/${convenio.id}`} className={s.enlaceCliente}>

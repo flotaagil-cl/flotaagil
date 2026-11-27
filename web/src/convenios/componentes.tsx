@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { Aviso } from '../componentes/Aviso';
 import estilos from '../componentes/panel.module.css';
+import type { NombreIcono } from '../diseno/iconos';
 import { Icono } from '../diseno/Icono';
 import { normalizarRut, rutValido } from '../flota/formularios';
 import { ErrorApi } from '../api/resultado';
@@ -10,10 +11,17 @@ import type { ConvenioDetalle } from './api';
 import { ESTADOS_CONVENIO } from './estados';
 import s from './convenios.module.css';
 
+const ICONO_ESTADO: Record<ConvenioDetalle['estado'], NombreIcono> = {
+  APROBADO: 'check',
+  EN_REVISION: 'reloj',
+  RECHAZADO: 'cerrar',
+  INACTIVO: 'menos',
+};
+
 export function BadgeEstado({ estado }: { estado: ConvenioDetalle['estado'] }) {
   return (
     <span className={s.badgeEstado} data-estado={estado}>
-      <span className={s.puntoEstado} aria-hidden="true" />
+      <Icono nombre={ICONO_ESTADO[estado]} tamano={13} />
       {ESTADOS_CONVENIO[estado]}
     </span>
   );

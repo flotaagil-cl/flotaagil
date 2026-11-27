@@ -93,6 +93,22 @@ describe('listado', () => {
     expect(await screen.findByRole('link', { name: 'Minera Norte' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Hotel Sur' })).toBeInTheDocument();
   });
+
+  it('atajos de estado sincronizados y resaltado de filas en revisión (K1)', async () => {
+    const { convenios } = montar('/convenios');
+    convenios.convenios = [
+      convenioDePrueba({ id: 10, cliente_nombre: 'Minera Norte', estado: 'APROBADO' }),
+      convenioDePrueba({ id: 11, cliente_nombre: 'Hotel Sur', estado: 'EN_REVISION', activo: false }),
+    ];
+    const filaSur = (await screen.findByRole('link', { name: 'Hotel Sur' })).closest('tr')!;
+    expect(filaSur).toHaveAttribute('data-pendiente', 'true');
+
+    const grupo = screen.getByRole('group', { name: 'Atajos de estado' });
+    await userEvent.click(within(grupo).getByRole('button', { name: 'En revisión' }));
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Minera Norte' })).not.toBeInTheDocument());
+    expect(within(grupo).getByRole('button', { name: 'En revisión' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('combobox', { name: 'Estado' })).toHaveValue('EN_REVISION');
+  });
 });
 
 describe('sin creación', () => {
@@ -115,10 +131,13 @@ describe('ficha', () => {
     expect(await screen.findByRole('link', { name: 'Volver a los convenios' })).toBeInTheDocument();
   });
 
-  it('muestra los datos del registro', async () => {
-    await abrir();
+  it('muestra los datos del registro con correo mailto y teléfono de contacto (K3)', async () => {
+    await abrir({ contacto_correo: 'contacto@minera.example' });
     expect(screen.getByText('Elena Encargada')).toBeInTheDocument();
-    expect(screen.getByText('elena@minera.example')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'elena@minera.example' })).toHaveAttribute('href', 'mailto:elena@minera.example');
+    expect(screen.getByRole('link', { name: 'contacto@minera.example' })).toHaveAttribute('href', 'mailto:contacto@minera.example');
+    expect(screen.getByRole('link', { name: 'Llamar a Elena Encargada' })).toHaveAttribute('href', 'tel:+56900008001');
+    expect(screen.getByRole('link', { name: 'WhatsApp a Elena Encargada' })).toHaveAttribute('href', 'https://wa.me/56900008001');
     expect(screen.getByText('Av. Apoquindo 3000, Las Condes')).toBeInTheDocument();
   });
 
@@ -250,10 +269,17 @@ describe('auditoría del convenio (HU-12, CP-24)', () => {
     expect(await screen.findByText('Aún no hay registros.')).toBeInTheDocument();
   });
 
-  it('no ofrece modificar los registros', async () => {
-    abrirConvenio();
+  it('no ofrece modificar los registros y diferencia el tono por tipo de acción (K3)', async () => {
+    abrirConvenio([
+      { ...REGISTRO, id: 1, accion: 'CREACION' },
+      { ...REGISTRO, id: 2, accion: 'APROBACION' },
+      { ...REGISTRO, id: 3, accion: 'DESACTIVACION' },
+    ]);
     const tabla = await screen.findByRole('table', { name: 'Auditoría del convenio' });
     expect(within(tabla).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(tabla).getByText('Creación')).toHaveAttribute('data-tono', 'neutro');
+    expect(within(tabla).getByText('Aprobación')).toHaveAttribute('data-tono', 'ok');
+    expect(within(tabla).getByText('Desactivación')).toHaveAttribute('data-tono', 'peligro');
   });
 });
 
