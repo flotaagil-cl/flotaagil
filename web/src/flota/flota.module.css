@@ -193,6 +193,11 @@ a.patente:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.sinCorte {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 .listaChips {
   display: flex;
   flex-wrap: wrap;
@@ -856,6 +861,24 @@ a.patente:hover {
   }
 
   .pieFormulario > * {
-    flex: 1;
+    flex: 1 1 auto;
+    white-space: nowrap;
+  }
+
+  .listaAsociados li,
+  .listaCandidatos li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .listaAsociados li > button,
+  .listaCandidatos li > button {
+    width: 100%;
+  }
+
+  .listaCandidatos {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
   }
 }

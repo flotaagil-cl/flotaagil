@@ -147,7 +147,8 @@ function Ficha({ conductor }: { conductor: TipoConductor }) {
                   <dt>Licencia</dt>
                   <dd>
                     <span>
-                      Clase {LICENCIAS[conductor.licencia_clase]} · vence {formatearFecha(conductor.licencia_vence)}
+                      Clase {LICENCIAS[conductor.licencia_clase]} · vence{' '}
+                      <span className={s.sinCorte}>{formatearFecha(conductor.licencia_vence)}</span>
                     </span>
                     {alertaLicencia && (
                       <div>
